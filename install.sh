@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-REPO_URL="git+https://github.com/your-org/dev_ops.git"
+REPO_URL="git+https://github.com/NunoMoura/dev_ops.git"
 
 echo "🚀 Installing dev_ops framework..."
 
