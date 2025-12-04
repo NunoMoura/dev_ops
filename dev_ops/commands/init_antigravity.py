@@ -14,7 +14,7 @@ def read_file(path: str) -> str:
         return f.read()
 
 
-def init_antigravity():
+def init_antigravity(force: bool = False):
     print("🚀 Initializing Antigravity IDE Integration...")
 
     # 1. Define Paths
@@ -44,13 +44,19 @@ def init_antigravity():
         if not os.path.exists(d):
             os.makedirs(d)
             print(f"✅ Created directory: {d}")
+        else:
+            print(f"ℹ️  Directory exists: {d}")
 
     # 3. Install Rules (agents.md -> rules/dev_ops.md)
     agents_md_src = os.path.join(templates_dir, "agents.md")
     if os.path.exists(agents_md_src):
         rule_dest = os.path.join(rules_dir, "dev_ops.md")
-        shutil.copy2(agents_md_src, rule_dest)
-        print(f"✅ Installed Rule: {rule_dest}")
+        if os.path.exists(rule_dest) and not force:
+            print(f"⏭️  Skipping Rule (exists): {rule_dest}")
+        else:
+            action = "Overwrote" if os.path.exists(rule_dest) else "Installed"
+            shutil.copy2(agents_md_src, rule_dest)
+            print(f"✅ {action} Rule: {rule_dest}")
     else:
         print(f"⚠️  Warning: agents.md not found at {agents_md_src}")
 
@@ -69,12 +75,14 @@ def init_antigravity():
             dest_path = os.path.join(workflows_dir, dest_name)
 
             if os.path.exists(src_path):
-                # We copy instead of symlink to avoid issues with relative paths in some environments
-                # and to allow user customization without affecting the source.
-                shutil.copy2(src_path, dest_path)
-                print(
-                    f"✅ Installed Workflow: /{dest_name.replace('.md', '')} -> {dest_path}"
-                )
+                if os.path.exists(dest_path) and not force:
+                    print(f"⏭️  Skipping Workflow (exists): {dest_path}")
+                else:
+                    action = "Overwrote" if os.path.exists(dest_path) else "Installed"
+                    shutil.copy2(src_path, dest_path)
+                    print(
+                        f"✅ {action} Workflow: /{dest_name.replace('.md', '')} -> {dest_path}"
+                    )
             else:
                 print(f"⚠️  Warning: Workflow {src_name} not found.")
     else:
@@ -86,4 +94,9 @@ def init_antigravity():
 
 
 if __name__ == "__main__":
-    init_antigravity()
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--force", action="store_true", help="Overwrite existing files")
+    args = parser.parse_args()
+    init_antigravity(force=args.force)

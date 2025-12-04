@@ -1,7 +1,5 @@
-#!/usr/bin/env python3
 import argparse
 import sys
-import os
 import subprocess
 
 # Import commands
@@ -13,11 +11,7 @@ import subprocess
 
 from dev_ops.commands import (
     log_issue,
-    create_research,
-    create_adr,
     init_antigravity,
-    ci_check,
-    git_commit,
 )
 
 
@@ -27,6 +21,9 @@ def main():
 
     # Init
     init_parser = subparsers.add_parser("init", help="Initialize dev_ops in a project")
+    init_parser.add_argument(
+        "--force", action="store_true", help="Overwrite existing files"
+    )
 
     # Issue
     issue_parser = subparsers.add_parser("issue", help="Log a new issue")
@@ -54,7 +51,7 @@ def main():
     args = parser.parse_args()
 
     if args.command == "init":
-        init_antigravity.init_antigravity()
+        init_antigravity.init_antigravity(force=args.force)
     elif args.command == "issue":
         log_issue.log_issue(args.title, args.desc, args.priority)
     elif args.command == "research":
