@@ -18,13 +18,14 @@ Your mission is to build high-quality software using **Code Wiki** for understan
 You are an intelligent agent. Your job is to **analyze**, **select the right tool**, and **execute**.
 
 ### 1. Understand the Task
-- **Goal**: Read the user's prompt and identify the core objective.
-- **Context**: Use `read_file` or `grep_search` to gather context.
-- **Artifacts**: Produce the following artifacts to document your work:
-    *   **Issues** (`ISSUE-XXX`): For tracking bugs or features.
-    *   **Research** (`RES-XXX`): For exploring new concepts.
-    *   **ADRs** (`ADR-XXX`): For significant architectural decisions.
-    *   **Plans**: `task.md` and `implementation_plan.md` (Standard Antigravity Artifacts).
+
+* **Goal**: Read the user's prompt and identify the core objective.
+* **Context**: Use `read_file` or `grep_search` to gather context.
+* **Artifacts**: Produce the following artifacts to document your work:
+  * **Issues** (`ISSUE-XXX`): For tracking bugs or features.
+  * **Research** (`RES-XXX`): For exploring new concepts.
+  * **ADRs** (`ADR-XXX`): For significant architectural decisions.
+  * **Plans**: `task.md` and `implementation_plan.md` (Standard Antigravity Artifacts).
 
 ### 2. Select Tool
 

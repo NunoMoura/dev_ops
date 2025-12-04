@@ -35,9 +35,9 @@ def init_antigravity(force: bool = False):
         rules_dir,
         workflows_dir,
         os.path.join(workspace_root, ".github"),
-        os.path.join(workspace_root, "adr"),
-        os.path.join(workspace_root, "research"),
-        os.path.join(workspace_root, "issues"),
+        os.path.join(workspace_root, "dev_ops", "adr"),
+        os.path.join(workspace_root, "dev_ops", "research"),
+        os.path.join(workspace_root, "dev_ops", "issues"),
     ]
 
     for d in directories_to_create:

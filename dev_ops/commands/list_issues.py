@@ -7,9 +7,7 @@ import sys
 # Add current directory to sys.path to ensure local imports work
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-ISSUES_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "issues"
-)
+ISSUES_DIR = os.path.join(os.getcwd(), "dev_ops", "issues")
 
 
 def get_parser() -> argparse.ArgumentParser:

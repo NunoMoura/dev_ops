@@ -16,9 +16,7 @@ from dev_ops.commands.utils.id_gen import get_next_id, sanitize_slug
 TEMPLATE_PATH = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "templates", "adr.md"
 )
-ADR_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "docs", "adr"
-)
+ADR_DIR = os.path.join(os.getcwd(), "dev_ops", "adr")
 
 
 def get_next_adr_number():

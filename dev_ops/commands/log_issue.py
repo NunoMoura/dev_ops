@@ -11,9 +11,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from interaction import prompt_user
 from dev_ops.commands.utils.id_gen import get_next_id, sanitize_slug
 
-ISSUES_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "issues"
-)
+ISSUES_DIR = os.path.join(os.getcwd(), "dev_ops", "issues")
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -44,7 +42,7 @@ def log_issue(title: str, description: str, priority: str = "medium") -> str:
     """
     # Create Issue Object
     # issue_id = str(uuid.uuid4())[:8] # OLD
-    
+
     # Ensure directory exists first to scan for IDs
     if not os.path.exists(ISSUES_DIR):
         os.makedirs(ISSUES_DIR)
@@ -52,7 +50,7 @@ def log_issue(title: str, description: str, priority: str = "medium") -> str:
     next_id_num = get_next_id(ISSUES_DIR, "ISSUE")
     slug = sanitize_slug(title)
     issue_id = f"ISSUE-{next_id_num}"
-    
+
     issue = {
         "id": issue_id,
         "title": title,

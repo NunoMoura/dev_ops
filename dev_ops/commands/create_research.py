@@ -10,7 +10,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from interaction import prompt_user
 from file_ops import write_file
 from template_ops import read_template, fill_template
-from text_ops import sanitize_name
+
 from dev_ops.commands.utils.id_gen import get_next_id, sanitize_slug
 
 
@@ -31,10 +31,7 @@ def main():
     topic = args.topic or prompt_user("Research Topic")
     # short_name = sanitize_name(topic) # OLD
 
-    research_dir = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-        "research",
-    )
+    research_dir = os.path.join(os.getcwd(), "dev_ops", "research")
     next_id = get_next_id(research_dir, "RES")
     slug = sanitize_slug(topic)
 
