@@ -15,5 +15,11 @@ setup(
             "dev_ops=dev_ops.main:main",
         ],
     },
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+    ],
+    license="MIT",
     python_requires=">=3.10",
 )
