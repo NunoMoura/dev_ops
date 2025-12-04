@@ -113,5 +113,9 @@ def deploy(env: str, force: bool = False) -> str:
         return "❌ Deployment failed."
 
 
-if __name__ == "__main__":
+def main():
     mcp.run()
+
+
+if __name__ == "__main__":
+    main()
