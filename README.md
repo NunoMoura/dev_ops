@@ -1,4 +1,4 @@
-# Dev_Ops Framework
+# Dev_Ops
 
 **An Agentic Framework for High-Quality Software Development.**
 
