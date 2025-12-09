@@ -10,7 +10,7 @@ description: Create a project backlog.
 
 ## Steps
 
-1. Create a `dev_ops/backlog.md` file.
+1. Create a `dev_docs/backlog.md` file.
 2. Populate it with the template below.
 
 ## Template

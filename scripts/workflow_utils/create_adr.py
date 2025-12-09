@@ -19,7 +19,7 @@ ADR_DIR = os.path.join(
     os.path.dirname(
         os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     ),
-    "dev_ops",
+    "dev_docs",
     "adrs",
 )
 

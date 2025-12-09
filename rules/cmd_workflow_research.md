@@ -1,8 +1,7 @@
-```
 ---
 activation_mode: Glob
 description: Standards for Research and Trade-off Analysis.
-globs: "dev_ops/research/*.md"
+globs: "dev_docs/research/*.md"
 ---
 
 # Research Standards

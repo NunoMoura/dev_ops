@@ -48,11 +48,12 @@ related_code: {{related_code}}
 
 1. Identify the IDs of relevant ADRs, Research, Bugs, and Backlog items.
 2. Run `python3 scripts/workflow_utils/create_plan.py --title "Plan Title" --docs [ID1] [ID2] ...` to generate the plan file.
-3. The script will create a new plan in `dev_ops/plans/` with the context populated.
+3. The script will create a new plan in `dev_docs/plans/` with the context populated.
 4. Review the generated plan and fill in the "Steps" and "Verification" sections.
 5. If there are conflicting documents, use `python3 scripts/workflow_utils/check_doc_date.py [file1] [file2]` to determine precedence.
 
 ## Exit Criteria
 
-- [ ] Plan file created in `dev_ops/plans/`.
+- [ ] Plan file created in `dev_docs/plans/`.
 - [ ] Plan approved by user or team.
+```

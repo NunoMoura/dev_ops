@@ -73,13 +73,13 @@ def main():
         )
         print("✅ Installed scripts to .agent/scripts")
 
-    # 6. Initialize Data Directories (dev_ops/)
+    # 6. Initialize Data Directories (dev_docs/)
     print("\n📂 Initializing Data Directories...")
     data_structure = [
-        "dev_ops/adrs",
-        "dev_ops/bugs",
-        "dev_ops/plans",
-        "dev_ops/research",
+        "dev_docs/adrs",
+        "dev_docs/bugs",
+        "dev_docs/plans",
+        "dev_docs/research",
     ]
     for rel_path in data_structure:
         full_path = os.path.join(PROJECT_ROOT, rel_path)
@@ -90,16 +90,16 @@ def main():
         print(f"✅ Created {rel_path}")
 
     # Create backlog.md if it doesn't exist
-    backlog_path = os.path.join(PROJECT_ROOT, "dev_ops", "backlog.md")
+    backlog_path = os.path.join(PROJECT_ROOT, "dev_docs", "backlog.md")
     if not os.path.exists(backlog_path):
         with open(backlog_path, "w") as f:
             f.write(
                 "# Project Backlog\n\n## High Priority\n\n## Medium Priority\n\n## Low Priority\n"
             )
-        print("✅ Created dev_ops/backlog.md")
+        print("✅ Created dev_docs/backlog.md")
 
     print(
-        "\n✨ Bootstrap Complete! Configuration installed to .agent/ and dev_ops/ directories."
+        "\n✨ Bootstrap Complete! Configuration installed to .agent/ and dev_docs/ directories."
     )
 
 

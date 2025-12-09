@@ -1,7 +1,7 @@
 ---
 activation_mode: Glob
 description: Standards for Backlog management.
-globs: "dev_ops/backlog.md"
+globs: "dev_docs/backlog.md"
 ---
 
 # Backlog Standards

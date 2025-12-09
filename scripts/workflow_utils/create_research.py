@@ -35,7 +35,7 @@ def main():
     repo_root = os.path.dirname(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     )
-    research_dir = os.path.join(repo_root, "dev_ops", "research")
+    research_dir = os.path.join(repo_root, "dev_docs", "research")
 
     if not os.path.exists(research_dir):
         os.makedirs(research_dir)

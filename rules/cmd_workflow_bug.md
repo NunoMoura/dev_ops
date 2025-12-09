@@ -1,7 +1,7 @@
 ---
 activation_mode: Glob
 description: Standards for Bug and Issue reports.
-globs: "dev_ops/bugs/*.md"
+globs: "dev_docs/bugs/*.md"
 ---
 
 # Bug & Issue Standards
@@ -27,7 +27,7 @@ globs: "dev_ops/bugs/*.md"
 
 ### CREATE
 
-1. Check for duplicates in `dev_ops/bugs/`. to avoid duplicates.
+1. Check for duplicates in `dev_docs/bugs/`. to avoid duplicates.
 2. Use `/bug` workflow to create.
 3. **If discovered during coding**: Note the context in the bug.
 4. **If from ADR/Research**: Add link in `related_docs`.

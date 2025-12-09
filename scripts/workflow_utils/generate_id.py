@@ -24,7 +24,7 @@ def main():
         os.path.dirname(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         ),
-        "dev_ops",
+        "dev_docs",
     )
 
     type_map = {

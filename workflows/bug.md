@@ -55,13 +55,13 @@ related_docs: []
 
 ## Steps
 
-1. Search existing bugs in `docs/bugs/` to avoid duplicates.
+1. Search existing bugs in `dev_docs/bugs/` to avoid duplicates.
 2. Run `python3 scripts/workflow_utils/log_bug.py --title "Bug Title" --desc "Description"` to create a new bug file.
-3. The script will generate a bug ID (e.g., `BUG-XXX`) and create the file in `dev_ops/bugs/`.
+3. The script will generate a bug ID (e.g., `BUG-XXX`) and create the file in `dev_docs/bugs/`.
 4. **Link to related Research or ADRs** if this bug is derived from them.
 5. Assign a priority and labels if applicable.
 
 ## Exit Criteria
 
-- [ ] New bug file created in `dev_ops/bugs/`.
+- [ ] New bug file created in `dev_docs/bugs/`.
 - [ ] Related documents are linked if applicable.
