@@ -1,0 +1,10 @@
+# Files to exclude when using `git archive` for vendoring
+# These stay in the repo but won't be included in archives
+
+tests/ export-ignore
+.github/ export-ignore
+install.sh export-ignore
+LICENSE export-ignore
+README.md export-ignore
+.gitignore export-ignore
+.gitattributes export-ignore
