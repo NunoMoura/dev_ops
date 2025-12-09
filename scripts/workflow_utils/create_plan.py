@@ -6,7 +6,9 @@ import sys
 
 # Add project root to sys.path
 sys.path.append(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
 )
 
 from scripts.shared_utils.id_gen import get_next_id, sanitize_slug
@@ -14,8 +16,10 @@ from scripts.shared_utils.doc_ops import find_doc_by_id
 from scripts.shared_utils.template_ops import extract_template_from_workflow
 
 PLANS_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
-    "docs",
+    os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    ),
+    "dev_ops",
     "plans",
 )
 

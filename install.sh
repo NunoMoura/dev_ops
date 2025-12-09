@@ -5,43 +5,41 @@
 set -e
 
 REPO_URL="https://github.com/NunoMoura/dev_ops.git"
-TARGET_DIR="dev_ops"
+INSTALL_DIR="$HOME/.dev_ops"
+CURRENT_DIR=$(pwd)
 
-echo "🚀 Installing dev_ops framework..."
+echo "🚀 Installing/Updating dev_ops framework..."
 
-# Check if target directory exists
-if [ -d "$TARGET_DIR" ]; then
-    echo "⚠️  Directory '$TARGET_DIR' already exists."
-    read -p "Overwrite? (y/N): " confirm
-    if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
-        echo "❌ Installation cancelled."
-        exit 1
-    fi
-    rm -rf "$TARGET_DIR"
+# 1. Update Global Tool
+if [ -d "$INSTALL_DIR" ]; then
+    echo "📦 Updating global dev_ops in $INSTALL_DIR..."
+    cd "$INSTALL_DIR"
+    git pull --quiet
+else
+    echo "📦 Cloning dev_ops to $INSTALL_DIR..."
+    git clone --depth 1 --quiet "$REPO_URL" "$INSTALL_DIR"
 fi
 
-# Clone (shallow, no history)
-echo "📦 Cloning repository..."
-git clone --depth 1 --quiet "$REPO_URL" "$TARGET_DIR"
+# 2. Run Bootstrap in Target Project
+echo "⚙️  Running bootstrap for project at $CURRENT_DIR..."
 
-# Clean up non-vendored files
-echo "🧹 Cleaning up..."
-rm -rf "$TARGET_DIR/.git"
-rm -rf "$TARGET_DIR/tests"
-rm -rf "$TARGET_DIR/.github"
-rm -f "$TARGET_DIR/install.sh"
-rm -f "$TARGET_DIR/LICENSE"
-rm -f "$TARGET_DIR/README.md"
+cd "$CURRENT_DIR"
 
-# Run bootstrap
-echo "⚙️  Running bootstrap..."
-python3 "$TARGET_DIR/scripts/bootstrap.py"
+# Ensure Python script can read from TTY if piped
+if [ -t 0 ]; then
+    python3 "$INSTALL_DIR/scripts/bootstrap.py" --target "$CURRENT_DIR"
+else
+    if [ -e /dev/tty ]; then
+         python3 "$INSTALL_DIR/scripts/bootstrap.py" --target "$CURRENT_DIR" < /dev/tty
+    else
+         python3 "$INSTALL_DIR/scripts/bootstrap.py" --target "$CURRENT_DIR"
+    fi
+fi
 
 echo ""
-echo "✅ dev_ops installed successfully!"
+echo "✅ dev_ops configured for this project!"
 echo ""
 echo "Next steps:"
 echo "  1. Open your project in Antigravity IDE"
-echo "  2. Use /bootstrap to configure agent rules"
-echo "  3. Start using workflows: /bug, /adr, /plan, etc."
+echo "  2. Use agents commands like /bug, /plan..."
 echo ""

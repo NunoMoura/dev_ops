@@ -6,7 +6,9 @@ import argparse
 
 # Add project root to sys.path
 sys.path.append(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
 )
 
 from scripts.shared_utils.file_ops import write_file
@@ -14,9 +16,11 @@ from scripts.shared_utils.id_gen import get_next_id, sanitize_slug
 from scripts.shared_utils.template_ops import extract_template_from_workflow
 
 ADR_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
-    "docs",
-    "adr",
+    os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    ),
+    "dev_ops",
+    "adrs",
 )
 
 

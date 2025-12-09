@@ -52,13 +52,13 @@ related_docs: []
 ## Steps
 
 1. Run `python3 scripts/workflow_utils/create_research.py --title "Research Topic"` to create a new research file.
-2. The script will generate a Research ID (e.g., `RES-XXX`) and create the file in `docs/research/`.
+2. The script will generate a Research ID (e.g., `RES-XXX`) and create the file in `dev_ops/research/`.
 3. **Link to the Bug or Backlog item** that prompted this research.
 4. Conduct research and document findings, including pros/cons of different approaches.
 5. If the research leads to a decision, **trigger the Create ADR Workflow** (`/adr`).
 
 ## Exit Criteria
 
-- [ ] New research file created in `docs/research/`.
+- [ ] New research file created in `dev_ops/research/`.
 - [ ] Related Bug/Backlog item is linked.
 - [ ] If decision needed, ADR workflow triggered.

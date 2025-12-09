@@ -7,7 +7,9 @@ import sys
 
 # Add project root to sys.path
 sys.path.append(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
 )
 
 from scripts.shared_utils.file_ops import write_file
@@ -16,8 +18,10 @@ from scripts.shared_utils.interaction import prompt_user
 from scripts.shared_utils.template_ops import extract_template_from_workflow
 
 BUGS_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
-    "docs",
+    os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    ),
+    "dev_ops",
     "bugs",
 )
 

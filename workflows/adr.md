@@ -55,10 +55,10 @@ related_docs: []
 
 ## Steps
 
-1. Check for existing ADRs in `docs/adrs/` to ensure no conflicts exist.
+1. Check for existing ADRs in `dev_ops/adrs/` to ensure no conflicts exist.
 2. If a conflict exists, use `python3 scripts/workflow_utils/check_doc_date.py [file1] [file2]` to determine precedence.
 3. Run `python3 scripts/workflow_utils/create_adr.py --title "ADR Title"` to create a new ADR file.
-4. The script will generate an ADR ID (e.g., `ADR-XXX`) and create the file in `docs/adrs/`.
+4. The script will generate an ADR ID (e.g., `ADR-XXX`) and create the file in `dev_ops/adrs/`.
 5. Fill in the Context, Decision, and Consequences sections.
 6. **Link the ADR** to any Research docs or Bugs that originated this decision.
 7. **Create Backlog items** for any implementation work this ADR requires.
@@ -67,7 +67,7 @@ related_docs: []
 
 ## Exit Criteria
 
-- [ ] New ADR file created in `docs/adrs/`.
+- [ ] New ADR file created in `dev_ops/adrs/`.
 - [ ] ADR does not conflict with existing active ADRs.
 - [ ] Related documents are linked.
 - [ ] Implementation Backlog items created if applicable.

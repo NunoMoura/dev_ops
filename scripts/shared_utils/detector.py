@@ -14,10 +14,31 @@ def detect_languages(project_root):
         ):
             # Rough heuristic, but user can always delete if irrelevant
             langs.append("svelte")
-    if os.path.exists(os.path.join(project_root, "requirements.txt")) or os.path.exists(
-        os.path.join(project_root, "pyproject.toml")
+
+    # Python Detection
+    if (
+        os.path.exists(os.path.join(project_root, "requirements.txt"))
+        or os.path.exists(os.path.join(project_root, "pyproject.toml"))
+        or os.path.exists(os.path.join(project_root, "Pipfile"))
+        or os.path.exists(os.path.join(project_root, "setup.py"))
     ):
         langs.append("python")
+
+    # Fallback: Scan for .py files if no config found
+    if "python" not in langs:
+        for root, _, files in os.walk(project_root):
+            # Skip common ignored dirs to save time
+            if any(
+                p in root
+                for p in [".git", ".venv", "venv", "__pycache__", "node_modules"]
+            ):
+                continue
+            for file in files:
+                if file.endswith(".py"):
+                    langs.append("python")
+                    break
+            if "python" in langs:
+                break
     if os.path.exists(os.path.join(project_root, "pom.xml")) or os.path.exists(
         os.path.join(project_root, "build.gradle")
     ):

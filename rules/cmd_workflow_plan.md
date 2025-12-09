@@ -1,7 +1,7 @@
 ---
 activation_mode: Glob
 description: Standards for Implementation Plans.
-globs: "docs/plans/*.md"
+globs: "dev_ops/plans/*.md"
 ---
 
 # Plan Standards
@@ -34,7 +34,7 @@ globs: "docs/plans/*.md"
 
 ### UPDATE
 
-1. Check off completed items.
+1. Check `dev_ops/backlog.md` for prioritized items.
 2. Strike through dropped items with reason.
 3. **If blocked**: Create Research (`/research`) or Bug (`/bug`).
 4. Update `status`: `active` → `in-progress` → `completed`.

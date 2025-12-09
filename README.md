@@ -107,6 +107,7 @@ curl -sL https://raw.githubusercontent.com/NunoMoura/dev_ops/main/install.sh | b
 ```
 
 This will:
+
 1. Clone `dev_ops` into your project
 2. Remove non-essential files (tests, docs, license)
 3. Run bootstrap to configure rules

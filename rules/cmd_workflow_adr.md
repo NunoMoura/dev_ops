@@ -1,7 +1,7 @@
 ---
 activation_mode: Glob
 description: Standards for Architectural Decision Records.
-globs: "docs/adrs/*.md"
+globs: "dev_ops/adrs/*.md"
 ---
 
 # ADR Standards
@@ -26,7 +26,7 @@ globs: "docs/adrs/*.md"
 
 ### CREATE
 
-1. Check for conflicting ADRs in `docs/adrs/`.
+1. Check for conflicting ADRs in `dev_ops/adrs/`.
 2. Use `/adr` workflow to create.
 3. **Link to Research**: Add Research IDs that informed this decision.
 4. **Link to Bugs**: Add Bug IDs this decision addresses.

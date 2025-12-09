@@ -4,7 +4,9 @@ import sys
 
 # Add project root to sys.path
 sys.path.append(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
 )
 
 from scripts.shared_utils.id_gen import get_next_id
@@ -19,8 +21,10 @@ def main():
 
     # Default directories
     base_dir = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
-        "docs",
+        os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        ),
+        "dev_ops",
     )
 
     type_map = {

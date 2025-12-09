@@ -48,9 +48,16 @@ def install_rules(rules_src_dir, agent_rules_dir, project_root, langs):
                     continue
 
             # Smart Bootstrap (globs)
+            # Smart Bootstrap (globs)
+            # We always install workflow commands so users can create content
+            # We also always install the guide
+            force_install = (
+                file.startswith("cmd_workflow_") or file == "dev_ops_guide.md"
+            )
+
             content = read_file(src_path)
             glob_match = re.search(r'globs: "(.*)"', content)
-            if glob_match:
+            if glob_match and not force_install:
                 patterns = [p.strip() for p in glob_match.group(1).split(",")]
                 found_match = False
                 for p in patterns:

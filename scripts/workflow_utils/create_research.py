@@ -5,7 +5,9 @@ import os
 import sys
 
 # Add current directory to sys.path to ensure local imports work
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 
 from scripts.shared_utils.interaction import prompt_user
 from scripts.shared_utils.file_ops import write_file
@@ -30,8 +32,10 @@ def main():
     topic = args.topic or prompt_user("Research Topic")
 
     # Path setup
-    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    research_dir = os.path.join(repo_root, "docs", "research")
+    repo_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    )
+    research_dir = os.path.join(repo_root, "dev_ops", "research")
 
     if not os.path.exists(research_dir):
         os.makedirs(research_dir)

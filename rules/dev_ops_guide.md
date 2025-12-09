@@ -44,7 +44,7 @@ All rules in `rules/` follow a strict prefix system to indicate their purpose:
 ## 📁 Directory Structure
 
 * **`.agent/`**: Contains the rules and internal logic.
-* **`docs/`**: Where your documentation lives (`adrs`, `bugs`, `plans`, `research`).
+* **`dev_ops/`**: Where your documentation lives (`adrs`, `bugs`, `plans`, `research`).
 * **`scripts/`**: Python scripts powering the framework.
   * `workflow_utils/`: Tools used by Workflows.
   * `shared_utils/`: Core libraries and bootstrap logic.

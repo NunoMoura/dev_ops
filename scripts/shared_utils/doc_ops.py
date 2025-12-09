@@ -2,7 +2,8 @@ import os
 import yaml
 
 BASE_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "docs"
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "dev_ops",
 )
 
 TYPE_MAP = {
