@@ -1,7 +1,9 @@
 ---
+
 activation_mode: Glob
 description: Java coding standards and best practices.
-globs: "**/*.java"
+globs: ["**/*.java"]
+
 ---
 
 # Java Standards

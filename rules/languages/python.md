@@ -1,7 +1,9 @@
 ---
-activation_mode: glob
+
+activation_mode: Glob
 description: Python coding standards and best practices.
-globs: "**/*.py"
+globs: ["**/*.py"]
+
 ---
 
 # Python Standards

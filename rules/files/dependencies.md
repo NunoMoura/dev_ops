@@ -1,7 +1,9 @@
 ---
-activation_mode: model_decision
+
+activation_mode: Glob
 description: Standards for Dependency Injection.
-globs: "**/di/**,**/containers/**,**/dependencies/**"
+globs: ["**/di/**", "**/containers/**", "**/dependencies/**"]
+
 ---
 
 # Dependency Standards

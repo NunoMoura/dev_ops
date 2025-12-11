@@ -1,7 +1,9 @@
 ---
-activation_mode: model_decision
+
+activation_mode: Glob
 description: Standards for Factory Pattern usage.
-globs: "**/factories/**,**/factory/**"
+globs: ["**/factories/**", "**/factory/**"]
+
 ---
 
 # Factory Standards

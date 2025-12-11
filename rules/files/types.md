@@ -1,7 +1,9 @@
 ---
-activation_mode: model_decision
+
+activation_mode: Glob
 description: Standards for Type Definitions and Interfaces.
-globs: "**/types/**,**/interfaces/**,**/definitions/**"
+globs: ["**/types/**", "**/interfaces/**", "**/definitions/**"]
+
 ---
 
 # Types Standards

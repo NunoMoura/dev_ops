@@ -1,7 +1,8 @@
 ---
-activation_mode: agent-decides
+
+activation_mode: Always On
 description: Policies for Implementing plans and fixing builds.
-globs: "**/*"
+
 ---
 
 # Implementation Policy

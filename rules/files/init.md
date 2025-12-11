@@ -1,7 +1,9 @@
 ---
-activation_mode: model_decision
+
+activation_mode: Glob
 description: Standards for Project Initialization and Startup.
-globs: "**/init/**,**/startup/**,**/boot/**,**/main.py**,**/index.js**,**/index.ts**"
+globs: ["**/init/**", "**/startup/**", "**/boot/**", "**/main.py**", "**/index.js**", "**/index.ts**"]
+
 ---
 
 # Init Standards

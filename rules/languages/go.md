@@ -1,7 +1,9 @@
 ---
+
 activation_mode: Glob
 description: Go coding standards and best practices.
-globs: "**/*.go"
+globs: ["**/*.go"]
+
 ---
 
 # Go Standards

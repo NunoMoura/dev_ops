@@ -1,7 +1,9 @@
 ---
+
 activation_mode: Glob
 description: Svelte coding standards and best practices.
-globs: "**/*.svelte"
+globs: ["**/*.svelte"]
+
 ---
 
 # Svelte Standards

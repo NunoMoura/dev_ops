@@ -1,7 +1,8 @@
 ---
-activation_mode: agent-decides
+
+activation_mode: Model Decides
 description: Standards and policy for Bug Project Artifacts.
-globs: "dev_docs/bugs/*.md"
+
 ---
 
 # Bug Policy

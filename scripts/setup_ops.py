@@ -75,6 +75,13 @@ def install_rules(rules_src: str, rules_dest: str, project_root: str, langs: lis
     for root, _, files in os.walk(rules_src):
         for file in files:
             if file.endswith(".md"):
+                # Filter language rules
+                if os.path.basename(root) == "languages":
+                    lang_name = os.path.splitext(file)[0]
+                    if lang_name not in langs:
+                        # Skip if language not detected
+                        continue
+
                 src_path = os.path.join(root, file)
                 # Flatten: Copy directly to rules_dest
                 shutil.copy2(src_path, os.path.join(rules_dest, file))

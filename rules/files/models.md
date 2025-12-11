@@ -1,7 +1,9 @@
 ---
-activation_mode: model_decision
+
+activation_mode: Glob
 description: Standards for Data Models and ORM.
-globs: "**/models/**,**/model/**,**/entities/**"
+globs: ["**/models/**", "**/model/**", "**/entities/**"]
+
 ---
 
 # Model Standards

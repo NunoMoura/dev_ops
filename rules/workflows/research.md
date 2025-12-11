@@ -1,7 +1,8 @@
 ---
-activation_mode: agent-decides
+
+activation_mode: Model Decides
 description: Standards and policy for Research Project Artifacts.
-globs: "dev_docs/research/*.md"
+
 ---
 
 # Research Policy

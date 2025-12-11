@@ -1,7 +1,8 @@
 ---
-activation_mode: agent-decides
+
+activation_mode: Model Decides
 description: Standards and process for creating an Architectural Decision Record (ADR) Project Artifact.
-globs: "dev_docs/adrs/*.md"
+
 ---
 
 # ADR Policy

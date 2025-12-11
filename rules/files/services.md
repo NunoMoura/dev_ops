@@ -1,7 +1,9 @@
 ---
-activation_mode: model_decision
+
+activation_mode: Glob
 description: Standards for Service layer and Business Logic.
-globs: "**/services/**,**/service/**"
+globs: ["**/services/**", "**/service/**"]
+
 ---
 
 # Service Standards

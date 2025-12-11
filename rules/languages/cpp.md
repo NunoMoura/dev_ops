@@ -1,7 +1,9 @@
 ---
+
 activation_mode: Glob
 description: C++ coding standards and best practices.
-globs: "**/*.cpp,**/*.h,**/*.hpp"
+globs: ["**/*.cpp", "**/*.h", "**/*.hpp"]
+
 ---
 
 # C++ Standards

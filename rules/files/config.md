@@ -1,7 +1,9 @@
 ---
-activation_mode: model_decision
+
+activation_mode: Glob
 description: Standards for Configuration and Environment Variables.
-globs: "**/config/**,**/.env*,**/settings/**"
+globs: ["**/config/**", "**/.env*", "**/settings/**"]
+
 ---
 
 # Config Standards

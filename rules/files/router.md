@@ -1,7 +1,9 @@
 ---
-activation_mode: model_decision
+
+activation_mode: Glob
 description: Standards for API Routers and Controllers.
-globs: "**/routes/**,**/routers/**,**/controllers/**,**/api/**"
+globs: ["**/routes/**", "**/routers/**", "**/controllers/**", "**/api/**"]
+
 ---
 
 # Router Standards

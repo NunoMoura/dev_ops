@@ -1,7 +1,8 @@
 ---
-activation_mode: agent-decides
+
+activation_mode: Always On
 description: Policies for Code Quality, Testing, and Auditing.
-globs: "**/*"
+
 ---
 
 # Code Quality Policy

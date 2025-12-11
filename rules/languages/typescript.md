@@ -1,7 +1,9 @@
 ---
+
 activation_mode: Glob
 description: TypeScript coding standards and best practices.
-globs: "**/*.ts,**/*.tsx"
+globs: ["**/*.ts", "**/*.tsx"]
+
 ---
 
 # TypeScript Standards

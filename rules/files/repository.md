@@ -1,7 +1,9 @@
 ---
-activation_mode: model_decision
+
+activation_mode: Glob
 description: Standards for Repositories and DAO.
-globs: "**/repositories/**,**/repository/**,**/dao/**"
+globs: ["**/repositories/**", "**/repository/**", "**/dao/**"]
+
 ---
 
 # Repository Standards

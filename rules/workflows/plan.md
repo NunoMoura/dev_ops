@@ -1,7 +1,8 @@
 ---
-activation_mode: agent-decides
+
+activation_mode: Model Decides
 description: Process for creating an implementation plan Project Artifact.
-globs: "**/*.md"
+
 ---
 
 # Plan Policy

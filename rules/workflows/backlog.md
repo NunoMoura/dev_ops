@@ -1,7 +1,8 @@
 ---
-activation_mode: agent-decides
+
+activation_mode: Model Decides
 description: Standards and policy for the Project Backlog Artifact.
-globs: "dev_docs/backlog.md"
+
 ---
 
 # Backlog Policy

@@ -1,7 +1,9 @@
 ---
+
 activation_mode: Glob
 description: Rust coding standards and best practices.
-globs: "**/*.rs"
+globs: ["**/*.rs"]
+
 ---
 
 # Rust Standards

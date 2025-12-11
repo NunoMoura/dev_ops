@@ -1,7 +1,9 @@
 ---
-activation_mode: model_decision
+
+activation_mode: Glob
 description: Standards for API Schemas and DTOs.
-globs: "**/schemas/**,**/schema/**,**/dto/**"
+globs: ["**/schemas/**", "**/schema/**", "**/dto/**"]
+
 ---
 
 # Schema Standards

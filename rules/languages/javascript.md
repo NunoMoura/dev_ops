@@ -1,7 +1,9 @@
 ---
+
 activation_mode: Glob
 description: JavaScript coding standards and best practices.
-globs: "**/*.js,**/*.jsx"
+globs: ["**/*.js", "**/*.jsx"]
+
 ---
 
 # JavaScript Standards
