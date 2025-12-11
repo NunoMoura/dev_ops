@@ -1,5 +1,5 @@
 ---
-description: Diagnose and resolve CI/CD failures or local build errors.
+description: Diagnostic workflow for fixing build failures or CI errors.
 ---
 
 # Fix Build Workflow

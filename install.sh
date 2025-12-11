@@ -5,7 +5,7 @@
 set -e
 
 REPO_URL="https://github.com/NunoMoura/dev_ops.git"
-INSTALL_DIR="$HOME/.dev_ops"
+INSTALL_DIR="$HOME/.dev_ops_core"
 CURRENT_DIR=$(pwd)
 
 echo "🚀 Installing/Updating dev_ops framework..."
@@ -27,12 +27,12 @@ cd "$CURRENT_DIR"
 
 # Ensure Python script can read from TTY if piped
 if [ -t 0 ]; then
-    python3 "$INSTALL_DIR/scripts/bootstrap.py" --target "$CURRENT_DIR"
+    python3 "$INSTALL_DIR/scripts/setup_ops.py" --target "$CURRENT_DIR"
 else
     if [ -e /dev/tty ]; then
-         python3 "$INSTALL_DIR/scripts/bootstrap.py" --target "$CURRENT_DIR" < /dev/tty
+         python3 "$INSTALL_DIR/scripts/setup_ops.py" --target "$CURRENT_DIR" < /dev/tty
     else
-         python3 "$INSTALL_DIR/scripts/bootstrap.py" --target "$CURRENT_DIR"
+         python3 "$INSTALL_DIR/scripts/setup_ops.py" --target "$CURRENT_DIR"
     fi
 fi
 
