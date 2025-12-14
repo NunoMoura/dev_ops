@@ -8,6 +8,16 @@ import argparse
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from utils import write_file, prompt_user
+from detectors import (
+    detect_python_details,
+    detect_node_details,
+    detect_go_details,
+    detect_rust_details,
+    detect_java_details,
+    detect_cpp_details,
+    detect_svelte_details,
+    get_file_content,
+)
 
 # ==========================================
 # Language Detection
@@ -38,6 +48,34 @@ def detect_languages(project_root: str) -> list:
             elif file.endswith(".svelte"):
                 langs.add("svelte")
     return list(langs)
+
+
+def analyze_project(project_root, langs):
+    """collects replacement map for templates based on language analysis."""
+    replacements = {}
+
+    if "python" in langs:
+        replacements.update(detect_python_details(project_root))
+
+    if "javascript" in langs or "typescript" in langs:
+        replacements.update(detect_node_details(project_root))
+
+    if "go" in langs:
+        replacements.update(detect_go_details(project_root))
+
+    if "rust" in langs:
+        replacements.update(detect_rust_details(project_root))
+
+    if "java" in langs:
+        replacements.update(detect_java_details(project_root))
+
+    if "cpp" in langs:
+        replacements.update(detect_cpp_details(project_root))
+
+    if "svelte" in langs:
+        replacements.update(detect_svelte_details(project_root))
+
+    return replacements
 
 
 # ==========================================
@@ -71,6 +109,9 @@ def install_rules(rules_src: str, rules_dest: str, project_root: str, langs: lis
     print("\n📦 Installing Rules...")
     os.makedirs(rules_dest, exist_ok=True)
 
+    # Analyze project to get replacements
+    replacements = analyze_project(project_root, langs)
+
     # 1. Install Global Rules (Recursive Flattening)
     for root, _, files in os.walk(rules_src):
         for file in files:
@@ -83,11 +124,18 @@ def install_rules(rules_src: str, rules_dest: str, project_root: str, langs: lis
                         continue
 
                 src_path = os.path.join(root, file)
-                # Flatten: Copy directly to rules_dest
-                shutil.copy2(src_path, os.path.join(rules_dest, file))
-                print(f"   - Installed {file}")
+                dest_path = os.path.join(rules_dest, file)
 
-    # (Language specific rules are now included in the global copy loop)
+                # REFACTOR: Read, Replace, Write
+                content = get_file_content(src_path)
+
+                # Apply replacements
+                for key, value in replacements.items():
+                    content = content.replace(key, str(value))
+
+                write_file(dest_path, content)
+
+                print(f"   - Installed {file}")
 
 
 # ==========================================

@@ -109,11 +109,25 @@ flowchart TD
 
 ### Automatic Install (Recommended)
 
-This script installs the global core package to `~/.dev_ops_core` and bootstraps the local `dev_ops/` folder in your project.
+This script installs the global core package to `~/.dev_ops_core` and adds the `dev_ops` command to your PATH.
 
 ```bash
 curl -sL https://raw.githubusercontent.com/NunoMoura/dev_ops/main/install.sh | bash
 ```
+
+### Bootstrap a Project
+
+Once installed, go to your project root and run:
+
+```bash
+dev_ops
+```
+
+This will:
+
+1. Analyze your project (languages, tools, versions).
+2. Install customized rules and workflows.
+3. Configure documentation structure.
 
 ### Manual Install
 
@@ -122,7 +136,9 @@ curl -sL https://raw.githubusercontent.com/NunoMoura/dev_ops/main/install.sh | b
 git clone https://github.com/NunoMoura/dev_ops.git ~/.dev_ops_core
 
 # 2. Run setup in your project root
-python3 ~/.dev_ops_core/scripts/setup_ops.py
+# You can alias this or use the wrapper script in bin/dev_ops
+alias dev_ops='python3 ~/.dev_ops_core/scripts/setup_ops.py'
+dev_ops
 ```
 
 ---

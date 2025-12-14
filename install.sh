@@ -6,11 +6,12 @@ set -e
 
 REPO_URL="https://github.com/NunoMoura/dev_ops.git"
 INSTALL_DIR="$HOME/.dev_ops_core"
-CURRENT_DIR=$(pwd)
+BIN_DIR="$HOME/.local/bin"
+GLOBAL_CMD="dev_ops"
 
-echo "🚀 Installing/Updating dev_ops framework..."
+echo "🚀 Installing/Updating dev_ops framework core..."
 
-# 1. Update Global Tool
+# 1. Update/Clone Core Repo
 if [ -d "$INSTALL_DIR" ]; then
     echo "📦 Updating global dev_ops in $INSTALL_DIR..."
     cd "$INSTALL_DIR"
@@ -20,26 +21,23 @@ else
     git clone --depth 1 --quiet "$REPO_URL" "$INSTALL_DIR"
 fi
 
-# 2. Run Bootstrap in Target Project
-echo "⚙️  Running bootstrap for project at $CURRENT_DIR..."
+# 2. Setup Global Command
+echo "⚙️  Setting up global command '$GLOBAL_CMD'..."
+mkdir -p "$BIN_DIR"
 
-cd "$CURRENT_DIR"
-
-# Ensure Python script can read from TTY if piped
-if [ -t 0 ]; then
-    python3 "$INSTALL_DIR/scripts/setup_ops.py" --target "$CURRENT_DIR"
-else
-    if [ -e /dev/tty ]; then
-         python3 "$INSTALL_DIR/scripts/setup_ops.py" --target "$CURRENT_DIR" < /dev/tty
-    else
-         python3 "$INSTALL_DIR/scripts/setup_ops.py" --target "$CURRENT_DIR"
-    fi
+# Link the wrapper script
+if [ -L "$BIN_DIR/$GLOBAL_CMD" ] || [ -e "$BIN_DIR/$GLOBAL_CMD" ]; then
+    rm -f "$BIN_DIR/$GLOBAL_CMD"
 fi
 
+ln -s "$INSTALL_DIR/bin/dev_ops" "$BIN_DIR/$GLOBAL_CMD"
+
 echo ""
-echo "✅ dev_ops configured for this project!"
+echo "✅ dev_ops core installed successfully!"
 echo ""
 echo "Next steps:"
-echo "  1. Open your project in Antigravity IDE"
-echo "  2. Use agents commands like /bug, /plan..."
+echo "  1. Ensure '$BIN_DIR' is in your PATH."
+echo "     (Add 'export PATH=\"$BIN_DIR:\$PATH\"' to your .bashrc or .zshrc if needed)"
+echo "  2. Go to any project directory and run:"
+echo "     dev_ops"
 echo ""
