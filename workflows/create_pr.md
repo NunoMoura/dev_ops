@@ -17,6 +17,7 @@ description: Create a Pull Request linked to an Implementation Plan.
 3. **Fill Description**:
    - **Title**: Use the PR title from the Plan or Branch.
    - **Description**:
+     
      ```markdown
      ## Goal
      [Summary of changes]
@@ -29,6 +30,7 @@ description: Create a Pull Request linked to an Implementation Plan.
      - [ ] Automated tests passed
      - [ ] Manual verification completed
      ```
+     
 4. **Link Items**: Ensure the PR is linked to the GitHub Issue or Project Item if applicable.
 
 ## Exit Criteria
