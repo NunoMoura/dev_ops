@@ -80,8 +80,7 @@ flowchart TD
 | `/adr` | Document an architectural decision | `dev_ops/docs/adrs/ADR-XXX.md` |
 | `/plan` | Create an Implementation Plan | `dev_ops/docs/plans/PLN-XXX.md` |
 | `/implement` | Execute an active Plan | Code Changes |
-| `/fix` | Debug/fix a bug | Code Changes |
-| `/test` | Run tests/verification | Test Results |
+| `/debug` | Debug and fix a defect (bug/build/test) | Code Changes |
 | `/verify` | Run verification workflow | Test Results |
 | `/bootstrap` | Configure agent rules | `.agent/rules/` |
 
