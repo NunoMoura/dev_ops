@@ -25,9 +25,12 @@ description: Run local pre-flight checks before pushing a PR.
 2. **Lint Code**:
    - Run project-specific linters (e.g., `flake8`, `eslint`).
    - Fix style violations.
-3. **Run Tests**:
+3. **Verify Tests**:
+   - **New Code**: MUST have passing tests.
+   - **Legacy Code**:
+     - *Ideally*: Add tests for modified legacy code.
+     - *Fallback*: If adding tests is too large a scope, create a **Backlog Item** `[Test]` (e.g., "Add tests for legacy module X") and link it in the PR description.
    - Run `workflows/run_tests.md`.
-   - Ensure all tests pass.
 
 ## Exit Criteria
 

@@ -10,9 +10,14 @@
 1. **Identify Scope**:
    - Determine if you are running unit tests, integration tests, or all tests.
 
-2. **Run Tests**:
+3. **Standard**:
+   - Tests MUST mirror the source directory structure.
+     - `src/utils/helper.py` -> `tests/src/utils/test_helper.py`.
+   - All legacy tests should be refactored to match this standard over time.
+
+4. **Run Tests**:
    - Execute: `python3 -m pytest` (or relevant test runner for the project).
-   - For specific file: `python3 -m pytest path/to/test_file.py`.
+   - For specific file: `python3 -m pytest tests/src/utils/test_helper.py`.
 
 3. **Analyze Results**:
    - **Pass**: Proceed to next step (commit/review).

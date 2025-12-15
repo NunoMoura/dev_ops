@@ -45,7 +45,10 @@ flowchart TD
 
     %% Execution Output
     Plan --> |implement_plan| Code["💻 Code"]
-    Code --> |create_pr| PR["🔀 Pull Request"]
+    Code --> |run_tests| Verify["🧪 Verify"]
+    Verify --> |create_pr| PR["🔀 Pull Request"]
+    Verify -.-> |fix| Code
+    Verify -.-> |report_bug| Bug
 
     %% Continuous Feedback
     PR --> |check_pr| Triage["🕵️ Triage"]
