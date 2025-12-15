@@ -9,9 +9,21 @@ description: Document research on a specific topic.
 - [ ] A topic requiring investigation or research.
 - [ ] Optionally, a Bug (`BUG-XXX`) or Backlog item (`BLK-XXX`) prompting this.
 
+## Relations
+
+- **Upstream**:
+  - **Bug**: `BUG-XXX` (Issue requiring investigation)
+  - **Backlog**: `BLK-XXX` (Feature requiring investigation)
+- **Downstream**:
+  - **ADR**: `ADR-XXX` (Decision informed by this research)
+  - **Plan**: `PLN-XXX` (Plan informed by this research)
+
 ## Steps
 
 1. **Conduct Research**:
+   > [!TIP]
+   > **MCP Recommendation**: Use **Paper Search MCP** (OpenAGS) for academic sources (arXiv, etc.) and deeply technical topics. Use **Web Search** for general information.
+
    - Run `python3 dev_ops/scripts/doc_ops.py create research --title "Title"`.
    - This generates `dev_ops/docs/research/RES-XXX-title.md`.
 

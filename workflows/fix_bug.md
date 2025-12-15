@@ -12,10 +12,21 @@ globs: "**/*"
 - [ ] You have reproduced the issue (if applicable).
 - [ ] Tests exist that fail (demonstrating the bug).
 
+## Relations
+
+- **Upstream**:
+  - **Bug**: `BUG-XXX` (Bug being fixed)
+- **Downstream**:
+  - **Code**: `[Repository]` (Codebase being modified)
+  - **PR**: `PR-XXX` (Pull Request if applicable)
+
 ## Steps
 
 1. **Implement Fix**:
    - specific code changes to resolve the issue.
+
+   > [!TIP]
+   > **MCP Recommendation**: Use **GitHub MCP** (gitmcp) to check file history and blame. Use **Context7 MCP** (Upstash) to verify library APIs.
 
 2. **Verify Fix**:
    - Run tests to ensure they now pass.

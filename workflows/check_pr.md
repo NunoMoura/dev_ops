@@ -9,6 +9,14 @@ description: Run local pre-flight checks before pushing a PR.
 - [ ] Code is committed locally.
 - [ ] Branch is up to date with `main`.
 
+## Relations
+
+- **Upstream**:
+  - **PR**: `PR-XXX` (Pull Request being checked)
+- **Downstream**:
+  - **Triage**: `workflows/triage_feedback.md` (If checks result in feedback)
+  - **Merge**: (If checks pass)
+
 ## Steps
 
 1. **Validate Documentation**:

@@ -9,6 +9,13 @@ description: Generate a conventional commit message and commit changes.
 - [ ] Changes are staged (`git add`).
 - [ ] Changes are atomic (one feature/fix per commit).
 
+## Relations
+
+- **Upstream**:
+  - **Code**: Staged changes
+- **Downstream**:
+  - **PR**: `PR-XXX` (Commit will be part of this PR)
+
 ## Template
 
 ````text

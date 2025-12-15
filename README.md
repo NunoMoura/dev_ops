@@ -35,22 +35,22 @@ flowchart TD
     Plan("🗺️ Plan")
 
     %% Context & Strategy (Fluid Inputs)
-    Research["🔬 Research"] -.-> |informs| Plan
-    ADR["🏛️ ADR"] -.-> |guides| Plan
-    Research --> |leads to| ADR
+    Research["🔬 Research"] -.-> |create_plan| Plan
+    ADR["🏛️ ADR"] -.-> |create_plan| Plan
+    Research --> |create_adr| ADR
 
     %% Work inputs
-    Backlog["📋 Backlog"] --> |prioritized in| Plan
-    Bug["🐛 Bug"] --> |fixed in| Plan
+    Backlog["📋 Backlog"] --> |create_plan| Plan
+    Bug["🐛 Bug"] --> |create_plan| Plan
 
     %% Execution Output
-    Plan --> |produces| Code["💻 Code"]
-    Code --> |reviewed in| PR["🔀 Pull Request"]
+    Plan --> |implement_plan| Code["💻 Code"]
+    Code --> |create_pr| PR["🔀 Pull Request"]
 
     %% Continuous Feedback
-    PR --> |triggers| Triage["🕵️ Triage"]
-    Triage --> |new feature| Backlog
-    Triage --> |new defect| Bug
+    PR --> |check_pr| Triage["🕵️ Triage"]
+    Triage --> |create_backlog_item| Backlog
+    Triage --> |report_bug| Bug
 ```
 
 ---

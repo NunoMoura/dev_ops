@@ -4,6 +4,16 @@
 
 - [ ] An idea, future task, or non-critical issue identified.
 - [ ] Checked existing backlog to avoid duplicates.
+  > [!TIP]
+  > **MCP Recommendation**: Use **GitHub MCP** (gitmcp) to search for existing issues or related discussions in the repo before creating a new item.
+
+## Relations
+
+- **Upstream**:
+  - **Triage**: (Source of the idea/request)
+  - **ADR**: `ADR-XXX` (Architectural decision spawning this work)
+- **Downstream**:
+  - **Plan**: `PLN-XXX` (Plan implementing this item)
 
 ## Steps
 

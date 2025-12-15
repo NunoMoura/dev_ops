@@ -9,9 +9,23 @@ description: Create an implementation plan for a task.
 - [ ] An issue or backlog item exists (`BLK-XXX` or `BUG-XXX`).
 - [ ] Relevant ADRs (`ADR-XXX`) and Research (`RES-XXX`) are identified.
 
+## Relations
+
+- **Upstream**:
+  - **Backlog**: `BLK-XXX` (Item being addressed)
+  - **Bug**: `BUG-XXX` (Issue being fixed)
+  - **Research**: `RES-XXX` (Relevant research)
+  - **ADR**: `ADR-XXX` (Relevant architectural decisions)
+- **Downstream**:
+  - **Code**: `[file/path]` (Code changes)
+  - **PR**: `PR-XXX` (Pull Request)
+
 ## Steps
 
 1. **Identify Context**:
+   > [!TIP]
+   > **MCP Recommendation**: Use **Context7 MCP** (Upstash) to research library capabilities to ensure your plan is feasible. Use **GitHub MCP** (gitmcp) to check specific code references.
+
    - Collect IDs of relevant ADRs, Research, Bugs, and Backlog items.
 
 2. **Create the Plan**:

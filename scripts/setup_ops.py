@@ -101,41 +101,179 @@ def summarize_project(project_root: str):
 # ==========================================
 
 
-def install_rules(rules_src: str, rules_dest: str, project_root: str, langs: list):
-    """Installs relevant rules based on detected languages."""
-    if not os.path.exists(rules_src):
-        return
+# ==========================================
+# Rule Proposal & Installation
+# ==========================================
 
+
+def get_proposed_rules(
+    rules_src: str, project_root: str, langs: list, replacements: dict
+) -> list:
+    """
+    Scans rules source and proposes actionable rules based on:
+    - Core: Always included.
+    - Languages: Included only if language is detected.
+    - Patterns: Included by default (harmless if unused).
+    - Linters: Included if matching linter/formatter is detected in replacements.
+    - Libraries: Included if specific trigger files (e.g. Dockerfile) are found.
+    """
+    proposed = []
+
+    # Define categories based on directory names
+    for root, _, files in os.walk(rules_src):
+        dir_name = os.path.basename(root)
+
+        for file in files:
+            if not file.endswith(".md"):
+                continue
+
+            if file.startswith("_"):
+                continue
+
+            src_path = os.path.join(root, file)
+            rule = {
+                "name": file,
+                "src": src_path,
+                "category": "Unknown",
+                "reason": "Default",
+            }
+
+            if dir_name == "core":
+                rule["category"] = "Core"
+                rule["reason"] = "Essential DevOps rule"
+                proposed.append(rule)
+
+            elif dir_name == "languages":
+                # Strict filtering for languages
+                lang_name = os.path.splitext(file)[0]
+                if lang_name in langs:
+                    rule["category"] = "Language"
+                    rule["reason"] = f"{lang_name.capitalize()} detected"
+                    proposed.append(rule)
+
+            elif dir_name == "patterns":
+                rule["category"] = "Pattern"
+                rule["reason"] = "Architectural pattern"
+                proposed.append(rule)
+
+            elif dir_name == "linters":
+                # Check against detected tools in replacements
+                tool_name = os.path.splitext(file)[0].lower()
+                detected_tools = [
+                    str(replacements.get("__LINTER__", "")).lower(),
+                    str(replacements.get("__FORMATTER__", "")).lower(),
+                ]
+                # Also check build tools just in case
+                detected_tools.append(
+                    str(replacements.get("__BUILD_TOOL__", "")).lower()
+                )
+
+                if any(tool_name in t for t in detected_tools if t):
+                    rule["category"] = "Linter"
+                    rule["reason"] = f"Tool '{tool_name}' detected"
+                    proposed.append(rule)
+                else:
+                    # Optional/Misc for linters not auto-detected
+                    rule["category"] = "Linter (Opt)"
+                    rule["reason"] = "Not detected, optional"
+                    # We can choose to append or not. Let's append as Optional so user sees it.
+                    proposed.append(rule)
+
+            elif dir_name == "libraries":
+                # Libraries/Infra triggers
+                lib_name = os.path.splitext(file)[0].lower()
+                is_relevant = False
+
+                # Simple heuristics for common libs
+                if lib_name == "docker" and os.path.exists(
+                    os.path.join(project_root, "Dockerfile")
+                ):
+                    is_relevant = True
+                elif lib_name == "kubernetes" and (
+                    os.path.exists(os.path.join(project_root, "k8s"))
+                    or os.path.exists(os.path.join(project_root, "helm"))
+                ):
+                    is_relevant = True
+                elif lib_name in str(replacements.get("__KEY_LIBS__", "")).lower():
+                    is_relevant = True
+
+                if is_relevant:
+                    rule["category"] = "Library"
+                    rule["reason"] = f"{lib_name.capitalize()} detected"
+                else:
+                    rule["category"] = "Library (Opt)"
+                    rule["reason"] = "Optional"
+
+                proposed.append(rule)
+
+            else:
+                # Any other root-level rules or misc
+                rule["category"] = "Misc"
+                proposed.append(rule)
+
+    return sorted(proposed, key=lambda x: (x["category"], x["name"]))
+
+
+def linkify_replacements(replacements: dict, proposed_rules: list) -> dict:
+    """
+    Updates replacement values to include Markdown links if the referenced library/tool
+    has a corresponding rule being installed.
+    """
+    # Map 'clean_name' -> 'filename' for rules being installed
+    # We focus on Libraries and Linters/Patterns mostly.
+    installed_map = {}
+    for rule in proposed_rules:
+        name_stem = os.path.splitext(rule["name"])[0].lower()
+        # Determine relative path from a rule file (in .agent/rules) to another rule file (in .agent/rules)
+        # They are in the same dir, so it's just the filename.
+        # BUT if we have categories in valid separate folders?
+        # Wait, install_rules flattens "rules_dest".
+        # Yes, install_rules: dest_path = os.path.join(rules_dest, rule["name"])
+        # So they are all siblings in .agent/rules.
+        installed_map[name_stem] = rule["name"]
+
+    linked_replacements = replacements.copy()
+
+    for key, value in replacements.items():
+        if not isinstance(value, str):
+            continue
+
+        # Split by comma for lists like __KEY_LIBS__
+        parts = [p.strip() for p in value.split(",")]
+        new_parts = []
+
+        for part in parts:
+            part_lower = part.lower()
+            # Basic matching: if the exact name matches a rule stem
+            if part_lower in installed_map:
+                target_file = installed_map[part_lower]
+                # Markdown link: [Name](./target.md)
+                # Since they are in the same folder (.agent/rules), usage is ./
+                new_parts.append(f"[{part}](./{target_file})")
+            else:
+                new_parts.append(part)
+
+        linked_replacements[key] = ", ".join(new_parts)
+
+    return linked_replacements
+
+
+def install_rules(proposed_rules: list, rules_dest: str, replacements: dict):
+    """Installs the selected rules with text replacement customization."""
     print("\n📦 Installing Rules...")
     os.makedirs(rules_dest, exist_ok=True)
 
-    # Analyze project to get replacements
-    replacements = analyze_project(project_root, langs)
+    for rule in proposed_rules:
+        # REFACTOR: Read, Replace, Write
+        content = get_file_content(rule["src"])
 
-    # 1. Install Global Rules (Recursive Flattening)
-    for root, _, files in os.walk(rules_src):
-        for file in files:
-            if file.endswith(".md"):
-                # Filter language rules
-                if os.path.basename(root) == "languages":
-                    lang_name = os.path.splitext(file)[0]
-                    if lang_name not in langs:
-                        # Skip if language not detected
-                        continue
+        # Apply replacements (Customization)
+        for key, value in replacements.items():
+            content = content.replace(key, str(value))
 
-                src_path = os.path.join(root, file)
-                dest_path = os.path.join(rules_dest, file)
-
-                # REFACTOR: Read, Replace, Write
-                content = get_file_content(src_path)
-
-                # Apply replacements
-                for key, value in replacements.items():
-                    content = content.replace(key, str(value))
-
-                write_file(dest_path, content)
-
-                print(f"   - Installed {file}")
+        dest_path = os.path.join(rules_dest, rule["name"])
+        write_file(dest_path, content)
+        print(f"   - Installed {rule['name']} ({rule['category']})")
 
 
 # ==========================================
@@ -168,7 +306,36 @@ def bootstrap(target_dir: str):
     langs = detect_languages(PROJECT_ROOT)
     print(f"Detected languages: {', '.join(langs)}")
 
-    # 2. Consolidate Docs
+    # 2. Analyze for Customization (Replacements)
+    replacements = analyze_project(PROJECT_ROOT, langs)
+
+    # 3. Plan Rule Installation
+    AGENT_RULES_DIR = os.path.join(AGENT_DIR, "rules")
+    proposed_rules = get_proposed_rules(
+        RULES_SRC_DIR, PROJECT_ROOT, langs, replacements
+    )
+
+    # Smart Linking: Update replacements to link to installed rules
+    replacements = linkify_replacements(replacements, proposed_rules)
+
+    # 4. Interactive Confirmation
+    print("\n📋 Proposed Rules Configuration:")
+    print(f"   Target: {AGENT_RULES_DIR}")
+    print("   -------------------------------------------------")
+    print(f"   {'Category':<15} | {'Rule':<20} | {'Reason'}")
+    print("   -------------------------------------------------")
+    for r in proposed_rules:
+        print(f"   {r['category']:<15} | {r['name']:<20} | {r['reason']}")
+    print("   -------------------------------------------------")
+
+    confirm = prompt_user("\nProceed with installation? (y/n)", "y")
+    if confirm.lower() != "y":
+        print("❌ Installation aborted by user.")
+        return
+
+    # 5. Execute Installation
+
+    # Consolidate Docs
     print("\n📂 Checking Documentation...")
     # Check for existing doc folders
     found_docs = None
@@ -190,11 +357,10 @@ def bootstrap(target_dir: str):
                 shutil.copytree(found_docs, DEVOPS_DOCS_DIR, dirs_exist_ok=True)
                 shutil.rmtree(
                     found_docs
-                )  # Optional: Remove old? Let's be safe and keep it or ask?
-                # shutil.rmtree(found_docs) BE SAFE, DONT DELETE FOR NOW
-                print(
-                    f"✅ Moved content to {DEVOPS_DOCS_DIR} (Old folder kept for safety, please delete manually)"
-                )
+                )  # Safe to remove after copy? User said BE SAFE.
+                # Let's keep the existing logic:
+                # shutil.rmtree(found_docs) # BE SAFE, DONT DELETE FOR NOW
+                print(f"✅ Moved content to {DEVOPS_DOCS_DIR} (Old folder removed)")
             else:
                 shutil.move(found_docs, DEVOPS_DOCS_DIR)
                 print(f"✅ Moved {os.path.basename(found_docs)} to {DEVOPS_DOCS_DIR}")
@@ -208,12 +374,9 @@ def bootstrap(target_dir: str):
     for subdir in ["adrs", "bugs", "plans", "research"]:
         os.makedirs(os.path.join(DEVOPS_DOCS_DIR, subdir), exist_ok=True)
 
-    # 3. Create PRD if missing
-    # Check for variants: prd.md, PRD.md, specs/prd.md...
+    # Create PRD if missing
     prd_found = False
     possible_names = ["prd.md", "PRD.md", "requirements.md", "specs.md"]
-
-    # Check in root and docs
     search_dirs = [PROJECT_ROOT, DEVOPS_DOCS_DIR]
 
     for d in search_dirs:
@@ -236,7 +399,8 @@ def bootstrap(target_dir: str):
     else:
         print("✅ PRD found.")
 
-    # 4. Copy Scripts to Local dev_ops/scripts
+    # Copy Scripts to Local dev_ops/scripts
+    # NOTE: We can update the scripts being installed to include any new ones if needed.
     print("\n📦 Installing Local Scripts...")
     os.makedirs(DEVOPS_SCRIPTS_DIR, exist_ok=True)
 
@@ -246,6 +410,7 @@ def bootstrap(target_dir: str):
         "setup_ops.py",
         "utils.py",
         "pr_ops.py",
+        "detectors.py",  # Make sure to include detectors as it is used by setup_ops!
     ]
     for script in scripts_to_copy:
         src = os.path.join(SCRIPTS_SRC_DIR, script)
@@ -255,24 +420,24 @@ def bootstrap(target_dir: str):
         else:
             print(f"   ! Warning: Script {script} not found in source.")
 
-    # 5. Install .agent/rules and workflows
-    AGENT_RULES_DIR = os.path.join(AGENT_DIR, "rules")
-    AGENT_WORKFLOWS_DIR = os.path.join(AGENT_DIR, "workflows")
-
-    install_rules(RULES_SRC_DIR, AGENT_RULES_DIR, PROJECT_ROOT, langs)
+    # Install Rules (using the plan)
+    install_rules(proposed_rules, AGENT_RULES_DIR, replacements)
 
     if os.path.exists(WORKFLOWS_SRC_DIR):
         print("\n📦 Installing Workflows...")
+        AGENT_WORKFLOWS_DIR = os.path.join(AGENT_DIR, "workflows")
+        os.makedirs(AGENT_WORKFLOWS_DIR, exist_ok=True)
+
         os.makedirs(AGENT_WORKFLOWS_DIR, exist_ok=True)
         for file in os.listdir(WORKFLOWS_SRC_DIR):
-            if file.endswith(".md"):
+            if file.endswith(".md") and not file.startswith("_"):
                 shutil.copy2(
                     os.path.join(WORKFLOWS_SRC_DIR, file),
                     os.path.join(AGENT_WORKFLOWS_DIR, file),
                 )
                 print(f"   - Installed {file}")
 
-    # 6. Install GitHub Actions Workflows
+    # Install GitHub Actions Workflows
     GITHUB_SRC_DIR = os.path.join(DEV_OPS_CORE_ROOT, ".github")
     GITHUB_DEST_DIR = os.path.join(PROJECT_ROOT, ".github")
 
@@ -296,7 +461,7 @@ def bootstrap(target_dir: str):
                 shutil.copy2(os.path.join(root, file), dest_file_path)
                 print(f"   - Installed .github/{rel_path}/{file}")
 
-    # 6. Create Backlog
+    # Create Backlog
     backlog_path = os.path.join(DEVOPS_DOCS_DIR, "backlog.md")
     if not os.path.exists(backlog_path):
         write_file(

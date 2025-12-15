@@ -9,6 +9,13 @@ description: Process for reporting a new bug.
 - [ ] Bug behavior is reproducible (if applicable).
 - [ ] Checked for duplicates via `python3 dev_ops/scripts/doc_ops.py list bug`.
 
+## Relations
+
+- **Upstream**:
+  - **Triage**: (Discovery source)
+- **Downstream**:
+  - **Plan**: `PLN-XXX` (Plan fixing this bug)
+
 ## Steps
 
 1. **Create the file**:

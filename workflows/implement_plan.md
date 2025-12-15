@@ -2,7 +2,15 @@
 description: Implement approved execution plans.
 ---
 
-# Implement Workflow
+# Implement Plan Workflow
+
+## Relations
+
+- **Upstream**:
+  - **Plan**: `PLN-XXX` (Plan being executed)
+- **Downstream**:
+  - **Code**: `[Repository]` (Codebase being modified)
+  - **PR**: `PR-XXX` (Pull Request created from this implementation)
 
 ## Prerequisites
 
@@ -13,6 +21,9 @@ description: Implement approved execution plans.
 1. Read the active plan in `docs/plans/` (e.g., `PLN-XXX-title.md`).
 2. Review the "Context" section to understand the architectural decisions and research.
 3. Execute the "Steps" defined in the plan.
+   > [!TIP]
+   > **MCP Recommendation**: Use **Context7 MCP** (Upstash) to look up up-to-date documentation for libraries you are using. Use **GitHub MCP** (gitmcp) to find code examples in the repo.
+
 4. If the plan requires changes, update the plan file first.
 5. Follow the **Test Workflow** to verify changes.
 6. Commit your changes using `python3 dev_ops/scripts/git_ops.py`.

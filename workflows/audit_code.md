@@ -8,6 +8,15 @@ description: Audit and review code for security, quality, and standards.
 
 - [ ] Code is ready for review.
 
+## Relations
+
+- **Upstream**:
+  - **Code**: `[Repository]` (Code to review)
+  - **PR**: `PR-XXX` (Pull RequestContext)
+- **Downstream**:
+  - **Feedback**: Comments on Code/PR
+  - **Bug**: `BUG-XXX` (If critical issues found)
+
 ## Steps
 
 1. Check for security vulnerabilities, secrets, and injection risks.

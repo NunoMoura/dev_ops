@@ -8,6 +8,15 @@ description: Process Feedback from PRs into Bugs or Backlog items.
 
 - [ ] PR has comments or CI failures.
 
+## Relations
+
+- **Upstream**:
+  - **PR**: `PR-XXX` (Source of feedback)
+  - **Feedback**: CI Failure or Human Comment
+- **Downstream**:
+  - **Bug**: `BUG-XXX` (Defect identified)
+  - **Backlog**: `BLK-XXX` (Improvement identified)
+
 ## Steps
 
 1. **Triage Feedback**:

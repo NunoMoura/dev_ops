@@ -18,6 +18,7 @@ def detect_python_details(project_root):
         "__LINTER__": "pylint/flake8",
         "__FORMATTER__": "black",
         "__KEY_LIBS__": "None detected",
+        "__DI_FRAMEWORK__": "None detected",
     }
 
     # Pyproject.toml analysis
@@ -52,6 +53,9 @@ def detect_python_details(project_root):
                 libs.append(lib)
         if libs:
             details["__KEY_LIBS__"] = ", ".join(libs)
+
+        if "fastapi" in req_content.lower():
+            details["__DI_FRAMEWORK__"] = "FastAPI"
 
     return details
 

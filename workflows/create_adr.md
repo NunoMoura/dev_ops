@@ -9,9 +9,19 @@ description: Create a new Architectural Decision Record (ADR).
 - [ ] A decision needs to be made that affects architecture.
 - [ ] Existing ADRs checked for conflicts via `python3 dev_ops/scripts/doc_ops.py list adr`.
 
+## Relations
+
+- **Upstream**:
+  - **Research**: `RES-XXX` (Research informing this decision)
+- **Downstream**:
+  - **Plan**: `PLN-XXX` (Plans guided by this decision)
+
 ## Steps
 
 1. **Create the file**:
+   > [!TIP]
+   > **MCP Recommendation**: Use **Context7 MCP** (Upstash) to compare libraries/technologies or **Paper Search MCP** (OpenAGS) for algorithmic/theoretical decisions.
+
    - Run `python3 dev_ops/scripts/doc_ops.py create adr --title "Your Title Here"`.
    - This generates `dev_ops/docs/adrs/ADR-XXX-your-title-here.md`.
 
