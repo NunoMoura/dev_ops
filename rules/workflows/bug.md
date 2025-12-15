@@ -20,7 +20,7 @@ Rules for managing the lifecycle of Bug **Project Artifacts** in the project.
 * **Report**: Use `workflows/report_bug.md` to log a new issue.
 * **Test**: Use `workflows/verify.md` whenever code is changed.
 * **Plan Fix**: Use `workflows/create_plan.md` for complex issues.
-* **Quick Fix**: Use `workflows/fix_bug.md` for simple defects.
+* **Debug**: Use `workflows/debug.md` for fixing defects.
 * **Verify**: Use `workflows/verify.md` to ensure no regressions.
 
 ## Lifecycle
@@ -32,5 +32,5 @@ Rules for managing the lifecycle of Bug **Project Artifacts** in the project.
 5. **Wont Fix**: Decision made not to address.
 
 > [!IMPORTANT]
-> **Priority**: Fix build-breaking bugs immediately (See `workflows/fix_build.md`).
+> **Priority**: Fix build-breaking bugs immediately (See `workflows/debug.md`).
 > Agent: If you modify code, you MUST run tests (`workflows/verify.md`).

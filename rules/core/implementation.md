@@ -12,7 +12,7 @@ Guidelines for executing work.
 ## Workflows
 
 * **Implement**: Use `workflows/implement_feature.md` when executing an approved Plan.
-* **Fix Build**: Use `workflows/fix_build.md` if the build is broken.
+* **Debug**: Use `workflows/debug.md` if the build is broken.
 
 ## Guidelines
 
@@ -21,4 +21,4 @@ Guidelines for executing work.
 3. **Green Build**: Do not leave the build in a broken state.
 
 > [!IMPORTANT]
-> If the build fails, STOP and fix it immediately using `workflows/fix_build.md`.
+> If the build fails, STOP and fix it immediately using `workflows/debug.md`.

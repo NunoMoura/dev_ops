@@ -56,6 +56,9 @@ flowchart TD
     %% Execution Flows
     Plan --> |implement| Code
 
+    %% Debug Cycle (Bug fixes return to Code)
+    Bug --> |debug| Code
+
     %% Verification & Delivery Flows
     Code --> |verify| PR
     Code -.-> |report_bug| Bug
@@ -77,7 +80,7 @@ flowchart TD
 | `/adr` | Document an architectural decision | `dev_ops/docs/adrs/ADR-XXX.md` |
 | `/plan` | Create an Implementation Plan | `dev_ops/docs/plans/PLN-XXX.md` |
 | `/implement` | Execute an active Plan | Code Changes |
-| `/fix` | Fix a bug from the backlog | Code Changes |
+| `/fix` | Debug/fix a bug | Code Changes |
 | `/test` | Run tests/verification | Test Results |
 | `/verify` | Run verification workflow | Test Results |
 | `/bootstrap` | Configure agent rules | `.agent/rules/` |

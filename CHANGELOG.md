@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PR triage workflow automation (`.github/workflows/pr_triage.yml`)
 - Additional tests for `doc_ops.py` and `setup_ops.py`
 - Version info in `__init__.py` (`__version__ = "1.0.0"`)
+- Unified `debug.md` workflow (replaces `fix_bug.md` and `fix_build.md`)
 
 ### Changed
 

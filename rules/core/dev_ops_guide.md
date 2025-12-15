@@ -35,7 +35,7 @@ You can trigger these by name or intent:
 
 * **Audit Code**: `workflows/audit_code.md` (Agentic Review)
 * **Verify**: `workflows/verify.md` (Verification)
-* **Fix Build**: `workflows/fix_build.md` (Troubleshooting)
+* **Debug**: `workflows/debug.md` (Fix Bugs/Builds)
 * **Brainstorm**: `workflows/brainstorm.md` (Ideation)
 * **Implement**: `workflows/implement_plan.md` (Coding)
 

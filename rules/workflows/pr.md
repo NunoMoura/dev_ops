@@ -30,4 +30,4 @@ Pull Requests (PRs) are the gatekeepers of code quality.
 4. **Merged**: Integrated into `main`.
 
 > [!IMPORTANT]
-> **Green Build**: You cannot merge if the CI build fails. Fix it first using `workflows/fix_build.md`.
+> **Green Build**: You cannot merge if the CI build fails. Fix it first using `workflows/debug.md`.
