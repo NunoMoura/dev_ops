@@ -92,10 +92,12 @@ def get_next_id(prefix: str, directory: str) -> str:
 
 def sanitize_slug(text: str) -> str:
     """Converts text to kebab-case slug."""
-    text = text.lower()
+    if not text or not text.strip():
+        return "untitled"
+    text = text.lower().strip()
     text = re.sub(r"[^a-z0-9\s-]", "", text)
     text = re.sub(r"\s+", "-", text)
-    return text
+    return text if text else "untitled"
 
 
 # ==========================================

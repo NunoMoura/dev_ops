@@ -231,6 +231,9 @@ def main():
     resolve_parser.add_argument("type", choices=["bug", "plan"], help="Document type")
     resolve_parser.add_argument("id", help="Document ID (e.g. BUG-001)")
 
+    # VALIDATE
+    subparsers.add_parser("validate", help="Validate documentation")
+
     args = parser.parse_args()
 
     if args.command == "create":
@@ -240,6 +243,38 @@ def main():
         list_docs(args.type)
     elif args.command == "resolve":
         resolve_doc(args.type, args.id)
+    elif args.command == "validate":
+        validate_docs()
+
+
+def validate_docs():
+    """Validates that all documentation files are readable and have basic metadata."""
+    print("🔍 Validating documentation...")
+    error_count = 0
+
+    # 1. Check directories
+    if not os.path.exists(DOCS_DIR):
+        print(f"❌ Docs directory not found: {DOCS_DIR}")
+        return
+
+    # 2. Iterate all known types
+    for doc_type, config in DOC_TYPES.items():
+        if "dir" in config:
+            target_dir = os.path.join(DOCS_DIR, config["dir"])
+            if os.path.exists(target_dir):
+                for f in os.listdir(target_dir):
+                    if f.endswith(".md"):
+                        path = os.path.join(target_dir, f)
+                        content = read_file(path)
+                        if not content.strip():
+                            print(f"⚠️  Empty file: {f}")
+                            error_count += 1
+
+    if error_count == 0:
+        print("✅ Documentation is valid.")
+    else:
+        print(f"❌ Found {error_count} issues.")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

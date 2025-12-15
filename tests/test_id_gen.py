@@ -1,7 +1,7 @@
 import unittest
 import os
 import tempfile
-from scripts.shared_utils.id_gen import sanitize_slug, get_next_id
+from scripts.utils import sanitize_slug, get_next_id
 
 
 class TestIdGen(unittest.TestCase):

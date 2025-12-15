@@ -12,7 +12,7 @@ Ensure code meets standards before merging.
 ## Workflows
 
 * **Audit**: Use `workflows/audit_code.md` for specific code review requests or before finishing a feature.
-* **Test**: Use `workflows/run_tests.md` whenever code is changed.
+* **Test**: Use `workflows/verify.md` whenever code is changed.
 
 ## Requirements
 
@@ -21,4 +21,4 @@ Ensure code meets standards before merging.
 3. **Security**: No secrets in code, no obvious injection vulnerabilities.
 
 > [!IMPORTANT]
-> Agent: If you modify code, you MUST run tests (`workflows/run_tests.md`).
+> Agent: If you modify code, you MUST run tests (`workflows/verify.md`).

@@ -14,7 +14,7 @@ The framework divides agent capabilities into two clear categories:
 2. **Workflows** (`.agent/workflows/`):
     * **Purpose**: Define precise, *actionable steps* to perform a task.
     * **Usage**: The Agent follows these instructions to execute a command (e.g., creating a doc, running tests).
-    * **Examples**: `create_plan.md`, `run_tests.md`, `audit_code.md`.
+    * **Examples**: `create_plan.md`, `verify.md`, `audit_code.md`.
 
 ## 📁 Directory Structure
 
@@ -22,7 +22,7 @@ The framework divides agent capabilities into two clear categories:
   * **`rules/`**:
     * **`core/`**: General policies (`quality.md`, `implementation.md`).
     * **`workflows/`**: Policy rules for specific domains (`backlog.md`, `research.md`).
-  * **`workflows/`**: Actionable checklist files (`create_plan.md`, `run_tests.md`).
+  * **`workflows/`**: Actionable checklist files (`create_plan.md`, `verify.md`).
 * **`dev_ops/`**:
   * **`scripts/`**: Automation scripts (`doc_ops.py`, `setup_ops.py`).
   * **`docs/`**: **Project Artifacts** (`plans/`, `research/`, `adrs/`, `backlog.md`).
@@ -34,10 +34,10 @@ You can trigger these by name or intent:
 ### Core Actions
 
 * **Audit Code**: `workflows/audit_code.md` (Agentic Review)
-* **Run Tests**: `workflows/run_tests.md` (Verification)
+* **Verify**: `workflows/verify.md` (Verification)
 * **Fix Build**: `workflows/fix_build.md` (Troubleshooting)
 * **Brainstorm**: `workflows/brainstorm.md` (Ideation)
-* **Implement**: `workflows/implement_feature.md` (Coding)
+* **Implement**: `workflows/implement_plan.md` (Coding)
 
 ### Document Operations
 

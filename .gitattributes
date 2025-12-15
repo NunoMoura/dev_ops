@@ -3,7 +3,6 @@
 
 tests/ export-ignore
 .github/ export-ignore
-install.sh export-ignore
 LICENSE export-ignore
 README.md export-ignore
 .gitignore export-ignore

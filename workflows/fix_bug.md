@@ -30,7 +30,7 @@ globs: "**/*"
 
 2. **Verify Fix**:
    - Run tests to ensure they now pass.
-   - Run regression tests (`workflows/run_tests.md`).
+   - Run regression tests (`workflows/verify.md`).
 
    - Run `python3 dev_ops/scripts/doc_ops.py resolve bug [ID]`.
    - Update `dev_ops/docs/bugs/BUG-XXX.md` with resolution notes.

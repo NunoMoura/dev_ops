@@ -1,0 +1,62 @@
+name: PR Triage Reminder
+
+on:
+  pull_request_review_comment:
+    types: [created]
+  issue_comment:
+    types: [created]
+
+jobs:
+  reminder:
+    if: github.event.issue.pull_request || github.event.pull_request
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Post Triage Reminder
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const body = context.payload.comment.body.toLowerCase();
+            // Skip if comment is from a bot or already contains triage keywords
+            if (context.payload.comment.user.type === 'Bot') return;
+            
+            // Check if comment seems actionable (bug report, suggestion, etc.)
+            const actionableKeywords = ['bug', 'issue', 'fix', 'should', 'could', 'suggestion', 'idea', 'problem', 'error'];
+            const isActionable = actionableKeywords.some(kw => body.includes(kw));
+            
+            if (isActionable) {
+              // Check if already triaged
+              const existingComments = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+              
+              const alreadyTriaged = existingComments.data.some(c => 
+                c.body.includes('Triage Reminder') && c.user.type === 'Bot'
+              );
+              
+              if (!alreadyTriaged) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: `### 🔍 Triage Reminder
+            
+            This PR has new feedback that may need tracking!
+            
+            **To triage**, run:
+            \`\`\`bash
+            python3 dev_ops/scripts/pr_ops.py triage --pr ${context.issue.number}
+            \`\`\`
+            
+            Or manually categorize:
+            - 🐛 **Bug** → Track in \`dev_ops/docs/bugs/\`
+            - 📋 **Feature/Improvement** → Add to \`dev_ops/docs/backlog.md\`
+            - ❓ **Question** → Reply directly in PR
+            
+            See [triage_feedback workflow](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/workflows/triage_feedback.md) for details.`
+                });
+              }
+            }

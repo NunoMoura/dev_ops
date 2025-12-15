@@ -7,6 +7,13 @@ description: Standards for [Process Name].
 
 # [Process Name] Policy
 
+<!-- INSTRUCTION:
+1. DESCRIBE: Explain the process and its purpose.
+2. SCENARIOS: Define when this process applies.
+3. WORKFLOWS: Link to the executable workflows in `workflows/`.
+4. LIFECYCLE: Define the stages of the process.
+-->
+
 [Brief description of the process and its purpose.]
 
 ## When to use

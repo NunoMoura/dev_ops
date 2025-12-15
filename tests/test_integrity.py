@@ -2,7 +2,8 @@ import unittest
 import os
 import glob
 import re
-from scripts.shared_utils.template_ops import extract_template_from_workflow
+from scripts.template_ops import extract_template_from_workflow
+
 
 # Paths
 tests_dir = os.path.dirname(os.path.abspath(__file__))
@@ -25,12 +26,11 @@ class TestIntegrity(unittest.TestCase):
 
             # List of workflows that definitely need templates
             required_templates = [
-                "bug.md",
-                "feature.md",
-                "adr.md",
-                "research.md",
-                "plan.md",
-                "readme.md",
+                "report_bug.md",
+                "create_adr.md",
+                "create_research.md",
+                "create_plan.md",
+                "create_backlog_item.md",
             ]
 
             if filename in required_templates:

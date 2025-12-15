@@ -2,7 +2,8 @@
 
 **An Agentic Framework for High-Quality Software Development.**
 
-The `dev_ops` framework is a collection of tools, workflows, and conventions designed to bridge the gap between **Human Developers** and **AI Agents**.
+The `dev_ops` framework is a collection of tools, workflows, and conventions
+designed to bridge the gap between **Human Developers** and **AI Agents**.
 
 ---
 
@@ -14,7 +15,8 @@ This framework treats software development as a collaborative "Hybrid" process.
 
 You are the pilot. You have the `Intention` and make the `Decisions`.
 
-- **Trigger**: You initiate work via **Slash Commands** (e.g., `/bug`, `/plan`) or by entering natural language prompts.
+- **Trigger**: You initiate work via **Slash Commands** (e.g., `/bug`, `/plan`)
+  or by entering natural language prompts.
 - **Review**: You approve Plans, ADRs, and Code changes.
 
 ### 🤖 The Agent (The Co-Pilot)
@@ -22,8 +24,10 @@ You are the pilot. You have the `Intention` and make the `Decisions`.
 The AI is your co-pilot. It handles the `Execution` and `Validation`.
 
 - **Context**: It automatically loads `rules/` relevant to the active file.
-- **Workflow**: It follows deterministic `workflows/` to complete tasks (e.g., "Create a Plan", "Fix a Bug").
-- **Tools**: It uses python scripts (`scripts/`) to perform atomic actions like generating IDs or logging bugs.
+- **Workflow**: It follows deterministic `workflows/` to complete tasks (e.g.,
+  "Create a Plan", "Fix a Bug").
+- **Tools**: It uses python scripts (`scripts/`) to perform atomic actions like
+  generating IDs or logging bugs.
 
 ---
 
@@ -31,29 +35,33 @@ The AI is your co-pilot. It handles the `Execution` and `Validation`.
 
 ```mermaid
 flowchart TD
-    %% Central Hub
-    Plan("🗺️ Plan")
+    %% Document Artifacts
+    Research["🔬 Research"]
+    ADR["🏛️ ADR"]
+    Backlog["📋 Backlog"]
+    Bug["🐛 Bug"]
+    Plan["🗺️ Plan"]
+    Code["💻 Code"]
+    PR["🔀 Pull Request"]
 
-    %% Context & Strategy (Fluid Inputs)
-    Research["🔬 Research"] -.-> |create_plan| Plan
-    ADR["🏛️ ADR"] -.-> |create_plan| Plan
-    Research --> |create_adr| ADR
+    %% Research & Decision Flows
+    Research --> |informs| ADR
+    Research --> |informs| Plan
+    ADR --> |constrains| Plan
+    
+    %% Planning Flows
+    Backlog --> |create_plan| Plan
+    Bug --> |create_plan| Plan
 
-    %% Work inputs
-    Backlog["📋 Backlog"] --> |create_plan| Plan
-    Bug["🐛 Bug"] --> |create_plan| Plan
+    %% Execution Flows
+    Plan --> |implement| Code
 
-    %% Execution Output
-    Plan --> |implement_plan| Code["💻 Code"]
-    Code --> |run_tests| Verify["🧪 Verify"]
-    Verify --> |create_pr| PR["🔀 Pull Request"]
-    Verify -.-> |fix| Code
-    Verify -.-> |report_bug| Bug
-
-    %% Continuous Feedback
-    PR --> |check_pr| Triage["🕵️ Triage"]
-    Triage --> |create_backlog_item| Backlog
-    Triage --> |report_bug| Bug
+    %% Delivery Flows
+    Code --> |create_pr| PR
+    
+    %% Feedback Flows (PR comments become tracked items)
+    PR --> |triage| Backlog
+    PR --> |triage| Bug
 ```
 
 ---
@@ -70,6 +78,7 @@ flowchart TD
 | `/implement` | Execute an active Plan | Code Changes |
 | `/fix` | Fix a bug from the backlog | Code Changes |
 | `/test` | Run tests/verification | Test Results |
+| `/verify` | Run verification workflow | Test Results |
 | `/bootstrap` | Configure agent rules | `.agent/rules/` |
 
 ---
@@ -85,64 +94,52 @@ flowchart TD
 | `research` | `dev_ops/docs/research/*.md` | Research standards & CRUD |
 | `plan` | `dev_ops/docs/plans/*.md` | Plan standards & CRUD |
 | `backlog` | `dev_ops/docs/backlog.md` | Backlog management |
+| `verify` | `ws::files` | Verification standards |
 
-### Language Rules (activate on file type)
+### Language Rules (generated during bootstrap)
 
-| Rule | Languages |
-| :--- | :--- |
-| `python` | `.py` files |
-| `typescript` | `.ts`, `.tsx` files |
-| `javascript` | `.js`, `.jsx` files |
-| `go`, `rust`, `java`, `cpp`, `svelte` | Respective languages |
+Language-specific rules are **dynamically created** during the `/bootstrap` workflow
+based on your project's detected languages. The framework includes templates for:
 
-### File Pattern Rules (activate on naming patterns)
+- Python, TypeScript, JavaScript, Go, Rust, Java, C++, Svelte, and more.
 
-| Rule | Pattern | Purpose |
-| :--- | :--- | :--- |
-| `config` | `*config*` | Configuration files |
-| `models` | `*model*` | Data models |
-| `services` | `*service*` | Service layer |
-| `repository` | `*repository*` | Data access |
-| `router` | `*router*`, `*route*` | API routes |
-| `schemas` | `*schema*` | Validation schemas |
+Each rule is customized with project-specific tools, linters, and best practices
+discovered via research.
+
+### Library & Linter Rules (generated during bootstrap)
+
+Similarly, rules for detected libraries (e.g., FastAPI, React) and linters
+(e.g., ESLint, Ruff) are generated from templates and populated with current best
+practices.
 
 ---
 
 ## 📦 Installation
 
-### Automatic Install (Recommended)
+### 1. Vendor the Framework
 
-This script installs the global core package to `~/.dev_ops_core` and adds the `dev_ops` command to your PATH.
-
-```bash
-curl -sL https://raw.githubusercontent.com/NunoMoura/dev_ops/main/install.sh | bash
-```
-
-### Bootstrap a Project
-
-Once installed, go to your project root and run:
+Copy the `dev_ops` framework into your project's `vendor/` directory.
 
 ```bash
-dev_ops
+git clone https://github.com/NunoMoura/dev_ops.git vendor/dev_ops_core
 ```
+
+### 2. Bootstrap
+
+Use the bootstrap slash command to set up the project:
+
+```bash
+/bootstrap
+```
+
+> **Note**: This runs the `workflows/bootstrap.md` workflow, which triggers the
+> setup script.
 
 This will:
 
-1. Analyze your project (languages, tools, versions).
-2. Install customized rules and workflows.
-3. Configure documentation structure.
-
-### Manual Install
-
-```bash
-# 1. Clone the core package globally
-git clone https://github.com/NunoMoura/dev_ops.git ~/.dev_ops_core
-
-# 2. Run setup in your project root
-# You can alias this or use the wrapper script in bin/dev_ops
-alias dev_ops='python3 ~/.dev_ops_core/scripts/setup_ops.py'
-dev_ops
-```
+1. Analyze your project.
+2. Install customized rules and workflows to `.agent/`.
+3. Install utility scripts to `dev_ops/scripts/`.
 
 ---
 

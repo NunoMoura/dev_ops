@@ -1,7 +1,7 @@
 import unittest
 import os
 import tempfile
-from scripts.shared_utils.template_ops import extract_template_from_workflow
+from scripts.template_ops import extract_template_from_workflow
 
 
 class TestTemplateOps(unittest.TestCase):

@@ -30,7 +30,7 @@ description: Run local pre-flight checks before pushing a PR.
    - **Legacy Code**:
      - *Ideally*: Add tests for modified legacy code.
      - *Fallback*: If adding tests is too large a scope, create a **Backlog Item** `[Test]` (e.g., "Add tests for legacy module X") and link it in the PR description.
-   - Run `workflows/run_tests.md`.
+   - Run `workflows/verify.md`.
 
 ## Exit Criteria
 

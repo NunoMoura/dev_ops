@@ -4,6 +4,13 @@ description: [Workflow Description]
 
 # [Workflow Name]
 
+<!-- INSTRUCTION:
+1. DESCRIBE: Explain what this workflow achieves.
+2. GOAL: Define the exit criteria ("Definition of Done").
+3. PREREQUISITES: List what is needed before starting.
+4. STEPS: Detail the step-by-step execution.
+-->
+
 [Detailed description of what this workflow achieves.]
 
 ## Goal

@@ -8,74 +8,7 @@ import argparse
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from utils import write_file, prompt_user
-from detectors import (
-    detect_python_details,
-    detect_node_details,
-    detect_go_details,
-    detect_rust_details,
-    detect_java_details,
-    detect_cpp_details,
-    detect_svelte_details,
-    get_file_content,
-)
-
-# ==========================================
-# Language Detection
-# ==========================================
-
-
-def detect_languages(project_root: str) -> list:
-    """Detects primary programming languages in the project."""
-    langs = set()
-    for root, _, files in os.walk(project_root):
-        if ".git" in root or "node_modules" in root or "venv" in root:
-            continue
-        for file in files:
-            if file.endswith(".py"):
-                langs.add("python")
-            elif file.endswith(".ts") or file.endswith(".tsx"):
-                langs.add("typescript")
-            elif file.endswith(".js") or file.endswith(".jsx"):
-                langs.add("javascript")
-            elif file.endswith(".go"):
-                langs.add("go")
-            elif file.endswith(".rs"):
-                langs.add("rust")
-            elif file.endswith(".java"):
-                langs.add("java")
-            elif file.endswith(".cpp") or file.endswith(".cc"):
-                langs.add("cpp")
-            elif file.endswith(".svelte"):
-                langs.add("svelte")
-    return list(langs)
-
-
-def analyze_project(project_root, langs):
-    """collects replacement map for templates based on language analysis."""
-    replacements = {}
-
-    if "python" in langs:
-        replacements.update(detect_python_details(project_root))
-
-    if "javascript" in langs or "typescript" in langs:
-        replacements.update(detect_node_details(project_root))
-
-    if "go" in langs:
-        replacements.update(detect_go_details(project_root))
-
-    if "rust" in langs:
-        replacements.update(detect_rust_details(project_root))
-
-    if "java" in langs:
-        replacements.update(detect_java_details(project_root))
-
-    if "cpp" in langs:
-        replacements.update(detect_cpp_details(project_root))
-
-    if "svelte" in langs:
-        replacements.update(detect_svelte_details(project_root))
-
-    return replacements
+from project_ops import detect_stack, get_file_content
 
 
 # ==========================================
@@ -106,174 +39,87 @@ def summarize_project(project_root: str):
 # ==========================================
 
 
-def get_proposed_rules(
-    rules_src: str, project_root: str, langs: list, replacements: dict
-) -> list:
-    """
-    Scans rules source and proposes actionable rules based on:
-    - Core: Always included.
-    - Languages: Included only if language is detected.
-    - Patterns: Included by default (harmless if unused).
-    - Linters: Included if matching linter/formatter is detected in replacements.
-    - Libraries: Included if specific trigger files (e.g. Dockerfile) are found.
-    """
+def get_core_rules(rules_src: str) -> list:
+    """Get all Core rules that should always be present."""
     proposed = []
-
-    # Define categories based on directory names
-    for root, _, files in os.walk(rules_src):
-        dir_name = os.path.basename(root)
-
-        for file in files:
-            if not file.endswith(".md"):
-                continue
-
-            if file.startswith("_"):
-                continue
-
-            src_path = os.path.join(root, file)
-            rule = {
-                "name": file,
-                "src": src_path,
-                "category": "Unknown",
-                "reason": "Default",
-            }
-
-            if dir_name == "core":
-                rule["category"] = "Core"
-                rule["reason"] = "Essential DevOps rule"
-                proposed.append(rule)
-
-            elif dir_name == "languages":
-                # Strict filtering for languages
-                lang_name = os.path.splitext(file)[0]
-                if lang_name in langs:
-                    rule["category"] = "Language"
-                    rule["reason"] = f"{lang_name.capitalize()} detected"
-                    proposed.append(rule)
-
-            elif dir_name == "patterns":
-                rule["category"] = "Pattern"
-                rule["reason"] = "Architectural pattern"
-                proposed.append(rule)
-
-            elif dir_name == "linters":
-                # Check against detected tools in replacements
-                tool_name = os.path.splitext(file)[0].lower()
-                detected_tools = [
-                    str(replacements.get("__LINTER__", "")).lower(),
-                    str(replacements.get("__FORMATTER__", "")).lower(),
-                ]
-                # Also check build tools just in case
-                detected_tools.append(
-                    str(replacements.get("__BUILD_TOOL__", "")).lower()
+    core_path = os.path.join(rules_src, "core")
+    if os.path.exists(core_path):
+        for file in os.listdir(core_path):
+            if file.endswith(".md") and not file.startswith("_"):
+                proposed.append(
+                    {
+                        "name": file,
+                        "src": os.path.join(core_path, file),
+                        "category": "Core",
+                        "reason": "Essential DevOps rule",
+                        "replacements": {},
+                    }
                 )
-
-                if any(tool_name in t for t in detected_tools if t):
-                    rule["category"] = "Linter"
-                    rule["reason"] = f"Tool '{tool_name}' detected"
-                    proposed.append(rule)
-                else:
-                    # Optional/Misc for linters not auto-detected
-                    rule["category"] = "Linter (Opt)"
-                    rule["reason"] = "Not detected, optional"
-                    # We can choose to append or not. Let's append as Optional so user sees it.
-                    proposed.append(rule)
-
-            elif dir_name == "libraries":
-                # Libraries/Infra triggers
-                lib_name = os.path.splitext(file)[0].lower()
-                is_relevant = False
-
-                # Simple heuristics for common libs
-                if lib_name == "docker" and os.path.exists(
-                    os.path.join(project_root, "Dockerfile")
-                ):
-                    is_relevant = True
-                elif lib_name == "kubernetes" and (
-                    os.path.exists(os.path.join(project_root, "k8s"))
-                    or os.path.exists(os.path.join(project_root, "helm"))
-                ):
-                    is_relevant = True
-                elif lib_name in str(replacements.get("__KEY_LIBS__", "")).lower():
-                    is_relevant = True
-
-                if is_relevant:
-                    rule["category"] = "Library"
-                    rule["reason"] = f"{lib_name.capitalize()} detected"
-                else:
-                    rule["category"] = "Library (Opt)"
-                    rule["reason"] = "Optional"
-
-                proposed.append(rule)
-
-            else:
-                # Any other root-level rules or misc
-                rule["category"] = "Misc"
-                proposed.append(rule)
-
-    return sorted(proposed, key=lambda x: (x["category"], x["name"]))
+    return proposed
 
 
-def linkify_replacements(replacements: dict, proposed_rules: list) -> dict:
-    """
-    Updates replacement values to include Markdown links if the referenced library/tool
-    has a corresponding rule being installed.
-    """
-    # Map 'clean_name' -> 'filename' for rules being installed
-    # We focus on Libraries and Linters/Patterns mostly.
-    installed_map = {}
+def get_all_rules(rules_src: str, project_root: str):
+    """Combines Core rules with Dynamic Stack rules."""
+    core_rules = get_core_rules(rules_src)
+    dynamic_rules = detect_stack(project_root)
+
+    # Fix paths for dynamic rules (templates need full path)
+    for rule in dynamic_rules:
+        # Prepend rules_src to the template relative path
+        rule["src"] = os.path.join(
+            rules_src, "..", rule["template"]
+        )  # template is like 'rules/languages/_template.md'
+        # Actually rules_src is '.../rules', so we need to go up one level if template starts with rules/
+        # Or just construct it correctly.
+        # project_ops returns 'rules/languages/_template.md'.
+        # rules_src is '/path/to/rules'.
+        # So we want '/path/to/rules/languages/_template.md'
+        # project_ops template is relative to Repo Root.
+        # rules_src is '.../dev_ops/rules'
+        repo_root = os.path.dirname(rules_src)
+        rule["src"] = os.path.join(repo_root, rule["template"])
+
+    return sorted(core_rules + dynamic_rules, key=lambda x: (x["category"], x["name"]))
+
+
+def install_rules(proposed_rules: list, rules_dest: str):
+    """Installs the selected rules with text replacement."""
+    print("\n📦 Installing Rules...")
+
+    # Flatten structure by categories? No, user wants .agent/rules/ filled.
+    # We should probably respect categories in destination?
+    # Original logic: dest_path = os.path.join(rules_dest, rule["name"]) -> Flat structure if name is just "python.md"
+    # But names could collide if flatten. Let's create subdirs.
+
     for rule in proposed_rules:
-        name_stem = os.path.splitext(rule["name"])[0].lower()
-        # Determine relative path from a rule file (in .agent/rules) to another rule file (in .agent/rules)
-        # They are in the same dir, so it's just the filename.
-        # BUT if we have categories in valid separate folders?
-        # Wait, install_rules flattens "rules_dest".
-        # Yes, install_rules: dest_path = os.path.join(rules_dest, rule["name"])
-        # So they are all siblings in .agent/rules.
-        installed_map[name_stem] = rule["name"]
+        # Create subfolder based on category if needed, or flat.
+        # Let's mirror source structure: rules/languages/python.md
+        # "category" is readable (Language), let's map to dir
+        cat_dir = {
+            "Core": "core",
+            "Language": "languages",
+            "Linter": "linters",
+            "Library": "libraries",
+            "Pattern": "patterns",
+        }.get(rule.get("category"), "misc")
 
-    linked_replacements = replacements.copy()
+        target_dir = os.path.join(rules_dest, cat_dir)
+        os.makedirs(target_dir, exist_ok=True)
 
-    for key, value in replacements.items():
-        if not isinstance(value, str):
+        if not os.path.exists(rule["src"]):
+            print(f"   ! Warning: Source for {rule['name']} not found at {rule['src']}")
             continue
 
-        # Split by comma for lists like __KEY_LIBS__
-        parts = [p.strip() for p in value.split(",")]
-        new_parts = []
-
-        for part in parts:
-            part_lower = part.lower()
-            # Basic matching: if the exact name matches a rule stem
-            if part_lower in installed_map:
-                target_file = installed_map[part_lower]
-                # Markdown link: [Name](./target.md)
-                # Since they are in the same folder (.agent/rules), usage is ./
-                new_parts.append(f"[{part}](./{target_file})")
-            else:
-                new_parts.append(part)
-
-        linked_replacements[key] = ", ".join(new_parts)
-
-    return linked_replacements
-
-
-def install_rules(proposed_rules: list, rules_dest: str, replacements: dict):
-    """Installs the selected rules with text replacement customization."""
-    print("\n📦 Installing Rules...")
-    os.makedirs(rules_dest, exist_ok=True)
-
-    for rule in proposed_rules:
-        # REFACTOR: Read, Replace, Write
+        # Read
         content = get_file_content(rule["src"])
 
-        # Apply replacements (Customization)
-        for key, value in replacements.items():
+        # Apply Rule-Specific Replacements
+        custom_repls = rule.get("replacements", {})
+        for key, value in custom_repls.items():
             content = content.replace(key, str(value))
-
-        dest_path = os.path.join(rules_dest, rule["name"])
+        dest_path = os.path.join(target_dir, rule["name"])
         write_file(dest_path, content)
-        print(f"   - Installed {rule['name']} ({rule['category']})")
+        print(f"   - Installed {cat_dir}/{rule['name']} ({rule['category']})")
 
 
 # ==========================================
@@ -303,20 +149,14 @@ def bootstrap(target_dir: str):
 
     # 1. Summarize & Detect
     summarize_project(PROJECT_ROOT)
-    langs = detect_languages(PROJECT_ROOT)
-    print(f"Detected languages: {', '.join(langs)}")
 
-    # 2. Analyze for Customization (Replacements)
-    replacements = analyze_project(PROJECT_ROOT, langs)
+    # 2. Detect & Propose Rules
+    print("🔍 Analyzing project stack...")
+
+    proposed_rules = get_all_rules(RULES_SRC_DIR, PROJECT_ROOT)
 
     # 3. Plan Rule Installation
     AGENT_RULES_DIR = os.path.join(AGENT_DIR, "rules")
-    proposed_rules = get_proposed_rules(
-        RULES_SRC_DIR, PROJECT_ROOT, langs, replacements
-    )
-
-    # Smart Linking: Update replacements to link to installed rules
-    replacements = linkify_replacements(replacements, proposed_rules)
 
     # 4. Interactive Confirmation
     print("\n📋 Proposed Rules Configuration:")
@@ -410,7 +250,7 @@ def bootstrap(target_dir: str):
         "setup_ops.py",
         "utils.py",
         "pr_ops.py",
-        "detectors.py",  # Make sure to include detectors as it is used by setup_ops!
+        "project_ops.py",  # Include project operations logic
     ]
     for script in scripts_to_copy:
         src = os.path.join(SCRIPTS_SRC_DIR, script)
@@ -421,7 +261,7 @@ def bootstrap(target_dir: str):
             print(f"   ! Warning: Script {script} not found in source.")
 
     # Install Rules (using the plan)
-    install_rules(proposed_rules, AGENT_RULES_DIR, replacements)
+    install_rules(proposed_rules, AGENT_RULES_DIR)
 
     if os.path.exists(WORKFLOWS_SRC_DIR):
         print("\n📦 Installing Workflows...")
