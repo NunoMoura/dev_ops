@@ -56,8 +56,9 @@ flowchart TD
     %% Execution Flows
     Plan --> |implement| Code
 
-    %% Delivery Flows
-    Code --> |create_pr| PR
+    %% Verification & Delivery Flows
+    Code --> |verify| PR
+    Code -.-> |report_bug| Bug
     
     %% Feedback Flows (PR comments become tracked items)
     PR --> |triage| Backlog
