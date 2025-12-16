@@ -23,10 +23,9 @@ globs: "**/*"
 ## Steps
 
 1. **Implement Fix**:
-   - specific code changes to resolve the issue.
-
-   > [!TIP]
-   > **MCP Recommendation**: Use **GitHub MCP** (gitmcp) to check file history and blame. Use **Context7 MCP** (Upstash) to verify library APIs.
+   - Make specific code changes to resolve the issue
+   - Check file history and blame (use GitHub MCP if available)
+   - Verify library APIs (use Context7 MCP if available)
 
 2. **Verify Fix**:
    - Run tests to ensure they now pass.

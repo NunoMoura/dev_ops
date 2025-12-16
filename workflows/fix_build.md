@@ -8,6 +8,17 @@ description: Diagnostic workflow for fixing build failures or CI errors.
 
 - [ ] Build failed (locally or remotely).
 
+## Relations
+
+- **Upstream**:
+  - **CI**: Build failure logs
+- **Downstream**:
+  - **Code**: `[Repository]` (Fixed code)
+
+## Template
+
+None - outputs code fixes, not document artifacts.
+
 ## Steps
 
 1. Analyze the failure logs to understand the error.

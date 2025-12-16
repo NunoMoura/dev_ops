@@ -75,14 +75,72 @@ flowchart TD
 | Command | Action | Output |
 | :--- | :--- | :--- |
 | `/bug` | Log a new bug or issue | `dev_ops/docs/bugs/BUG-XXX.md` |
-| `/feature` | Create/manage the Backlog | `dev_ops/docs/backlog.md` |
+| `/add_task` | Add a task to the Backlog | `dev_ops/docs/backlog.md` |
 | `/research` | Investigate a topic | `dev_ops/docs/research/RES-XXX.md` |
 | `/adr` | Document an architectural decision | `dev_ops/docs/adrs/ADR-XXX.md` |
 | `/plan` | Create an Implementation Plan | `dev_ops/docs/plans/PLN-XXX.md` |
+| `/task` | Create/manage Kanban board task | `kanban/tasks/TASK-XXX.md` |
 | `/implement` | Execute an active Plan | Code Changes |
 | `/debug` | Debug and fix a defect (bug/build/test) | Code Changes |
 | `/verify` | Run verification workflow | Test Results |
 | `/bootstrap` | Configure agent rules | `.agent/rules/` |
+
+---
+
+## 📊 Kanban Task Board
+
+The framework includes an optional Kanban board for coordinating work across multiple developers and AI agents.
+
+### Task ↔ Artifact Model
+
+```mermaid
+flowchart TB
+    subgraph Board ["kanban/board.md"]
+        Backlog["Backlog"]
+        InProgress["In Progress"]
+        Review["Review"]
+        Done["Done"]
+    end
+    
+    subgraph Task ["Tasks = Workflow Executions"]
+        T1["TASK-001<br/>workflow: /plan"]
+    end
+    
+    subgraph Artifacts ["Artifacts = Outputs"]
+        PLN["PLN-001.md"]
+        RES["RES-001.md"]
+    end
+    
+    Board --> Task --> Artifacts
+```
+
+### Task Commands
+
+```bash
+# Create a task
+python3 dev_ops/scripts/task_ops.py create --title "Implement Feature X" --workflow "/plan"
+
+# Claim a task (prevents duplicate work)
+python3 dev_ops/scripts/task_ops.py claim TASK-001 --agent "claude-agent-1"
+
+# Move between columns
+python3 dev_ops/scripts/task_ops.py progress TASK-001 --column "In Progress"
+
+# Complete with outputs
+python3 dev_ops/scripts/task_ops.py complete TASK-001 --outputs "PLN-001.md"
+
+# List all tasks
+python3 dev_ops/scripts/task_ops.py list
+```
+
+### Multi-Agent Coordination
+
+The Kanban board enables safe parallel work:
+
+1. **Check board** before starting work
+2. **Claim task** to signal you're working on it
+3. **Other agents see claimed tasks** and pick available work
+4. **Complete task** to link outputs and move to Done
 
 ---
 

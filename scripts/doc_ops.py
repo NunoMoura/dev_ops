@@ -17,8 +17,10 @@ from utils import write_file, read_file, get_next_id, sanitize_slug, prompt_user
 # We assume this script runs from [Project]/dev_ops/scripts/doc_ops.py
 # So Project Root is ../../
 script_dir = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(os.path.dirname(script_dir))
+DEV_OPS_ROOT = os.path.dirname(script_dir)  # dev_ops/
+PROJECT_ROOT = os.path.dirname(DEV_OPS_ROOT)  # actual project root
 DOCS_DIR = os.path.join(PROJECT_ROOT, "dev_ops", "docs")
+TEMPLATES_DIR = os.path.join(DEV_OPS_ROOT, "templates")
 
 DOC_TYPES = {
     "adr": {"dir": "adrs", "prefix": "ADR"},
@@ -56,15 +58,19 @@ def extract_template(workflow_path: str) -> str:
 
 
 def get_default_template(doc_type: str) -> str:
-    if doc_type == "adr":
-        return "# {{id}} - {{title}}\n\nDate: {{date}}\n\n## Status\nProposed\n\n## Context\n\n## Decision\n\n## Consequences\n"
-    elif doc_type == "bug":
-        return "# {{id}} - {{title}}\n\nPriority: {{priority}}\nStatus: Open\n\n## Description\n{{description}}\n\n## Context\n{{context}}\n"
-    elif doc_type == "plan":
-        return "# {{id}} - {{title}}\n\n## Goal\n\n## Proposed Changes\n\n## Verification\n"
-    elif doc_type == "research":
-        return "# {{id}} - {{title}}\n\n## Question\n\n## Findings\n\n## Conclusion\n"
-    return "# {{title}}"
+    """Load template from templates/ directory."""
+    template_path = os.path.join(TEMPLATES_DIR, f"{doc_type}.md")
+    if os.path.exists(template_path):
+        return read_file(template_path)
+
+    # Fallback for backwards compatibility
+    fallbacks = {
+        "adr": "# {{id}} - {{title}}\n\nDate: {{date}}\n\n## Status\nProposed\n\n## Context\n\n## Decision\n\n## Consequences\n",
+        "bug": "# {{id}} - {{title}}\n\nPriority: {{priority}}\nStatus: Open\n\n## Description\n{{description}}\n\n## Context\n{{context}}\n",
+        "plan": "# {{id}} - {{title}}\n\n## Goal\n\n## Proposed Changes\n\n## Verification\n",
+        "research": "# {{id}} - {{title}}\n\n## Question\n\n## Findings\n\n## Conclusion\n",
+    }
+    return fallbacks.get(doc_type, "# {{title}}")
 
 
 # ==========================================

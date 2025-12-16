@@ -28,9 +28,9 @@ class TestIntegrity(unittest.TestCase):
             required_templates = [
                 "report_bug.md",
                 "create_adr.md",
-                "create_research.md",
+                "research.md",
                 "create_plan.md",
-                "create_backlog_item.md",
+                "add_task.md",
             ]
 
             if filename in required_templates:

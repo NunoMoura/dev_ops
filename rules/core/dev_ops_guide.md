@@ -42,10 +42,10 @@ You can trigger these by name or intent:
 ### Document Operations
 
 * **Create Plan**: `workflows/create_plan.md`
-* **Create Research**: `workflows/create_research.md`
+* **Research**: `workflows/research.md`
 * **Report Bug**: `workflows/report_bug.md`
 * **Create ADR**: `workflows/create_adr.md`
-* **Add to Backlog**: `workflows/create_backlog_item.md`
+* **Add Task**: `workflows/add_task.md`
 
 ### PR & Feedback
 

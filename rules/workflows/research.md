@@ -17,7 +17,7 @@ Research **Project Artifacts** capture analysis, trade-offs, and investigations.
 
 ## Workflows
 
-* **Create**: Use `workflows/create_research.md` when you need to investigate something.
+* **Create**: Use `workflows/research.md` when you need to investigate something.
 
 ## Lifecycle
 

@@ -8,10 +8,12 @@ description: Create an implementation plan for a task.
 
 - [ ] An issue or backlog item exists (`BLK-XXX` or `BUG-XXX`).
 - [ ] Relevant ADRs (`ADR-XXX`) and Research (`RES-XXX`) are identified.
+- [ ] **If tracked on board**: Parent task (`TASK-XXX`) exists and is claimed.
 
 ## Relations
 
 - **Upstream**:
+  - **Task**: `TASK-XXX` (Parent work item on Kanban board)
   - **Backlog**: `BLK-XXX` (Item being addressed)
   - **Bug**: `BUG-XXX` (Issue being fixed)
   - **Research**: `RES-XXX` (Relevant research)
@@ -20,13 +22,35 @@ description: Create an implementation plan for a task.
   - **Code**: `[file/path]` (Code changes)
   - **PR**: `PR-XXX` (Pull Request)
 
+## Template
+
+Use [plan.md](file:///home/nunoc/projects/dev_ops/templates/plan.md).
+
+**Example fill-in**:
+
+- **Goal**: "Implement user authentication for API endpoints"
+- **Context**: "Addresses BUG-042, informed by ADR-015 (JWT strategy)"
+- **Proposed Changes**:
+
+  ```markdown
+  ### Auth Module
+  - [ ] Create `auth/jwt_handler.py`
+  - [ ] Add middleware to `api/routes.py`
+
+  ### Tests
+  - [ ] Add unit tests for token validation
+  ```
+
+- **Verification**: "Run `pytest tests/auth/` and manual login test"
+- **Related**: "ADR-015, BUG-042, RES-008"
+
 ## Steps
 
 1. **Identify Context**:
-   > [!TIP]
-   > **MCP Recommendation**: Use **Context7 MCP** (Upstash) to research library capabilities to ensure your plan is feasible. Use **GitHub MCP** (gitmcp) to check specific code references.
-
-   - Collect IDs of relevant ADRs, Research, Bugs, and Backlog items.
+   - Research library capabilities and best practices to ensure your plan is
+     feasible (use Context7 MCP if available)
+   - Check specific code references (use GitHub MCP if available)
+   - Collect IDs of relevant ADRs, Research, Bugs, and Backlog items
 
 2. **Create the Plan**:
    - Run `python3 dev_ops/scripts/doc_ops.py create plan --title "Plan Title"`.
@@ -39,8 +63,15 @@ description: Create an implementation plan for a task.
    - **Verification**: How to verify success.
    - **Related**: Ensure all IDs collected in Step 1 are in `related_docs`.
 
+4. **Link to Parent Task** (if using Kanban):
+
+   ```bash
+   python3 dev_ops/scripts/task_ops.py complete TASK-XXX --outputs "PLN-XXX.md"
+   ```
+
 ## Exit Criteria
 
 - [ ] Plan file created in `dev_ops/docs/plans/`.
 - [ ] Context and Steps are filled out.
 - [ ] Plan is ready for review.
+- [ ] **If tracked**: Artifact linked to parent task.

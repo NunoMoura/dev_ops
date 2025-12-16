@@ -17,6 +17,10 @@ description: Run local pre-flight checks before pushing a PR.
   - **Triage**: `workflows/triage_feedback.md` (If checks result in feedback)
   - **Merge**: (If checks pass)
 
+## Template
+
+None - outputs validation results, not document artifacts.
+
 ## Steps
 
 1. **Validate Documentation**:
@@ -29,7 +33,9 @@ description: Run local pre-flight checks before pushing a PR.
    - **New Code**: MUST have passing tests.
    - **Legacy Code**:
      - *Ideally*: Add tests for modified legacy code.
-     - *Fallback*: If adding tests is too large a scope, create a **Backlog Item** `[Test]` (e.g., "Add tests for legacy module X") and link it in the PR description.
+     - *Fallback*: If adding tests is too large a scope, create a
+       **Backlog Item** `[Test]` (e.g., "Add tests for legacy module X")
+       and link it in the PR description.
    - Run `workflows/verify.md`.
 
 ## Exit Criteria

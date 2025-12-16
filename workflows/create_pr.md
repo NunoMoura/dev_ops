@@ -39,7 +39,8 @@ description: Create a Pull Request linked to an Implementation Plan.
      - [ ] Manual verification completed
      ```
 
-4. **Link Items**: Ensure the PR is linked to the GitHub Issue or Project Item if applicable.
+4. **Link Items**: Ensure the PR is linked to the GitHub Issue or Project Item
+   if applicable.
 
 ## Exit Criteria
 

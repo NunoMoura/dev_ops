@@ -1,11 +1,14 @@
-# Create Backlog Item Workflow
+---
+description: Add an item to the backlog for future work.
+---
+
+# Add Task Workflow
 
 ## Prerequisites
 
 - [ ] An idea, future task, or non-critical issue identified.
-- [ ] Checked existing backlog to avoid duplicates.
-  > [!TIP]
-  > **MCP Recommendation**: Use **GitHub MCP** (gitmcp) to search for existing issues or related discussions in the repo before creating a new item.
+- [ ] Checked existing backlog to avoid duplicates
+      (search for existing issues using GitHub MCP if available)
 
 ## Relations
 
@@ -14,6 +17,28 @@
   - **ADR**: `ADR-XXX` (Architectural decision spawning this work)
 - **Downstream**:
   - **Plan**: `PLN-XXX` (Plan implementing this item)
+
+## Template
+
+Backlog items are added to `dev_ops/docs/backlog.md` in this format:
+
+```markdown
+## BLK-XXX: Title
+
+**Priority**: High | Medium | Low
+**Source**: ADR-XXX, RES-XXX, or description
+**Goal**: What is the desired outcome?
+```
+
+**Example**:
+
+```markdown
+## BLK-045: Add rate limiting to public API
+
+**Priority**: Medium
+**Source**: RES-012 (API performance research)
+**Goal**: Prevent abuse and ensure fair usage across clients
+```
 
 ## Steps
 

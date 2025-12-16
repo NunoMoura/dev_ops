@@ -1,3 +1,7 @@
+---
+description: Run tests to verify code changes.
+---
+
 # Verify Workflow
 
 ## Prerequisites
@@ -13,6 +17,10 @@
 - **Downstream**:
   - **PR**: `PR-XXX` (Pull Request)
   - **Bug**: `BUG-XXX` (If verification fails)
+
+## Template
+
+None - outputs test results, not document artifacts.
 
 ## Steps
 

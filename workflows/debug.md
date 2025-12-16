@@ -18,15 +18,20 @@ description: Unified workflow for debugging and fixing defects (bugs, build fail
   - **Code**: `[Repository]` (Codebase being modified)
   - **PR**: `PR-XXX` (Pull Request for the fix)
 
+## Template
+
+Use [bug.md](file:///home/nunoc/projects/dev_ops/templates/bug.md) for tracking
+the defect and documenting resolution notes.
+
+See `/report_bug` workflow for fill-in examples.
+
 ## Steps
 
 1. **Analyze the Issue**:
-   - Review bug report, error logs, or CI failure output.
-   - Reproduce the issue locally if possible.
-
-   > [!TIP]
-   > **MCP Recommendation**: Use **GitHub MCP** (gitmcp) to check file history
-   > and blame. Use **Context7 MCP** (Upstash) to verify library APIs.
+   - Review bug report, error logs, or CI failure output
+   - Reproduce the issue locally if possible
+   - Check file history and blame (use GitHub MCP if available)
+   - Verify library APIs (use Context7 MCP if available)
 
 2. **Implement Fix**:
    - Make specific code changes to resolve the issue.

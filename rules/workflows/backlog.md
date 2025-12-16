@@ -17,7 +17,7 @@ The Backlog **Project Artifact** tracks future work, ideas, and non-critical iss
 
 ## Workflows
 
-* **Create**: Use `workflows/create_backlog_item.md` to add items.
+* **Create**: Use `workflows/add_task.md` to add items.
 * **Plan**: Move items to `workflows/create_plan.md` when prioritizing.
 
 ## Lifecycle
