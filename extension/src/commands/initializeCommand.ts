@@ -10,7 +10,7 @@ import * as path from "path";
  * - workflows/ → .agent/workflows/
  * - templates/ → dev_ops/templates/
  * - scripts/ → dev_ops/scripts/
- * - Initializes local/kanban.json
+ * - Initializes dev_ops/kanban/board.json
  */
 export function registerInitializeCommand(
     context: vscode.ExtensionContext
@@ -94,8 +94,8 @@ async function copyDirectory(src: string, dest: string): Promise<void> {
 }
 
 async function initializeKanbanBoard(workspaceRoot: string): Promise<void> {
-    const kanbanDir = path.join(workspaceRoot, "local");
-    const boardPath = path.join(kanbanDir, "kanban.json");
+    const kanbanDir = path.join(workspaceRoot, "dev_ops", "kanban");
+    const boardPath = path.join(kanbanDir, "board.json");
 
     if (fs.existsSync(boardPath)) {
         console.log("Kanban board already exists");
@@ -109,28 +109,14 @@ async function initializeKanbanBoard(workspaceRoot: string): Promise<void> {
     const initialBoard = {
         version: 1,
         columns: [
-            { id: "col-idea", name: "I am working through the idea", position: 1 },
-            {
-                id: "col-breakdown",
-                name: "I am breaking it down into pieces",
-                position: 2,
-            },
-            {
-                id: "col-iterating",
-                name: "I am iterating through implementation",
-                position: 3,
-            },
-            {
-                id: "col-testing",
-                name: "I am testing this feature component",
-                position: 4,
-            },
-            { id: "col-ready", name: "This component is ready", position: 5 },
-            { id: "col-complete", name: "This is complete", position: 6 },
+            { id: "backlog", name: "Backlog", position: 1 },
+            { id: "in-progress", name: "In Progress", position: 2 },
+            { id: "review", name: "Review", position: 3 },
+            { id: "done", name: "Done", position: 4 },
         ],
         items: [],
     };
 
     fs.writeFileSync(boardPath, JSON.stringify(initialBoard, null, 2));
-    console.log("Kanban board initialized at local/kanban.json");
+    console.log("Kanban board initialized at dev_ops/kanban/board.json");
 }

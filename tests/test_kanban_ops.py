@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Tests for kanban_ops.py."""
 
-import json
 import os
 import tempfile
 import pytest

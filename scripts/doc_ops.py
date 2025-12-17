@@ -19,7 +19,7 @@ from utils import write_file, read_file, get_next_id, sanitize_slug, prompt_user
 script_dir = os.path.dirname(os.path.abspath(__file__))
 DEV_OPS_ROOT = os.path.dirname(script_dir)  # dev_ops/
 PROJECT_ROOT = os.path.dirname(DEV_OPS_ROOT)  # actual project root
-DOCS_DIR = os.path.join(PROJECT_ROOT, "dev_ops", "docs")
+DOCS_DIR = os.path.join(PROJECT_ROOT, "dev_ops")  # Artifacts go to dev_ops/
 TEMPLATES_DIR = os.path.join(DEV_OPS_ROOT, "templates")
 
 DOC_TYPES = {

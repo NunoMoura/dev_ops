@@ -1,13 +1,14 @@
 ---
 description: Create an implementation plan for a task.
+produces: PLAN-XXX
 ---
 
 # Create Plan Workflow
 
 ## Prerequisites
 
-- [ ] An issue or backlog item exists (`BLK-XXX` or `BUG-XXX`).
-- [ ] Relevant ADRs (`ADR-XXX`) and Research (`RES-XXX`) are identified.
+- [ ] An issue or backlog item exists.
+- [ ] Relevant ADRs (`ADR-XXX`) and Research (`RESEARCH-XXX`) are identified.
 - [ ] **If tracked on board**: Parent task (`TASK-XXX`) exists and is claimed.
 
 ## Relations
@@ -54,7 +55,7 @@ Use [plan.md](file:///home/nunoc/projects/dev_ops/templates/plan.md).
 
 2. **Create the Plan**:
    - Run `python3 dev_ops/scripts/doc_ops.py create plan --title "Plan Title"`.
-   - This generates `dev_ops/docs/plans/PLN-XXX-plan-title.md`.
+   - This generates `dev_ops/plans/PLAN-XXX-plan-title.md`.
 
 3. **Fill in the Details**:
    - **Goal**: High-level objective.
@@ -66,12 +67,12 @@ Use [plan.md](file:///home/nunoc/projects/dev_ops/templates/plan.md).
 4. **Link to Parent Task** (if using Kanban):
 
    ```bash
-   python3 dev_ops/scripts/kanban_ops.py link TASK-XXX "PLN-XXX.md"
+   python3 dev_ops/scripts/kanban_ops.py link TASK-XXX PLAN-XXX --relation output
    ```
 
 ## Exit Criteria
 
-- [ ] Plan file created in `dev_ops/docs/plans/`.
+- [ ] Plan file created in `dev_ops/plans/`.
 - [ ] Context and Steps are filled out.
 - [ ] Plan is ready for review.
 - [ ] **If tracked**: Artifact linked to parent task.

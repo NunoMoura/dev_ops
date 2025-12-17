@@ -2,8 +2,6 @@
 """Tests for doc_ops.py."""
 
 import os
-import tempfile
-import pytest
 
 # Add scripts to path
 import sys

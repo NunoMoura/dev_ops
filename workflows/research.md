@@ -1,5 +1,6 @@
 ---
 description: Document research on a specific topic.
+produces: RESEARCH-XXX
 ---
 
 # Research Workflow
@@ -18,7 +19,7 @@ description: Document research on a specific topic.
   - **Backlog**: `BLK-XXX` (Feature requiring investigation)
 - **Downstream**:
   - **ADR**: `ADR-XXX` (Decision informed by this research)
-  - **Plan**: `PLN-XXX` (Plan informed by this research)
+  - **Plan**: `PLAN-XXX` (Plan informed by this research)
 
 ## Template
 
@@ -47,7 +48,7 @@ Use [research.md](file:///home/nunoc/projects/dev_ops/templates/research.md).
 
 1. **Conduct Research**:
    - Run `python3 dev_ops/scripts/doc_ops.py create research --title "Title"`.
-   - This generates `dev_ops/docs/research/RES-XXX-title.md`.
+   - This generates `dev_ops/research/RESEARCH-XXX-title.md`.
    - Research your topic using Paper Search MCP for academic sources or Web
      Search for general information (if available)
 
@@ -63,12 +64,12 @@ Use [research.md](file:///home/nunoc/projects/dev_ops/templates/research.md).
 4. **Link to Parent Task** (if using Kanban):
 
    ```bash
-   python3 dev_ops/scripts/kanban_ops.py link TASK-XXX "RES-XXX.md"
+   python3 dev_ops/scripts/kanban_ops.py link TASK-XXX RESEARCH-XXX --relation output
    ```
 
 ## Exit Criteria
 
-- [ ] Research file created in `dev_ops/docs/research/`.
+- [ ] Research file created in `dev_ops/research/`.
 - [ ] Findings and Recommendation filled out.
 - [ ] Linked to prompting documents (Bug/Backlog).
 - [ ] **If tracked**: Artifact linked to parent task.

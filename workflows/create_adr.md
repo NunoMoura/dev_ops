@@ -1,5 +1,6 @@
 ---
 description: Create a new Architectural Decision Record (ADR).
+produces: ADR-XXX
 ---
 
 # Create ADR Workflow
@@ -15,7 +16,7 @@ description: Create a new Architectural Decision Record (ADR).
 - **Upstream**:
   - **Research**: `RES-XXX` (Research informing this decision)
 - **Downstream**:
-  - **Plan**: `PLN-XXX` (Plans guided by this decision)
+  - **Plan**: `PLAN-XXX` (Plans guided by this decision)
 
 ## Template
 

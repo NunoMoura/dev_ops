@@ -160,18 +160,20 @@ def install_rules(proposed_rules: list, rules_dest: str):
     # But names could collide if flatten. Let's create subdirs.
 
     for rule in proposed_rules:
-        # Create subfolder based on category if needed, or flat.
-        # Let's mirror source structure: rules/languages/python.md
-        # "category" is readable (Language), let's map to dir
+        # Create subfolder based on category if needed
+        # Core rules go to root, others to subdirs
         cat_dir = {
-            "Core": "core",
+            "Core": "",  # Core rules go to rules/ root
             "Language": "languages",
             "Linter": "linters",
             "Library": "libraries",
             "Pattern": "patterns",
         }.get(rule.get("category"), "misc")
 
-        target_dir = os.path.join(rules_dest, cat_dir)
+        if cat_dir:
+            target_dir = os.path.join(rules_dest, cat_dir)
+        else:
+            target_dir = rules_dest
         os.makedirs(target_dir, exist_ok=True)
 
         if not os.path.exists(rule["src"]):

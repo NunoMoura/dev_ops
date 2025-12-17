@@ -1,5 +1,6 @@
 ---
 description: Process for reporting a new bug.
+produces: BUG-XXX
 ---
 
 # Report Bug Workflow
@@ -14,7 +15,7 @@ description: Process for reporting a new bug.
 - **Upstream**:
   - **Triage**: (Discovery source)
 - **Downstream**:
-  - **Plan**: `PLN-XXX` (Plan fixing this bug)
+  - **Plan**: `PLAN-XXX` (Plan fixing this bug)
 
 ## Template
 
