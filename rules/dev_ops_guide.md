@@ -18,9 +18,12 @@ This project uses the **DevOps Framework** for task-centric development.
 
 ## Core Concepts
 
-1. **Everything is a Task** — All work lives on the Kanban board
-2. **Workflows = Pre-decomposed Tasks** — Step sequences with automation
+1. **Task = Unit of Planned Work** — Only create tasks in planning mode
+2. **Fast Mode = Direct Execution** — Small tasks done directly
 3. **Artifacts are Linked** — Outputs in `dev_ops/`, linked to tasks
+
+> [!TIP]
+> See `kanban_policy.md` for when to create tasks vs. direct execution.
 
 ## Directory Structure
 

@@ -52,11 +52,11 @@ jobs:
             \`\`\`
             
             Or manually categorize:
-            - 🐛 **Bug** → Track in \`dev_ops/docs/bugs/\`
-            - 📋 **Feature/Improvement** → Add to \`dev_ops/docs/backlog.md\`
+            - 🐛 **Bug** → Track in \`dev_ops/bugs/\`
+            - 📋 **Feature/Improvement** → Add task to Kanban board
             - ❓ **Question** → Reply directly in PR
             
-            See [triage_feedback workflow](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/workflows/triage_feedback.md) for details.`
+            See [triage_feedback workflow](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/.agent/workflows/triage_feedback.md) for details.`
                 });
               }
             }

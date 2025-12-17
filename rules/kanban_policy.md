@@ -5,6 +5,17 @@ description: Kanban board policies - load when managing tasks, picking work, or 
 
 # Kanban Policy
 
+## When to Create Tasks
+
+Only create tasks when in **planning mode** for work that needs:
+
+- Multi-step coordination
+- Progress tracking
+- Artifact generation
+
+> [!IMPORTANT]
+> Fast mode = direct execution. Small fixes don't need task overhead.
+
 ## Before Starting Work
 
 1. Use `/list_tasks` to see available work
@@ -50,7 +61,7 @@ Before claiming work, verify no other agent has claimed the task:
 id: TASK-001
 title: Implement JWT Authentication
 description: Add JWT auth to the API
-workflow: /create_feature        # Pre-decomposed workflow (optional)
+workflow: /create_plan           # Pre-decomposed workflow (optional)
 
 # Prerequisites - must be met before starting
 prerequisites:

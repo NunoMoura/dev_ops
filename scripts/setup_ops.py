@@ -347,29 +347,28 @@ def bootstrap(target_dir: str):
                 )
                 print(f"   - Installed {file}")
 
-    # Install GitHub Actions Workflows
-    GITHUB_SRC_DIR = os.path.join(DEV_OPS_CORE_ROOT, ".github")
-    GITHUB_DEST_DIR = os.path.join(PROJECT_ROOT, ".github")
+    # Install GitHub Actions Workflows (only PR triage, not full CI)
+    GITHUB_SRC_DIR = os.path.join(DEV_OPS_CORE_ROOT, ".github", "workflows")
+    GITHUB_DEST_DIR = os.path.join(PROJECT_ROOT, ".github", "workflows")
 
-    if os.path.exists(GITHUB_SRC_DIR):
-        print("\n🤖 Installing CI/CD Workflows...")
-        # Merge folders (usually .github/workflows)
-        for root, dirs, files in os.walk(GITHUB_SRC_DIR):
-            rel_path = os.path.relpath(root, GITHUB_SRC_DIR)
-            dest_path = os.path.join(GITHUB_DEST_DIR, rel_path)
-            os.makedirs(dest_path, exist_ok=True)
-            for file in files:
-                dest_file_path = os.path.join(dest_path, file)
-                if os.path.exists(dest_file_path):
-                    choice = prompt_user(
-                        f"⚠️  {file} already exists in .github. Overwrite? (y/n)", "n"
-                    )
-                    if choice.lower() != "y":
-                        print(f"   - Skipped {file}")
-                        continue
-
-                shutil.copy2(os.path.join(root, file), dest_file_path)
-                print(f"   - Installed .github/{rel_path}/{file}")
+    # Only install pr_triage.yml - lightweight PR comment → task ingestion
+    pr_triage_src = os.path.join(GITHUB_SRC_DIR, "pr_triage.yml")
+    if os.path.exists(pr_triage_src):
+        print("\n🤖 Installing PR Triage Workflow...")
+        os.makedirs(GITHUB_DEST_DIR, exist_ok=True)
+        pr_triage_dest = os.path.join(GITHUB_DEST_DIR, "pr_triage.yml")
+        if os.path.exists(pr_triage_dest):
+            choice = prompt_user(
+                "⚠️  pr_triage.yml already exists. Overwrite? (y/n)", "n"
+            )
+            if choice.lower() != "y":
+                print("   - Skipped pr_triage.yml")
+            else:
+                shutil.copy2(pr_triage_src, pr_triage_dest)
+                print("   - Installed .github/workflows/pr_triage.yml")
+        else:
+            shutil.copy2(pr_triage_src, pr_triage_dest)
+            print("   - Installed .github/workflows/pr_triage.yml")
 
     # Initialize Kanban Board (replaces old backlog.md)
     init_kanban_board(PROJECT_ROOT)
