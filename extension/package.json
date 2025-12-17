@@ -1,0 +1,348 @@
+{
+  "name": "dev-ops",
+  "displayName": "DevOps Framework",
+  "description": "Kanban board + DevOps workflows for AI-assisted development",
+  "publisher": "NunoMoura",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NunoMoura/dev_ops"
+  },
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.106.1"
+  },
+  "categories": [
+    "Visualization"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "devops.initialize",
+        "title": "DevOps: Initialize"
+      },
+      {
+        "command": "kanban.openBoard",
+        "title": "DevOps: Open Board"
+      },
+      {
+        "command": "kanban.pickNextTask",
+        "title": "DevOps: Pick Next Task"
+      },
+      {
+        "command": "kanban.showTaskDetails",
+        "title": "DevOps: Show Task Details"
+      },
+      {
+        "command": "kanban.getTasks",
+        "title": "DevOps: Export Board JSON"
+      },
+      {
+        "command": "kanban.createColumn",
+        "title": "DevOps: Create Column",
+        "icon": "$(organization)"
+      },
+      {
+        "command": "kanban.renameColumn",
+        "title": "DevOps: Rename Column",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "kanban.deleteColumn",
+        "title": "DevOps: Delete Column",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "kanban.createTask",
+        "title": "DevOps: Create Feature",
+        "icon": "$(add)"
+      },
+      {
+        "command": "kanban.moveTask",
+        "title": "DevOps: Move Task",
+        "icon": "$(arrow-swap)"
+      },
+      {
+        "command": "kanban.filterTasks",
+        "title": "DevOps: Filter Tasks",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "kanban.clearTaskFilter",
+        "title": "DevOps: Clear Task Filter",
+        "icon": "$(close)"
+      },
+      {
+        "command": "kanban.markTaskInProgress",
+        "title": "DevOps: Mark In Progress",
+        "icon": "$(play)"
+      },
+      {
+        "command": "kanban.markTaskBlocked",
+        "title": "DevOps: Mark Blocked",
+        "icon": "$(circle-slash)"
+      },
+      {
+        "command": "kanban.markTaskDone",
+        "title": "DevOps: Mark Done",
+        "icon": "$(check)"
+      },
+      {
+        "command": "kanban.generateCodexPrompt",
+        "title": "DevOps: Generate Codex Prompt",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "kanban.toggleAgentReadyFilter",
+        "title": "DevOps: Toggle Agent-Ready Filter",
+        "icon": "$(rocket)"
+      },
+      {
+        "command": "kanban.toggleBlockedFilter",
+        "title": "DevOps: Toggle Blocked Filter",
+        "icon": "$(issue-closed)"
+      },
+      {
+        "command": "kanban.openEntryPoints",
+        "title": "DevOps: Open Entry Points",
+        "icon": "$(references)"
+      },
+      {
+        "command": "kanban.openTaskContext",
+        "title": "DevOps: Open Task Context",
+        "icon": "$(file-code)"
+      },
+      {
+        "command": "kanban.showCardDetails",
+        "title": "DevOps: Show Card Details",
+        "icon": "$(preview)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "kanban",
+          "title": "Kanban",
+          "icon": "resources/kanban-icon.png"
+        }
+      ]
+    },
+    "views": {
+      "kanban": [
+        {
+          "id": "kanbanBoardView",
+          "name": "Board",
+          "type": "webview",
+          "icon": "resources/kanban-icon.png"
+        },
+        {
+          "id": "kanbanView",
+          "name": "List",
+          "icon": "resources/kanban-icon.png"
+        },
+        {
+          "id": "kanbanCardView",
+          "name": "Card Details",
+          "type": "webview",
+          "icon": "resources/kanban-icon.png"
+        },
+        {
+          "id": "kanbanManagerView",
+          "name": "Board Tools",
+          "icon": "resources/kanban-icon.png"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "kanban.importPlan",
+          "when": "view == kanbanView",
+          "group": "navigation@0",
+          "icon": "$(cloud-upload)"
+        },
+        {
+          "command": "kanban.importPlan",
+          "when": "view == kanbanBoardView",
+          "group": "navigation@0",
+          "icon": "$(cloud-upload)"
+        },
+        {
+          "command": "kanban.createTask",
+          "when": "view == kanbanView",
+          "group": "navigation@1",
+          "icon": "$(add)"
+        },
+        {
+          "command": "kanban.createTask",
+          "when": "view == kanbanBoardView",
+          "group": "navigation@1",
+          "icon": "$(add)"
+        },
+        {
+          "command": "kanban.createColumn",
+          "when": "view == kanbanManagerView",
+          "group": "navigation@1",
+          "icon": "$(organization)"
+        },
+        {
+          "command": "kanban.filterTasks",
+          "when": "view == kanbanView",
+          "group": "navigation@3",
+          "icon": "$(filter)"
+        },
+        {
+          "command": "kanban.filterTasks",
+          "when": "view == kanbanBoardView",
+          "group": "navigation@3",
+          "icon": "$(filter)"
+        },
+        {
+          "command": "kanban.clearTaskFilter",
+          "when": "view == kanbanView && kanbanFilterActive",
+          "group": "navigation@4",
+          "icon": "$(close)"
+        },
+        {
+          "command": "kanban.clearTaskFilter",
+          "when": "view == kanbanBoardView && kanbanFilterActive",
+          "group": "navigation@4",
+          "icon": "$(close)"
+        },
+        {
+          "command": "kanban.toggleAgentReadyFilter",
+          "when": "view == kanbanView",
+          "group": "navigation@5",
+          "icon": "$(rocket)"
+        },
+        {
+          "command": "kanban.toggleAgentReadyFilter",
+          "when": "view == kanbanBoardView",
+          "group": "navigation@5",
+          "icon": "$(rocket)"
+        },
+        {
+          "command": "kanban.toggleBlockedFilter",
+          "when": "view == kanbanView",
+          "group": "navigation@6",
+          "icon": "$(issue-closed)"
+        },
+        {
+          "command": "kanban.toggleBlockedFilter",
+          "when": "view == kanbanBoardView",
+          "group": "navigation@6",
+          "icon": "$(issue-closed)"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "kanban.showCardDetails",
+          "when": "view == kanbanView && viewItem == kanbanTask",
+          "group": "inline@0",
+          "icon": "$(preview)"
+        },
+        {
+          "command": "kanban.openEntryPoints",
+          "when": "view == kanbanView && viewItem == kanbanTask",
+          "group": "inline@0",
+          "icon": "$(references)"
+        },
+        {
+          "command": "kanban.openTaskContext",
+          "when": "view == kanbanView && viewItem == kanbanTask",
+          "group": "inline@0",
+          "icon": "$(file-code)"
+        },
+        {
+          "command": "kanban.renameColumn",
+          "when": "view == kanbanView && viewItem == kanbanColumn",
+          "group": "inline@0",
+          "icon": "$(edit)"
+        },
+        {
+          "command": "kanban.createTask",
+          "when": "view == kanbanView && viewItem == kanbanColumn",
+          "group": "inline@1",
+          "icon": "$(add)"
+        },
+        {
+          "command": "kanban.deleteColumn",
+          "when": "view == kanbanView && viewItem == kanbanColumn",
+          "group": "inline@2",
+          "icon": "$(trash)"
+        },
+        {
+          "command": "kanban.moveTask",
+          "when": "view == kanbanView && viewItem == kanbanTask",
+          "group": "inline@1",
+          "icon": "$(arrow-swap)"
+        },
+        {
+          "command": "kanban.markTaskInProgress",
+          "when": "view == kanbanView && viewItem == kanbanTask",
+          "group": "inline@2",
+          "icon": "$(play)"
+        },
+        {
+          "command": "kanban.markTaskBlocked",
+          "when": "view == kanbanView && viewItem == kanbanTask",
+          "group": "inline@3",
+          "icon": "$(circle-slash)"
+        },
+        {
+          "command": "kanban.markTaskDone",
+          "when": "view == kanbanView && viewItem == kanbanTask",
+          "group": "inline@4",
+          "icon": "$(check)"
+        },
+        {
+          "command": "kanban.generateCodexPrompt",
+          "when": "view == kanbanView && viewItem == kanbanTask",
+          "group": "inline@5",
+          "icon": "$(comment-discussion)"
+        },
+        {
+          "command": "kanban.renameColumn",
+          "when": "view == kanbanManagerView && viewItem == kanbanManagerColumn",
+          "group": "inline@0",
+          "icon": "$(edit)"
+        },
+        {
+          "command": "kanban.deleteColumn",
+          "when": "view == kanbanManagerView && viewItem == kanbanManagerColumn",
+          "group": "inline@1",
+          "icon": "$(trash)"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "pnpm run package",
+    "compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "package": "pnpm run check-types && pnpm run lint && node esbuild.js --production",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.106.1",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "typescript-eslint": "^8.46.3",
+    "eslint": "^9.39.1",
+    "esbuild": "^0.27.0",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.9.3",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2"
+  }
+}

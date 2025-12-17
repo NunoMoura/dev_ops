@@ -1,0 +1,142 @@
+import { KanbanColumn, KanbanItem, COLUMN_FALLBACK_NAME } from './types';
+
+export function compareTasks(a: KanbanItem, b: KanbanItem): number {
+  const statusDelta = getStatusRank(a.status) - getStatusRank(b.status);
+  if (statusDelta !== 0) {
+    return statusDelta;
+  }
+  const priorityDelta = getPriorityRank(a.priority) - getPriorityRank(b.priority);
+  if (priorityDelta !== 0) {
+    return priorityDelta;
+  }
+  return getUpdatedAtRank(a.updatedAt) - getUpdatedAtRank(b.updatedAt);
+}
+
+export function getStatusRank(status?: string): number {
+  switch (status?.toLowerCase()) {
+    case 'in_progress':
+    case 'in-progress':
+    case 'doing':
+      return 0;
+    case 'todo':
+    case 'backlog':
+      return 1;
+    case 'blocked':
+      return 2;
+    case 'review':
+    case 'in_review':
+      return 3;
+    case 'done':
+    case 'complete':
+      return 4;
+    default:
+      return 5;
+  }
+}
+
+export function getPriorityRank(priority?: string): number {
+  switch (priority?.toLowerCase()) {
+    case 'p0':
+    case 'critical':
+    case 'high':
+      return 0;
+    case 'p1':
+    case 'medium':
+      return 1;
+    case 'p2':
+    case 'low':
+      return 2;
+    default:
+      return 3;
+  }
+}
+
+export function getUpdatedAtRank(updatedAt?: string): number {
+  if (!updatedAt) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+  const timestamp = Date.parse(updatedAt);
+  return Number.isNaN(timestamp) ? Number.MAX_SAFE_INTEGER : timestamp;
+}
+
+export function compareNumbers(a?: number, b?: number): number {
+  if (typeof a === 'number' && typeof b === 'number') {
+    return a - b;
+  }
+  if (typeof a === 'number') {
+    return -1;
+  }
+  if (typeof b === 'number') {
+    return 1;
+  }
+  return 0;
+}
+
+export function sortColumnsForManager(columns: KanbanColumn[]): KanbanColumn[] {
+  return [...columns].sort((left, right) => {
+    const positionDelta = compareNumbers(left.position, right.position);
+    if (positionDelta !== 0) {
+      return positionDelta;
+    }
+    const leftName = left.name || COLUMN_FALLBACK_NAME;
+    const rightName = right.name || COLUMN_FALLBACK_NAME;
+    return leftName.localeCompare(rightName);
+  });
+}
+
+export function getNextColumnPosition(columns: KanbanColumn[]): number {
+  if (!columns.length) {
+    return 1;
+  }
+  const positions = columns.map((column) => (typeof column.position === 'number' ? column.position : 0));
+  return Math.max(...positions, columns.length) + 1;
+}
+
+export function parseTags(input?: string): string[] | undefined {
+  if (!input) {
+    return undefined;
+  }
+  const tags = input
+    .split(/[\s,]+/)
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+  return tags.length ? tags : undefined;
+}
+
+export function splitListValues(value?: string): string[] | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const parts = value
+    .split(/[,;]+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  return parts.length ? parts : undefined;
+}
+
+export function appendParagraph(current: string | undefined, addition: string): string {
+  return current ? `${current}\n${addition}` : addition;
+}
+
+export function parseBooleanFromString(value: string): boolean {
+  return ['true', 'yes', 'y', '1'].includes(value.trim().toLowerCase());
+}
+
+export function createId(prefix: string, seed?: string): string {
+  const slug = seed ? slugify(seed) : '';
+  const random = Math.random().toString(36).slice(2, 6);
+  const timestamp = Date.now().toString(36);
+  return [prefix, slug || undefined, `${random}${timestamp}`].filter(Boolean).join('-');
+}
+
+export function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 24);
+}
+
+export function isDefined<T>(value: T | undefined | null): value is T {
+  return value !== undefined && value !== null;
+}

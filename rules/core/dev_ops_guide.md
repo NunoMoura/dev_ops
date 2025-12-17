@@ -46,6 +46,15 @@ You can trigger these by name or intent:
 * **Report Bug**: `workflows/report_bug.md`
 * **Create ADR**: `workflows/create_adr.md`
 * **Create Task**: `workflows/create_task.md`
+* **Create Feature**: `workflows/create_feature.md`
+
+### Kanban Operations
+
+* **List Tasks**: `workflows/list_tasks.md`
+* **Pick Task**: `workflows/pick_task.md`
+* **Claim Task**: `workflows/claim_task.md`
+* **Complete Task**: `workflows/complete_task.md`
+* **Link Artifact**: `workflows/link_artifact.md`
 
 ### PR & Feedback
 

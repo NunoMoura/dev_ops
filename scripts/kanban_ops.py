@@ -172,6 +172,40 @@ def _update_task_status(
     return False
 
 
+def pick_task(project_root: Optional[str] = None) -> Optional[dict]:
+    """Pick the next available task based on priority and status.
+
+    Selection criteria:
+    1. Status is 'todo' (not claimed)
+    2. agentReady is True
+    3. Priority order: high > medium > low
+    4. Oldest updatedAt wins ties
+    """
+    tasks = get_tasks(project_root=project_root, status="todo", agent_ready=True)
+
+    if not tasks:
+        print("ℹ️ No agent-ready tasks available")
+        return None
+
+    # Sort by priority (high first), then by updatedAt (oldest first)
+    priority_order = {"high": 0, "p0": 0, "medium": 1, "p1": 1, "low": 2, "p2": 2}
+    tasks.sort(
+        key=lambda t: (
+            priority_order.get(t.get("priority", "medium"), 1),
+            t.get("updatedAt", ""),
+        )
+    )
+
+    picked = tasks[0]
+    print(f"📋 Suggested task: {picked['id']} - {picked['title']}")
+    return picked
+
+
+def claim_task(task_id: str, project_root: Optional[str] = None) -> bool:
+    """Claim a task by marking it as in_progress."""
+    return _update_task_status(task_id, "in_progress", project_root)
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -203,6 +237,16 @@ if __name__ == "__main__":
     link_parser.add_argument("task_id", help="Task ID")
     link_parser.add_argument("artifact", help="Artifact path")
 
+    # Pick task
+    pick_parser = subparsers.add_parser("pick", help="Pick next available task")
+    pick_parser.add_argument(
+        "--claim", action="store_true", help="Also claim the picked task"
+    )
+
+    # Claim task
+    claim_parser = subparsers.add_parser("claim", help="Claim a task")
+    claim_parser.add_argument("task_id", help="Task ID to claim")
+
     args = parser.parse_args()
 
     if args.command == "list":
@@ -220,3 +264,9 @@ if __name__ == "__main__":
         mark_done(args.task_id, outputs=args.outputs)
     elif args.command == "link":
         link_artifact(args.task_id, args.artifact)
+    elif args.command == "pick":
+        task = pick_task()
+        if task and args.claim:
+            claim_task(task["id"])
+    elif args.command == "claim":
+        claim_task(args.task_id)
