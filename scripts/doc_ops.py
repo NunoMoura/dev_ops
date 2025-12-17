@@ -25,9 +25,9 @@ TEMPLATES_DIR = os.path.join(DEV_OPS_ROOT, "templates")
 DOC_TYPES = {
     "adr": {"dir": "adrs", "prefix": "ADR"},
     "bug": {"dir": "bugs", "prefix": "BUG"},
+    "feature": {"dir": "features", "prefix": "FEAT"},
     "plan": {"dir": "plans", "prefix": "PLAN"},
     "research": {"dir": "research", "prefix": "RESEARCH"},
-    # backlog removed - use Kanban board instead
 }
 
 DOC_STATUS_REGEX = r"^status:\s*(.*)$"

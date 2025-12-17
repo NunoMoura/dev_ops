@@ -9,6 +9,7 @@ description: Artifact standards - load when creating documents, linking artifact
 
 | Type | Location | Workflow |
 |------|----------|----------|
+| Features | `dev_ops/features/` | `/create_feature` |
 | Plans | `dev_ops/plans/` | `/create_plan` |
 | Research | `dev_ops/research/` | `/research` |
 | ADRs | `dev_ops/adrs/` | `/create_adr` |
@@ -37,6 +38,7 @@ linked_tasks:
 
 | Type | Prefix | Example |
 |------|--------|---------|
+| Features | FEAT | FEAT-001 |
 | Plans | PLAN | PLAN-001 |
 | Research | RESEARCH | RESEARCH-001 |
 | ADRs | ADR | ADR-001 |

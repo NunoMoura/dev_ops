@@ -1,9 +1,13 @@
 ---
-id: "{{id}}"           # Feature ID (e.g., FEAT-001) - auto-generated
+id: "{{id}}"           # FEAT-XXX - auto-generated
 title: "{{title}}"     # Feature name
+type: feature
 date: "{{date}}"       # Creation date (YYYY-MM-DD)
 status: Draft          # Draft | Approved | In Progress | Complete
 priority: Medium       # Low | Medium | High | Critical
+upstream: []           # Artifacts this depends on (e.g., RESEARCH-001)
+downstream: []         # Artifacts that depend on this (e.g., PLAN-001)
+linked_tasks: []       # Related tasks (e.g., TASK-001)
 ---
 
 # {{id}} - {{title}}
@@ -32,7 +36,3 @@ priority: Medium       # Low | Medium | High | Critical
 ## Risks
 
 <!-- What could go wrong? -->
-
-## Related
-
-<!-- Link to ADRs, Research, Backlog items -->

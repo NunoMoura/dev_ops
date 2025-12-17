@@ -51,7 +51,7 @@ Load these with `@rule_name` when needed:
 | Category | Commands |
 |----------|----------|
 | Tasks | `/add_task`, `/pick_task`, `/claim_task`, `/complete_task` |
-| Planning | `/create_plan`, `/implement_plan`, `/brainstorm` |
+| Planning | `/create_feature`, `/create_plan`, `/implement_plan`, `/brainstorm` |
 | Quality | `/verify`, `/audit_code`, `/debug` |
 | Docs | `/research`, `/create_adr`, `/report_bug` |
 | Git | `/create_commit`, `/create_pr`, `/check_pr` |
