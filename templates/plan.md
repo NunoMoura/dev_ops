@@ -1,8 +1,12 @@
 ---
-id: "{{id}}"       # Plan ID (e.g., PLN-001) - auto-generated
-title: "{{title}}" # Short descriptive title
-date: "{{date}}"   # Creation date (YYYY-MM-DD)
-status: Draft      # Draft | Active | Complete | Superseded
+id: "{{id}}"           # PLAN-XXX - auto-generated
+title: "{{title}}"     # Short descriptive title
+type: plan
+date: "{{date}}"       # Creation date (YYYY-MM-DD)
+status: Draft          # Draft | Active | Complete | Superseded
+upstream: []           # Artifacts this depends on (e.g., RESEARCH-001)
+downstream: []         # Artifacts that depend on this
+linked_tasks: []       # Related tasks (e.g., TASK-001)
 ---
 
 # {{id}} - {{title}}
@@ -13,7 +17,7 @@ status: Draft      # Draft | Active | Complete | Superseded
 
 ## Context
 
-<!-- Why are we doing this? Link to ADRs, Research, Bugs -->
+<!-- Why are we doing this? Link to upstream artifacts -->
 
 ## Proposed Changes
 
@@ -22,7 +26,3 @@ status: Draft      # Draft | Active | Complete | Superseded
 ## Verification
 
 <!-- How will we verify this works? -->
-
-## Related
-
-<!-- Link related ADRs, Research, Bugs, Backlog items -->

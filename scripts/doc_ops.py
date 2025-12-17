@@ -25,8 +25,8 @@ TEMPLATES_DIR = os.path.join(DEV_OPS_ROOT, "templates")
 DOC_TYPES = {
     "adr": {"dir": "adrs", "prefix": "ADR"},
     "bug": {"dir": "bugs", "prefix": "BUG"},
-    "plan": {"dir": "plans", "prefix": "PLN"},
-    "research": {"dir": "research", "prefix": "RES"},
+    "plan": {"dir": "plans", "prefix": "PLAN"},
+    "research": {"dir": "research", "prefix": "RESEARCH"},
     # backlog removed - use Kanban board instead
 }
 

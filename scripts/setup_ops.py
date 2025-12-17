@@ -51,9 +51,9 @@ def install_kanban_extension(dev_ops_root: str):
 
 
 def init_kanban_board(project_root: str):
-    """Initialize the Kanban board if not exists (Titan Kanban compatible)."""
-    kanban_dir = os.path.join(project_root, "local")
-    board_path = os.path.join(kanban_dir, "kanban.json")
+    """Initialize the Kanban board if not exists."""
+    kanban_dir = os.path.join(project_root, "dev_ops", "kanban")
+    board_path = os.path.join(kanban_dir, "board.json")
 
     if os.path.exists(board_path):
         print("   ✅ Kanban board already exists")
@@ -61,8 +61,6 @@ def init_kanban_board(project_root: str):
 
     print("   📋 Initializing Kanban board...")
     os.makedirs(kanban_dir, exist_ok=True)
-    os.makedirs(os.path.join(kanban_dir, "tasks"), exist_ok=True)
-    os.makedirs(os.path.join(kanban_dir, "plans"), exist_ok=True)
 
     initial_board = {
         "version": 1,
@@ -78,7 +76,7 @@ def init_kanban_board(project_root: str):
     with open(board_path, "w") as f:
         json.dump(initial_board, f, indent=2)
 
-    print("   ✅ Kanban board initialized at local/kanban.json")
+    print("   ✅ Kanban board initialized at dev_ops/kanban/board.json")
 
 
 # ==========================================

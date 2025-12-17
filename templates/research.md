@@ -1,8 +1,12 @@
 ---
-id: "{{id}}"           # Research ID (e.g., RES-001) - auto-generated
+id: "{{id}}"           # RESEARCH-XXX - auto-generated
 title: "{{title}}"     # Research topic or question
+type: research
 date: "{{date}}"       # Creation date (YYYY-MM-DD)
 status: Active         # Active | Complete
+upstream: []           # Artifacts this depends on
+downstream: []         # Artifacts that depend on this (e.g., PLAN-001)
+linked_tasks: []       # Related tasks (e.g., TASK-001)
 ---
 
 # {{id}} - {{title}}
@@ -13,7 +17,7 @@ status: Active         # Active | Complete
 
 ## Context
 
-<!-- Why is this research needed? Link to Bug/Backlog -->
+<!-- Why is this research needed? -->
 
 ## Findings
 
@@ -22,7 +26,3 @@ status: Active         # Active | Complete
 ## Conclusion
 
 <!-- Summary of findings and recommendation -->
-
-## Related
-
-<!-- Link related Bugs, Backlog items, ADRs -->

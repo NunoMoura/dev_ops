@@ -1,8 +1,12 @@
 ---
-id: "{{id}}"           # Bug ID (e.g., BUG-001) - auto-generated
+id: "{{id}}"           # BUG-XXX - auto-generated
 title: "{{title}}"     # Brief failure description
+type: bug
 priority: "{{priority}}" # Low | Medium | High | Critical
 status: Open           # Open | In Progress | Resolved | Closed
+upstream: []           # Artifacts this depends on
+downstream: []         # Artifacts that depend on this (e.g., PLAN-001)
+linked_tasks: []       # Related tasks (e.g., TASK-001)
 ---
 
 # {{id}} - {{title}}
@@ -34,7 +38,3 @@ Open
 ## Actual Behavior
 
 <!-- What actually happens? -->
-
-## Related
-
-<!-- Link related Plans, Research -->
