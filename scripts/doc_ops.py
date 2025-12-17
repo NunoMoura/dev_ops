@@ -27,7 +27,7 @@ DOC_TYPES = {
     "bug": {"dir": "bugs", "prefix": "BUG"},
     "plan": {"dir": "plans", "prefix": "PLN"},
     "research": {"dir": "research", "prefix": "RES"},
-    "backlog": {"file": "backlog.md"},
+    # backlog removed - use Kanban board instead
 }
 
 DOC_STATUS_REGEX = r"^status:\s*(.*)$"

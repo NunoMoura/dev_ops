@@ -11,7 +11,7 @@ Guidelines for executing work.
 
 ## Workflows
 
-* **Implement**: Use `workflows/implement_feature.md` when executing an approved Plan.
+* **Implement**: Use `workflows/implement_plan.md` when executing an approved Plan.
 * **Debug**: Use `workflows/debug.md` if the build is broken.
 
 ## Guidelines

@@ -18,7 +18,7 @@ Implementation Plan **Project Artifacts** allow us to design before we code.
 ## Workflows
 
 * **Create**: Use `workflows/create_plan.md` to design a solution for **Backlog Items** or **Bugs**.
-* **Implement**: Use `workflows/implement_feature.md` to produce **Code** from a plan.
+* **Implement**: Use `workflows/implement_plan.md` to produce **Code** from a plan.
 
 ## Lifecycle
 

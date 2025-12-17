@@ -3,12 +3,82 @@ import os
 import sys
 import shutil
 import argparse
+import subprocess
+import json
 
 # Add current directory to sys.path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from utils import write_file, prompt_user
 from project_ops import detect_stack, get_file_content
+
+
+# ==========================================
+# Kanban Extension Installation
+# ==========================================
+
+
+def install_kanban_extension(dev_ops_root: str):
+    """Install the DevOps Kanban VS Code extension if not already installed."""
+    print("\n🔧 Checking Kanban extension...")
+
+    # Check if already installed
+    try:
+        result = subprocess.run(
+            ["code", "--list-extensions"], capture_output=True, text=True, timeout=30
+        )
+        if "devops-kanban" in result.stdout.lower():
+            print("   ✅ DevOps Kanban extension already installed")
+            return
+    except Exception as e:
+        print(f"   ⚠️ Could not check extensions: {e}")
+
+    # Install from VSIX
+    vsix_path = os.path.join(
+        dev_ops_root, "vendor", "titan-kanban", "devops-kanban-0.0.1.vsix"
+    )
+    if os.path.exists(vsix_path):
+        print("   📦 Installing DevOps Kanban extension...")
+        try:
+            subprocess.run(
+                ["code", "--install-extension", vsix_path], check=True, timeout=60
+            )
+            print("   ✅ DevOps Kanban extension installed")
+        except subprocess.CalledProcessError as e:
+            print(f"   ⚠️ Failed to install extension: {e}")
+    else:
+        print(f"   ⚠️ Extension VSIX not found at {vsix_path}")
+
+
+def init_kanban_board(project_root: str):
+    """Initialize the Kanban board if not exists (Titan Kanban compatible)."""
+    kanban_dir = os.path.join(project_root, "local")
+    board_path = os.path.join(kanban_dir, "kanban.json")
+
+    if os.path.exists(board_path):
+        print("   ✅ Kanban board already exists")
+        return
+
+    print("   📋 Initializing Kanban board...")
+    os.makedirs(kanban_dir, exist_ok=True)
+    os.makedirs(os.path.join(kanban_dir, "tasks"), exist_ok=True)
+    os.makedirs(os.path.join(kanban_dir, "plans"), exist_ok=True)
+
+    initial_board = {
+        "version": 1,
+        "columns": [
+            {"id": "backlog", "name": "Backlog", "position": 1},
+            {"id": "in-progress", "name": "In Progress", "position": 2},
+            {"id": "review", "name": "Review", "position": 3},
+            {"id": "done", "name": "Done", "position": 4},
+        ],
+        "items": [],
+    }
+
+    with open(board_path, "w") as f:
+        json.dump(initial_board, f, indent=2)
+
+    print("   ✅ Kanban board initialized at local/kanban.json")
 
 
 # ==========================================
@@ -301,13 +371,11 @@ def bootstrap(target_dir: str):
                 shutil.copy2(os.path.join(root, file), dest_file_path)
                 print(f"   - Installed .github/{rel_path}/{file}")
 
-    # Create Backlog
-    backlog_path = os.path.join(DEVOPS_DOCS_DIR, "backlog.md")
-    if not os.path.exists(backlog_path):
-        write_file(
-            backlog_path,
-            "# Project Backlog\n\n## High Priority\n\n## Medium Priority\n\n## Low Priority\n",
-        )
+    # Initialize Kanban Board (replaces old backlog.md)
+    init_kanban_board(PROJECT_ROOT)
+
+    # Install Kanban Extension (if VS Code available)
+    install_kanban_extension(DEV_OPS_CORE_ROOT)
 
     print("\n✨ Setup Complete! dev_ops installed locally.")
 

@@ -11,14 +11,13 @@ work across human developers and AI agents.
 
 ## Prerequisites
 
-- [ ] The `.kanbn/` directory exists (run `/bootstrap` first if not).
+- [ ] Titan Kanban extension installed in VS Code.
 - [ ] An idea, feature, or work item to track.
 
 ## Relations
 
 - **Upstream**:
   - **Triage**: Source of the work request
-  - **Backlog**: Item being turned into actionable work
 - **Downstream**:
   - **Plan**: `PLN-XXX` (created as output of this task)
   - **Research**: `RES-XXX` (created as output of this task)
@@ -47,60 +46,39 @@ Use [task.md](file:///home/nunoc/projects/dev_ops/templates/task.md).
 ## Steps
 
 1. **Create the Task**:
-
-   ```bash
-   python3 dev_ops/scripts/task_ops.py create \
-     --title "Task Title" \
-     --workflow "/plan" \
-     --desc "Brief description" \
-     --workload Medium
-   ```
-
-   This creates a task file in `.kanbn/tasks/` and adds it to the Backlog column.
+   - Run command: `Kanban: Create Task` (Ctrl+Shift+P)
+   - Or use the `+` button in the Titan Board view
+   - Fill in title, summary, and set `agentReady: true` if ready for agent work
 
 2. **Claim the Task** (when starting work):
+   - Open the task in Card Details view
+   - Set status to `in_progress`
+   - Add your name/agent ID to indicate ownership
 
-   ```bash
-   python3 dev_ops/scripts/task_ops.py claim TASK-XXX --agent "your-name"
-   ```
+3. **Execute Sub-tasks**:
+   - Follow the specified workflow (e.g., `/plan`, `/research`, `/adr`)
+   - Each workflow produces artifacts (PLN-XXX, RES-XXX, etc.)
+   - Update checklist items in the Card Details view
 
-   This marks the task as assigned and signals to others that work is in progress.
-
-3. **Move to In Progress**:
-
-   ```bash
-   python3 dev_ops/scripts/task_ops.py progress TASK-XXX --column "In Progress"
-   ```
-
-4. **Execute Sub-tasks**:
-   - Follow the specified workflow (e.g., `/plan`, `/research`, `/adr`).
-   - Each workflow produces artifacts (PLN-XXX, RES-XXX, etc.).
-   - Update sub-task checkboxes in the task file as you complete them.
-
-5. **Complete the Task**:
-
-   ```bash
-   python3 dev_ops/scripts/task_ops.py complete TASK-XXX \
-     --outputs "PLN-001.md, RES-002.md"
-   ```
-
-   This links outputs and moves the task to Done.
+4. **Complete the Task**:
+   - Run command: `Kanban: Mark Task Done`
+   - Add artifact IDs to the task's `entryPoints` field
+   - Task moves to Done column automatically
 
 ## Multi-Agent Coordination
 
-Before starting work, always check the board for already-claimed tasks:
+Before starting work, check for already-claimed tasks:
 
-```bash
-python3 dev_ops/scripts/task_ops.py list
-```
+- Run `Kanban: Get Tasks` to see structured JSON
+- Or run `Kanban: Pick Next Task` for the extension to suggest work
+- Look for `agentReady: true` tasks without an assigned owner
 
-- **Claimed tasks**: Show `assigned` field with agent name
-- **Available tasks**: No `assigned` value, can be claimed
-- **Prevents duplicated effort**: Only claim tasks not already in progress
+**Claimed tasks**: Have `status: in_progress` and an owner name
+**Available tasks**: Have `status: todo` and `agentReady: true`
 
 ## Exit Criteria
 
-- [ ] Task created with `TASK-XXX` ID.
+- [ ] Task created in Kanban board.
 - [ ] Task claimed and moved to "In Progress" when work starts.
 - [ ] Sub-tasks completed and artifacts produced.
-- [ ] Task marked complete with outputs linked.
+- [ ] Task marked done with outputs linked.

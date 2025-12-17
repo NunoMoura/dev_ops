@@ -63,7 +63,7 @@ Use [research.md](file:///home/nunoc/projects/dev_ops/templates/research.md).
 4. **Link to Parent Task** (if using Kanban):
 
    ```bash
-   python3 dev_ops/scripts/task_ops.py complete TASK-XXX --outputs "RES-XXX.md"
+   python3 dev_ops/scripts/kanban_ops.py link TASK-XXX "RES-XXX.md"
    ```
 
 ## Exit Criteria

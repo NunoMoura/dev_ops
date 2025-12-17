@@ -4,6 +4,10 @@ description: Add an item to the backlog for future work.
 
 # Add Task Workflow
 
+> [!WARNING]
+> **Deprecated**: This workflow uses the legacy `backlog.md` file.
+> Use [create_task.md](file:///workflows/create_task.md) for Kanban board tasks.
+
 ## Prerequisites
 
 - [ ] An idea, future task, or non-critical issue identified.

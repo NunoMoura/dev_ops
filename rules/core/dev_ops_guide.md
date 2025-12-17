@@ -45,7 +45,7 @@ You can trigger these by name or intent:
 * **Research**: `workflows/research.md`
 * **Report Bug**: `workflows/report_bug.md`
 * **Create ADR**: `workflows/create_adr.md`
-* **Add Task**: `workflows/add_task.md`
+* **Create Task**: `workflows/create_task.md`
 
 ### PR & Feedback
 
