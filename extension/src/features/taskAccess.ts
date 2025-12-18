@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { KanbanBoard, KanbanColumn, KanbanItem, COLUMN_FALLBACK_NAME } from './types';
+import { Board, Column, Task, COLUMN_FALLBACK_NAME } from './types';
 import { readKanban, writeKanban, getWorkspaceRoot } from './boardStore';
 import { compareNumbers, compareTasks, isDefined } from './kanbanData';
 import { formatError } from './errors';
@@ -9,9 +9,9 @@ import { buildTaskDescription } from './taskPresentation';
 
 export type MoveTasksResult = { movedTaskIds: string[]; columnName: string };
 
-type TaskQuickPickItem = vscode.QuickPickItem & { item: KanbanItem };
+type TaskQuickPickItem = vscode.QuickPickItem & { item: Task };
 
-export async function promptForTask(board: KanbanBoard): Promise<KanbanItem | undefined> {
+export async function promptForTask(board: Board): Promise<Task | undefined> {
   if (!board.items.length) {
     vscode.window.showInformationMessage('No Kanban tasks available.');
     return undefined;
@@ -27,15 +27,15 @@ export async function promptForTask(board: KanbanBoard): Promise<KanbanItem | un
 }
 
 export async function promptForColumn(
-  board: KanbanBoard,
+  board: Board,
   placeHolder: string,
   preselectId?: string,
-): Promise<KanbanColumn | undefined> {
+): Promise<Column | undefined> {
   if (!board.columns.length) {
     vscode.window.showInformationMessage('Create a Kanban column first.');
     return undefined;
   }
-  type ColumnQuickPick = vscode.QuickPickItem & { column: KanbanColumn };
+  type ColumnQuickPick = vscode.QuickPickItem & { column: Column };
   const picks: ColumnQuickPick[] = [...board.columns]
     .sort((a, b) => compareNumbers(a.position, b.position))
     .map((column) => ({
@@ -48,7 +48,7 @@ export async function promptForColumn(
   return selection?.column;
 }
 
-export async function appendTaskHistory(task: KanbanItem, message: string): Promise<void> {
+export async function appendTaskHistory(task: Task, message: string): Promise<void> {
   const root = getWorkspaceRoot();
   if (!root) {
     return;
@@ -59,7 +59,7 @@ export async function appendTaskHistory(task: KanbanItem, message: string): Prom
   await fs.appendFile(path.join(historyDir, `${task.id}.md`), entry, 'utf8');
 }
 
-export async function maybeOpenEntryPoints(task: KanbanItem): Promise<void> {
+export async function maybeOpenEntryPoints(task: Task): Promise<void> {
   if (!task.entryPoints?.length) {
     return;
   }
@@ -84,7 +84,7 @@ export async function maybeOpenEntryPoints(task: KanbanItem): Promise<void> {
   }
 }
 
-export async function openTaskContext(task: KanbanItem): Promise<void> {
+export async function openTaskContext(task: Task): Promise<void> {
   if (!task.contextFile) {
     vscode.window.showInformationMessage('This task does not specify a context document.');
     return;

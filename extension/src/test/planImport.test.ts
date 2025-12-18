@@ -6,7 +6,7 @@ import {
   mergeLists,
   ensureStringArray,
 } from '../features/planImport';
-import { KanbanBoard } from '../features/types';
+import { Board } from '../features/types';
 
 suite('Plan import helpers', () => {
   test('parsePlanJson normalizes optional arrays and fields', () => {
@@ -82,7 +82,7 @@ Status: in_progress
   });
 
   test('findOrCreateColumn reuses existing columns ignoring case', () => {
-    const board: KanbanBoard = {
+    const board: Board = {
       version: 1,
       columns: [{ id: 'col-1', name: 'Build', position: 1 }],
       items: [],

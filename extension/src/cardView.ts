@@ -1,31 +1,22 @@
 import * as vscode from 'vscode';
 
-export type CardFeatureTaskItemStatus = 'todo' | 'in_progress' | 'blocked' | 'review' | 'done';
-
-export type CardFeatureTaskItem = {
-  id: string;
-  title: string;
-  status: CardFeatureTaskItemStatus;
-};
-
-export type CardFeatureTask = {
-  id: string;
-  title: string;
-  summary?: string;
-  items: CardFeatureTaskItem[];
-};
-
+/**
+ * Payload type for passing task data to/from the Card Details webview.
+ */
 export type CardTaskPayload = {
   id: string;
   title: string;
   summary?: string;
   tags?: string;
   priority?: string;
-  status?: string;
+  columnId?: string;              // Column determines status
   agentReady?: boolean;
-  column?: string;
-  featureTasks?: CardFeatureTask[];
+  column?: string;                // Column display name
+  workflow?: string;              // DevOps workflow (e.g., /create_plan)
+  upstream?: string[];            // Artifact dependencies
+  downstream?: string[];          // Artifacts depending on this task
 };
+
 
 type WebviewMessage =
   | { type: 'update'; task: CardTaskPayload }
@@ -42,7 +33,7 @@ export class KanbanCardViewProvider implements vscode.WebviewViewProvider {
   readonly onDidSubmitUpdate = this.onUpdateEmitter.event;
   readonly onDidRequestDelete = this.onDeleteEmitter.event;
 
-  constructor(private readonly extensionUri: vscode.Uri) {}
+  constructor(private readonly extensionUri: vscode.Uri) { }
 
   resolveWebviewView(webviewView: vscode.WebviewView): void {
     this.view = webviewView;

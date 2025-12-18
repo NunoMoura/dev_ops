@@ -10,7 +10,7 @@ Mark a task as done and record the artifacts produced during the work.
 
 ## Prerequisites
 
-- [ ] Task is in `in_progress` status
+- [ ] Task is in `In Progress` column
 - [ ] Work is complete
 - [ ] Output artifacts exist (plans, research, code, etc.)
 
@@ -19,13 +19,13 @@ Mark a task as done and record the artifacts produced during the work.
 1. **Complete Without Outputs**:
 
    ```bash
-   python3 dev_ops/scripts/kanban_ops.py done task-001
+   python3 dev_ops/scripts/kanban_ops.py done TASK-001
    ```
 
 2. **Complete With Outputs** (recommended):
 
    ```bash
-   python3 dev_ops/scripts/kanban_ops.py done task-001 \
+   python3 dev_ops/scripts/kanban_ops.py done TASK-001 \
      --outputs "PLN-001.md" "src/feature.py"
    ```
 
@@ -35,11 +35,10 @@ Mark a task as done and record the artifacts produced during the work.
 
 ## Output Linking
 
-Outputs are added to the task's `entryPoints` field, making them
+Outputs are added to the task's `downstream` field, making them
 discoverable from the board.
 
 ## Exit Criteria
 
-- [ ] Task status changed to `done`
-- [ ] Output artifacts linked to task
-- [ ] Task appears in "Done" or "Complete" column
+- [ ] Task moved to "Done" column
+- [ ] Output artifacts linked to task's downstream

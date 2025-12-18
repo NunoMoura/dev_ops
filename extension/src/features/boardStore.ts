@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { KanbanBoard, KanbanColumn, DEFAULT_COLUMN_BLUEPRINTS } from './types';
+import { Board, Column, DEFAULT_COLUMN_BLUEPRINTS } from './types';
 
 export async function ensureKanbanUri(): Promise<vscode.Uri> {
   const kanbanPath = await getKanbanPath();
   if (!kanbanPath) {
-    throw new Error('Open a workspace folder to load local/kanban.json.');
+    throw new Error('Open a workspace folder to load dev_ops/kanban/board.json.');
   }
   try {
     await fs.stat(kanbanPath);
@@ -29,18 +29,18 @@ export async function getKanbanPath(): Promise<string | undefined> {
   if (!root) {
     return undefined;
   }
-  return path.join(root, 'local', 'kanban.json');
+  return path.join(root, 'dev_ops', 'kanban', 'board.json');
 }
 
-export async function readKanban(): Promise<KanbanBoard> {
+export async function readKanban(): Promise<Board> {
   const p = await getKanbanPath();
   if (!p) {
-    throw new Error('Open a workspace folder to use Titan Kanban.');
+    throw new Error('Open a workspace folder to use DevOps Kanban.');
   }
   let raw: string | undefined;
   try {
     raw = await fs.readFile(p, 'utf8');
-    return JSON.parse(raw) as KanbanBoard;
+    return JSON.parse(raw) as Board;
   } catch (error: any) {
     if (error?.code === 'ENOENT') {
       return createEmptyBoard();
@@ -52,20 +52,20 @@ export async function readKanban(): Promise<KanbanBoard> {
   }
 }
 
-export async function writeKanban(board: KanbanBoard): Promise<void> {
+export async function writeKanban(board: Board): Promise<void> {
   const p = await getKanbanPath();
   if (!p) {
-    throw new Error('Open a workspace folder to use Titan Kanban.');
+    throw new Error('Open a workspace folder to use DevOps Kanban.');
   }
   await fs.mkdir(path.dirname(p), { recursive: true });
   await fs.writeFile(p, JSON.stringify(board, null, 2), 'utf8');
 }
 
-export function createEmptyBoard(): KanbanBoard {
+export function createEmptyBoard(): Board {
   return { version: 1, columns: createDefaultColumns(), items: [] };
 }
 
-export function createDefaultColumns(): KanbanColumn[] {
+export function createDefaultColumns(): Column[] {
   return DEFAULT_COLUMN_BLUEPRINTS.map((column) => ({ ...column }));
 }
 
@@ -88,11 +88,10 @@ export async function registerKanbanWatchers(
     }, 200);
   };
   const patterns = [
-    'local/kanban.json',
-    'local/tasks/*.md',
-    'local/plans/*.md',
-    'local/plans/*.json',
-    'local/plans/*.jsonc',
+    'dev_ops/kanban/board.json',
+    'dev_ops/plans/*.md',
+    'dev_ops/research/*.md',
+    'dev_ops/docs/*.md',
   ];
   for (const glob of patterns) {
     const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, glob));
@@ -110,11 +109,11 @@ export async function registerKanbanWatchers(
   );
 }
 
-export async function handleCorruptKanbanFile(filePath: string, contents: string): Promise<KanbanBoard> {
+export async function handleCorruptKanbanFile(filePath: string, contents: string): Promise<Board> {
   const repairOption = 'Repair Kanban board';
   const openOption = 'Open file';
   const selection = await vscode.window.showErrorMessage(
-    'Titan Kanban cannot read local/kanban.json because it is not valid JSON.',
+    'DevOps Kanban cannot read dev_ops/kanban/board.json because it is not valid JSON.',
     repairOption,
     openOption,
   );
@@ -130,7 +129,7 @@ export async function handleCorruptKanbanFile(filePath: string, contents: string
     const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
     await vscode.window.showTextDocument(doc, { preview: false });
   }
-  throw new Error('local/kanban.json is invalid. Repair or fix it, then refresh Titan Kanban.');
+  throw new Error('dev_ops/kanban/board.json is invalid. Repair or fix it, then refresh DevOps Kanban.');
 }
 
 export async function backupCorruptKanbanFile(filePath: string, contents: string): Promise<string> {

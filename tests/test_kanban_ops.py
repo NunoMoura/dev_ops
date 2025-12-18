@@ -16,11 +16,14 @@ from kanban_ops import (
     save_board,
     create_task,
     get_tasks,
-    link_artifact,
+    add_upstream,
+    add_downstream,
+    move_to_column,
     mark_done,
     pick_task,
     claim_task,
     check_prerequisites,
+    DEFAULT_COLUMNS,
 )
 
 
@@ -44,22 +47,22 @@ class TestBoardOperations:
         assert temp_project in path
 
     def test_load_empty_board(self, temp_project):
-        """Test loading a non-existent board returns empty structure."""
+        """Test loading a non-existent board returns default structure."""
         board = load_board(temp_project)
         assert board["version"] == 1
-        assert board["columns"] == []
+        assert len(board["columns"]) == 7  # Default columns
         assert board["items"] == []
 
     def test_save_and_load_board(self, temp_project):
         """Test saving and loading a board."""
         test_board = {
             "version": 1,
-            "columns": [{"id": "todo", "name": "To Do"}],
-            "items": [{"id": "TASK-001", "title": "Test"}],
+            "columns": [{"id": "col-test", "name": "Test", "position": 1}],
+            "items": [{"id": "TASK-001", "title": "Test", "columnId": "col-test"}],
         }
         save_board(test_board, temp_project)
         loaded = load_board(temp_project)
-        assert loaded == test_board
+        assert loaded["items"] == test_board["items"]
 
 
 class TestTaskOperations:
@@ -69,7 +72,7 @@ class TestTaskOperations:
         """Test creating a task."""
         task_id = create_task(
             title="Test Task",
-            description="A test task",
+            summary="A test task",
             priority="high",
             agent_ready=True,
             project_root=temp_project,
@@ -84,8 +87,7 @@ class TestTaskOperations:
         assert task["title"] == "Test Task"
         assert task["priority"] == "high"
         assert task["agentReady"] is True
-        assert "prerequisites" in task
-        assert "completion_criteria" in task
+        assert task["columnId"] == "col-backlog"
 
     def test_create_multiple_tasks(self, temp_project):
         """Test creating multiple tasks generates unique IDs."""
@@ -98,7 +100,7 @@ class TestTaskOperations:
         assert id3 == "TASK-003"
 
     def test_get_tasks_filtered(self, temp_project):
-        """Test filtering tasks by status and agent_ready."""
+        """Test filtering tasks by column and agent_ready."""
         create_task(title="Ready", agent_ready=True, project_root=temp_project)
         create_task(title="Not Ready", agent_ready=False, project_root=temp_project)
 
@@ -114,33 +116,51 @@ class TestTaskOperations:
         assert result is True
         board = load_board(temp_project)
         task = board["items"][0]
-        assert task["status"] == "done"
+        assert task["columnId"] == "col-done"
+
+    def test_move_to_column(self, temp_project):
+        """Test moving a task to a specific column."""
+        task_id = create_task(title="To Move", project_root=temp_project)
+        result = move_to_column(task_id, "col-inprogress", temp_project)
+
+        assert result is True
+        board = load_board(temp_project)
+        task = board["items"][0]
+        assert task["columnId"] == "col-inprogress"
 
 
 class TestArtifactLinking:
     """Test artifact linking operations."""
 
-    def test_link_artifact(self, temp_project):
-        """Test linking an artifact to a task."""
-        task_id = create_task(title="With Artifact", project_root=temp_project)
-        result = link_artifact(task_id, "PLAN-001", "output", temp_project)
+    def test_add_upstream(self, temp_project):
+        """Test adding an upstream dependency to a task."""
+        task_id = create_task(title="With Upstream", project_root=temp_project)
+        result = add_upstream(task_id, "RES-001", temp_project)
 
         assert result is True
         board = load_board(temp_project)
         task = board["items"][0]
-        assert len(task["artifacts"]) == 1
-        assert task["artifacts"][0]["id"] == "PLAN-001"
-        assert task["artifacts"][0]["relation"] == "output"
+        assert "RES-001" in task["upstream"]
 
-    def test_link_artifact_duplicate(self, temp_project):
-        """Test that duplicate artifacts are not added."""
-        task_id = create_task(title="With Artifact", project_root=temp_project)
-        link_artifact(task_id, "PLAN-001", "output", temp_project)
-        link_artifact(task_id, "PLAN-001", "output", temp_project)  # Duplicate
+    def test_add_downstream(self, temp_project):
+        """Test adding a downstream dependency to a task."""
+        task_id = create_task(title="With Downstream", project_root=temp_project)
+        result = add_downstream(task_id, "PLN-001", temp_project)
+
+        assert result is True
+        board = load_board(temp_project)
+        task = board["items"][0]
+        assert "PLN-001" in task["downstream"]
+
+    def test_add_upstream_duplicate(self, temp_project):
+        """Test that duplicate upstreams are not added."""
+        task_id = create_task(title="With Upstream", project_root=temp_project)
+        add_upstream(task_id, "RES-001", temp_project)
+        add_upstream(task_id, "RES-001", temp_project)  # Duplicate
 
         board = load_board(temp_project)
         task = board["items"][0]
-        assert len(task["artifacts"]) == 1  # Should still be 1
+        assert task["upstream"].count("RES-001") == 1
 
 
 class TestPrerequisites:
@@ -148,19 +168,16 @@ class TestPrerequisites:
 
     def test_check_prerequisites_empty(self, temp_project):
         """Test that empty prerequisites pass."""
-        task = {"prerequisites": {"tasks": [], "artifacts": [], "approvals": []}}
+        task = {"prerequisites": {"tasks": [], "approvals": []}}
         ok, missing = check_prerequisites(task, temp_project)
         assert ok is True
         assert missing["tasks"] == []
-        assert missing["artifacts"] == []
 
     def test_check_prerequisites_missing_task(self, temp_project):
         """Test that missing prerequisite tasks are detected."""
-        # Create a task that depends on non-existent TASK-999
         task = {
             "prerequisites": {
                 "tasks": ["TASK-999"],
-                "artifacts": [],
                 "approvals": [],
             }
         }
@@ -178,7 +195,6 @@ class TestPrerequisites:
         task = {
             "prerequisites": {
                 "tasks": [prereq_id],
-                "artifacts": [],
                 "approvals": [],
             }
         }
@@ -212,10 +228,13 @@ class TestTaskPicking:
         # Create a task with unmet prerequisites
         task_id = create_task(
             title="Blocked Task",
-            prerequisites={"tasks": ["TASK-999"], "artifacts": [], "approvals": []},
             agent_ready=True,
             project_root=temp_project,
         )
+        # Manually add prerequisites
+        board = load_board(temp_project)
+        board["items"][0]["prerequisites"] = {"tasks": ["TASK-999"], "approvals": []}
+        save_board(board, temp_project)
 
         result = claim_task(task_id, force=False, project_root=temp_project)
         assert result is False
@@ -224,10 +243,13 @@ class TestTaskPicking:
         """Test that force=True bypasses prerequisite check."""
         task_id = create_task(
             title="Blocked Task",
-            prerequisites={"tasks": ["TASK-999"], "artifacts": [], "approvals": []},
             agent_ready=True,
             project_root=temp_project,
         )
+        # Manually add prerequisites
+        board = load_board(temp_project)
+        board["items"][0]["prerequisites"] = {"tasks": ["TASK-999"], "approvals": []}
+        save_board(board, temp_project)
 
         result = claim_task(task_id, force=True, project_root=temp_project)
         assert result is True

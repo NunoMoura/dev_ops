@@ -3,12 +3,11 @@ import * as path from 'path';
 import { KanbanCardViewProvider, CardTaskPayload } from '../cardView';
 import { KanbanTreeProvider, KanbanNode, KanbanManagerNode } from '../ui/providers';
 import {
-  KanbanBoard,
-  KanbanColumn,
-  KanbanItem,
+  Board,
+  Column,
+  Task,
   COLUMN_FALLBACK_NAME,
-  DEFAULT_PLANNING_COLUMN,
-  IDEA_COLUMN_NAME,
+  DEFAULT_COLUMN_NAME,
 } from '../features/types';
 import { readKanban, writeKanban, ensureKanbanUri, getWorkspaceRoot } from '../features/boardStore';
 import {
@@ -33,7 +32,6 @@ import {
   buildTaskDetail,
   buildCardPayload,
   presentCodexPrompt,
-  normalizeFeatureTasks,
 } from '../features/taskPresentation';
 import {
   promptForTask,
@@ -237,7 +235,7 @@ export function registerKanbanCommands(
     context,
     'kanban.markTaskInProgress',
     async (node?: KanbanNode) => {
-      await handleStatusUpdate('in_progress', 'Marked In Progress', provider, kanbanView, node);
+      await handleStatusUpdate('col-inprogress', 'Marked In Progress', provider, kanbanView, node);
     },
     'Unable to update status',
   );
@@ -246,7 +244,7 @@ export function registerKanbanCommands(
     context,
     'kanban.markTaskBlocked',
     async (node?: KanbanNode) => {
-      await handleStatusUpdate('blocked', 'Marked Blocked', provider, kanbanView, node);
+      await handleStatusUpdate('col-blocked', 'Marked Blocked', provider, kanbanView, node);
     },
     'Unable to update status',
   );
@@ -255,7 +253,7 @@ export function registerKanbanCommands(
     context,
     'kanban.markTaskDone',
     async (node?: KanbanNode) => {
-      await handleStatusUpdate('done', 'Marked Done', provider, kanbanView, node);
+      await handleStatusUpdate('col-done', 'Marked Done', provider, kanbanView, node);
     },
     'Unable to update status',
   );
@@ -320,9 +318,10 @@ export async function handleCardUpdateMessage(
     task.summary = update.summary?.trim() || undefined;
     task.tags = parseTags(update.tags);
     task.priority = update.priority || undefined;
-    task.status = update.status || task.status;
+    task.workflow = update.workflow || task.workflow;
+    task.upstream = update.upstream || task.upstream;
+    task.downstream = update.downstream || task.downstream;
     task.agentReady = Boolean(update.agentReady);
-    task.featureTasks = normalizeFeatureTasks(update.featureTasks);
     task.updatedAt = new Date().toISOString();
     await writeKanban(board);
     await provider.refresh();
@@ -392,7 +391,7 @@ function registerKanbanCommand(
 async function handlePickNextTask(provider: KanbanTreeProvider, view: vscode.TreeView<KanbanNode>) {
   const board = await readKanban();
   if (!board.items.length) {
-    vscode.window.showInformationMessage('No tasks found in local/kanban.json.');
+    vscode.window.showInformationMessage('No tasks found in dev_ops/kanban/board.json.');
     return;
   }
   const ranked = [...board.items].sort(compareTasks);
@@ -426,25 +425,26 @@ async function handleShowTaskDetails(
     }
     task = pick;
   }
-  const columnName = board.columns.find((column) => column.id === task.columnId)?.name ?? COLUMN_FALLBACK_NAME;
-  await provider.revealTask(task.id, view);
-  const detail = buildTaskDetail(task, columnName);
+  const selectedTask = task;
+  const columnName = board.columns.find((column) => column.id === selectedTask.columnId)?.name ?? COLUMN_FALLBACK_NAME;
+  await provider.revealTask(selectedTask.id, view);
+  const detail = buildTaskDetail(selectedTask, columnName);
   const actions = ['Open entry points'];
-  if (task.contextFile) {
+  if (selectedTask.contextFile) {
     actions.push('Open context');
   }
   actions.push('Generate Codex Prompt');
   const action = await vscode.window.showInformationMessage(
-    `${task.title} (${columnName})`,
+    `${selectedTask.title} (${columnName})`,
     { modal: true, detail },
     ...actions,
   );
   if (action === 'Open entry points') {
-    await maybeOpenEntryPoints(task);
+    await maybeOpenEntryPoints(selectedTask);
   } else if (action === 'Open context') {
-    await openTaskContext(task);
+    await openTaskContext(selectedTask);
   } else if (action === 'Generate Codex Prompt') {
-    await presentCodexPrompt(task, columnName);
+    await presentCodexPrompt(selectedTask, columnName);
   }
 }
 
@@ -473,7 +473,7 @@ async function handleCreateColumn(provider: KanbanTreeProvider): Promise<void> {
   if (!name) {
     return;
   }
-  const column: KanbanColumn = {
+  const column: Column = {
     id: createId('col', name),
     name: name.trim(),
     position: getNextColumnPosition(board.columns),
@@ -518,13 +518,13 @@ async function handleDeleteColumn(provider: KanbanTreeProvider, node?: KanbanNod
   }
   const tasksInColumn = board.items.filter((item) => item.columnId === column.id);
   const remainingColumns = board.columns.filter((candidate) => candidate.id !== column.id);
-  let targetColumn: KanbanColumn | undefined;
+  let targetColumn: Column | undefined;
   if (tasksInColumn.length) {
     if (!remainingColumns.length) {
       vscode.window.showWarningMessage('Cannot delete the only column that still contains cards.');
       return;
     }
-    type ColumnQuickPick = vscode.QuickPickItem & { column: KanbanColumn };
+    type ColumnQuickPick = vscode.QuickPickItem & { column: Column };
     const picks: ColumnQuickPick[] = sortColumnsForManager(remainingColumns).map((candidate) => ({
       label: candidate.name || COLUMN_FALLBACK_NAME,
       description: `Position ${candidate.position ?? 0}`,
@@ -570,12 +570,11 @@ async function handleCreateTask(
   node?: KanbanNode,
 ): Promise<void> {
   const board = await readKanban();
-  const column = node && node.kind === 'column' ? node.column : findOrCreateColumn(board, IDEA_COLUMN_NAME);
-  const task: KanbanItem = {
-    id: createId('task', 'new feature'),
+  const column = node && node.kind === 'column' ? node.column : findOrCreateColumn(board, DEFAULT_COLUMN_NAME);
+  const task: Task = {
+    id: createId('task', 'new task'),
     columnId: column.id,
-    title: 'New Feature',
-    status: 'todo',
+    title: 'New Task',
     updatedAt: new Date().toISOString(),
   };
   board.items.push(task);
@@ -611,7 +610,7 @@ async function handleMoveTask(
 }
 
 async function handleStatusUpdate(
-  status: string,
+  targetColumnId: string,
   successMessage: string,
   provider: KanbanTreeProvider,
   view: vscode.TreeView<KanbanNode>,
@@ -622,11 +621,12 @@ async function handleStatusUpdate(
   if (!task) {
     return;
   }
-  task.status = status;
+  task.columnId = targetColumnId;
   task.updatedAt = new Date().toISOString();
   await writeKanban(board);
   await provider.refresh();
-  await appendTaskHistory(task, `Status changed to ${status}`);
+  const columnName = board.columns.find((c) => c.id === targetColumnId)?.name || COLUMN_FALLBACK_NAME;
+  await appendTaskHistory(task, `Moved to ${columnName}`);
   vscode.window.showInformationMessage(`${task.title} — ${successMessage}`);
   await provider.revealTask(task.id, view);
 }
@@ -675,7 +675,7 @@ async function handleImportPlan(provider: KanbanTreeProvider, view: vscode.TreeV
   let updated = 0;
   let lastTaskId: string | undefined;
   for (const task of parsed.tasks) {
-    const columnName = task.column ?? parsed.defaultColumn ?? DEFAULT_PLANNING_COLUMN;
+    const columnName = task.column ?? parsed.defaultColumn ?? DEFAULT_COLUMN_NAME;
     const column = findOrCreateColumn(board, columnName);
     const result = upsertPlanTask(board, column, task, parsed, relativePlanPath);
     if (result.kind === 'created') {
@@ -730,7 +730,7 @@ async function handleOpenTaskContext(node?: KanbanNode): Promise<void> {
   await openTaskContext(task);
 }
 
-function getTaskFromNode(node?: KanbanNode): KanbanItem | undefined {
+function getTaskFromNode(node?: KanbanNode): Task | undefined {
   if (!node) {
     return undefined;
   }
@@ -740,7 +740,7 @@ function getTaskFromNode(node?: KanbanNode): KanbanItem | undefined {
   return undefined;
 }
 
-function getColumnFromAnyNode(board: KanbanBoard, node?: KanbanNode | KanbanManagerNode): KanbanColumn | undefined {
+function getColumnFromAnyNode(board: Board, node?: KanbanNode | KanbanManagerNode): Column | undefined {
   const columnId = getColumnIdFromNode(node);
   if (!columnId) {
     return undefined;

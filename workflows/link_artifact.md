@@ -1,13 +1,15 @@
 ---
-description: Link an artifact or file to an existing task.
+description: Link an artifact as upstream or downstream dependency of a task.
 ---
 
 # Link Artifact Workflow
 
 ## Purpose
 
-Associate a file or document with a Kanban task for traceability.
-Linked artifacts appear in the task's `entryPoints`.
+Associate artifacts with a Kanban task for traceability.
+
+- **Upstream**: Artifacts this task depends on (inputs)
+- **Downstream**: Artifacts this task produces (outputs)
 
 ## Prerequisites
 
@@ -16,36 +18,35 @@ Linked artifacts appear in the task's `entryPoints`.
 
 ## Steps
 
-1. **Link Single Artifact**:
+1. **Add Upstream Dependency** (input):
 
    ```bash
-   python3 dev_ops/scripts/kanban_ops.py link task-001 "PLN-001.md"
+   python3 dev_ops/scripts/kanban_ops.py upstream TASK-001 "RES-001"
    ```
 
-   Output: `✅ Linked PLN-001.md to task-001`
+   Output: `✅ Added upstream RES-001 to TASK-001`
 
-2. **Link Multiple Artifacts** (run multiple times):
+2. **Add Downstream Output**:
 
    ```bash
-   python3 dev_ops/scripts/kanban_ops.py link task-001 "RES-001.md"
-   python3 dev_ops/scripts/kanban_ops.py link task-001 "src/feature.py"
+   python3 dev_ops/scripts/kanban_ops.py downstream TASK-001 "PLN-001"
    ```
+
+   Output: `✅ Added downstream PLN-001 to TASK-001`
 
 3. **Via VS Code** (alternative):
    - Open Card Details for the task
-   - Add files to Entry Points field
+   - Add artifacts to Upstream/Downstream fields
 
 ## Common Artifact Types
 
 | Prefix | Type | Example |
 |--------|------|---------|
-| PLN | Plan | `PLN-001-auth-module.md` |
-| RES | Research | `RES-002-caching.md` |
-| ADR | Decision | `ADR-003-jwt-strategy.md` |
-| FEAT | Feature | `FEAT-001-user-auth.md` |
-| BUG | Bug | `BUG-004-login-error.md` |
+| PLN | Plan | `PLN-001-auth-module` |
+| RES | Research | `RES-002-caching` |
+| ADR | Decision | `ADR-003-jwt-strategy` |
 
 ## Exit Criteria
 
-- [ ] Artifact added to task's `entryPoints`
+- [ ] Artifact added to task's upstream or downstream
 - [ ] Artifact visible in Card Details view

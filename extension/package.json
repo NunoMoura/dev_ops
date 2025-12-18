@@ -57,7 +57,7 @@
       },
       {
         "command": "kanban.createTask",
-        "title": "DevOps: Create Feature",
+        "title": "DevOps: Create Task",
         "icon": "$(add)"
       },
       {

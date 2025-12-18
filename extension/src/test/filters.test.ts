@@ -1,13 +1,13 @@
 import { strict as assert } from 'assert';
 import { applyFilters, columnMatchesFilters, parseTaskFilter } from '../features/filters';
-import { KanbanColumn, KanbanItem } from '../features/types';
+import { Column, Task } from '../features/types';
 
 suite('Task filters', () => {
-  const column: KanbanColumn = { id: 'col-1', name: 'Implementation', position: 1 };
-  const tasks: KanbanItem[] = [
-    { id: '1', columnId: 'col-1', title: 'Ship auth', status: 'blocked', agentReady: true },
-    { id: '2', columnId: 'col-1', title: 'Write docs', status: 'todo', agentReady: false },
-    { id: '3', columnId: 'col-1', title: 'Tidy backlog', status: 'blocked', agentReady: false, tags: ['ops'] },
+  const column: Column = { id: 'col-1', name: 'Implementation', position: 1 };
+  const tasks: Task[] = [
+    { id: '1', columnId: 'col-blocked', title: 'Ship auth', agentReady: true },
+    { id: '2', columnId: 'col-backlog', title: 'Write docs', agentReady: false },
+    { id: '3', columnId: 'col-blocked', title: 'Tidy backlog', agentReady: false, tags: ['ops'] },
   ];
 
   test('parseTaskFilter extracts text and tag tokens', () => {
@@ -24,7 +24,7 @@ suite('Task filters', () => {
     const filterState = {
       text: parseTaskFilter('ship'),
       onlyAgentReady: true,
-      status: 'blocked' as const,
+      columnId: 'col-blocked' as const,
     };
     const result = applyFilters(tasks, column, filterState);
     assert.deepStrictEqual(
@@ -34,7 +34,7 @@ suite('Task filters', () => {
   });
 
   test('columnMatchesFilters uses fallback titles when name missing', () => {
-    const unnamedColumn: KanbanColumn = { id: 'col-2', name: '', position: 2 };
+    const unnamedColumn: Column = { id: 'col-2', name: '', position: 2 };
     const filterState = { text: parseTaskFilter('unassigned') };
     const matches = columnMatchesFilters(unnamedColumn, filterState);
     assert.strictEqual(matches, true);

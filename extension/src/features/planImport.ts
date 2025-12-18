@@ -2,12 +2,12 @@ import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import {
-  KanbanBoard,
-  KanbanColumn,
-  KanbanItem,
-  PlanTask,
+  Board,
+  Column,
+  Task,
+  ImportedTask,
   ParsedPlan,
-  PlanTaskListKey,
+  TaskListKey,
   COLUMN_FALLBACK_NAME,
   PLAN_EXTENSIONS,
 } from './types';
@@ -73,7 +73,7 @@ export function parsePlanJson(raw: string, filePath: string): ParsedPlan {
   if (!Array.isArray(data?.tasks)) {
     throw new Error('Plan JSON must include a "tasks" array.');
   }
-  const tasks: PlanTask[] = data.tasks.map((task: any, index: number) => normalizePlanTaskFromJson(task, index));
+  const tasks: ImportedTask[] = data.tasks.map((task: any, index: number) => normalizePlanTaskFromJson(task, index));
   return {
     title: typeof data.title === 'string' ? data.title : undefined,
     summary: typeof data.summary === 'string' ? data.summary : undefined,
@@ -86,7 +86,7 @@ export function parsePlanJson(raw: string, filePath: string): ParsedPlan {
   };
 }
 
-export function normalizePlanTaskFromJson(input: any, index: number): PlanTask {
+export function normalizePlanTaskFromJson(input: any, index: number): ImportedTask {
   const fallbackTitle = `Task ${index + 1}`;
   const title = typeof input?.title === 'string' && input.title.trim().length ? input.title.trim() : fallbackTitle;
   return {
@@ -113,15 +113,15 @@ export function normalizePlanTaskFromJson(input: any, index: number): PlanTask {
 
 export function parsePlanMarkdown(raw: string, filePath: string): ParsedPlan {
   const lines = raw.split(/\r?\n/);
-  const tasks: PlanTask[] = [];
+  const tasks: ImportedTask[] = [];
   const globalEntryPoints: string[] = [];
   const globalRisks: string[] = [];
   let section: 'tasks' | 'entrypoints' | 'risks' | undefined;
   let planTitle: string | undefined;
   let defaultColumn: string | undefined;
   let defaultStatus: string | undefined;
-  let currentTask: PlanTask | undefined;
-  let currentList: PlanTaskListKey | undefined;
+  let currentTask: ImportedTask | undefined;
+  let currentList: TaskListKey | undefined;
 
   const flushTask = () => {
     if (!currentTask) {
@@ -300,7 +300,7 @@ export function parsePlanMarkdown(raw: string, filePath: string): ParsedPlan {
   };
 }
 
-export function pushPlanTaskValue(task: PlanTask, key: PlanTaskListKey, value: string): void {
+export function pushPlanTaskValue(task: ImportedTask, key: TaskListKey, value: string): void {
   if (!value) {
     return;
   }
@@ -320,7 +320,7 @@ export function ensureStringArray(value: unknown): string[] | undefined {
   return undefined;
 }
 
-export function findOrCreateColumn(board: KanbanBoard, name: string): KanbanColumn {
+export function findOrCreateColumn(board: Board, name: string): Column {
   const normalized = (name || COLUMN_FALLBACK_NAME).trim();
   const match = board.columns.find(
     (column) => (column.name || COLUMN_FALLBACK_NAME).toLowerCase() === normalized.toLowerCase(),
@@ -328,7 +328,7 @@ export function findOrCreateColumn(board: KanbanBoard, name: string): KanbanColu
   if (match) {
     return match;
   }
-  const column: KanbanColumn = {
+  const column: Column = {
     id: createId('col', normalized),
     name: normalized,
     position: getNextColumnPosition(board.columns),
@@ -337,12 +337,12 @@ export function findOrCreateColumn(board: KanbanBoard, name: string): KanbanColu
   return column;
 }
 
-export type UpsertResult = { kind: 'created' | 'updated'; item: KanbanItem };
+export type UpsertResult = { kind: 'created' | 'updated'; item: Task };
 
 export function upsertPlanTask(
-  board: KanbanBoard,
-  column: KanbanColumn,
-  planTask: PlanTask,
+  board: Board,
+  column: Column,
+  planTask: ImportedTask,
   parsed: ParsedPlan,
   planPath: string,
 ): UpsertResult {
@@ -355,7 +355,7 @@ export function upsertPlanTask(
     applyPlanTask(existing, column, planTask, planPath, parsed.defaultStatus, entryPoints, risks);
     return { kind: 'updated', item: existing };
   }
-  const item: KanbanItem = {
+  const item: Task = {
     id: createId('task', planTask.title),
     columnId: column.id,
     title: planTask.title,
@@ -366,23 +366,23 @@ export function upsertPlanTask(
 }
 
 export function applyPlanTask(
-  item: KanbanItem,
-  column: KanbanColumn,
-  planTask: PlanTask,
+  item: Task,
+  column: Column,
+  planTask: ImportedTask,
   planPath: string,
-  defaultStatus: string | undefined,
+  _defaultStatus: string | undefined,
   entryPoints?: string[],
   risks?: string[],
 ): void {
   item.columnId = column.id;
   item.title = planTask.title;
   item.summary = planTask.summary ?? planTask.context?.split('\n')[0] ?? item.summary;
-  item.status = planTask.status ?? defaultStatus ?? item.status ?? 'todo';
+  // Note: status is now determined by columnId, not stored separately
   item.priority = planTask.priority ?? item.priority;
   item.tags = planTask.tags ?? item.tags;
   item.entryPoints = entryPoints ?? item.entryPoints;
   item.acceptanceCriteria = planTask.acceptanceCriteria ?? item.acceptanceCriteria;
-  item.dependencies = planTask.dependencies ?? item.dependencies;
+  item.upstream = planTask.upstream ?? planTask.dependencies ?? item.upstream;
   item.risks = risks ?? item.risks;
   item.checklist = planTask.checklist ?? item.checklist;
   item.context = planTask.context ?? item.context;
@@ -403,8 +403,8 @@ export function mergeLists(...lists: (string[] | undefined)[]): string[] | undef
 }
 
 export async function ensureTaskDocument(
-  task: KanbanItem,
-  planTask: PlanTask,
+  task: Task,
+  planTask: ImportedTask,
   relativePlanPath: string,
   columnName?: string,
 ): Promise<void> {
@@ -429,7 +429,6 @@ export async function ensureTaskDocument(
     '',
     `Source Plan: ${relativePlanPath}`,
     columnName ? `Column: ${columnName}` : undefined,
-    `Status: ${task.status ?? 'todo'}`,
     `Priority: ${task.priority ?? 'not set'}`,
   ].filter(isDefined);
   if (planTask.context) {

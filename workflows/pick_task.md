@@ -16,7 +16,8 @@ Optionally claim it immediately.
 ## Selection Criteria
 
 Tasks are ranked by:
-1. **Status**: Only `todo` tasks (unclaimed)
+
+1. **Column**: Only Backlog tasks (unclaimed)
 2. **Agent Ready**: Must have `agentReady: true`
 3. **Priority**: `high` > `medium` > `low`
 4. **Age**: Oldest `updatedAt` wins ties
@@ -29,7 +30,7 @@ Tasks are ranked by:
    python3 dev_ops/scripts/kanban_ops.py pick
    ```
 
-   Output: `📋 Suggested task: task-001 - Implement auth module`
+   Output: `📋 Suggested task: TASK-001 - Implement auth module`
 
 2. **Pick and Claim** (recommended):
 
@@ -38,9 +39,10 @@ Tasks are ranked by:
    ```
 
    Output:
-   ```
-   📋 Suggested task: task-001 - Implement auth module
-   ✅ Marked task-001 as in_progress
+
+   ```markdown
+   📋 Suggested task: TASK-001 - Implement auth module
+   ✅ Moved TASK-001 to In Progress
    ```
 
 3. **Via VS Code** (alternative):

@@ -1,47 +1,61 @@
-export type KanbanColumn = {
+/**
+ * DevOps Kanban Types
+ *
+ * Core types for the Kanban board, aligned with DevOps Framework terminology.
+ * - Column = Board column (status-based)
+ * - Task = Work item on the board (TASK-XXX)
+ * - Board = Collection of columns and tasks
+ */
+
+// ============================================================================
+// Core Types
+// ============================================================================
+
+export type Column = {
   id: string;
   name: string;
   position: number;
 };
 
-export type KanbanItem = {
-  id: string;
-  columnId: string;
+export type Task = {
+  id: string;                    // TASK-XXX format
+  columnId: string;              // Current column (determines status)
   title: string;
   summary?: string;
-  status?: string;
-  priority?: string;
+  priority?: string;             // high | medium | low
   tags?: string[];
   updatedAt?: string;
-  entryPoints?: string[];
   agentReady?: boolean;
+
+  // Artifact dependencies (mirrors feature.md upstream/downstream)
+  upstream?: string[];           // Artifacts this task depends on (e.g., RESEARCH-001)
+  downstream?: string[];         // Artifacts that will depend on this task's output
+
+  // DevOps workflow
+  workflow?: string;             // /create_plan, /research, etc.
+  entryPoints?: string[];        // Files involved in this task
+
+  // Prerequisites (must be met before starting)
+  prerequisites?: {
+    tasks?: string[];            // TASK-XXX that must be done first
+    approvals?: string[];        // Human approvals needed
+  };
+
+  // Completion criteria (definition of done)
+  completionCriteria?: {
+    artifacts?: string[];        // Must produce these (PLN-XXX, RES-XXX)
+    tests?: boolean;             // Tests must pass
+    review?: boolean;            // Needs human review
+  };
+
+  // Context from plan import or manual entry
   acceptanceCriteria?: string[];
-  dependencies?: string[];
   risks?: string[];
-  checklist?: string[];
+  checklist?: string[];          // Simple string checklist for sub-items
   context?: string;
   contextFile?: string;
-  contextRange?: {
-    startLine: number;
-    endLine: number;
-  };
+  contextRange?: { startLine: number; endLine: number };
   source?: TaskSource;
-  featureTasks?: FeatureTask[];
-};
-
-export type FeatureTaskItemStatus = 'todo' | 'in_progress' | 'blocked' | 'review' | 'done';
-
-export type FeatureTaskItem = {
-  id: string;
-  title: string;
-  status: FeatureTaskItemStatus;
-};
-
-export type FeatureTask = {
-  id: string;
-  title: string;
-  summary?: string;
-  items: FeatureTaskItem[];
 };
 
 export type TaskSource = {
@@ -50,11 +64,15 @@ export type TaskSource = {
   taskId?: string;
 };
 
-export type KanbanBoard = {
+export type Board = {
   version: number;
-  columns: KanbanColumn[];
-  items: KanbanItem[];
+  columns: Column[];
+  items: Task[];
 };
+
+// ============================================================================
+// Filtering Types
+// ============================================================================
 
 export type FilterToken = { type: 'text'; value: string } | { type: 'tag'; value: string };
 
@@ -66,57 +84,75 @@ export type TaskFilter = {
 export type FilterState = {
   text?: TaskFilter;
   onlyAgentReady?: boolean;
-  status?: 'blocked' | undefined;
+  columnId?: string;             // Filter by specific column
 };
 
-export type PlanTask = {
+// ============================================================================
+// Plan Import Types
+// ============================================================================
+
+export type ImportedTask = {
   id: string;
   title: string;
   summary?: string;
   column?: string;
-  status?: string;
   priority?: string;
   tags?: string[];
   entryPoints?: string[];
   acceptanceCriteria?: string[];
-  dependencies?: string[];
+  upstream?: string[];
+  downstream?: string[];
   risks?: string[];
   checklist?: string[];
   agentReady?: boolean;
   context?: string;
   contextRange?: { startLine: number; endLine: number };
+  // Legacy fields for backward compatibility with plan import
+  status?: string;
+  dependencies?: string[];
 };
 
-export type PlanTaskListKey = 'entryPoints' | 'acceptanceCriteria' | 'dependencies' | 'checklist' | 'risks';
+export type TaskListKey = 'entryPoints' | 'acceptanceCriteria' | 'upstream' | 'checklist' | 'risks' | 'dependencies';
 
 export type ParsedPlan = {
   title?: string;
   summary?: string;
-  tasks: PlanTask[];
+  tasks: ImportedTask[];
   defaultColumn?: string;
-  defaultStatus?: string;
+  defaultStatus?: string;        // Legacy field for plan import
   globalEntryPoints?: string[];
   globalRisks?: string[];
   filePath: string;
 };
 
+// ============================================================================
+// Constants
+// ============================================================================
+
 export const COLUMN_FALLBACK_NAME = 'Unassigned';
 export const PLAN_EXTENSIONS = new Set(['.md', '.markdown', '.json', '.jsonc']);
-export const DEFAULT_PLANNING_COLUMN = 'Planning';
-export const IDEA_COLUMN_NAME = 'I have an Idea';
-export const DEFAULT_COLUMN_BLUEPRINTS: ReadonlyArray<KanbanColumn> = [
-  { id: 'col-idea', name: 'I have an Idea', position: 1 },
-  { id: 'col-working', name: 'I am working through the idea', position: 2 },
-  { id: 'col-breakdown', name: 'I am breaking it down into pieces', position: 3 },
-  { id: 'col-iterating', name: 'I am iterating through implementation', position: 4 },
-  { id: 'col-testing', name: 'I am testing this feature component', position: 5 },
-  { id: 'col-ready', name: 'This component is ready', position: 6 },
-  { id: 'col-complete', name: 'Feature complete', position: 7 },
+export const DEFAULT_COLUMN_NAME = 'Backlog';
+
+/**
+ * Default 7-column structure aligned with DevOps workflow.
+ *
+ * | Column      | Purpose                    | Tied Artifact |
+ * |-------------|----------------------------|---------------|
+ * | Backlog     | Work not yet started       | -             |
+ * | Research    | Producing RES-XXX          | research.md   |
+ * | Planning    | Producing PLN-XXX          | plan.md       |
+ * | In Progress | Active implementation      | -             |
+ * | Review      | Verification/testing       | -             |
+ * | Blocked     | Waiting on dependency      | -             |
+ * | Done        | Completed work             | -             |
+ */
+export const DEFAULT_COLUMN_BLUEPRINTS: ReadonlyArray<Column> = [
+  { id: 'col-backlog', name: 'Backlog', position: 1 },
+  { id: 'col-research', name: 'Research', position: 2 },
+  { id: 'col-planning', name: 'Planning', position: 3 },
+  { id: 'col-inprogress', name: 'In Progress', position: 4 },
+  { id: 'col-review', name: 'Review', position: 5 },
+  { id: 'col-blocked', name: 'Blocked', position: 6 },
+  { id: 'col-done', name: 'Done', position: 7 },
 ];
-export const FEATURE_ITEM_STATUSES: ReadonlySet<FeatureTaskItemStatus> = new Set([
-  'todo',
-  'in_progress',
-  'blocked',
-  'review',
-  'done',
-]);
+

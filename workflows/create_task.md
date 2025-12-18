@@ -52,7 +52,7 @@ Use [task.md](file:///home/nunoc/projects/dev_ops/templates/task.md).
 
 2. **Claim the Task** (when starting work):
    - Open the task in Card Details view
-   - Set status to `in_progress`
+   - Move task to "In Progress" column
    - Add your name/agent ID to indicate ownership
 
 3. **Execute Sub-tasks**:
@@ -62,7 +62,7 @@ Use [task.md](file:///home/nunoc/projects/dev_ops/templates/task.md).
 
 4. **Complete the Task**:
    - Run command: `Kanban: Mark Task Done`
-   - Add artifact IDs to the task's `entryPoints` field
+   - Add artifact IDs to the task's `downstream` field
    - Task moves to Done column automatically
 
 ## Multi-Agent Coordination
@@ -73,8 +73,8 @@ Before starting work, check for already-claimed tasks:
 - Or run `Kanban: Pick Next Task` for the extension to suggest work
 - Look for `agentReady: true` tasks without an assigned owner
 
-**Claimed tasks**: Have `status: in_progress` and an owner name
-**Available tasks**: Have `status: todo` and `agentReady: true`
+**Claimed tasks**: In `In Progress` column with an owner name
+**Available tasks**: In `Backlog` column with `agentReady: true`
 
 ## Exit Criteria
 

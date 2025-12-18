@@ -1,9 +1,10 @@
-import { KanbanColumn, KanbanItem, COLUMN_FALLBACK_NAME } from './types';
+import { Column, Task, Board, COLUMN_FALLBACK_NAME } from './types';
 
-export function compareTasks(a: KanbanItem, b: KanbanItem): number {
-  const statusDelta = getStatusRank(a.status) - getStatusRank(b.status);
-  if (statusDelta !== 0) {
-    return statusDelta;
+export function compareTasks(a: Task, b: Task): number {
+  // Sort by column rank (In Progress first, then Backlog, etc.)
+  const columnDelta = getColumnRank(a.columnId) - getColumnRank(b.columnId);
+  if (columnDelta !== 0) {
+    return columnDelta;
   }
   const priorityDelta = getPriorityRank(a.priority) - getPriorityRank(b.priority);
   if (priorityDelta !== 0) {
@@ -12,22 +13,53 @@ export function compareTasks(a: KanbanItem, b: KanbanItem): number {
   return getUpdatedAtRank(a.updatedAt) - getUpdatedAtRank(b.updatedAt);
 }
 
+/**
+ * Rank columns for sorting. Lower = higher priority in display.
+ * Active work columns come first.
+ */
+export function getColumnRank(columnId?: string): number {
+  switch (columnId) {
+    case 'col-inprogress':
+      return 0;  // Active work first
+    case 'col-research':
+      return 1;
+    case 'col-planning':
+      return 2;
+    case 'col-review':
+      return 3;
+    case 'col-backlog':
+      return 4;
+    case 'col-blocked':
+      return 5;
+    case 'col-done':
+      return 6;
+    default:
+      return 7;
+  }
+}
+
+/** @deprecated Use getColumnRank instead - kept for backward compatibility */
 export function getStatusRank(status?: string): number {
   switch (status?.toLowerCase()) {
     case 'in_progress':
     case 'in-progress':
     case 'doing':
+    case 'col-inprogress':
       return 0;
     case 'todo':
     case 'backlog':
+    case 'col-backlog':
       return 1;
     case 'blocked':
+    case 'col-blocked':
       return 2;
     case 'review':
     case 'in_review':
+    case 'col-review':
       return 3;
     case 'done':
     case 'complete':
+    case 'col-done':
       return 4;
     default:
       return 5;
@@ -72,7 +104,7 @@ export function compareNumbers(a?: number, b?: number): number {
   return 0;
 }
 
-export function sortColumnsForManager(columns: KanbanColumn[]): KanbanColumn[] {
+export function sortColumnsForManager(columns: Column[]): Column[] {
   return [...columns].sort((left, right) => {
     const positionDelta = compareNumbers(left.position, right.position);
     if (positionDelta !== 0) {
@@ -84,7 +116,7 @@ export function sortColumnsForManager(columns: KanbanColumn[]): KanbanColumn[] {
   });
 }
 
-export function getNextColumnPosition(columns: KanbanColumn[]): number {
+export function getNextColumnPosition(columns: Column[]): number {
   if (!columns.length) {
     return 1;
   }
@@ -140,3 +172,17 @@ export function slugify(value: string): string {
 export function isDefined<T>(value: T | undefined | null): value is T {
   return value !== undefined && value !== null;
 }
+
+/**
+ * Generate a unique task ID in TASK-XXX format.
+ * Finds the next available number by checking existing IDs.
+ */
+export function createTaskId(board: Board): string {
+  const existingIds = new Set(board.items.map((item) => item.id));
+  let num = 1;
+  while (existingIds.has(`TASK-${num.toString().padStart(3, '0')}`)) {
+    num++;
+  }
+  return `TASK-${num.toString().padStart(3, '0')}`;
+}
+

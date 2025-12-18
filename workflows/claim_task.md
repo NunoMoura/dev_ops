@@ -1,5 +1,5 @@
 ---
-description: Claim a specific task by marking it as in progress.
+description: Claim a specific task by moving it to In Progress.
 ---
 
 # Claim Task Workflow
@@ -12,17 +12,17 @@ other agents or developers from starting the same work.
 ## Prerequisites
 
 - [ ] Task ID known (e.g., from `/list_tasks` or Kanban board)
-- [ ] Task is in `todo` status
+- [ ] Task is in Backlog column
 
 ## Steps
 
 1. **Claim by Task ID**:
 
    ```bash
-   python3 dev_ops/scripts/kanban_ops.py claim task-001
+   python3 dev_ops/scripts/kanban_ops.py claim TASK-001
    ```
 
-   Output: `✅ Marked task-001 as in_progress`
+   Output: `✅ Moved TASK-001 to In Progress`
 
 2. **Via VS Code** (alternative):
    - Right-click task in Kanban view
@@ -33,13 +33,12 @@ other agents or developers from starting the same work.
 Before claiming, verify the task is available:
 
 ```bash
-python3 dev_ops/scripts/kanban_ops.py list --status todo
+python3 dev_ops/scripts/kanban_ops.py list --column col-backlog
 ```
 
 > [!WARNING]
-> Do not claim tasks that are already `in_progress`.
+> Do not claim tasks that are already in `In Progress` column.
 
 ## Exit Criteria
 
-- [ ] Task status changed to `in_progress`
-- [ ] Task appears in "In Progress" or equivalent column
+- [ ] Task moved to "In Progress" column

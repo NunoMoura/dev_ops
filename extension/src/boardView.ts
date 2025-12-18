@@ -11,7 +11,7 @@ export type BoardViewTask = {
   columnId: string;
   title: string;
   summary?: string;
-  status?: string;
+  columnName?: string;           // Column display name (replaces status)
   priority?: string;
   tags?: string[];
   agentReady?: boolean;
@@ -43,7 +43,7 @@ export class KanbanBoardViewProvider implements vscode.WebviewViewProvider {
   readonly onDidRequestOpenTask = this.onOpenEmitter.event;
   readonly onDidRequestCreateTask = this.onCreateEmitter.event;
 
-  constructor(private readonly extensionUri: vscode.Uri) {}
+  constructor(private readonly extensionUri: vscode.Uri) { }
 
   resolveWebviewView(webviewView: vscode.WebviewView): void {
     this.view = webviewView;

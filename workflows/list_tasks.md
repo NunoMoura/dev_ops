@@ -6,12 +6,11 @@ description: List and filter Kanban board tasks.
 
 ## Purpose
 
-View tasks on the Kanban board with optional filtering by status, readiness,
-or column.
+View tasks on the Kanban board with optional filtering by column or readiness.
 
 ## Prerequisites
 
-- [ ] Kanban board initialized (`local/kanban.json` exists)
+- [ ] Kanban board initialized (`dev_ops/kanban/board.json` exists)
 
 ## Steps
 
@@ -21,11 +20,11 @@ or column.
    python3 dev_ops/scripts/kanban_ops.py list
    ```
 
-2. **Filter by Status**:
+2. **Filter by Column**:
 
    ```bash
-   python3 dev_ops/scripts/kanban_ops.py list --status todo
-   python3 dev_ops/scripts/kanban_ops.py list --status in_progress
+   python3 dev_ops/scripts/kanban_ops.py list --column col-backlog
+   python3 dev_ops/scripts/kanban_ops.py list --column col-inprogress
    ```
 
 3. **Show Agent-Ready Tasks Only**:
@@ -40,11 +39,11 @@ or column.
 
 ## Output Format
 
-```
-  task-001: Implement auth module [todo]
-  task-002: Fix login bug [in_progress]
+```markdown
+TASK-001: Implement auth module [Backlog]
+TASK-002: Fix login bug [In Progress]
 ```
 
 ## Exit Criteria
 
-- [ ] Tasks displayed with ID, title, and status
+- [ ] Tasks displayed with ID, title, and column
