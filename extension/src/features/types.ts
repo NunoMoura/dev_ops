@@ -17,15 +17,19 @@ export type Column = {
   position: number;
 };
 
+export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'pending' | 'done';
+
 export type Task = {
   id: string;                    // TASK-XXX format
-  columnId: string;              // Current column (determines status)
+  columnId: string;              // Current column (workflow phase)
   title: string;
   summary?: string;
   priority?: string;             // high | medium | low
   tags?: string[];
   updatedAt?: string;
-  agentReady?: boolean;
+  status?: TaskStatus;           // Autonomy state (default: todo)
+  assignee?: string;             // Agent or human assigned to task
+  blockedBy?: string;            // Task ID blocking this one
 
   // Artifact dependencies (mirrors feature.md upstream/downstream)
   upstream?: string[];           // Artifacts this task depends on (e.g., RESEARCH-001)
@@ -83,8 +87,8 @@ export type TaskFilter = {
 
 export type FilterState = {
   text?: TaskFilter;
-  onlyAgentReady?: boolean;
   columnId?: string;             // Filter by specific column
+  status?: TaskStatus;           // Filter by status
 };
 
 // ============================================================================
@@ -104,11 +108,10 @@ export type ImportedTask = {
   downstream?: string[];
   risks?: string[];
   checklist?: string[];
-  agentReady?: boolean;
+  status?: TaskStatus;
   context?: string;
   contextRange?: { startLine: number; endLine: number };
   // Legacy fields for backward compatibility with plan import
-  status?: string;
   dependencies?: string[];
 };
 
@@ -136,23 +139,24 @@ export const DEFAULT_COLUMN_NAME = 'Backlog';
 /**
  * Default 7-column structure aligned with DevOps workflow.
  *
- * | Column      | Purpose                    | Tied Artifact |
- * |-------------|----------------------------|---------------|
- * | Backlog     | Work not yet started       | -             |
- * | Research    | Producing RES-XXX          | research.md   |
- * | Planning    | Producing PLN-XXX          | plan.md       |
- * | In Progress | Active implementation      | -             |
- * | Testing     | Validation & test creation | tests/        |
- * | Blocked     | Waiting on dependency      | -             |
- * | Done        | Completed work             | PR            |
+ * | Column       | Purpose                    | Tied Artifact |
+ * |--------------|----------------------------|---------------|
+ * | Backlog      | Work not yet started       | -             |
+ * | Research     | Producing RES-XXX          | research.md   |
+ * | Planning     | Producing PLN-XXX          | plan.md       |
+ * | Implementing | Active implementation      | -             |
+ * | Review       | Awaiting code review       | PR            |
+ * | Testing      | Validation & test creation | tests/        |
+ * | Done         | Completed work             | -             |
  */
 export const DEFAULT_COLUMN_BLUEPRINTS: ReadonlyArray<Column> = [
   { id: 'col-backlog', name: 'Backlog', position: 1 },
   { id: 'col-research', name: 'Research', position: 2 },
   { id: 'col-planning', name: 'Planning', position: 3 },
-  { id: 'col-inprogress', name: 'In Progress', position: 4 },
-  { id: 'col-testing', name: 'Testing', position: 5 },
-  { id: 'col-blocked', name: 'Blocked', position: 6 },
+  { id: 'col-implementing', name: 'Implementing', position: 4 },
+  { id: 'col-review', name: 'Review', position: 5 },
+  { id: 'col-testing', name: 'Testing', position: 6 },
   { id: 'col-done', name: 'Done', position: 7 },
 ];
+
 

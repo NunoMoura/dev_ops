@@ -7,7 +7,7 @@ export function buildTaskDescription(task: Task): string | undefined {
   const parts = [
     task.columnId,
     task.priority,
-    task.agentReady ? 'agentReady' : undefined,
+    task.status ? `status:${task.status}` : undefined,
     task.tags?.length ? task.tags.join(', ') : undefined,
   ].filter(isDefined);
   return parts.length ? parts.join(' • ') : undefined;
@@ -19,7 +19,7 @@ export function buildTaskTooltip(task: Task, columnName: string): string {
     '',
     `Column: ${columnName || COLUMN_FALLBACK_NAME}`,
     `Priority: ${task.priority ?? 'not set'}`,
-    `Agent Ready: ${task.agentReady ? 'yes' : 'no'}`,
+    `Status: ${task.status ?? 'todo'}`,
     task.workflow ? `Workflow: ${task.workflow}` : undefined,
     task.summary ? `Summary: ${task.summary}` : undefined,
     task.tags?.length ? `Tags: ${task.tags.join(', ')}` : undefined,
@@ -35,7 +35,7 @@ export function buildTaskDetail(task: Task, columnName: string): string {
   const detail = [
     `Column: ${columnName || COLUMN_FALLBACK_NAME}`,
     `Priority: ${task.priority ?? 'not set'}`,
-    `Agent Ready: ${task.agentReady ? 'yes' : 'no'}`,
+    `Status: ${task.status ?? 'todo'}`,
     task.workflow ? `Workflow: ${task.workflow}` : undefined,
     task.tags?.length ? `Tags: ${task.tags.join(', ')}` : undefined,
     task.updatedAt ? `Updated: ${task.updatedAt}` : undefined,
@@ -71,7 +71,7 @@ export function buildCardPayload(task: Task, columnName: string): TaskDetailsPay
     tags: task.tags?.join(', '),
     priority: task.priority,
     columnId: task.columnId,
-    agentReady: task.agentReady,
+    status: task.status,
     column: columnName,
     workflow: task.workflow,
     upstream: task.upstream,
@@ -88,7 +88,7 @@ export function buildCodexPrompt(task: Task, columnName: string): string {
     '',
     `Column: ${columnName}`,
     `Priority: ${task.priority ?? 'not set'}`,
-    `Agent Ready: ${task.agentReady ? 'yes' : 'no'}`,
+    `Status: ${task.status ?? 'todo'}`,
     task.workflow ? `Workflow: ${task.workflow}` : undefined,
     task.tags?.length ? `Tags: ${task.tags.join(', ')}` : undefined,
     task.upstream?.length ? `Upstream: ${task.upstream.join(', ')}` : undefined,

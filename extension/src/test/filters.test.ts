@@ -5,9 +5,9 @@ import { Column, Task } from '../features/types';
 suite('Task filters', () => {
   const column: Column = { id: 'col-1', name: 'Implementation', position: 1 };
   const tasks: Task[] = [
-    { id: '1', columnId: 'col-blocked', title: 'Ship auth', agentReady: true },
-    { id: '2', columnId: 'col-backlog', title: 'Write docs', agentReady: false },
-    { id: '3', columnId: 'col-blocked', title: 'Tidy backlog', agentReady: false, tags: ['ops'] },
+    { id: '1', columnId: 'col-blocked', title: 'Ship auth', status: 'blocked' },
+    { id: '2', columnId: 'col-backlog', title: 'Write docs', status: 'todo' },
+    { id: '3', columnId: 'col-blocked', title: 'Tidy backlog', status: 'todo', tags: ['ops'] },
   ];
 
   test('parseTaskFilter extracts text and tag tokens', () => {
@@ -23,7 +23,7 @@ suite('Task filters', () => {
   test('applyFilters requires every flag to match', () => {
     const filterState = {
       text: parseTaskFilter('ship'),
-      onlyAgentReady: true,
+      status: 'blocked' as const,
       columnId: 'col-blocked' as const,
     };
     const result = applyFilters(tasks, column, filterState);

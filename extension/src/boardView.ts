@@ -11,10 +11,10 @@ export type BoardViewTask = {
   columnId: string;
   title: string;
   summary?: string;
-  columnName?: string;           // Column display name (replaces status)
+  columnName?: string;           // Column display name
   priority?: string;
+  status?: string;               // Autonomy state: todo, in_progress, blocked, pending, done
   tags?: string[];
-  agentReady?: boolean;
   updatedAt?: string;
 };
 
@@ -137,29 +137,43 @@ function getBoardHtml(panelMode = false): string {
     ? `
       body {
         background: var(--vscode-editor-background);
-        padding: 16px 24px;
+        padding: 12px 16px;
+        height: 100vh;
+        overflow: hidden;
       }
       #board {
         display: flex;
         flex-direction: row;
-        gap: 16px;
+        gap: 12px;
         overflow-x: auto;
-        padding-bottom: 16px;
+        padding-bottom: 12px;
         flex: 1;
-        align-items: flex-start;
+        align-items: stretch;
+        height: calc(100vh - 80px);
       }
       .board-column {
-        flex: 0 0 300px;
-        min-width: 280px;
-        max-width: 320px;
-        min-height: 400px;
-        max-height: calc(100vh - 120px);
+        flex: 0 0 240px;
+        min-width: 220px;
+        max-width: 280px;
+        display: flex;
+        flex-direction: column;
+        max-height: 100%;
+      }
+      .task-list {
+        flex: 1;
+        overflow-y: auto;
+        min-height: 0;
       }
       .task-card {
-        padding: 12px;
+        padding: 8px 10px;
       }
       .task-title {
-        font-size: 14px;
+        font-size: 13px;
+      }
+      .task-summary {
+        font-size: 11px;
+        max-height: 32px;
+        overflow: hidden;
       }
     `
     : `
@@ -303,6 +317,27 @@ function getBoardHtml(panelMode = false): string {
         font-size: 11px;
         color: var(--vscode-descriptionForeground);
       }
+      .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: var(--vscode-descriptionForeground);
+      }
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+      .status-in_progress { background: #22c55e; } /* Green */
+      .status-blocked { background: #ef4444; }     /* Red */
+      .status-pending { background: #f59e0b; }     /* Orange */
+      .status-done .status-dot { display: none; }
+      .status-check {
+        color: #22c55e;
+        font-size: 14px;
+      }
       .card-actions {
         display: flex;
         justify-content: flex-end;
@@ -368,12 +403,48 @@ function getBoardHtml(panelMode = false): string {
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
         font-size: 12px;
       }
+      .board-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0 16px 0;
+        border-bottom: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
+        margin-bottom: 16px;
+      }
+      .board-title {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--vscode-foreground);
+      }
+      .add-task-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 6px;
+        color: white;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.1s ease, box-shadow 0.15s ease;
+      }
+      .add-task-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+      .add-task-button:active {
+        transform: translateY(0);
+      }
     </style>
   `;
 
   const body = /* HTML */ `
     <body>
       <div class="board-wrapper">
+        <div class="board-header">
+          <h2 class="board-title">Kanban Board</h2>
+          <button id="addTaskBtn" class="add-task-button" type="button" title="Create Task">New Task</button>
+        </div>
         <div id="selectionBanner" class="selection-banner hidden">
           <div>
             <strong id="selectionCount"></strong>
@@ -457,13 +528,8 @@ function getBoardHtml(panelMode = false): string {
             count.className = 'column-count';
             const tasks = getTasksForColumn(column.id);
             count.textContent = String(tasks.length);
-            const actions = document.createElement('div');
-            actions.className = 'column-actions';
-            const addButton = createColumnAddButton(column.id);
-            actions.appendChild(count);
-            actions.appendChild(addButton);
             header.appendChild(title);
-            header.appendChild(actions);
+            header.appendChild(count);
             columnEl.appendChild(header);
 
             const list = document.createElement('div');
@@ -524,6 +590,29 @@ function getBoardHtml(panelMode = false): string {
             card.appendChild(tags);
           }
 
+          // Status indicator (traffic light)
+          const status = task.status || 'todo';
+          if (status !== 'todo') {
+            const statusIndicator = document.createElement('div');
+            statusIndicator.className = 'status-indicator';
+            if (status === 'done') {
+              statusIndicator.innerHTML = '<span class="status-check">✓</span> Done';
+            } else {
+              const dot = document.createElement('span');
+              dot.className = 'status-dot status-' + status;
+              statusIndicator.appendChild(dot);
+              const label = document.createElement('span');
+              const statusLabels = {
+                'in_progress': 'In Progress',
+                'blocked': 'Blocked',
+                'pending': 'Pending Approval'
+              };
+              label.textContent = statusLabels[status] || status;
+              statusIndicator.appendChild(label);
+            }
+            card.appendChild(statusIndicator);
+          }
+
           const actions = document.createElement('div');
           actions.className = 'card-actions';
           const openBtn = document.createElement('button');
@@ -543,14 +632,8 @@ function getBoardHtml(panelMode = false): string {
 
         function buildChips(task) {
           const chips = [];
-          if (task.status) {
-            chips.push(createChip(task.status.replace(/_/g, ' ')));
-          }
           if (task.priority) {
             chips.push(createChip(task.priority));
-          }
-          if (task.agentReady) {
-            chips.push(createChip('agent ready'));
           }
           if (task.updatedAt) {
             const date = new Date(task.updatedAt);
@@ -683,6 +766,13 @@ function getBoardHtml(panelMode = false): string {
           }
         });
         clearSelectionBtn?.addEventListener('click', clearSelection);
+        
+        // Add task button - triggers column selection
+        const addTaskBtn = document.getElementById('addTaskBtn');
+        addTaskBtn?.addEventListener('click', () => {
+          vscode.postMessage({ type: 'createTask' });
+        });
+        
         document.addEventListener('keydown', (event) => {
           if (event.key === 'Escape') {
             clearSelection();

@@ -47,17 +47,17 @@ export class KanbanTreeProvider implements vscode.TreeDataProvider<KanbanNode> {
     if (this.filter.text?.raw) {
       parts.push(this.filter.text.raw);
     }
-    if (this.filter.onlyAgentReady) {
-      parts.push('agentReady');
+    if (this.filter.status) {
+      parts.push(`status:${this.filter.status}`);
     }
-    if (this.filter.columnId === 'col-blocked') {
-      parts.push('blocked');
+    if (this.filter.columnId) {
+      parts.push(`column:${this.filter.columnId}`);
     }
     return parts.length ? parts.join(' | ') : undefined;
   }
 
   hasFilter(): boolean {
-    return Boolean(this.filter.text || this.filter.onlyAgentReady || this.filter.columnId);
+    return Boolean(this.filter.text || this.filter.status || this.filter.columnId);
   }
 
   async setTextFilter(raw?: string): Promise<void> {
@@ -70,23 +70,24 @@ export class KanbanTreeProvider implements vscode.TreeDataProvider<KanbanNode> {
     await this.refresh();
   }
 
-  async toggleAgentReadyFilter(): Promise<void> {
-    this.filter = { ...this.filter, onlyAgentReady: !this.filter.onlyAgentReady };
+  async toggleStatusFilter(status: string): Promise<void> {
+    const newStatus = this.filter.status === status ? undefined : status;
+    this.filter = { ...this.filter, status: newStatus as any };
     await this.refresh();
   }
 
   async toggleBlockedFilter(): Promise<void> {
-    const columnId = this.filter.columnId === 'col-blocked' ? undefined : 'col-blocked';
-    this.filter = { ...this.filter, columnId };
+    const status = this.filter.status === 'blocked' ? undefined : 'blocked';
+    this.filter = { ...this.filter, status: status as any };
     await this.refresh();
   }
 
-  isAgentReadyFilterEnabled(): boolean {
-    return Boolean(this.filter.onlyAgentReady);
+  isStatusFilterEnabled(status: string): boolean {
+    return this.filter.status === status;
   }
 
   isBlockedFilterEnabled(): boolean {
-    return this.filter.columnId === 'col-blocked';
+    return this.filter.status === 'blocked';
   }
 
   async refresh(): Promise<void> {
@@ -217,8 +218,8 @@ export class KanbanTreeProvider implements vscode.TreeDataProvider<KanbanNode> {
           summary: task.summary,
           columnName: columnNode.column.name,
           priority: task.priority,
+          status: task.status,
           tags: task.tags,
-          agentReady: task.agentReady,
           updatedAt: task.updatedAt,
         });
       }

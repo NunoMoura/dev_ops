@@ -15,24 +15,33 @@ import { readKanban, registerKanbanWatchers } from './features/boardStore';
 import { COLUMN_FALLBACK_NAME } from './features/types';
 import { buildCardPayload } from './features/taskPresentation';
 import { formatError } from './features/errors';
+import { createStatusBar, StatusBarManager } from './statusBar';
 
 export async function activate(context: vscode.ExtensionContext) {
-  // Register DevOps: Initialize command
-  context.subscriptions.push(registerInitializeCommand(context));
-
-  const services = await initializeKanbanServices(context);
-  const syncFilterUI = createFilterSynchronizer(services.provider, services.kanbanView);
-
-  bindKanbanViews(context, services, syncFilterUI);
-
+  console.log('DevOps extension activating...');
   try {
-    await services.provider.refresh();
-  } catch (error) {
-    console.warn('Kanban board not loaded on activation:', error);
-  }
+    // Register DevOps: Initialize command first (always works)
+    context.subscriptions.push(registerInitializeCommand(context));
 
-  await registerKanbanWatchers(services.provider, context);
-  registerKanbanCommands(context, services, syncFilterUI);
+    const services = await initializeKanbanServices(context);
+    const syncFilterUI = createFilterSynchronizer(services.provider, services.kanbanView);
+
+    bindKanbanViews(context, services, syncFilterUI);
+
+    try {
+      await services.provider.refresh();
+    } catch (error) {
+      console.warn('Kanban board not loaded on activation:', error);
+    }
+
+    await registerKanbanWatchers(services.provider, context);
+    registerKanbanCommands(context, services, syncFilterUI);
+
+    console.log('DevOps extension activated successfully');
+  } catch (error) {
+    console.error('DevOps extension activation failed:', error);
+    vscode.window.showErrorMessage(`DevOps extension failed to activate: ${formatError(error)}`);
+  }
 }
 
 export function deactivate() { }
@@ -40,6 +49,7 @@ export function deactivate() { }
 type KanbanExtensionServices = KanbanCommandServices & {
   boardPanelManager: KanbanBoardPanelManager;
   managerProvider: KanbanManagerProvider;
+  statusBar: StatusBarManager;
 };
 
 async function initializeKanbanServices(context: vscode.ExtensionContext): Promise<KanbanExtensionServices> {
@@ -62,7 +72,10 @@ async function initializeKanbanServices(context: vscode.ExtensionContext): Promi
   context.subscriptions.push(kanbanManagerView, managerDragController);
   await managerProvider.refresh();
 
-  return { provider, kanbanView, taskDetailsProvider, boardPanelManager, managerProvider };
+  // Create status bar
+  const statusBar = createStatusBar(context);
+
+  return { provider, kanbanView, taskDetailsProvider, boardPanelManager, managerProvider, statusBar };
 }
 
 function createFilterSynchronizer(provider: KanbanTreeProvider, kanbanView: vscode.TreeView<KanbanNode>): () => void {
@@ -71,7 +84,7 @@ function createFilterSynchronizer(provider: KanbanTreeProvider, kanbanView: vsco
     const active = provider.hasFilter();
     kanbanView.message = active && summary ? `Filter: ${summary}` : undefined;
     void vscode.commands.executeCommand('setContext', 'kanbanFilterActive', active);
-    void vscode.commands.executeCommand('setContext', 'kanbanFilterAgentReady', provider.isAgentReadyFilterEnabled());
+    void vscode.commands.executeCommand('setContext', 'kanbanFilterAgentReady', provider.isStatusFilterEnabled('blocked'));
     void vscode.commands.executeCommand('setContext', 'kanbanFilterBlocked', provider.isBlockedFilterEnabled());
   };
   sync();
@@ -87,6 +100,16 @@ function bindKanbanViews(
   registerBoardSnapshotSync(context, services);
   registerBoardViewRequests(context, services);
   registerCardViewHandlers(context, services, syncFilterUI);
+
+  // Auto-open board when clicking on sidebar icon
+  const { kanbanView, boardPanelManager } = services;
+  context.subscriptions.push(
+    kanbanView.onDidChangeVisibility((e) => {
+      if (e.visible) {
+        boardPanelManager.openBoard();
+      }
+    })
+  );
 }
 
 function registerCardSelectionSync(context: vscode.ExtensionContext, services: KanbanExtensionServices): void {
@@ -111,12 +134,18 @@ function registerCardSelectionSync(context: vscode.ExtensionContext, services: K
 }
 
 function registerBoardSnapshotSync(context: vscode.ExtensionContext, services: KanbanExtensionServices): void {
-  const { provider, boardPanelManager, managerProvider } = services;
+  const { provider, boardPanelManager, managerProvider, statusBar } = services;
   boardPanelManager.setBoard(provider.getBoardViewSnapshot());
+
+  // Update status bar with initial board state
+  readKanban().then((board) => statusBar.update(board)).catch(() => { });
+
   context.subscriptions.push(
     provider.onDidUpdateBoardView((snapshot) => {
       boardPanelManager.setBoard(snapshot);
       void managerProvider.refresh();
+      // Update status bar when board changes
+      readKanban().then((board) => statusBar.update(board)).catch(() => { });
     }),
   );
 }

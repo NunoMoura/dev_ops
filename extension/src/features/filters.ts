@@ -1,4 +1,4 @@
-import { Column, Task, FilterState, TaskFilter, FilterToken, COLUMN_FALLBACK_NAME } from './types';
+import { Column, Task, FilterState, TaskFilter, FilterToken, COLUMN_FALLBACK_NAME, TaskStatus } from './types';
 import { isDefined } from './kanbanData';
 
 export function parseTaskFilter(raw?: string): TaskFilter | undefined {
@@ -30,18 +30,19 @@ export function parseTaskFilter(raw?: string): TaskFilter | undefined {
 }
 
 export function applyFilters(tasks: Task[], column: Column, filter: FilterState): Task[] {
-  if (!filter.text && !filter.onlyAgentReady && !filter.columnId) {
+  if (!filter.text && !filter.status && !filter.columnId) {
     return tasks;
   }
   return tasks.filter((task) => matchesAllFilters(task, column, filter));
 }
 
 export function matchesAllFilters(item: Task, column: Column, filter: FilterState): boolean {
-  if (filter.onlyAgentReady && !item.agentReady) {
+  // Filter by status
+  if (filter.status && item.status !== filter.status) {
     return false;
   }
-  // Filter by blocked column
-  if (filter.columnId === 'col-blocked' && item.columnId !== 'col-blocked') {
+  // Filter by column (e.g., blocked tasks in any column)
+  if (filter.columnId && item.columnId !== filter.columnId) {
     return false;
   }
   if (filter.text && !matchesTextFilter(item, column, filter.text)) {

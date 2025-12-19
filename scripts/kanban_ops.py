@@ -6,30 +6,50 @@ Provides Python functions to interact with the Kanban board stored at
 dev_ops/kanban/board.json. Supports task prerequisites, completion criteria,
 and artifact linking with identifiers.
 
-Column = Status Model:
-- Tasks are assigned to columns which determine their status
-- 7 columns: Backlog, Research, Planning, In Progress, Testing, Blocked, Done
+Column = Workflow phase, Status = Autonomy state:
+- Columns: Backlog, Research, Planning, Implementing, Review, Testing, Done
+- Status: todo, in_progress, blocked, pending, done
 """
 
+import argparse
 import json
 import os
-import sys
-import argparse
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any, Optional
 
-# Add current directory to sys.path
+# Valid priority values
+VALID_PRIORITIES = frozenset({"high", "medium", "low", "p0", "p1", "p2"})
 
-# Default column definitions (matches extension types.ts)
-DEFAULT_COLUMNS = [
-    {"id": "col-backlog", "name": "Backlog", "position": 1},
-    {"id": "col-research", "name": "Research", "position": 2},
-    {"id": "col-planning", "name": "Planning", "position": 3},
-    {"id": "col-inprogress", "name": "In Progress", "position": 4},
-    {"id": "col-testing", "name": "Testing", "position": 5},
-    {"id": "col-blocked", "name": "Blocked", "position": 6},
-    {"id": "col-done", "name": "Done", "position": 7},
-]
+
+def _load_default_columns() -> list[dict]:
+    """Load default columns from shared columns.json."""
+    # Look for columns.json relative to script location
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    # Try framework root first (one level up from scripts/)
+    columns_path = os.path.join(os.path.dirname(script_dir), "columns.json")
+
+    if os.path.exists(columns_path):
+        try:
+            with open(columns_path) as f:
+                data = json.load(f)
+                return data.get("columns", [])
+        except json.JSONDecodeError:
+            print(f"⚠️ Warning: Check {columns_path} - Invalid JSON. Using defaults.")
+
+    # Fallback to hardcoded if file not found or invalid
+    return [
+        {"id": "col-backlog", "name": "Backlog", "position": 1},
+        {"id": "col-research", "name": "Research", "position": 2},
+        {"id": "col-planning", "name": "Planning", "position": 3},
+        {"id": "col-implementing", "name": "Implementing", "position": 4},
+        {"id": "col-review", "name": "Review", "position": 5},
+        {"id": "col-testing", "name": "Testing", "position": 6},
+        {"id": "col-done", "name": "Done", "position": 7},
+    ]
+
+
+# Default column definitions (loaded from columns.json)
+DEFAULT_COLUMNS = _load_default_columns()
 
 
 def get_board_path(project_root: Optional[str] = None) -> str:
@@ -46,7 +66,7 @@ def load_board(project_root: Optional[str] = None) -> dict:
     board_path = get_board_path(project_root)
     if not os.path.exists(board_path):
         return {"version": 1, "columns": DEFAULT_COLUMNS.copy(), "items": []}
-    with open(board_path, "r") as f:
+    with open(board_path) as f:
         board = json.load(f)
     # Ensure columns exist
     if not board.get("columns"):
@@ -73,16 +93,16 @@ def get_column_name(board: dict, column_id: str) -> str:
 def get_tasks(
     project_root: Optional[str] = None,
     column_id: Optional[str] = None,
-    agent_ready: Optional[bool] = None,
-) -> List[Dict[str, Any]]:
-    """Get tasks from the board, optionally filtered by column or agentReady."""
+    status: Optional[str] = None,
+) -> list[dict[str, Any]]:
+    """Get tasks from the board, optionally filtered by column or status."""
     board = load_board(project_root)
     tasks = board.get("items", [])
 
     if column_id:
         tasks = [t for t in tasks if t.get("columnId") == column_id]
-    if agent_ready is not None:
-        tasks = [t for t in tasks if t.get("agentReady") == agent_ready]
+    if status is not None:
+        tasks = [t for t in tasks if t.get("status") == status]
 
     return tasks
 
@@ -92,13 +112,20 @@ def create_task(
     summary: str = "",
     workflow: Optional[str] = None,
     priority: str = "medium",
-    agent_ready: bool = False,
-    upstream: Optional[List[str]] = None,
-    downstream: Optional[List[str]] = None,
+    status: str = "todo",
+    assignee: Optional[str] = None,
+    upstream: Optional[list[str]] = None,
+    downstream: Optional[list[str]] = None,
     column_id: str = "col-backlog",
     project_root: Optional[str] = None,
 ) -> str:
     """Create a new task on the Kanban board. Returns the task ID."""
+    # Validate priority
+    if priority.lower() not in VALID_PRIORITIES:
+        raise ValueError(
+            f"Invalid priority: {priority}. Must be one of: {', '.join(sorted(VALID_PRIORITIES))}"
+        )
+
     board = load_board(project_root)
 
     # Generate unique ID (TASK-XXX format)
@@ -115,7 +142,8 @@ def create_task(
         "summary": summary,
         "workflow": workflow,
         "priority": priority,
-        "agentReady": agent_ready,
+        "status": status,
+        "assignee": assignee,
         "upstream": upstream or [],
         "downstream": downstream or [],
         "prerequisites": {"tasks": [], "approvals": []},
@@ -176,9 +204,7 @@ def add_downstream(
     return False
 
 
-def move_to_column(
-    task_id: str, column_id: str, project_root: Optional[str] = None
-) -> bool:
+def move_to_column(task_id: str, column_id: str, project_root: Optional[str] = None) -> bool:
     """Move a task to a specific column."""
     board = load_board(project_root)
 
@@ -194,14 +220,28 @@ def move_to_column(
     return False
 
 
-def mark_in_progress(task_id: str, project_root: Optional[str] = None) -> bool:
-    """Move a task to In Progress column."""
-    return move_to_column(task_id, "col-inprogress", project_root)
+def mark_implementing(task_id: str, project_root: Optional[str] = None) -> bool:
+    """Move a task to Implementing column."""
+    return move_to_column(task_id, "col-implementing", project_root)
 
 
-def mark_blocked(task_id: str, project_root: Optional[str] = None) -> bool:
-    """Move a task to Blocked column."""
-    return move_to_column(task_id, "col-blocked", project_root)
+def set_status(task_id: str, status: str, project_root: Optional[str] = None) -> bool:
+    """Set the status of a task (todo, in_progress, blocked, pending, done)."""
+    valid_statuses = {"todo", "in_progress", "blocked", "pending", "done"}
+    if status not in valid_statuses:
+        print(f"⚠️ Invalid status: {status}. Must be one of: {', '.join(valid_statuses)}")
+        return False
+
+    board = load_board(project_root)
+    for task in board.get("items", []):
+        if task.get("id") == task_id:
+            task["status"] = status
+            task["updatedAt"] = datetime.utcnow().isoformat() + "Z"
+            save_board(board, project_root)
+            print(f"✅ Set {task_id} status to {status}")
+            return True
+    print(f"⚠️ Task {task_id} not found")
+    return False
 
 
 def create_pr(
@@ -306,16 +346,14 @@ def pick_task(project_root: Optional[str] = None) -> Optional[dict]:
 
     Selection criteria:
     1. In Backlog column (not yet started)
-    2. agentReady is True
+    2. Status is 'todo' (ready to work on)
     3. Priority order: high > medium > low
     4. Oldest updatedAt wins ties
     """
-    tasks = get_tasks(
-        project_root=project_root, column_id="col-backlog", agent_ready=True
-    )
+    tasks = get_tasks(project_root=project_root, column_id="col-backlog", status="todo")
 
     if not tasks:
-        print("ℹ️ No agent-ready tasks available")
+        print("ℹ️ No tasks available in Backlog")
         return None
 
     # Sort by priority (high first), then by updatedAt (oldest first)
@@ -351,10 +389,8 @@ def check_prerequisites(task: dict, project_root: Optional[str] = None) -> tuple
     return all_ok, missing
 
 
-def claim_task(
-    task_id: str, force: bool = False, project_root: Optional[str] = None
-) -> bool:
-    """Claim a task by moving it to In Progress. Validates prerequisites first."""
+def claim_task(task_id: str, force: bool = False, project_root: Optional[str] = None) -> bool:
+    """Claim a task by moving it to Implementing. Validates prerequisites first."""
     board = load_board(project_root)
 
     for task in board.get("items", []):
@@ -368,15 +404,19 @@ def claim_task(
                         print(f"   Missing tasks: {missing['tasks']}")
                     return False
 
-            return move_to_column(task_id, "col-inprogress", project_root)
+            # Move to Implementing and set status to in_progress
+            task["columnId"] = "col-implementing"
+            task["status"] = "in_progress"
+            task["updatedAt"] = datetime.utcnow().isoformat() + "Z"
+            save_board(board, project_root)
+            print(f"✅ Claimed {task_id} - moved to Implementing")
+            return True
 
     print(f"⚠️ Task {task_id} not found")
     return False
 
 
 if __name__ == "__main__":
-    import argparse
-
     parser = argparse.ArgumentParser(description="Kanban board operations.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -384,7 +424,9 @@ if __name__ == "__main__":
     list_parser = subparsers.add_parser("list", help="List tasks")
     list_parser.add_argument("--column", help="Filter by column ID (e.g., col-backlog)")
     list_parser.add_argument(
-        "--agent-ready", action="store_true", help="Show only agent-ready tasks"
+        "--status",
+        choices=["todo", "in_progress", "blocked", "pending", "done"],
+        help="Filter by status",
     )
 
     # Create task
@@ -392,11 +434,15 @@ if __name__ == "__main__":
     create_parser.add_argument("--title", required=True, help="Task title")
     create_parser.add_argument("--summary", default="", help="Task summary")
     create_parser.add_argument("--workflow", help="Workflow to follow")
-    create_parser.add_argument(
-        "--agent-ready", action="store_true", help="Mark as agent-ready"
-    )
+    create_parser.add_argument("--assignee", help="Agent or human assigned to task")
     create_parser.add_argument(
         "--column", default="col-backlog", help="Initial column (default: col-backlog)"
+    )
+    create_parser.add_argument(
+        "--priority",
+        default="medium",
+        choices=["high", "medium", "low"],
+        help="Task priority (default: medium)",
     )
 
     # Mark done
@@ -410,15 +456,20 @@ if __name__ == "__main__":
         help="Create a Pull Request using GitHub CLI",
     )
 
+    # Set status
+    status_parser = subparsers.add_parser("status", help="Set task status")
+    status_parser.add_argument("task_id", help="Task ID")
+    status_parser.add_argument(
+        "status", choices=["todo", "in_progress", "blocked", "pending", "done"], help="New status"
+    )
+
     # Add upstream
     upstream_parser = subparsers.add_parser("upstream", help="Add upstream dependency")
     upstream_parser.add_argument("task_id", help="Task ID")
     upstream_parser.add_argument("artifact_id", help="Artifact ID (e.g., PLN-001)")
 
     # Add downstream
-    downstream_parser = subparsers.add_parser(
-        "downstream", help="Add downstream dependency"
-    )
+    downstream_parser = subparsers.add_parser("downstream", help="Add downstream dependency")
     downstream_parser.add_argument("task_id", help="Task ID")
     downstream_parser.add_argument("artifact_id", help="Artifact ID")
 
@@ -429,16 +480,12 @@ if __name__ == "__main__":
 
     # Pick task
     pick_parser = subparsers.add_parser("pick", help="Pick next available task")
-    pick_parser.add_argument(
-        "--claim", action="store_true", help="Also claim the picked task"
-    )
+    pick_parser.add_argument("--claim", action="store_true", help="Also claim the picked task")
 
     # Claim task
     claim_parser = subparsers.add_parser("claim", help="Claim a task")
     claim_parser.add_argument("task_id", help="Task ID to claim")
-    claim_parser.add_argument(
-        "--force", action="store_true", help="Skip prerequisite check"
-    )
+    claim_parser.add_argument("--force", action="store_true", help="Skip prerequisite check")
 
     args = parser.parse_args()
 
@@ -446,21 +493,25 @@ if __name__ == "__main__":
         board = load_board()
         tasks = get_tasks(
             column_id=args.column,
-            agent_ready=True if args.agent_ready else None,
+            status=args.status,
         )
         for t in tasks:
             col_name = get_column_name(board, t.get("columnId", ""))
-            print(f"  {t['id']}: {t['title']} [{col_name}]")
+            status_str = t.get("status", "todo")
+            print(f"  {t['id']}: {t['title']} [{col_name}] ({status_str})")
     elif args.command == "create":
         create_task(
             title=args.title,
             summary=args.summary,
             workflow=args.workflow,
-            agent_ready=args.agent_ready,
+            priority=args.priority,
+            assignee=args.assignee,
             column_id=args.column,
         )
     elif args.command == "done":
         mark_done(args.task_id, outputs=args.outputs, create_pr_flag=args.create_pr)
+    elif args.command == "status":
+        set_status(args.task_id, args.status)
     elif args.command == "upstream":
         add_upstream(args.task_id, args.artifact_id)
     elif args.command == "downstream":

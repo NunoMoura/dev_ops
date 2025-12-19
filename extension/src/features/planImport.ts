@@ -97,7 +97,7 @@ export function normalizePlanTaskFromJson(input: any, index: number): ImportedTa
     title,
     summary: typeof input?.summary === 'string' ? input.summary.trim() || undefined : undefined,
     column: typeof input?.column === 'string' ? input.column.trim() || undefined : undefined,
-    status: typeof input?.status === 'string' ? input.status.trim() || undefined : undefined,
+    status: typeof input?.status === 'string' ? input.status.trim() as any || undefined : undefined,
     priority: typeof input?.priority === 'string' ? input.priority.trim() || undefined : undefined,
     tags: ensureStringArray(input?.tags) ?? parseTags(input?.tags),
     entryPoints: ensureStringArray(input?.entryPoints),
@@ -105,7 +105,6 @@ export function normalizePlanTaskFromJson(input: any, index: number): ImportedTa
     dependencies: ensureStringArray(input?.dependencies),
     risks: ensureStringArray(input?.risks),
     checklist: ensureStringArray(input?.checklist),
-    agentReady: typeof input?.agentReady === 'boolean' ? input.agentReady : undefined,
     context: typeof input?.context === 'string' ? input.context : undefined,
     contextRange: undefined,
   };
@@ -228,7 +227,7 @@ export function parsePlanMarkdown(raw: string, filePath: string): ParsedPlan {
           currentTask.column = value;
           break;
         case 'status':
-          currentTask.status = value.toLowerCase();
+          currentTask.status = value.toLowerCase() as any;
           break;
         case 'priority':
           currentTask.priority = value.toLowerCase();
@@ -255,7 +254,7 @@ export function parsePlanMarkdown(raw: string, filePath: string): ParsedPlan {
           break;
         case 'agentready':
         case 'agent ready':
-          currentTask.agentReady = parseBooleanFromString(value);
+          // Legacy field - ignored, use status instead
           break;
         case 'risks':
           currentTask.risks = value ? splitListValues(value) : undefined;
@@ -388,7 +387,7 @@ export function applyPlanTask(
   item.context = planTask.context ?? item.context;
   item.contextFile = planPath;
   item.contextRange = planTask.contextRange ?? item.contextRange;
-  item.agentReady = planTask.agentReady ?? item.agentReady;
+  item.status = planTask.status ?? item.status;
   item.source = { type: 'plan', planFile: planPath, taskId: planTask.id };
   item.updatedAt = new Date().toISOString();
 }

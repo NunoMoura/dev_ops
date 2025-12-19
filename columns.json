@@ -1,0 +1,41 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "description": "Default 7-column Kanban structure aligned with DevOps Framework phases",
+    "columns": [
+        {
+            "id": "col-backlog",
+            "name": "Backlog",
+            "position": 1
+        },
+        {
+            "id": "col-research",
+            "name": "Research",
+            "position": 2
+        },
+        {
+            "id": "col-planning",
+            "name": "Planning",
+            "position": 3
+        },
+        {
+            "id": "col-implementing",
+            "name": "Implementing",
+            "position": 4
+        },
+        {
+            "id": "col-review",
+            "name": "Review",
+            "position": 5
+        },
+        {
+            "id": "col-testing",
+            "name": "Testing",
+            "position": 6
+        },
+        {
+            "id": "col-done",
+            "name": "Done",
+            "position": 7
+        }
+    ]
+}

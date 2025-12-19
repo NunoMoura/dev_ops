@@ -25,7 +25,7 @@ suite('Plan import helpers', () => {
             priority: 'P1',
             acceptanceCriteria: ['return JSON'],
             checklist: ['add tests'],
-            agentReady: true,
+            status: 'in_progress',
           },
         ],
       },
@@ -37,7 +37,7 @@ suite('Plan import helpers', () => {
     assert.strictEqual(parsed.defaultColumn, 'Implementation');
     assert.strictEqual(parsed.globalEntryPoints?.[0], 'global.ts');
     assert.deepStrictEqual(parsed.tasks[0].tags, ['backend', 'api']);
-    assert.strictEqual(parsed.tasks[0].agentReady, true);
+    assert.strictEqual(parsed.tasks[0].status, 'in_progress');
     assert.strictEqual(parsed.tasks[0].checklist?.length, 1);
   });
 

@@ -9,8 +9,8 @@ export type TaskDetailsPayload = {
   summary?: string;
   tags?: string;
   priority?: string;
-  columnId?: string;              // Column determines status
-  agentReady?: boolean;
+  columnId?: string;              // Column determines workflow phase
+  status?: string;                // Autonomy state: todo, in_progress, blocked, pending, done
   column?: string;                // Column display name
   workflow?: string;              // DevOps workflow (e.g., /create_plan)
   upstream?: string[];            // Artifact dependencies
@@ -280,7 +280,6 @@ function getCardHtml(): string {
       const tagsInput = document.getElementById('tags');
       const prioritySelect = document.getElementById('priority');
       const statusSelect = document.getElementById('status');
-      const agentReadyInput = document.getElementById('agentReady');
       const columnLabel = document.getElementById('columnLabel');
       const deleteBtn = document.getElementById('deleteBtn');
       const saveBtn = document.getElementById('saveBtn');
@@ -512,8 +511,7 @@ function getCardHtml(): string {
           summaryInput.value = message.task.summary || '';
           tagsInput.value = message.task.tags || '';
           prioritySelect.value = message.task.priority || '';
-          statusSelect.value = message.task.status || '';
-          agentReadyInput.checked = Boolean(message.task.agentReady);
+          statusSelect.value = message.task.status || 'todo';
           columnLabel.textContent = message.task.column ? 'Column: ' + message.task.column : '';
           featureTasks = cloneFeatureTasks(message.task.featureTasks);
           renderFeatureTasks();
@@ -533,7 +531,6 @@ function getCardHtml(): string {
           tags: tagsInput.value,
           priority: prioritySelect.value,
           status: statusSelect.value,
-          agentReady: agentReadyInput.checked,
           featureTasks: serializeFeatureTasks(),
         };
       }
@@ -583,21 +580,16 @@ function getCardHtml(): string {
               <option value="low">Low</option>
             </select>
           </div>
-          <div>
+        <div>
             <label for="status">Status</label>
             <select id="status">
               <option value="todo">Todo</option>
               <option value="in_progress">In Progress</option>
               <option value="blocked">Blocked</option>
-              <option value="review">In Review</option>
+              <option value="pending">Pending Approval</option>
               <option value="done">Done</option>
             </select>
           </div>
-        </div>
-
-        <div class="checkbox-row">
-          <input id="agentReady" type="checkbox" />
-          <label for="agentReady">Agent ready</label>
         </div>
 
         <div class="feature-section">

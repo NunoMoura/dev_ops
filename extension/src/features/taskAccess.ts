@@ -18,7 +18,7 @@ export async function promptForTask(board: Board): Promise<Task | undefined> {
   }
   const quickPickItems: TaskQuickPickItem[] = board.items.sort(compareTasks).map((item) => ({
     label: item.title,
-    detail: [item.summary, item.agentReady ? '(agentReady)' : undefined].filter(isDefined).join(' — '),
+    detail: [item.summary, item.status ? `(${item.status})` : undefined].filter(isDefined).join(' — '),
     description: buildTaskDescription(item),
     item,
   }));

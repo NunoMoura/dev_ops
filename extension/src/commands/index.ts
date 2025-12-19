@@ -59,16 +59,7 @@ export function registerKanbanCommands(
 ): void {
   const { provider, taskDetailsProvider, kanbanView } = services;
 
-  registerKanbanCommand(
-    context,
-    'kanban.openBoard',
-    async () => {
-      const uri = await ensureKanbanUri();
-      const doc = await vscode.workspace.openTextDocument(uri);
-      await vscode.window.showTextDocument(doc, { preview: false });
-    },
-    'Unable to open board',
-  );
+  // Note: kanban.openBoard is registered in boardView.ts (opens the webview panel)
 
   registerKanbanCommand(
     context,
@@ -79,14 +70,7 @@ export function registerKanbanCommands(
     'Unable to pick next task',
   );
 
-  registerKanbanCommand(
-    context,
-    'kanban.showTaskDetails',
-    async (taskId?: string) => {
-      await handleShowTaskDetails(taskId, provider, kanbanView);
-    },
-    'Unable to show task details',
-  );
+  // Note: kanban.showTaskDetails is registered below (opens card details panel)
 
   registerKanbanCommand(
     context,
@@ -167,14 +151,15 @@ export function registerKanbanCommands(
     'Unable to clear filter',
   );
 
+  // toggleAgentReadyFilter command removed - using status filter instead
   registerKanbanCommand(
     context,
     'kanban.toggleAgentReadyFilter',
     async () => {
-      await provider.toggleAgentReadyFilter();
+      await provider.toggleStatusFilter('blocked');
       syncFilterUI();
     },
-    'Unable to toggle agent filter',
+    'Unable to toggle filter',
   );
 
   registerKanbanCommand(
@@ -331,7 +316,7 @@ export async function handleCardUpdateMessage(
     task.workflow = update.workflow || task.workflow;
     task.upstream = update.upstream || task.upstream;
     task.downstream = update.downstream || task.downstream;
-    task.agentReady = Boolean(update.agentReady);
+    task.status = update.status as any || task.status;
     task.updatedAt = new Date().toISOString();
     await writeKanban(board);
     await provider.refresh();
@@ -407,7 +392,7 @@ async function handlePickNextTask(provider: KanbanTreeProvider, view: vscode.Tre
   const ranked = [...board.items].sort(compareTasks);
   const quickPickItems = ranked.map((item) => ({
     label: item.title,
-    detail: [item.summary, item.agentReady ? '(agentReady)' : undefined].filter(isDefined).join(' — '),
+    detail: [item.summary, item.status ? `(${item.status})` : undefined].filter(isDefined).join(' — '),
     description: buildTaskDescription(item),
     item,
   }));
@@ -579,35 +564,40 @@ async function handleCreateTask(
   taskDetailsView: KanbanTaskDetailsViewProvider,
   node?: KanbanNode,
 ): Promise<void> {
-  const board = await readKanban();
+  try {
+    const board = await readKanban();
 
-  // Determine target column - if not from context, prompt user
-  let column: Column | undefined;
-  if (node && node.kind === 'column') {
-    column = node.column;
-  } else {
-    column = await promptForColumn(board, 'Create task in column');
-    if (!column) {
-      return;
+    // Determine target column - if not from context, prompt user
+    let column: Column | undefined;
+    if (node && node.kind === 'column') {
+      column = node.column;
+    } else {
+      column = await promptForColumn(board, 'Create task in column');
+      if (!column) {
+        return;
+      }
     }
+
+    // Use TASK-XXX format
+    const taskId = createTaskId(board);
+
+    const task: Task = {
+      id: taskId,
+      columnId: column.id,
+      title: 'New Task',
+      updatedAt: new Date().toISOString(),
+    };
+    board.items.push(task);
+    await writeKanban(board);
+    await provider.refresh();
+    await appendTaskHistory(task, `Created in column ${column.name || COLUMN_FALLBACK_NAME}`);
+    const columnName = column.name ?? COLUMN_FALLBACK_NAME;
+    taskDetailsView.showTask(buildCardPayload(task, columnName));
+    void vscode.commands.executeCommand('kanbanTaskDetailsView.focus');
+    vscode.window.showInformationMessage(`✅ Created task ${taskId}`);
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to create task: ${formatError(error)}`);
   }
-
-  // Use TASK-XXX format
-  const taskId = createTaskId(board);
-
-  const task: Task = {
-    id: taskId,
-    columnId: column.id,
-    title: 'New Task',
-    updatedAt: new Date().toISOString(),
-  };
-  board.items.push(task);
-  await writeKanban(board);
-  await provider.refresh();
-  await appendTaskHistory(task, `Created in column ${column.name || COLUMN_FALLBACK_NAME}`);
-  const columnName = column.name ?? COLUMN_FALLBACK_NAME;
-  taskDetailsView.showTask(buildCardPayload(task, columnName));
-  void vscode.commands.executeCommand('kanbanTaskDetailsView.focus');
 }
 
 async function handleMoveTask(
