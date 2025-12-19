@@ -7,25 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- Health check script (`scripts/health_check.py`)
-- PR triage workflow automation (`.github/workflows/pr_triage.yml`)
-- Additional tests for `doc_ops.py` and `setup_ops.py`
-- Version info in `__init__.py` (`__version__ = "1.0.0"`)
-- Unified `debug.md` workflow (replaces `fix_bug.md` and `fix_build.md`)
-
 ### Changed
 
-- CI workflow now triggers on push and pull requests
-- Standardized vendoring path to `vendor/dev_ops_core`
+- **Major restructure**: Separated user commands from agent procedures
+  - Workflows reduced from 24 to 8 (user-facing only)
+  - Phase rules enriched with full procedure guidance
+  - Agent now guided by phase rules, not command invocation
+- User commands now focus on board management:
+  `/create_task`, `/list_tasks`, `/pick_task`, `/claim_task`,
+  `/complete_task`, `/report_bug`, `/triage_feedback`, `/bootstrap`
+- README.md rewritten to reflect new mental model
+
+### Removed
+
+- 16 agent-internal workflows (merged into phase rules):
+  `implement_plan`, `create_plan`, `research`, `brainstorm`, `create_adr`,
+  `supersede_adr`, `debug`, `fix_bug`, `fix_build`, `verify`, `create_commit`,
+  `create_pr`, `check_pr`, `audit_code`, `test_task`, `link_artifact`
+- `quality_policy.md` (consolidated into phase_testing and phase_inprogress)
 
 ### Fixed
 
-- Broken test imports (shared_utils → utils)
-- `sanitize_slug` now handles empty/None inputs
-- README.md accuracy (dynamic rule generation)
-- Documentation workflow references
+- Stale workflow references in remaining files
+- Documentation accuracy
 
 ## [1.0.0] - 2025-12-16
 

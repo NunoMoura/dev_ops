@@ -2,48 +2,40 @@
   "version": 1,
   "columns": [
     {
-      "id": "col-idea",
-      "name": "I have an Idea",
+      "id": "col-backlog",
+      "name": "Backlog",
       "position": 1
     },
     {
-      "id": "col-working",
-      "name": "I am working through the idea",
+      "id": "col-research",
+      "name": "Research",
       "position": 2
     },
     {
-      "id": "col-breakdown",
-      "name": "I am breaking it down into pieces",
+      "id": "col-planning",
+      "name": "Planning",
       "position": 3
     },
     {
-      "id": "col-iterating",
-      "name": "I am iterating through implementation",
+      "id": "col-inprogress",
+      "name": "In Progress",
       "position": 4
     },
     {
       "id": "col-testing",
-      "name": "I am testing this feature component",
+      "name": "Testing",
       "position": 5
     },
     {
-      "id": "col-ready",
-      "name": "This component is ready",
+      "id": "col-blocked",
+      "name": "Blocked",
       "position": 6
     },
     {
-      "id": "col-complete",
-      "name": "Feature complete",
+      "id": "col-done",
+      "name": "Done",
       "position": 7
     }
   ],
-  "items": [
-    {
-      "id": "task-new-feature-q5d5mjajhudg",
-      "columnId": "col-ready",
-      "title": "New Feature",
-      "status": "todo",
-      "updatedAt": "2025-12-17T21:44:41.476Z"
-    }
-  ]
+  "items": []
 }

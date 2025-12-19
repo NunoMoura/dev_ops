@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
+import { DEFAULT_COLUMN_BLUEPRINTS } from "../features/types";
 
 /**
  * DevOps: Initialize command
@@ -108,12 +109,7 @@ async function initializeKanbanBoard(workspaceRoot: string): Promise<void> {
 
     const initialBoard = {
         version: 1,
-        columns: [
-            { id: "backlog", name: "Backlog", position: 1 },
-            { id: "in-progress", name: "In Progress", position: 2 },
-            { id: "review", name: "Review", position: 3 },
-            { id: "done", name: "Done", position: 4 },
-        ],
+        columns: DEFAULT_COLUMN_BLUEPRINTS.map((col) => ({ ...col })),
         items: [],
     };
 

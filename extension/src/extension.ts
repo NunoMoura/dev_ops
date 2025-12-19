@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { KanbanCardViewProvider, registerCardView } from './cardView';
-import { KanbanBoardViewProvider, registerBoardView } from './boardView';
+import { KanbanTaskDetailsViewProvider, registerTaskDetailsView } from './taskDetailsView';
+import { KanbanBoardPanelManager, createBoardPanelManager } from './boardView';
 import { KanbanTreeProvider, KanbanNode, KanbanItemNode, KanbanManagerProvider } from './ui/providers';
 import {
   registerKanbanCommands,
@@ -38,7 +38,7 @@ export async function activate(context: vscode.ExtensionContext) {
 export function deactivate() { }
 
 type KanbanExtensionServices = KanbanCommandServices & {
-  boardViewProvider: KanbanBoardViewProvider;
+  boardPanelManager: KanbanBoardPanelManager;
   managerProvider: KanbanManagerProvider;
 };
 
@@ -50,8 +50,8 @@ async function initializeKanbanServices(context: vscode.ExtensionContext): Promi
   });
   context.subscriptions.push(kanbanView);
 
-  const cardViewProvider = registerCardView(context);
-  const boardViewProvider = registerBoardView(context);
+  const taskDetailsProvider = registerTaskDetailsView(context);
+  const boardPanelManager = createBoardPanelManager(context);
   const managerProvider = new KanbanManagerProvider(provider);
   const managerDragController = managerProvider.getDragAndDropController();
   const kanbanManagerView = vscode.window.createTreeView('kanbanManagerView', {
@@ -62,7 +62,7 @@ async function initializeKanbanServices(context: vscode.ExtensionContext): Promi
   context.subscriptions.push(kanbanManagerView, managerDragController);
   await managerProvider.refresh();
 
-  return { provider, kanbanView, cardViewProvider, boardViewProvider, managerProvider };
+  return { provider, kanbanView, taskDetailsProvider, boardPanelManager, managerProvider };
 }
 
 function createFilterSynchronizer(provider: KanbanTreeProvider, kanbanView: vscode.TreeView<KanbanNode>): () => void {
@@ -90,47 +90,47 @@ function bindKanbanViews(
 }
 
 function registerCardSelectionSync(context: vscode.ExtensionContext, services: KanbanExtensionServices): void {
-  const { kanbanView, cardViewProvider } = services;
-  const syncCardViewWithSelection = (selection: readonly KanbanNode[]) => {
+  const { kanbanView, taskDetailsProvider } = services;
+  const syncTaskDetailsWithSelection = (selection: readonly KanbanNode[]) => {
     const taskNode = selection.find((node): node is KanbanItemNode => node.kind === 'item');
     if (taskNode) {
       const columnName = taskNode.column.name || COLUMN_FALLBACK_NAME;
-      cardViewProvider.showTask(buildCardPayload(taskNode.item, columnName));
+      taskDetailsProvider.showTask(buildCardPayload(taskNode.item, columnName));
       return;
     }
     if (!selection.length) {
-      cardViewProvider.showTask(undefined);
+      taskDetailsProvider.showTask(undefined);
     }
   };
   context.subscriptions.push(
     kanbanView.onDidChangeSelection((event) => {
-      syncCardViewWithSelection(event.selection);
+      syncTaskDetailsWithSelection(event.selection);
     }),
   );
-  syncCardViewWithSelection(kanbanView.selection ?? []);
+  syncTaskDetailsWithSelection(kanbanView.selection ?? []);
 }
 
 function registerBoardSnapshotSync(context: vscode.ExtensionContext, services: KanbanExtensionServices): void {
-  const { provider, boardViewProvider, managerProvider } = services;
-  boardViewProvider.setBoard(provider.getBoardViewSnapshot());
+  const { provider, boardPanelManager, managerProvider } = services;
+  boardPanelManager.setBoard(provider.getBoardViewSnapshot());
   context.subscriptions.push(
     provider.onDidUpdateBoardView((snapshot) => {
-      boardViewProvider.setBoard(snapshot);
+      boardPanelManager.setBoard(snapshot);
       void managerProvider.refresh();
     }),
   );
 }
 
 function registerBoardViewRequests(context: vscode.ExtensionContext, services: KanbanExtensionServices): void {
-  const { provider, boardViewProvider, cardViewProvider } = services;
+  const { provider, boardPanelManager, taskDetailsProvider } = services;
   context.subscriptions.push(
-    boardViewProvider.onDidRequestMoveTasks((request) => {
+    boardPanelManager.onDidRequestMoveTasks((request) => {
       void handleBoardMoveTasks(request, provider);
     }),
-    boardViewProvider.onDidRequestOpenTask((taskId) => {
-      void handleBoardOpenTask(taskId, cardViewProvider);
+    boardPanelManager.onDidRequestOpenTask((taskId) => {
+      void handleBoardOpenTask(taskId, taskDetailsProvider);
     }),
-    boardViewProvider.onDidRequestCreateTask(() => {
+    boardPanelManager.onDidRequestCreateTask(() => {
       void Promise.resolve(vscode.commands.executeCommand('kanban.createTask')).catch((error: unknown) => {
         vscode.window.showErrorMessage(`Unable to create feature: ${formatError(error)}`);
       });
@@ -143,13 +143,13 @@ function registerCardViewHandlers(
   services: KanbanExtensionServices,
   syncFilterUI: () => void,
 ): void {
-  const { provider, cardViewProvider } = services;
+  const { provider, taskDetailsProvider } = services;
   context.subscriptions.push(
-    cardViewProvider.onDidSubmitUpdate((update) => {
-      void handleCardUpdateMessage(update, provider, cardViewProvider, syncFilterUI);
+    taskDetailsProvider.onDidSubmitUpdate((update) => {
+      void handleCardUpdateMessage(update, provider, taskDetailsProvider, syncFilterUI);
     }),
-    cardViewProvider.onDidRequestDelete((taskId) => {
-      void handleCardDeleteMessage(taskId, provider, cardViewProvider, syncFilterUI);
+    taskDetailsProvider.onDidRequestDelete((taskId) => {
+      void handleCardDeleteMessage(taskId, provider, taskDetailsProvider, syncFilterUI);
     }),
   );
 }

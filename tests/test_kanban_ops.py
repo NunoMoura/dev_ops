@@ -23,7 +23,6 @@ from kanban_ops import (
     pick_task,
     claim_task,
     check_prerequisites,
-    DEFAULT_COLUMNS,
 )
 
 

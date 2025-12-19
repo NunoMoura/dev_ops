@@ -31,7 +31,7 @@ Part of the DevOps Framework for structured task management and artifact trackin
 | `kanban.filterTasks` | Apply text/tag filter |
 | `kanban.toggleAgentReadyFilter` | Filter to agent-ready tasks |
 | `kanban.importPlan` | Import plan file as tasks |
-| `kanban.generateCodexPrompt` | Generate prompt for task |
+| `kanban.viewTaskHistory` | View task history file |
 
 ## Board Schema
 

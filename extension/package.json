@@ -9,7 +9,7 @@
   },
   "version": "0.1.0",
   "engines": {
-    "vscode": "^1.106.1"
+    "vscode": "^1.85.0"
   },
   "categories": [
     "Visualization"
@@ -91,9 +91,9 @@
         "icon": "$(check)"
       },
       {
-        "command": "kanban.generateCodexPrompt",
-        "title": "DevOps: Generate Codex Prompt",
-        "icon": "$(comment-discussion)"
+        "command": "kanban.viewTaskHistory",
+        "title": "DevOps: View Task History",
+        "icon": "$(history)"
       },
       {
         "command": "kanban.toggleAgentReadyFilter",
@@ -114,11 +114,6 @@
         "command": "kanban.openTaskContext",
         "title": "DevOps: Open Task Context",
         "icon": "$(file-code)"
-      },
-      {
-        "command": "kanban.showCardDetails",
-        "title": "DevOps: Show Card Details",
-        "icon": "$(preview)"
       }
     ],
     "viewsContainers": {
@@ -133,19 +128,13 @@
     "views": {
       "kanban": [
         {
-          "id": "kanbanBoardView",
-          "name": "Board",
-          "type": "webview",
-          "icon": "resources/kanban-icon.png"
-        },
-        {
           "id": "kanbanView",
           "name": "List",
           "icon": "resources/kanban-icon.png"
         },
         {
-          "id": "kanbanCardView",
-          "name": "Card Details",
+          "id": "kanbanTaskDetailsView",
+          "name": "Task Details",
           "type": "webview",
           "icon": "resources/kanban-icon.png"
         },
@@ -165,38 +154,14 @@
           "icon": "$(cloud-upload)"
         },
         {
-          "command": "kanban.importPlan",
-          "when": "view == kanbanBoardView",
-          "group": "navigation@0",
-          "icon": "$(cloud-upload)"
-        },
-        {
           "command": "kanban.createTask",
           "when": "view == kanbanView",
           "group": "navigation@1",
           "icon": "$(add)"
         },
         {
-          "command": "kanban.createTask",
-          "when": "view == kanbanBoardView",
-          "group": "navigation@1",
-          "icon": "$(add)"
-        },
-        {
-          "command": "kanban.createColumn",
-          "when": "view == kanbanManagerView",
-          "group": "navigation@1",
-          "icon": "$(organization)"
-        },
-        {
           "command": "kanban.filterTasks",
           "when": "view == kanbanView",
-          "group": "navigation@3",
-          "icon": "$(filter)"
-        },
-        {
-          "command": "kanban.filterTasks",
-          "when": "view == kanbanBoardView",
           "group": "navigation@3",
           "icon": "$(filter)"
         },
@@ -207,39 +172,21 @@
           "icon": "$(close)"
         },
         {
-          "command": "kanban.clearTaskFilter",
-          "when": "view == kanbanBoardView && kanbanFilterActive",
-          "group": "navigation@4",
-          "icon": "$(close)"
-        },
-        {
           "command": "kanban.toggleAgentReadyFilter",
           "when": "view == kanbanView",
           "group": "navigation@5",
           "icon": "$(rocket)"
         },
         {
-          "command": "kanban.toggleAgentReadyFilter",
-          "when": "view == kanbanBoardView",
-          "group": "navigation@5",
-          "icon": "$(rocket)"
-        },
-        {
           "command": "kanban.toggleBlockedFilter",
           "when": "view == kanbanView",
-          "group": "navigation@6",
-          "icon": "$(issue-closed)"
-        },
-        {
-          "command": "kanban.toggleBlockedFilter",
-          "when": "view == kanbanBoardView",
           "group": "navigation@6",
           "icon": "$(issue-closed)"
         }
       ],
       "view/item/context": [
         {
-          "command": "kanban.showCardDetails",
+          "command": "kanban.showTaskDetails",
           "when": "view == kanbanView && viewItem == kanbanTask",
           "group": "inline@0",
           "icon": "$(preview)"
@@ -257,22 +204,10 @@
           "icon": "$(file-code)"
         },
         {
-          "command": "kanban.renameColumn",
-          "when": "view == kanbanView && viewItem == kanbanColumn",
-          "group": "inline@0",
-          "icon": "$(edit)"
-        },
-        {
           "command": "kanban.createTask",
           "when": "view == kanbanView && viewItem == kanbanColumn",
           "group": "inline@1",
           "icon": "$(add)"
-        },
-        {
-          "command": "kanban.deleteColumn",
-          "when": "view == kanbanView && viewItem == kanbanColumn",
-          "group": "inline@2",
-          "icon": "$(trash)"
         },
         {
           "command": "kanban.moveTask",
@@ -299,22 +234,16 @@
           "icon": "$(check)"
         },
         {
-          "command": "kanban.generateCodexPrompt",
+          "command": "kanban.viewTaskHistory",
           "when": "view == kanbanView && viewItem == kanbanTask",
           "group": "inline@5",
-          "icon": "$(comment-discussion)"
+          "icon": "$(history)"
         },
         {
-          "command": "kanban.renameColumn",
+          "command": "kanban.createTask",
           "when": "view == kanbanManagerView && viewItem == kanbanManagerColumn",
           "group": "inline@0",
-          "icon": "$(edit)"
-        },
-        {
-          "command": "kanban.deleteColumn",
-          "when": "view == kanbanManagerView && viewItem == kanbanManagerColumn",
-          "group": "inline@1",
-          "icon": "$(trash)"
+          "icon": "$(add)"
         }
       ]
     }
@@ -334,7 +263,7 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.106.1",
+    "@types/vscode": "^1.85.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
     "typescript-eslint": "^8.46.3",

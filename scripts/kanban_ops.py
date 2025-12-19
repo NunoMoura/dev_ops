@@ -8,17 +8,17 @@ and artifact linking with identifiers.
 
 Column = Status Model:
 - Tasks are assigned to columns which determine their status
-- 7 columns: Backlog, Research, Planning, In Progress, Review, Blocked, Done
+- 7 columns: Backlog, Research, Planning, In Progress, Testing, Blocked, Done
 """
 
 import json
 import os
 import sys
+import argparse
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 
 # Add current directory to sys.path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Default column definitions (matches extension types.ts)
 DEFAULT_COLUMNS = [
@@ -26,7 +26,7 @@ DEFAULT_COLUMNS = [
     {"id": "col-research", "name": "Research", "position": 2},
     {"id": "col-planning", "name": "Planning", "position": 3},
     {"id": "col-inprogress", "name": "In Progress", "position": 4},
-    {"id": "col-review", "name": "Review", "position": 5},
+    {"id": "col-testing", "name": "Testing", "position": 5},
     {"id": "col-blocked", "name": "Blocked", "position": 6},
     {"id": "col-done", "name": "Done", "position": 7},
 ]
@@ -204,9 +204,76 @@ def mark_blocked(task_id: str, project_root: Optional[str] = None) -> bool:
     return move_to_column(task_id, "col-blocked", project_root)
 
 
+def create_pr(
+    task_id: str,
+    title: Optional[str] = None,
+    body: Optional[str] = None,
+    project_root: Optional[str] = None,
+) -> Optional[str]:
+    """Create a Pull Request using GitHub CLI. Returns PR URL if successful."""
+    import subprocess
+
+    board = load_board(project_root)
+    task = None
+    for t in board.get("items", []):
+        if t.get("id") == task_id:
+            task = t
+            break
+
+    if not task:
+        print(f"⚠️ Task {task_id} not found")
+        return None
+
+    # Build PR title and body from task
+    pr_title = title or f"{task_id}: {task.get('title', 'No title')}"
+    pr_body_parts = [
+        f"## Task: {task.get('title')}",
+        "",
+        task.get("summary", ""),
+        "",
+        f"Task ID: `{task_id}`",
+    ]
+    if task.get("workflow"):
+        pr_body_parts.append(f"Workflow: `{task.get('workflow')}`")
+    if task.get("upstream"):
+        pr_body_parts.append(f"Upstream: {', '.join(task.get('upstream'))}")
+    if task.get("downstream"):
+        pr_body_parts.append(f"Downstream: {', '.join(task.get('downstream'))}")
+
+    pr_body = body or "\n".join(pr_body_parts)
+
+    try:
+        result = subprocess.run(
+            ["gh", "pr", "create", "--title", pr_title, "--body", pr_body],
+            capture_output=True,
+            text=True,
+            cwd=project_root,
+        )
+        if result.returncode == 0:
+            pr_url = result.stdout.strip()
+            print(f"✅ Pull Request created: {pr_url}")
+
+            # Add PR URL to task's downstream
+            if "downstream" not in task:
+                task["downstream"] = []
+            if pr_url not in task["downstream"]:
+                task["downstream"].append(pr_url)
+            task["updatedAt"] = datetime.utcnow().isoformat() + "Z"
+            save_board(board, project_root)
+
+            return pr_url
+        else:
+            print(f"⚠️ Failed to create PR: {result.stderr}")
+            return None
+    except FileNotFoundError:
+        print("⚠️ GitHub CLI (gh) not found. Please install it first.")
+        return None
+
+
 def mark_done(
     task_id: str,
     outputs: Optional[list] = None,
+    create_pr_flag: bool = False,
     project_root: Optional[str] = None,
 ) -> bool:
     """Move a task to Done column and optionally add output artifacts."""
@@ -224,6 +291,11 @@ def mark_done(
                         task["downstream"].append(output)
             save_board(board, project_root)
             print(f"✅ Marked {task_id} as done")
+
+            # Create PR if requested
+            if create_pr_flag:
+                create_pr(task_id, project_root=project_root)
+
             return True
     print(f"⚠️ Task {task_id} not found")
     return False
@@ -331,6 +403,12 @@ if __name__ == "__main__":
     done_parser = subparsers.add_parser("done", help="Mark task as done")
     done_parser.add_argument("task_id", help="Task ID")
     done_parser.add_argument("--outputs", nargs="*", help="Output artifacts")
+    done_parser.add_argument(
+        "--create-pr",
+        action="store_true",
+        dest="create_pr",
+        help="Create a Pull Request using GitHub CLI",
+    )
 
     # Add upstream
     upstream_parser = subparsers.add_parser("upstream", help="Add upstream dependency")
@@ -382,7 +460,7 @@ if __name__ == "__main__":
             column_id=args.column,
         )
     elif args.command == "done":
-        mark_done(args.task_id, outputs=args.outputs)
+        mark_done(args.task_id, outputs=args.outputs, create_pr_flag=args.create_pr)
     elif args.command == "upstream":
         add_upstream(args.task_id, args.artifact_id)
     elif args.command == "downstream":

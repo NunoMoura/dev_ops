@@ -1,57 +1,85 @@
 ---
 activation_mode: Always On
-description: Core DevOps Framework guide - index to available rules and workflows.
+description: Core DevOps Framework index - links to phase-specific rules.
 ---
 
 # DevOps Framework Guide
 
-This project uses the **DevOps Framework** for task-centric development.
-
-## Quick Reference
-
-| Need | Rule/Workflow |
-|------|---------------|
-| Manage tasks | Load `kanban_policy.md` or use `/list_tasks` |
-| Check quality | Load `quality_policy.md` or use `/verify` |
-| Create artifacts | Load `artifact_standards.md` |
-| Any workflow | Use `/command` syntax in chat |
+Task-centric development with Kanban workflow.
 
 ## Core Concepts
 
-1. **Task = Unit of Planned Work** — Only create tasks in planning mode
-2. **Fast Mode = Direct Execution** — Small tasks done directly
-3. **Artifacts are Linked** — Outputs in `dev_ops/`, linked to tasks
+| Mode | When | Action |
+|------|------|--------|
+| **Fast Mode** | Small fixes, quick questions | Execute directly |
+| **Planning Mode** | Complex work, coordination | Create task first |
 
-> [!TIP]
-> See `kanban_policy.md` for when to create tasks vs. direct execution.
+## Workflow
+
+```text
+Backlog → Research → Planning → In Progress → Testing → Done
+                                     ↓
+                                  Blocked
+```
+
+## Phase Rules
+
+Load the appropriate rule for your current phase:
+
+| Phase | Rule | Artifact |
+|-------|------|----------|
+| Backlog | `@phase_backlog` | TASK-XXX |
+| Research | `@phase_research` | RES-XXX |
+| Planning | `@phase_planning` | PLN-XXX |
+| In Progress | `@phase_inprogress` | Code |
+| Testing | `@phase_testing` | TST-XXX |
+| Blocked | `@phase_blocked` | - |
+| Done | `@phase_done` | PR |
+
+## Commands
+
+User-facing commands for board management:
+
+| Command | Purpose |
+|---------|---------|
+| `/create_task` | Add task to backlog |
+| `/list_tasks` | View all tasks |
+| `/pick_task` | Get next available task |
+| `/claim_task` | Start working on task |
+| `/complete_task` | Finish task with PR |
+| `/report_bug` | Report a new bug |
+| `/triage_feedback` | Process PR feedback |
+| `/bootstrap` | Initialize project |
+
+> [!NOTE]
+> Development procedures (research, planning, implementation, testing) are
+> guided by phase rules, not invoked as commands. The agent selects the
+> appropriate procedure based on the task's current column.
 
 ## Directory Structure
 
 ```text
-.agent/rules/          # Load with @ mention
-.agent/workflows/      # Trigger with /command
-dev_ops/kanban/        # Task board (board.json)
-dev_ops/plans/         # Implementation plans
-dev_ops/research/      # Research documents
-dev_ops/adrs/          # Architecture Decision Records
+dev_ops/
+├── kanban/board.json   # Task board
+├── plans/              # PLN-XXX
+├── research/           # RES-XXX
+├── tests/              # TST-XXX
+├── bugs/               # BUG-XXX
+└── adrs/               # ADR-XXX
 ```
 
-## Available Rules
+## Artifact Flow
 
-Load these with `@rule_name` when needed:
-
-| Rule | When to Load |
-|------|--------------|
-| `kanban_policy` | Managing tasks, picking work, multi-agent coordination |
-| `quality_policy` | Before merging, code review, testing requirements |
-| `artifact_standards` | Creating docs, linking artifacts, frontmatter format |
-
-## Common Workflows
-
-| Category | Commands |
-|----------|----------|
-| Tasks | `/add_task`, `/pick_task`, `/claim_task`, `/complete_task` |
-| Planning | `/create_feature`, `/create_plan`, `/implement_plan`, `/brainstorm` |
-| Quality | `/verify`, `/audit_code`, `/debug` |
-| Docs | `/research`, `/create_adr`, `/report_bug` |
-| Git | `/create_commit`, `/create_pr`, `/check_pr` |
+```text
+RES-XXX (research)
+    ↓
+ADR-XXX (decision) ← optional
+    ↓
+PLN-XXX (plan)
+    ↓
+TASK-XXX (implementation)
+    ↓
+TST-XXX (testing) → BUG-XXX (failures)
+    ↓
+PR (done)
+```

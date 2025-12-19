@@ -142,16 +142,16 @@ export const DEFAULT_COLUMN_NAME = 'Backlog';
  * | Research    | Producing RES-XXX          | research.md   |
  * | Planning    | Producing PLN-XXX          | plan.md       |
  * | In Progress | Active implementation      | -             |
- * | Review      | Verification/testing       | -             |
+ * | Testing     | Validation & test creation | tests/        |
  * | Blocked     | Waiting on dependency      | -             |
- * | Done        | Completed work             | -             |
+ * | Done        | Completed work             | PR            |
  */
 export const DEFAULT_COLUMN_BLUEPRINTS: ReadonlyArray<Column> = [
   { id: 'col-backlog', name: 'Backlog', position: 1 },
   { id: 'col-research', name: 'Research', position: 2 },
   { id: 'col-planning', name: 'Planning', position: 3 },
   { id: 'col-inprogress', name: 'In Progress', position: 4 },
-  { id: 'col-review', name: 'Review', position: 5 },
+  { id: 'col-testing', name: 'Testing', position: 5 },
   { id: 'col-blocked', name: 'Blocked', position: 6 },
   { id: 'col-done', name: 'Done', position: 7 },
 ];

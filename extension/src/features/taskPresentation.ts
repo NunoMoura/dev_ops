@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { CardTaskPayload } from '../cardView';
+import { TaskDetailsPayload } from '../taskDetailsView';
 import { Task, COLUMN_FALLBACK_NAME } from './types';
 import { isDefined } from './kanbanData';
 
@@ -63,7 +63,7 @@ export function buildTaskDetail(task: Task, columnName: string): string {
   return detail.filter((line, index, arr) => !(line === '' && arr[index + 1] === '')).join('\n');
 }
 
-export function buildCardPayload(task: Task, columnName: string): CardTaskPayload {
+export function buildCardPayload(task: Task, columnName: string): TaskDetailsPayload {
   return {
     id: task.id,
     title: task.title,

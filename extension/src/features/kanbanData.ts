@@ -21,11 +21,11 @@ export function getColumnRank(columnId?: string): number {
   switch (columnId) {
     case 'col-inprogress':
       return 0;  // Active work first
+    case 'col-testing':
+      return 1;  // Testing next
     case 'col-research':
-      return 1;
-    case 'col-planning':
       return 2;
-    case 'col-review':
+    case 'col-planning':
       return 3;
     case 'col-backlog':
       return 4;
@@ -38,33 +38,8 @@ export function getColumnRank(columnId?: string): number {
   }
 }
 
-/** @deprecated Use getColumnRank instead - kept for backward compatibility */
-export function getStatusRank(status?: string): number {
-  switch (status?.toLowerCase()) {
-    case 'in_progress':
-    case 'in-progress':
-    case 'doing':
-    case 'col-inprogress':
-      return 0;
-    case 'todo':
-    case 'backlog':
-    case 'col-backlog':
-      return 1;
-    case 'blocked':
-    case 'col-blocked':
-      return 2;
-    case 'review':
-    case 'in_review':
-    case 'col-review':
-      return 3;
-    case 'done':
-    case 'complete':
-    case 'col-done':
-      return 4;
-    default:
-      return 5;
-  }
-}
+
+
 
 export function getPriorityRank(priority?: string): number {
   switch (priority?.toLowerCase()) {

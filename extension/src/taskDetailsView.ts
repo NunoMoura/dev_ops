@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 
 /**
- * Payload type for passing task data to/from the Card Details webview.
+ * Payload type for passing task data to/from the Task Details webview.
  */
-export type CardTaskPayload = {
+export type TaskDetailsPayload = {
   id: string;
   title: string;
   summary?: string;
@@ -19,15 +19,15 @@ export type CardTaskPayload = {
 
 
 type WebviewMessage =
-  | { type: 'update'; task: CardTaskPayload }
+  | { type: 'update'; task: TaskDetailsPayload }
   | { type: 'delete'; id: string }
-  | { type: 'task'; task: CardTaskPayload }
+  | { type: 'task'; task: TaskDetailsPayload }
   | { type: 'empty' };
 
-export class KanbanCardViewProvider implements vscode.WebviewViewProvider {
+export class KanbanTaskDetailsViewProvider implements vscode.WebviewViewProvider {
   private view: vscode.WebviewView | undefined;
-  private pendingTask: CardTaskPayload | undefined;
-  private readonly onUpdateEmitter = new vscode.EventEmitter<CardTaskPayload>();
+  private pendingTask: TaskDetailsPayload | undefined;
+  private readonly onUpdateEmitter = new vscode.EventEmitter<TaskDetailsPayload>();
   private readonly onDeleteEmitter = new vscode.EventEmitter<string>();
 
   readonly onDidSubmitUpdate = this.onUpdateEmitter.event;
@@ -61,7 +61,7 @@ export class KanbanCardViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  showTask(task?: CardTaskPayload): void {
+  showTask(task?: TaskDetailsPayload): void {
     this.pendingTask = task;
     if (!task) {
       this.postMessage({ type: 'empty' });
@@ -75,10 +75,10 @@ export class KanbanCardViewProvider implements vscode.WebviewViewProvider {
   }
 }
 
-export function registerCardView(context: vscode.ExtensionContext): KanbanCardViewProvider {
-  const provider = new KanbanCardViewProvider(context.extensionUri);
+export function registerTaskDetailsView(context: vscode.ExtensionContext): KanbanTaskDetailsViewProvider {
+  const provider = new KanbanTaskDetailsViewProvider(context.extensionUri);
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider('kanbanCardView', provider, {
+    vscode.window.registerWebviewViewProvider('kanbanTaskDetailsView', provider, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
   );

@@ -12,7 +12,8 @@ collaborative environment for **human teams and AI agents** working together.
 DevOps Framework follows a **task-centric model**:
 
 - **Everything is a Task** — All work lives on the Kanban board
-- **Workflows = Pre-decomposed Tasks** — Step sequences with automation
+- **Users are Project Managers** — Manage the board with simple commands
+- **Agents are Expert Developers** — Execute work guided by phase rules
 - **Artifacts are Linked** — All outputs in `dev_ops/`, linked to tasks
 - **Automation First** — Python scripts reduce agent token usage
 
@@ -20,32 +21,33 @@ DevOps Framework follows a **task-centric model**:
 
 ```mermaid
 graph TB
-    subgraph "Rules"
-        GUIDE["dev_ops_guide.md"]
+    subgraph "User Commands"
+        C1["/create_task"]
+        C2["/pick_task"]
+        C3["/complete_task"]
     end
-    
-    subgraph "Workflows"
-        W1["/create_plan"]
-        W2["/research"]
-        W3["/fix_bug"]
+
+    subgraph "Kanban Board"
+        KB["board.json"]
     end
-    
-    subgraph "Kanban"
-        T1["Task: Plan Auth"]
-        T2["Task: Research JWT"]
+
+    subgraph "Agent (Phase Rules)"
+        PR["phase_research"]
+        PP["phase_planning"]
+        PI["phase_inprogress"]
+        PT["phase_testing"]
     end
-    
+
     subgraph "Artifacts"
-        A1["plans/auth.md"]
-        A2["research/jwt.md"]
+        A1["plans/"]
+        A2["research/"]
     end
-    
-    GUIDE --> W1 & W2 & W3
-    W1 --> T1
-    W2 --> T2
-    T1 --> A1
-    T2 --> A2
-    A2 -->|informs| A1
+
+    C1 --> KB
+    C2 --> KB
+    KB --> PR --> PP --> PI --> PT
+    PI --> A1
+    PR --> A2
 ```
 
 ## Installation
@@ -70,96 +72,73 @@ Install the `dev-ops-X.X.X.vsix` from this repository:
 
 ## How It Works
 
+### Mental Model
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│  USER (Project Manager)                                 │
+│  8 Commands: /create_task, /list_tasks, /pick_task,     │
+│              /claim_task, /complete_task, /report_bug,  │
+│              /triage_feedback, /bootstrap               │
+│  → Manages WHAT gets done and WHEN                      │
+└─────────────────────────┬───────────────────────────────┘
+                          │ Kanban Board
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│  AGENT (Expert Developer)                               │
+│  Guided by: phase_* rules                               │
+│  → Executes HOW the work gets done                      │
+└─────────────────────────────────────────────────────────┘
+```
+
 ### Agent Workflow
 
 ```mermaid
 sequenceDiagram
     participant Agent
     participant Kanban
-    participant Workflow
+    participant PhaseRule
     participant Artifacts
-    
+
     Agent->>Kanban: /list_tasks
     Kanban-->>Agent: Available tasks
     Agent->>Kanban: /claim_task TASK-001
-    Agent->>Workflow: Load workflow steps
-    loop Each step
+    Agent->>PhaseRule: Load phase_inprogress rule
+    loop Each step in phase
         Agent->>Artifacts: Create/update
         Agent->>Kanban: Update progress
     end
     Agent->>Kanban: /complete_task
 ```
 
-### For Humans
-
-Type `/command` in the Antigravity chat to trigger workflows:
-
-```text
-/create_plan   → Create an implementation plan
-/research      → Start a research document
-/fix_bug       → Fix a tracked bug
-```
-
-### For AI Agents
-
-The agent automatically reads rules from `.agent/rules/` and follows project
-standards. Rules define:
-
-- Code style and conventions
-- Workflow procedures
-- Quality requirements
-
 ## Available Commands
 
-### Task Management
+### Board Management (User Commands)
 
 | Command | Description |
 |---------|-------------|
-| `/add_task` | Add a new task to the backlog |
-| `/create_task` | Create a detailed task with context |
-| `/pick_task` | Pick the next task to work on |
+| `/create_task` | Add a new task to the backlog |
+| `/list_tasks` | View all tasks on the board |
+| `/pick_task` | Pick the next available task |
 | `/claim_task` | Claim a task as yours |
 | `/complete_task` | Mark a task as complete |
-| `/list_tasks` | Show all tasks in the board |
+| `/report_bug` | Report a new bug |
+| `/triage_feedback` | Process PR feedback into tasks |
+| `/bootstrap` | Initialize DevOps in a project |
 
-### Planning & Development
+### Agent-Guided Procedures (Phase Rules)
 
-| Command | Description |
-|---------|-------------|
-| `/bootstrap` | Initialize DevOps in a new project |
-| `/create_plan` | Create an implementation plan |
-| `/implement_plan` | Execute an implementation plan |
-| `/create_feature` | Create a new feature with full workflow |
-| `/brainstorm` | Start a brainstorming session |
+Development procedures are **not** commands — they are guided by phase rules
+based on the task's current column:
 
-### Quality & Review
-
-| Command | Description |
-|---------|-------------|
-| `/debug` | Start a debugging session |
-| `/fix_bug` | Fix a reported bug |
-| `/fix_build` | Fix build/CI failures |
-| `/audit_code` | Audit code for issues |
-| `/verify` | Verify implementation correctness |
-
-### Documentation
-
-| Command | Description |
-|---------|-------------|
-| `/research` | Create a research document |
-| `/create_adr` | Create an Architecture Decision Record |
-| `/supersede_adr` | Supersede an existing ADR |
-| `/report_bug` | Create a bug report |
-| `/link_artifact` | Link artifacts to tasks |
-
-### Git & PRs
-
-| Command | Description |
-|---------|-------------|
-| `/create_commit` | Create a well-formatted commit |
-| `/create_pr` | Create a pull request |
-| `/check_pr` | Review a pull request |
-| `/triage_feedback` | Triage PR feedback |
+| Column | Phase Rule | What Agent Does |
+|--------|------------|-----------------|
+| Backlog | `phase_backlog` | Brainstorm, prioritize |
+| Research | `phase_research` | Investigate, create RES-XXX, ADR-XXX |
+| Planning | `phase_planning` | Create PLN-XXX |
+| In Progress | `phase_inprogress` | Implement, debug, commit |
+| Testing | `phase_testing` | Run tests, create TST-XXX |
+| Done | `phase_done` | Create PR |
 
 ## Project Structure
 
@@ -167,15 +146,24 @@ standards. Rules define:
 your-project/
 ├── .agent/
 │   ├── rules/
-│   │   └── dev_ops_guide.md   # Agent behavior rules
-│   └── workflows/             # Slash command definitions
+│   │   ├── dev_ops_guide.md     # Framework overview
+│   │   ├── phase_backlog.md     # Backlog phase
+│   │   ├── phase_research.md    # Research phase
+│   │   ├── phase_planning.md    # Planning phase
+│   │   ├── phase_inprogress.md  # Implementation phase
+│   │   ├── phase_testing.md     # Testing phase
+│   │   ├── phase_done.md        # Completion phase
+│   │   └── phase_blocked.md     # Blocked handling
+│   └── workflows/               # User commands (8 files)
 └── dev_ops/
-    ├── scripts/               # Automation scripts
+    ├── scripts/                 # Automation scripts
     ├── kanban/
-    │   └── board.json         # Task board
-    ├── plans/                 # Implementation plans
-    ├── research/              # Research documents
-    └── adrs/                  # Architecture Decision Records
+    │   └── board.json           # Task board
+    ├── plans/                   # PLN-XXX artifacts
+    ├── research/                # RES-XXX artifacts
+    ├── tests/                   # TST-XXX artifacts
+    ├── bugs/                    # BUG-XXX artifacts
+    └── adrs/                    # ADR-XXX artifacts
 ```
 
 ## Development

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { KanbanCardViewProvider, CardTaskPayload } from '../cardView';
+import { KanbanTaskDetailsViewProvider, TaskDetailsPayload } from '../taskDetailsView';
 import { KanbanTreeProvider, KanbanNode, KanbanManagerNode } from '../ui/providers';
 import {
   Board,
@@ -14,6 +14,7 @@ import {
   compareNumbers,
   compareTasks,
   createId,
+  createTaskId,
   getNextColumnPosition,
   parseTags,
   sortColumnsForManager,
@@ -48,7 +49,7 @@ import { MoveTasksRequest } from './types';
 export type KanbanCommandServices = {
   provider: KanbanTreeProvider;
   kanbanView: vscode.TreeView<KanbanNode>;
-  cardViewProvider: KanbanCardViewProvider;
+  taskDetailsProvider: KanbanTaskDetailsViewProvider;
 };
 
 export function registerKanbanCommands(
@@ -56,7 +57,7 @@ export function registerKanbanCommands(
   services: KanbanCommandServices,
   syncFilterUI: () => void,
 ): void {
-  const { provider, cardViewProvider, kanbanView } = services;
+  const { provider, taskDetailsProvider, kanbanView } = services;
 
   registerKanbanCommand(
     context,
@@ -132,7 +133,7 @@ export function registerKanbanCommands(
     context,
     'kanban.createTask',
     async (node?: KanbanNode) => {
-      await handleCreateTask(provider, cardViewProvider, node);
+      await handleCreateTask(provider, taskDetailsProvider, node);
     },
     'Unable to create task',
   );
@@ -224,9 +225,9 @@ export function registerKanbanCommands(
 
   registerKanbanCommand(
     context,
-    'kanban.showCardDetails',
+    'kanban.showTaskDetails',
     async (taskId?: string) => {
-      await handleShowCardDetails(taskId, cardViewProvider);
+      await handleFocusTaskDetails(taskId, taskDetailsProvider);
     },
     'Unable to open card details',
   );
@@ -257,6 +258,15 @@ export function registerKanbanCommands(
     },
     'Unable to update status',
   );
+
+  registerKanbanCommand(
+    context,
+    'kanban.viewTaskHistory',
+    async (node?: KanbanNode) => {
+      await handleViewTaskHistory(node);
+    },
+    'Unable to view task history',
+  );
 }
 
 export async function handleBoardMoveTasks(request: MoveTasksRequest, provider: KanbanTreeProvider): Promise<void> {
@@ -277,7 +287,7 @@ export async function handleBoardMoveTasks(request: MoveTasksRequest, provider: 
   }
 }
 
-export async function handleBoardOpenTask(taskId: string, cardView: KanbanCardViewProvider): Promise<void> {
+export async function handleBoardOpenTask(taskId: string, taskDetailsView: KanbanTaskDetailsViewProvider): Promise<void> {
   if (!taskId) {
     return;
   }
@@ -289,17 +299,17 @@ export async function handleBoardOpenTask(taskId: string, cardView: KanbanCardVi
       return;
     }
     const columnName = board.columns.find((column) => column.id === task.columnId)?.name ?? COLUMN_FALLBACK_NAME;
-    cardView.showTask(buildCardPayload(task, columnName));
-    void vscode.commands.executeCommand('kanbanCardView.focus');
+    taskDetailsView.showTask(buildCardPayload(task, columnName));
+    void vscode.commands.executeCommand('kanbanTaskDetailsView.focus');
   } catch (error) {
     vscode.window.showErrorMessage(`Unable to open task: ${formatError(error)}`);
   }
 }
 
 export async function handleCardUpdateMessage(
-  update: CardTaskPayload,
+  update: TaskDetailsPayload,
   provider: KanbanTreeProvider,
-  cardView: KanbanCardViewProvider,
+  taskDetailsView: KanbanTaskDetailsViewProvider,
   syncFilterUI: () => void,
 ): Promise<void> {
   try {
@@ -327,7 +337,7 @@ export async function handleCardUpdateMessage(
     await provider.refresh();
     syncFilterUI();
     const columnName = board.columns.find((column) => column.id === task.columnId)?.name ?? COLUMN_FALLBACK_NAME;
-    cardView.showTask(buildCardPayload(task, columnName));
+    taskDetailsView.showTask(buildCardPayload(task, columnName));
   } catch (error) {
     vscode.window.showErrorMessage(`Unable to save task: ${formatError(error)}`);
   }
@@ -336,7 +346,7 @@ export async function handleCardUpdateMessage(
 export async function handleCardDeleteMessage(
   taskId: string,
   provider: KanbanTreeProvider,
-  cardView: KanbanCardViewProvider,
+  taskDetailsView: KanbanTaskDetailsViewProvider,
   syncFilterUI: () => void,
 ): Promise<void> {
   try {
@@ -364,7 +374,7 @@ export async function handleCardDeleteMessage(
     await writeKanban(board);
     await provider.refresh();
     syncFilterUI();
-    cardView.showTask(undefined);
+    taskDetailsView.showTask(undefined);
     vscode.window.showInformationMessage('Task deleted.');
   } catch (error) {
     vscode.window.showErrorMessage(`Unable to delete task: ${formatError(error)}`);
@@ -448,19 +458,19 @@ async function handleShowTaskDetails(
   }
 }
 
-async function handleShowCardDetails(taskId: string | undefined, cardView: KanbanCardViewProvider): Promise<void> {
+async function handleFocusTaskDetails(taskId: string | undefined, taskDetailsView: KanbanTaskDetailsViewProvider): Promise<void> {
   const board = await readKanban();
   let task = taskId ? board.items.find((item) => item.id === taskId) : undefined;
   if (!task) {
     task = await promptForTask(board);
     if (!task) {
-      cardView.showTask(undefined);
+      taskDetailsView.showTask(undefined);
       return;
     }
   }
   const columnName = board.columns.find((column) => column.id === task.columnId)?.name ?? COLUMN_FALLBACK_NAME;
-  cardView.showTask(buildCardPayload(task, columnName));
-  void vscode.commands.executeCommand('kanbanCardView.focus');
+  taskDetailsView.showTask(buildCardPayload(task, columnName));
+  void vscode.commands.executeCommand('kanbanTaskDetailsView.focus');
 }
 
 async function handleCreateColumn(provider: KanbanTreeProvider): Promise<void> {
@@ -566,13 +576,27 @@ async function handleDeleteColumn(provider: KanbanTreeProvider, node?: KanbanNod
 
 async function handleCreateTask(
   provider: KanbanTreeProvider,
-  cardView: KanbanCardViewProvider,
+  taskDetailsView: KanbanTaskDetailsViewProvider,
   node?: KanbanNode,
 ): Promise<void> {
   const board = await readKanban();
-  const column = node && node.kind === 'column' ? node.column : findOrCreateColumn(board, DEFAULT_COLUMN_NAME);
+
+  // Determine target column - if not from context, prompt user
+  let column: Column | undefined;
+  if (node && node.kind === 'column') {
+    column = node.column;
+  } else {
+    column = await promptForColumn(board, 'Create task in column');
+    if (!column) {
+      return;
+    }
+  }
+
+  // Use TASK-XXX format
+  const taskId = createTaskId(board);
+
   const task: Task = {
-    id: createId('task', 'new task'),
+    id: taskId,
     columnId: column.id,
     title: 'New Task',
     updatedAt: new Date().toISOString(),
@@ -582,8 +606,8 @@ async function handleCreateTask(
   await provider.refresh();
   await appendTaskHistory(task, `Created in column ${column.name || COLUMN_FALLBACK_NAME}`);
   const columnName = column.name ?? COLUMN_FALLBACK_NAME;
-  cardView.showTask(buildCardPayload(task, columnName));
-  void vscode.commands.executeCommand('kanbanCardView.focus');
+  taskDetailsView.showTask(buildCardPayload(task, columnName));
+  void vscode.commands.executeCommand('kanbanTaskDetailsView.focus');
 }
 
 async function handleMoveTask(
@@ -650,7 +674,7 @@ async function handleImportPlan(provider: KanbanTreeProvider, view: vscode.TreeV
   }
   const planFiles = await listPlanFiles(planDir);
   if (!planFiles.length) {
-    vscode.window.showInformationMessage('No plan documents found under local/plans.');
+    vscode.window.showInformationMessage('No plan documents found under dev_ops/plans.');
     return;
   }
   type PlanPick = vscode.QuickPickItem & { filePath: string };
@@ -762,4 +786,31 @@ function getColumnIdFromNode(node?: KanbanNode | KanbanManagerNode): string | un
     return node.column.id;
   }
   return undefined;
+}
+
+async function handleViewTaskHistory(node?: KanbanNode): Promise<void> {
+  const board = await readKanban();
+  let task = getTaskFromNode(node);
+  if (!task) {
+    task = await promptForTask(board);
+  }
+  if (!task) {
+    return;
+  }
+  const root = getWorkspaceRoot();
+  if (!root) {
+    vscode.window.showWarningMessage('No workspace folder open.');
+    return;
+  }
+  const historyPath = path.join(root, 'dev_ops', 'kanban', 'tasks', `${task.id}.md`);
+  try {
+    const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(historyPath));
+    await vscode.window.showTextDocument(doc, { preview: true });
+  } catch (error: any) {
+    if (error?.code === 'FileNotFound' || error?.message?.includes('cannot find')) {
+      vscode.window.showInformationMessage(`No history found for ${task.id}.`);
+    } else {
+      throw error;
+    }
+  }
 }

@@ -31,8 +31,8 @@ type WebviewMessage =
 
 type WebviewEvent = { type: 'board'; data: BoardViewSnapshot };
 
-export class KanbanBoardViewProvider implements vscode.WebviewViewProvider {
-  private view: vscode.WebviewView | undefined;
+export class KanbanBoardPanelManager {
+  private panel: vscode.WebviewPanel | undefined;
   private webviewReady = false;
   private latestBoard: BoardViewSnapshot = { columns: [], tasks: [] };
   private readonly onMoveEmitter = new vscode.EventEmitter<{ taskIds: string[]; columnId: string }>();
@@ -45,17 +45,35 @@ export class KanbanBoardViewProvider implements vscode.WebviewViewProvider {
 
   constructor(private readonly extensionUri: vscode.Uri) { }
 
-  resolveWebviewView(webviewView: vscode.WebviewView): void {
-    this.view = webviewView;
-    webviewView.webview.options = {
-      enableScripts: true,
-    };
-    webviewView.webview.html = getBoardHtml();
-    webviewView.onDidDispose(() => {
-      this.view = undefined;
+  /**
+   * Opens the Kanban board in an editor panel (draggable to second monitor).
+   * If already open, reveals the existing panel.
+   */
+  openBoard(): void {
+    if (this.panel) {
+      this.panel.reveal(vscode.ViewColumn.One);
+      return;
+    }
+
+    this.panel = vscode.window.createWebviewPanel(
+      'kanbanBoard',
+      'Kanban Board',
+      vscode.ViewColumn.One,
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true,
+        localResourceRoots: [this.extensionUri],
+      }
+    );
+
+    this.panel.webview.html = getBoardHtml(true); // true = panel mode (full width)
+
+    this.panel.onDidDispose(() => {
+      this.panel = undefined;
       this.webviewReady = false;
     });
-    webviewView.webview.onDidReceiveMessage((message: WebviewMessage) => {
+
+    this.panel.webview.onDidReceiveMessage((message: WebviewMessage) => {
       if (!message) {
         return;
       }
@@ -74,6 +92,7 @@ export class KanbanBoardViewProvider implements vscode.WebviewViewProvider {
         this.onCreateEmitter.fire({ columnId: message.columnId });
       }
     });
+
     this.postBoard();
   }
 
@@ -83,27 +102,81 @@ export class KanbanBoardViewProvider implements vscode.WebviewViewProvider {
   }
 
   private postBoard(): void {
-    if (!this.view || !this.webviewReady) {
+    if (!this.panel || !this.webviewReady) {
       return;
     }
     const message: WebviewEvent = { type: 'board', data: this.latestBoard };
-    void this.view.webview.postMessage(message);
+    void this.panel.webview.postMessage(message);
+  }
+
+  dispose(): void {
+    this.panel?.dispose();
   }
 }
 
-export function registerBoardView(context: vscode.ExtensionContext): KanbanBoardViewProvider {
-  const provider = new KanbanBoardViewProvider(context.extensionUri);
+export function createBoardPanelManager(context: vscode.ExtensionContext): KanbanBoardPanelManager {
+  const manager = new KanbanBoardPanelManager(context.extensionUri);
+
+  // Register command to open board in editor panel
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider('kanbanBoardView', provider, {
-      webviewOptions: { retainContextWhenHidden: true },
+    vscode.commands.registerCommand('kanban.openBoard', () => {
+      manager.openBoard();
     }),
   );
-  return provider;
+
+  return manager;
 }
 
-function getBoardHtml(): string {
+function getBoardHtml(panelMode = false): string {
   const cspMeta =
     "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; img-src vscode-resource: data:; script-src 'unsafe-inline'; style-src 'unsafe-inline';\" />";
+
+  // Panel mode: horizontal Trello-like layout (columns side by side)
+  // Sidebar mode: vertical stacked columns
+  const layoutStyles = panelMode
+    ? `
+      body {
+        background: var(--vscode-editor-background);
+        padding: 16px 24px;
+      }
+      #board {
+        display: flex;
+        flex-direction: row;
+        gap: 16px;
+        overflow-x: auto;
+        padding-bottom: 16px;
+        flex: 1;
+        align-items: flex-start;
+      }
+      .board-column {
+        flex: 0 0 300px;
+        min-width: 280px;
+        max-width: 320px;
+        min-height: 400px;
+        max-height: calc(100vh - 120px);
+      }
+      .task-card {
+        padding: 12px;
+      }
+      .task-title {
+        font-size: 14px;
+      }
+    `
+    : `
+      #board {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        overflow-x: auto;
+        padding-bottom: 12px;
+        flex: 1;
+      }
+      .board-column {
+        flex: 1;
+        min-height: 200px;
+      }
+    `;
+
   const styles = /* HTML */ `
     <style>
       :root {
@@ -127,22 +200,12 @@ function getBoardHtml(): string {
         gap: 8px;
         height: 100%;
       }
-      #board {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        overflow-x: auto;
-        padding-bottom: 12px;
-        flex: 1;
-      }
       .board-column {
-        flex: 1;
         background: var(--vscode-sideBarSectionHeader-background, rgba(255, 255, 255, 0.03));
         border: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
         border-radius: 8px;
         display: flex;
         flex-direction: column;
-        min-height: 200px;
         transition: border-color 0.15s ease, box-shadow 0.15s ease;
       }
       .board-column.drop-target {
@@ -637,5 +700,5 @@ function getBoardHtml(): string {
     </script>
   `;
 
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" />${cspMeta}${styles}</head>${body}${script}</html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" />${cspMeta}${styles}<style>${layoutStyles}</style></head>${body}${script}</html>`;
 }
