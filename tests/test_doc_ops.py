@@ -19,8 +19,8 @@ class TestDocTypes:
         expected = {
             "adr": "ADR",
             "bug": "BUG",
-            "plan": "PLAN",
-            "research": "RESEARCH",
+            "plan": "PLN",
+            "research": "RES",
         }
         for doc_type, expected_prefix in expected.items():
             assert DOC_TYPES[doc_type]["prefix"] == expected_prefix, (

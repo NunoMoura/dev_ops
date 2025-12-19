@@ -1,5 +1,8 @@
 # DevOps Framework
 
+[![CI](https://github.com/NunoMoura/dev_ops/actions/workflows/ci.yml/badge.svg)](https://github.com/NunoMoura/dev_ops/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/NunoMoura/dev_ops/graph/badge.svg)](https://codecov.io/gh/NunoMoura/dev_ops)
+
 A comprehensive development framework that creates an efficient, truly
 collaborative environment for **human teams and AI agents** working together.
 
@@ -23,31 +26,41 @@ DevOps Framework follows a **task-centric model**:
 graph TB
     subgraph "User Commands"
         C1["/create_task"]
-        C2["/pick_task"]
-        C3["/complete_task"]
+        C2["/list_tasks"]
+        C3["/pick_task"]
+        C4["/claim_task"]
+        C5["/complete_task"]
+        C6["/report_bug"]
     end
 
     subgraph "Kanban Board"
-        KB["board.json"]
+        KB["board.json (7 phases)"]
     end
 
     subgraph "Agent (Phase Rules)"
-        PR["phase_research"]
-        PP["phase_planning"]
-        PI["phase_inprogress"]
-        PT["phase_testing"]
+        RB["phase_backlog"]
+        RR["phase_research"]
+        RP["phase_planning"]
+        RI["phase_inprogress"]
+        RT["phase_testing"]
+        RD["phase_done"]
     end
 
-    subgraph "Artifacts"
+    subgraph "Artifacts (dev_ops/)"
         A1["plans/"]
         A2["research/"]
+        A3["tests/"]
+        A4["bugs/"]
+        A5["adrs/"]
     end
 
     C1 --> KB
-    C2 --> KB
-    KB --> PR --> PP --> PI --> PT
-    PI --> A1
-    PR --> A2
+    C3 --> KB
+    KB --> RB --> RR --> RP --> RI --> RT --> RD
+    RI --> A1
+    RR --> A2
+    RT --> A3
+    RR --> A5
 ```
 
 ## Installation

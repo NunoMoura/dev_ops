@@ -25,6 +25,11 @@
         "title": "DevOps: Initialize"
       },
       {
+        "command": "kanban.importPlan",
+        "title": "DevOps: Import Plan",
+        "icon": "$(cloud-upload)"
+      },
+      {
         "command": "kanban.openBoard",
         "title": "DevOps: Open Board"
       },
@@ -121,7 +126,7 @@
         {
           "id": "kanban",
           "title": "Kanban",
-          "icon": "resources/kanban-icon.png"
+          "icon": "resources/kanban-icon.svg"
         }
       ]
     },
@@ -130,18 +135,18 @@
         {
           "id": "kanbanView",
           "name": "List",
-          "icon": "resources/kanban-icon.png"
+          "icon": "resources/kanban-icon.svg"
         },
         {
           "id": "kanbanTaskDetailsView",
           "name": "Task Details",
           "type": "webview",
-          "icon": "resources/kanban-icon.png"
+          "icon": "resources/kanban-icon.svg"
         },
         {
           "id": "kanbanManagerView",
           "name": "Board Tools",
-          "icon": "resources/kanban-icon.png"
+          "icon": "resources/kanban-icon.svg"
         }
       ]
     },

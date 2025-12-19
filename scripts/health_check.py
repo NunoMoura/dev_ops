@@ -99,17 +99,16 @@ def run_health_check(project_root: str = None, verbose: bool = False) -> int:
         errors += 1
     print()
 
-    # Check 3: Rules Directory
+    # Check 3: Rules Directory (Flat Structure)
     print("📂 Rules Directory:")
     rules_dir = os.path.join(framework_root, "rules")
     if os.path.isdir(rules_dir):
-        check_directory_not_empty(os.path.join(rules_dir, "core"), "Core Rules")
-        check_directory_not_empty(
-            os.path.join(rules_dir, "workflows"), "Workflow Rules"
-        )
-        check_directory_not_empty(
-            os.path.join(rules_dir, "languages"), "Language Templates"
-        )
+        phase_rules = [f for f in os.listdir(rules_dir) if f.startswith("phase_")]
+        if not phase_rules:
+            print(f"  ⚠️  No phase rules found in {rules_dir}")
+            warnings += 1
+        else:
+            print(f"  ✅ Phase rules: {len(phase_rules)} found")
     else:
         print(f"  ❌ Rules directory not found: {rules_dir}")
         errors += 1
@@ -122,21 +121,44 @@ def run_health_check(project_root: str = None, verbose: bool = False) -> int:
         errors += 1
     else:
         # Check for essential workflows
-        essential = ["bootstrap.md", "create_plan.md", "report_bug.md", "verify.md"]
+        essential = [
+            "bootstrap.md",
+            "create_task.md",
+            "report_bug.md",
+            "complete_task.md",
+        ]
         for wf in essential:
             check_path_exists(os.path.join(workflows_dir, wf), wf)
     print()
 
-    # Check 5: Python Imports
+    # Check 5: Kanban Board (7-Column Model)
+    print("📋 Kanban Board:")
+    try:
+        from scripts.kanban_ops import load_board
+
+        board = load_board(project_root)
+        columns = board.get("columns", [])
+        if len(columns) == 7:
+            print("  ✅ Kanban board: 7 columns found")
+        else:
+            print(f"  ❌ Kanban board: {len(columns)} columns (expected 7)")
+            errors += 1
+    except Exception as e:
+        print(f"  ⚠️  Could not validate Kanban board: {e}")
+        warnings += 1
+    print()
+
+    # Check 6: Python Imports
     print("🐍 Python Imports:")
     # Add scripts to path for import checks
     sys.path.insert(0, framework_root)
     check_import("scripts.utils")
     check_import("scripts.doc_ops")
     check_import("scripts.template_ops")
+    check_import("scripts.kanban_ops")
     print()
 
-    # Check 6: Target Project (if different from framework)
+    # Check 7: Target Project (if different from framework)
     if project_root != framework_root:
         print("📂 Target Project Installation:")
         agent_dir = os.path.join(project_root, ".agent")
@@ -152,7 +174,11 @@ def run_health_check(project_root: str = None, verbose: bool = False) -> int:
             warnings += 1
 
         if os.path.exists(dev_ops_dir):
-            check_path_exists(os.path.join(dev_ops_dir, "docs"), "dev_ops/docs")
+            # Check for direct artifact directories
+            for subdir in ["plans", "research", "bugs", "adrs", "tests"]:
+                check_path_exists(
+                    os.path.join(dev_ops_dir, subdir), f"dev_ops/{subdir}"
+                )
         else:
             print("  ⚠️  dev_ops directory not found - run /bootstrap first")
             warnings += 1

@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-import os
-import sys
-import shutil
 import argparse
-import subprocess
+import glob
 import json
+import os
+import shutil
+import subprocess
+import sys
 
 # Add current directory to sys.path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from utils import write_file, prompt_user
+from kanban_ops import DEFAULT_COLUMNS  # Import shared column definitions
 from project_ops import detect_stack, get_file_content
-
+from utils import prompt_user, write_file
 
 # ==========================================
 # Kanban Extension Installation
@@ -27,27 +28,32 @@ def install_kanban_extension(dev_ops_root: str):
         result = subprocess.run(
             ["code", "--list-extensions"], capture_output=True, text=True, timeout=30
         )
-        if "devops-kanban" in result.stdout.lower():
+        if "dev-ops" in result.stdout.lower():
             print("   ✅ DevOps Kanban extension already installed")
             return
     except Exception as e:
         print(f"   ⚠️ Could not check extensions: {e}")
 
-    # Install from VSIX
-    vsix_path = os.path.join(
-        dev_ops_root, "vendor", "titan-kanban", "devops-kanban-0.0.1.vsix"
-    )
-    if os.path.exists(vsix_path):
-        print("   📦 Installing DevOps Kanban extension...")
+    # Install from VSIX - find latest version dynamically
+    vsix_pattern = os.path.join(dev_ops_root, "extension", "dev-ops-*.vsix")
+    vsix_files = glob.glob(vsix_pattern)
+
+    # Sort by version number (assuming format dev-ops-X.Y.Z.vsix)
+    # If generic sort fails, we can rely on file modification time as a fallback or just alpha sort
+    # Alpha sort works if versions are zero-padded or simple enough.
+    vsix_files = sorted(vsix_files, reverse=True)  # simplistic sort, usually sufficient for X.Y.Z
+
+    vsix_path = vsix_files[0] if vsix_files else None
+
+    if vsix_path and os.path.exists(vsix_path):
+        print(f"   📦 Installing DevOps Kanban extension ({os.path.basename(vsix_path)})...")
         try:
-            subprocess.run(
-                ["code", "--install-extension", vsix_path], check=True, timeout=60
-            )
+            subprocess.run(["code", "--install-extension", vsix_path], check=True, timeout=60)
             print("   ✅ DevOps Kanban extension installed")
         except subprocess.CalledProcessError as e:
             print(f"   ⚠️ Failed to install extension: {e}")
     else:
-        print(f"   ⚠️ Extension VSIX not found at {vsix_path}")
+        print(f"   ⚠️ No extension VSIX found matching {vsix_pattern}")
 
 
 def init_kanban_board(project_root: str):
@@ -62,14 +68,12 @@ def init_kanban_board(project_root: str):
     print("   📋 Initializing Kanban board...")
     os.makedirs(kanban_dir, exist_ok=True)
 
+    # Load columns from shared schema via kanban_ops
+    columns = DEFAULT_COLUMNS
+
     initial_board = {
         "version": 1,
-        "columns": [
-            {"id": "backlog", "name": "Backlog", "position": 1},
-            {"id": "in-progress", "name": "In Progress", "position": 2},
-            {"id": "review", "name": "Review", "position": 3},
-            {"id": "done", "name": "Done", "position": 4},
-        ],
+        "columns": columns,
         "items": [],
     }
 
@@ -108,21 +112,31 @@ def summarize_project(project_root: str):
 
 
 def get_core_rules(rules_src: str) -> list:
-    """Get all Core rules that should always be present."""
+    """Get all Core rules that should always be present (phase rules and guide)."""
     proposed = []
-    core_path = os.path.join(rules_src, "core")
-    if os.path.exists(core_path):
-        for file in os.listdir(core_path):
-            if file.endswith(".md") and not file.startswith("_"):
-                proposed.append(
-                    {
-                        "name": file,
-                        "src": os.path.join(core_path, file),
-                        "category": "Core",
-                        "reason": "Essential DevOps rule",
-                        "replacements": {},
-                    }
-                )
+    # Core rules are now in the root of the rules directory
+    core_files = [
+        "dev_ops_guide.md",
+        "phase_backlog.md",
+        "phase_research.md",
+        "phase_planning.md",
+        "phase_inprogress.md",
+        "phase_testing.md",
+        "phase_done.md",
+        "phase_blocked.md",
+    ]
+    for file in core_files:
+        src_path = os.path.join(rules_src, file)
+        if os.path.exists(src_path):
+            proposed.append(
+                {
+                    "name": file,
+                    "src": src_path,
+                    "category": "Core",
+                    "reason": "Essential DevOps rule",
+                    "replacements": {},
+                }
+            )
     return proposed
 
 
@@ -265,9 +279,7 @@ def bootstrap(target_dir: str):
             if os.path.exists(DEVOPS_DOCS_DIR):
                 print(f"Warning: {DEVOPS_DOCS_DIR} already exists. Merging content...")
                 shutil.copytree(found_docs, DEVOPS_DOCS_DIR, dirs_exist_ok=True)
-                shutil.rmtree(
-                    found_docs
-                )  # Safe to remove after copy? User said BE SAFE.
+                shutil.rmtree(found_docs)  # Safe to remove after copy? User said BE SAFE.
                 # Let's keep the existing logic:
                 # shutil.rmtree(found_docs) # BE SAFE, DONT DELETE FOR NOW
                 print(f"✅ Moved content to {DEVOPS_DOCS_DIR} (Old folder removed)")
@@ -276,13 +288,9 @@ def bootstrap(target_dir: str):
                 print(f"✅ Moved {os.path.basename(found_docs)} to {DEVOPS_DOCS_DIR}")
         else:
             print("Skipping docs move.")
-            os.makedirs(DEVOPS_DOCS_DIR, exist_ok=True)
-    else:
-        os.makedirs(DEVOPS_DOCS_DIR, exist_ok=True)
-
-    # Ensure Subdirectories
-    for subdir in ["adrs", "bugs", "plans", "research"]:
-        os.makedirs(os.path.join(DEVOPS_DOCS_DIR, subdir), exist_ok=True)
+    # Ensure Subdirectories in dev_ops/
+    for subdir in ["adrs", "bugs", "plans", "research", "tests"]:
+        os.makedirs(os.path.join(DEVOPS_DIR, subdir), exist_ok=True)
 
     # Create PRD if missing
     prd_found = False
@@ -301,7 +309,7 @@ def bootstrap(target_dir: str):
 
     if not prd_found:
         print("📄 Creating prd.md template...")
-        prd_path = os.path.join(DEVOPS_DOCS_DIR, "prd.md")
+        prd_path = os.path.join(DEVOPS_DIR, "prd.md")
         write_file(
             prd_path,
             "# Product Requirement Document\n\n## Overview\n\n## Goals\n\n## User Stories\n",
@@ -320,7 +328,10 @@ def bootstrap(target_dir: str):
         "setup_ops.py",
         "utils.py",
         "pr_ops.py",
-        "project_ops.py",  # Include project operations logic
+        "project_ops.py",
+        "kanban_ops.py",
+        "health_check.py",
+        "template_ops.py",
     ]
     for script in scripts_to_copy:
         src = os.path.join(SCRIPTS_SRC_DIR, script)
@@ -336,8 +347,6 @@ def bootstrap(target_dir: str):
     if os.path.exists(WORKFLOWS_SRC_DIR):
         print("\n📦 Installing Workflows...")
         AGENT_WORKFLOWS_DIR = os.path.join(AGENT_DIR, "workflows")
-        os.makedirs(AGENT_WORKFLOWS_DIR, exist_ok=True)
-
         os.makedirs(AGENT_WORKFLOWS_DIR, exist_ok=True)
         for file in os.listdir(WORKFLOWS_SRC_DIR):
             if file.endswith(".md") and not file.startswith("_"):
@@ -358,9 +367,7 @@ def bootstrap(target_dir: str):
         os.makedirs(GITHUB_DEST_DIR, exist_ok=True)
         pr_triage_dest = os.path.join(GITHUB_DEST_DIR, "pr_triage.yml")
         if os.path.exists(pr_triage_dest):
-            choice = prompt_user(
-                "⚠️  pr_triage.yml already exists. Overwrite? (y/n)", "n"
-            )
+            choice = prompt_user("⚠️  pr_triage.yml already exists. Overwrite? (y/n)", "n")
             if choice.lower() != "y":
                 print("   - Skipped pr_triage.yml")
             else:
@@ -380,12 +387,8 @@ def bootstrap(target_dir: str):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Bootstrap/Setup dev_ops in a project."
-    )
-    parser.add_argument(
-        "--target", default=os.getcwd(), help="Target project directory"
-    )
+    parser = argparse.ArgumentParser(description="Bootstrap/Setup dev_ops in a project.")
+    parser.add_argument("--target", default=os.getcwd(), help="Target project directory")
     args = parser.parse_args()
 
     bootstrap(args.target)

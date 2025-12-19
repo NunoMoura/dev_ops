@@ -1,5 +1,5 @@
 ---
-id: "{{id}}"           # PLAN-XXX - auto-generated
+id: "{{id}}"           # PLN-XXX - auto-generated
 title: "{{title}}"     # Short descriptive title
 type: plan
 date: "{{date}}"       # Creation date (YYYY-MM-DD)

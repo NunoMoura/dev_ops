@@ -1,5 +1,5 @@
 ---
-id: "{{id}}"           # RESEARCH-XXX - auto-generated
+id: "{{id}}"           # RES-XXX - auto-generated
 title: "{{title}}"     # Research topic or question
 type: research
 date: "{{date}}"       # Creation date (YYYY-MM-DD)

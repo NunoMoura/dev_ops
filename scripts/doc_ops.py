@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-import os
-import sys
 import argparse
 import datetime
+import os
 import re
+import sys
 
 # Add current directory to sys.path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from utils import write_file, read_file, get_next_id, sanitize_slug, prompt_user
+from utils import get_next_id, prompt_user, read_file, sanitize_slug, write_file
 
 # ==========================================
 # CONSTANTS
@@ -25,9 +25,9 @@ TEMPLATES_DIR = os.path.join(DEV_OPS_ROOT, "templates")
 DOC_TYPES = {
     "adr": {"dir": "adrs", "prefix": "ADR"},
     "bug": {"dir": "bugs", "prefix": "BUG"},
-    "feature": {"dir": "features", "prefix": "FEAT"},
-    "plan": {"dir": "plans", "prefix": "PLAN"},
-    "research": {"dir": "research", "prefix": "RESEARCH"},
+    "plan": {"dir": "plans", "prefix": "PLN"},
+    "research": {"dir": "research", "prefix": "RES"},
+    "test": {"dir": "tests", "prefix": "TST"},
 }
 
 DOC_STATUS_REGEX = r"^status:\s*(.*)$"
@@ -110,9 +110,7 @@ def create_doc(doc_type: str, title: str, priority: str = "medium", desc: str = 
             new_item = f"\n- [ ] {title}\n"
             # Try to insert after "## High Priority" if exists
             if "## High Priority" in content:
-                content = content.replace(
-                    "## High Priority", f"## High Priority{new_item}", 1
-                )
+                content = content.replace("## High Priority", f"## High Priority{new_item}", 1)
             else:
                 content += new_item
             write_file(backlog_path, content, overwrite=True)
@@ -133,9 +131,7 @@ def create_doc(doc_type: str, title: str, priority: str = "medium", desc: str = 
     content = content.replace("{{date}}", datetime.date.today().isoformat())
     content = content.replace("{{priority}}", priority)
     content = content.replace("{{description}}", desc)
-    content = content.replace(
-        "{{context}}", f"Created via doc_ops at {datetime.datetime.now()}"
-    )
+    content = content.replace("{{context}}", f"Created via doc_ops at {datetime.datetime.now()}")
 
     # 4. Write
     write_file(filepath, content)
@@ -217,19 +213,17 @@ def main():
     create_parser = subparsers.add_parser("create", help="Create a new document")
     create_parser.add_argument(
         "type",
-        choices=["adr", "bug", "plan", "research", "backlog"],
+        choices=["adr", "bug", "plan", "research", "test", "backlog"],
         help="Document type",
     )
     create_parser.add_argument("--title", help="Title")
     create_parser.add_argument("--desc", help="Description")
-    create_parser.add_argument(
-        "--priority", default="medium", help="Priority (for bugs)"
-    )
+    create_parser.add_argument("--priority", default="medium", help="Priority (for bugs)")
 
     # LIST
     list_parser = subparsers.add_parser("list", help="List documents")
     list_parser.add_argument(
-        "type", choices=["adr", "bug", "plan", "research"], help="Document type"
+        "type", choices=["adr", "bug", "plan", "research", "test"], help="Document type"
     )
 
     # RESOLVE
@@ -264,7 +258,7 @@ def validate_docs():
         return
 
     # 2. Iterate all known types
-    for doc_type, config in DOC_TYPES.items():
+    for config in DOC_TYPES.values():
         if "dir" in config:
             target_dir = os.path.join(DOCS_DIR, config["dir"])
             if os.path.exists(target_dir):

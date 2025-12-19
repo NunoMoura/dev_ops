@@ -1,30 +1,48 @@
+"""Project operations for detecting technology stack and generating rules."""
+
 import os
+import glob
+from typing import Any, Optional
 
 
-def get_file_content(path):
+def get_file_content(path: str) -> str:
+    """Read and return file contents, or empty string if file doesn't exist.
+
+    Args:
+        path: Path to the file to read.
+
+    Returns:
+        File contents as string, or empty string if file doesn't exist.
+    """
     if os.path.exists(path):
         with open(path, "r") as f:
             return f.read()
     return ""
 
 
-def detect_stack(project_root):
+def detect_stack(project_root: str) -> list[dict[str, Any]]:
+    """Scan the project and return a list of detected stack items (rules to create).
+
+    Analyzes the project directory to detect programming languages, linters,
+    and libraries/frameworks. Returns rule definitions that can be used to
+    generate project-specific rule files.
+
+    Args:
+        project_root: Path to the project root directory.
+
+    Returns:
+        List of dictionaries containing rule definitions with keys:
+        - name: Filename for the rule (e.g., python.md)
+        - category: Language, Linter, or Library
+        - template: Path to the _template.md file
+        - replacements: Dictionary of placeholder values to fill in template
     """
-    Scans the project and returns a list of 'Stack Items' (Rules to create).
-    Each item contains:
-    - name: Filename for the rule (e.g. python.md)
-    - category: Language, Linter, Library
-    - template: Path to the _template.md file
-    - replacements: Dictionary of values to fill in the template
-    """
-    stack = []
+    stack: list[dict[str, Any]] = []
 
     # ---------------------------------------------------------
     # 1. Languages
     # ---------------------------------------------------------
-    # Definitions: (Language Name, Trigger Files, Extension, Template)
-    # Note: We rely on the template to exist at rules/languages/_template.md
-    languages = [
+    languages: list[tuple[str, list[str], str]] = [
         ("python", ["pyproject.toml", "requirements.txt", "**/*.py"], "py"),
         ("typescript", ["tsconfig.json", "**/*.ts", "**/*.tsx"], "ts"),
         ("javascript", ["package.json", "**/*.js", "**/*.jsx"], "js"),
@@ -34,7 +52,7 @@ def detect_stack(project_root):
         ("cpp", ["CMakeLists.txt", "Makefile", "**/*.cpp", "**/*.cc"], "cpp"),
     ]
 
-    detected_langs = set()
+    detected_langs: set[str] = set()
 
     for lang_name, triggers, ext in languages:
         if _check_triggers(project_root, triggers):
@@ -55,17 +73,15 @@ def detect_stack(project_root):
     # ---------------------------------------------------------
     # 2. Linters / Tools
     # ---------------------------------------------------------
-    # Definitions: (Tool Name, Trigger Content/Files)
-    # We scan common config files for these strings
-    tools = [
+    tools: list[tuple[str, list[str]]] = [
         ("eslint", ["package.json", ".eslintrc*", "eslint.config.js"]),
         ("prettier", ["package.json", ".prettierrc*", "prettier.config.js"]),
         ("ruff", ["pyproject.toml", "ruff.toml"]),
         ("pylint", ["pyproject.toml", ".pylintrc"]),
         ("black", ["pyproject.toml"]),
-        ("gofmt", ["go.mod"]),  # Implicit in Go usually
+        ("gofmt", ["go.mod"]),
         ("golangci-lint", [".golangci.yml", ".golangci.yaml"]),
-        ("clippy", ["Cargo.toml"]),  # Standard in Rust
+        ("clippy", ["Cargo.toml"]),
         ("cargo", ["Cargo.toml"]),
         ("maven", ["pom.xml"]),
         ("gradle", ["build.gradle"]),
@@ -77,13 +93,12 @@ def detect_stack(project_root):
             stack.append(
                 {
                     "name": f"{tool_name}.md",
-                    "category": "Linter",  # Or Tool
+                    "category": "Linter",
                     "template": "rules/linters/_template.md",
                     "replacements": {
                         "[Linter Name]": tool_name.capitalize(),
                         "[Linter/Tool Name]": tool_name.capitalize(),
                         "[Tool Name]": tool_name.capitalize(),
-                        # Infer config file extension or generic
                         "[config_file_ext]": "json"
                         if tool_name in ["eslint", "prettier"]
                         else "toml",
@@ -94,7 +109,7 @@ def detect_stack(project_root):
     # ---------------------------------------------------------
     # 3. Libraries / Infrastructure
     # ---------------------------------------------------------
-    libs = [
+    libs: list[tuple[str, list[str]]] = [
         ("docker", ["Dockerfile", "docker-compose.yml"]),
         ("kubernetes", ["k8s/", "helm/", "Chart.yaml", "values.yaml"]),
         ("react", ["package.json"]),
@@ -123,24 +138,34 @@ def detect_stack(project_root):
     return stack
 
 
-def _check_triggers(root, triggers, content_search=None):
-    """
-    Checks if any trigger matches.
-    If trigger is a glob (has *), we walk.
-    If trigger is a file, we check existence.
-    If content_search is provided, we check if the file content contains that string (for package.json etc).
-    """
-    import glob
+# Directories to exclude from glob searches
+_EXCLUDED_DIRS = frozenset(
+    [".git", "node_modules", "venv", "__pycache__", "dist", "out"]
+)
 
+
+def _check_triggers(
+    root: str, triggers: list[str], content_search: Optional[str] = None
+) -> bool:
+    """Check if any trigger file or pattern matches in the project.
+
+    Args:
+        root: Project root directory path.
+        triggers: List of file paths or glob patterns to check.
+        content_search: Optional string to search for within matched files.
+
+    Returns:
+        True if any trigger matches (and optionally contains content_search).
+    """
     for t in triggers:
         if "*" in t:
             # Glob check
-            # We limit depth to avoid analyzing node_modules
-            # Simple walk or glob? glob.glob with recursive=True is easy
-            # But let's verify if we need to implement a safer walker
-            # For now, let's assume if it's a simple glob relative to root
             try:
                 matches = glob.glob(os.path.join(root, t), recursive=True)
+                # Filter out matches in excluded dirs
+                matches = [
+                    m for m in matches if not any(x in m for x in _EXCLUDED_DIRS)
+                ]
                 if matches:
                     return True
             except Exception:
@@ -151,8 +176,6 @@ def _check_triggers(root, triggers, content_search=None):
             if os.path.exists(path):
                 if content_search:
                     content = get_file_content(path).lower()
-                    # Check if key is in content (e.g. "react" in package.json)
-                    # We reuse the tool/lib name as the search key usually
                     if content_search.lower() in content:
                         return True
                 else:

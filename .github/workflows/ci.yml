@@ -7,7 +7,8 @@ on:
     branches: [ "main" ]
 
 jobs:
-  validate:
+  python:
+    name: Python Tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -17,29 +18,67 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v3
-      
+      - uses: actions/checkout@v4
+
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          
+
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest
+          pip install pytest pytest-cov ruff
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          
+
       - name: Run Linting
         run: |
-          pip install ruff
-          ruff check . || true
-          
-      - name: Run Tests
+          ruff check . --output-format=github || echo "::warning::Linting issues found"
+
+      - name: Run Tests with Coverage
         run: |
-          python -m pytest tests/ -v
+          python -m pytest tests/ -v --cov=scripts --cov-report=term --cov-report=xml
+
+      - name: Upload Coverage
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false
 
       - name: Health Check
         run: |
-          python scripts/health_check.py || echo "Health check not yet implemented"
+          python scripts/health_check.py
 
+  extension:
+    name: Extension Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: extension
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Type Check
+        run: pnpm run check-types
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Build
+        run: pnpm run compile
+
+      - name: Run Tests
+        run: xvfb-run -a pnpm run test
+        continue-on-error: true  # Extension tests are WIP

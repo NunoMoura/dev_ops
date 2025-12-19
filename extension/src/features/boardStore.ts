@@ -91,7 +91,9 @@ export async function registerKanbanWatchers(
     'dev_ops/kanban/board.json',
     'dev_ops/plans/*.md',
     'dev_ops/research/*.md',
-    'dev_ops/docs/*.md',
+    'dev_ops/tests/*.md',
+    'dev_ops/bugs/*.md',
+    'dev_ops/adrs/*.md',
   ];
   for (const glob of patterns) {
     const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, glob));

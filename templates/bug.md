@@ -5,7 +5,7 @@ type: bug
 priority: "{{priority}}" # Low | Medium | High | Critical
 status: Open           # Open | In Progress | Resolved | Closed
 upstream: []           # Artifacts this depends on
-downstream: []         # Artifacts that depend on this (e.g., PLAN-001)
+downstream: []         # Artifacts that depend on this (e.g., PLN-001)
 linked_tasks: []       # Related tasks (e.g., TASK-001)
 ---
 

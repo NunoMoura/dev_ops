@@ -7,7 +7,7 @@ Part of the DevOps Framework for structured task management and artifact trackin
 
 - **Board storage** in `dev_ops/kanban/board.json`, automatically created with
   default columns if missing
-- **7-column workflow**: Backlog → Research → Planning → In Progress → Review →
+- **7-column workflow**: Backlog → Research → Planning → In Progress → Testing →
   Blocked → Done
 - **Dual views**: List view for compact navigation, Board view for drag-and-drop
 - **Task dependencies**: Track upstream (inputs) and downstream (outputs) artifacts
@@ -45,7 +45,7 @@ Part of the DevOps Framework for structured task management and artifact trackin
     { "id": "col-research", "name": "Research", "position": 2 },
     { "id": "col-planning", "name": "Planning", "position": 3 },
     { "id": "col-inprogress", "name": "In Progress", "position": 4 },
-    { "id": "col-review", "name": "Review", "position": 5 },
+    { "id": "col-testing", "name": "Testing", "position": 5 },
     { "id": "col-blocked", "name": "Blocked", "position": 6 },
     { "id": "col-done", "name": "Done", "position": 7 }
   ],
@@ -92,7 +92,7 @@ Tasks don't have a separate `status` field. The column determines status:
 | Research | Producing RES-XXX |
 | Planning | Producing PLN-XXX |
 | In Progress | Active work |
-| Review | Verification |
+| Testing | Verification |
 | Blocked | Waiting |
 | Done | Complete |
 

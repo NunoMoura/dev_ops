@@ -39,7 +39,7 @@ Use [bug.md](file:///home/nunoc/projects/dev_ops/templates/bug.md).
 
 1. **Create the file**:
    - Run `python3 dev_ops/scripts/doc_ops.py create bug --title "Brief failure description"`.
-   - This generates `dev_ops/docs/bugs/BUG-XXX-title.md`.
+   - This generates `dev_ops/bugs/BUG-XXX-title.md`.
 
 2. **Fill in the details**:
    - **Status**: Set to `open`.

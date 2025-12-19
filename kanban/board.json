@@ -40,15 +40,26 @@
   "items": [
     {
       "id": "TASK-001",
-      "columnId": "col-testing",
-      "title": "New Task",
-      "updatedAt": "2025-12-19T20:33:15.713Z"
-    },
-    {
-      "id": "TASK-002",
-      "columnId": "col-inprogress",
-      "title": "New Task",
-      "updatedAt": "2025-12-19T20:52:31.313Z"
+      "columnId": "col-done",
+      "title": "Test: Agent Board Interaction",
+      "summary": "Testing agent workflow",
+      "workflow": null,
+      "priority": "medium",
+      "agentReady": true,
+      "upstream": [],
+      "downstream": [
+        "test_output.py"
+      ],
+      "prerequisites": {
+        "tasks": [],
+        "approvals": []
+      },
+      "completionCriteria": {
+        "artifacts": [],
+        "tests": false,
+        "review": false
+      },
+      "updatedAt": "2025-12-19T19:48:03.676815Z"
     }
   ]
 }

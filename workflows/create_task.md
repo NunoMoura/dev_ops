@@ -11,14 +11,14 @@ work across human developers and AI agents.
 
 ## Prerequisites
 
-- [ ] Titan Kanban extension installed in VS Code
+- [ ] DevOps extension installed in VS Code
 - [ ] An idea, feature, or work item to track
 
 ## Steps
 
 1. **Create the Task**:
    - Run command: `Kanban: Create Task` (Ctrl+Shift+P)
-   - Or use the `+` button in the Titan Board view
+   - Or use the `+` button in the Kanban Board view
    - Fill in title, summary, and set `agentReady: true` if ready for agent work
 
 2. **Set Priority and Metadata**:

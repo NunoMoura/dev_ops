@@ -1,8 +1,31 @@
+"""Utility functions for the DevOps framework scripts."""
+
 import os
 import sys
 import re
 import subprocess
 from typing import Optional
+
+
+# ==========================================
+# Exceptions
+# ==========================================
+
+
+class DevOpsError(Exception):
+    """Base exception for DevOps framework errors."""
+    pass
+
+
+class CommandError(DevOpsError):
+    """Raised when a shell command fails."""
+    pass
+
+
+class FileExistsError(DevOpsError):
+    """Raised when attempting to write to an existing file without overwrite."""
+    pass
+
 
 # ==========================================
 # Interaction
@@ -10,7 +33,15 @@ from typing import Optional
 
 
 def prompt_user(question: str, default: Optional[str] = None) -> str:
-    """Prompts the user for input. Handles pipes and headless mode."""
+    """Prompt the user for input, handling pipes and headless mode.
+
+    Args:
+        question: The prompt message to display.
+        default: Default value to return if no input provided.
+
+    Returns:
+        User's input, or default value if applicable.
+    """
     if os.environ.get("HEADLESS", "").lower() == "true":
         return default or "TODO_FILL_ME"
 
@@ -44,21 +75,44 @@ def prompt_user(question: str, default: Optional[str] = None) -> str:
 # ==========================================
 
 
-def write_file(path: str, content: str, overwrite: bool = False) -> None:
-    """Writes content to a file. Errors if file exists and overwrite is False."""
+def write_file(
+    path: str,
+    content: str,
+    overwrite: bool = False,
+    quiet: bool = False
+) -> None:
+    """Write content to a file.
+
+    Args:
+        path: Path to the file to write.
+        content: Content to write to the file.
+        overwrite: If True, overwrite existing files. If False, raise error.
+        quiet: If True, suppress success messages.
+
+    Raises:
+        FileExistsError: If file exists and overwrite is False.
+    """
     if os.path.exists(path) and not overwrite:
-        print(f"Error: File '{path}' already exists. Use --overwrite to replace.")
-        sys.exit(1)
+        raise FileExistsError(f"File '{path}' already exists. Use overwrite=True to replace.")
 
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
 
     with open(path, "w") as f:
         f.write(content)
-    print(f"Created: {path}")
+    
+    if not quiet:
+        print(f"Created: {path}")
 
 
 def read_file(path: str) -> str:
-    """Reads content from a file."""
+    """Read and return content from a file.
+
+    Args:
+        path: Path to the file to read.
+
+    Returns:
+        File contents as a string.
+    """
     with open(path, "r") as f:
         return f.read()
 
@@ -69,8 +123,17 @@ def read_file(path: str) -> str:
 
 
 def get_next_id(prefix: str, directory: str) -> str:
-    """
-    Scans directory for files like PREFIX-001-*.md and returns PREFIX-002.
+    """Generate the next sequential ID for a given prefix and directory.
+
+    Scans the directory for files matching PREFIX-NNN-*.md pattern
+    and returns the next sequential ID.
+
+    Args:
+        prefix: ID prefix (e.g., 'PLN', 'RES', 'BUG').
+        directory: Directory to scan for existing files.
+
+    Returns:
+        Next ID in format 'PREFIX-NNN' (e.g., 'PLN-001').
     """
     if not os.path.exists(directory):
         return f"{prefix}-001"
@@ -91,7 +154,14 @@ def get_next_id(prefix: str, directory: str) -> str:
 
 
 def sanitize_slug(text: str) -> str:
-    """Converts text to kebab-case slug."""
+    """Convert text to a URL-safe kebab-case slug.
+
+    Args:
+        text: Text to convert to slug.
+
+    Returns:
+        Lowercase kebab-case slug, or 'untitled' if empty.
+    """
     if not text or not text.strip():
         return "untitled"
     text = text.lower().strip()
@@ -105,12 +175,33 @@ def sanitize_slug(text: str) -> str:
 # ==========================================
 
 
-def run_command(command: str) -> str:
-    """Runs a shell command and returns output."""
+def run_command(
+    command: str,
+    raise_on_error: bool = True,
+    quiet: bool = False
+) -> str:
+    """Execute a shell command and return its output.
+
+    Args:
+        command: Shell command to execute.
+        raise_on_error: If True, raise CommandError on failure.
+            If False, return empty string on failure.
+        quiet: If True, suppress error messages to stdout.
+
+    Returns:
+        Command output as string, or empty string on failure if raise_on_error=False.
+
+    Raises:
+        CommandError: If command fails and raise_on_error is True.
+    """
     try:
         result = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
         return result.decode("utf-8").strip()
     except subprocess.CalledProcessError as e:
-        print(f"Error running command: {command}")
-        print(e.output.decode("utf-8"))
-        sys.exit(1)
+        error_output = e.output.decode("utf-8") if e.output else ""
+        if raise_on_error:
+            raise CommandError(f"Command failed: {command}\n{error_output}")
+        if not quiet:
+            print(f"Error running command: {command}")
+            print(error_output)
+        return ""
