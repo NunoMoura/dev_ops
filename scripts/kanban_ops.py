@@ -543,6 +543,70 @@ def claim_task(task_id: str, force: bool = False, project_root: Optional[str] = 
     return False
 
 
+def revert_task(
+    task_id: str,
+    project_root: Optional[str] = None,
+) -> bool:
+    """Revert a completed task using its stored commit SHA.
+
+    Uses the commitSha stored when the task was marked done to perform
+    a git revert. This enables smart undo of logical units of work.
+
+    Args:
+        task_id: The task ID to revert (must have commitSha field)
+        project_root: Optional project root path
+
+    Returns:
+        True if revert successful, False otherwise
+    """
+    import subprocess
+
+    board = load_board(project_root)
+    task = None
+    for t in board.get("items", []):
+        if t.get("id") == task_id:
+            task = t
+            break
+
+    if not task:
+        print(f"⚠️ Task {task_id} not found")
+        return False
+
+    commit_sha = task.get("commitSha")
+    if not commit_sha:
+        print(f"⚠️ Task {task_id} has no commitSha - cannot revert")
+        print("   Tasks must be completed with mark_done() to track commits.")
+        return False
+
+    # Perform git revert
+    try:
+        result = subprocess.run(
+            ["git", "revert", "--no-commit", commit_sha],
+            capture_output=True,
+            text=True,
+            cwd=project_root or os.getcwd(),
+        )
+        if result.returncode != 0:
+            print(f"⚠️ Git revert failed: {result.stderr}")
+            return False
+
+        # Update task status
+        task["status"] = "reverted"
+        task["revertedAt"] = datetime.utcnow().isoformat() + "Z"
+        task["updatedAt"] = datetime.utcnow().isoformat() + "Z"
+        save_board(board, project_root)
+
+        print(f"✅ Reverted {task_id} (commit: {commit_sha})")
+        print("   Changes staged but not committed. Review and commit when ready.")
+        return True
+    except FileNotFoundError:
+        print("⚠️ Git not found. Please ensure git is installed.")
+        return False
+    except Exception as e:
+        print(f"⚠️ Revert failed: {e}")
+        return False
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Kanban board operations.")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -638,6 +702,10 @@ if __name__ == "__main__":
         "--with", nargs="+", dest="new_titles", required=True, help="Titles of new tasks"
     )
 
+    # Revert a completed task
+    revert_parser = subparsers.add_parser("revert", help="Revert a task using its commit SHA")
+    revert_parser.add_argument("task_id", help="Task ID to revert")
+
     args = parser.parse_args()
 
     if args.command == "list":
@@ -684,3 +752,5 @@ if __name__ == "__main__":
             checklist_list(args.task_id)
     elif args.command == "replace":
         replace_task(args.task_id, args.new_titles)
+    elif args.command == "revert":
+        revert_task(args.task_id)

@@ -27,7 +27,27 @@ Before approving, verify:
 - [ ] Code follows project style guidelines
 - [ ] No obvious bugs or logic errors
 - [ ] Error handling is appropriate
-- [ ] No security vulnerabilities (secrets, injection, etc.)
+
+### Security
+
+> [!IMPORTANT]
+> Security review is mandatory for all changes touching authentication,
+> authorization, data handling, or external inputs.
+
+- [ ] **Secrets**: No hardcoded credentials, API keys, or tokens
+- [ ] **Injection**: User inputs sanitized/parameterized (SQL, XSS, command)
+- [ ] **Authentication**: Auth checks present where required
+- [ ] **Authorization**: Permission checks enforce least privilege
+- [ ] **Data Exposure**: No sensitive data in logs, errors, or responses
+- [ ] **Dependencies**: No known vulnerabilities in new dependencies
+
+**For any security issue found**, create a BUG artifact:
+
+```bash
+python3 dev_ops/scripts/doc_ops.py create bug \
+  --title "Security: <issue description>" \
+  --priority high
+```
 
 ### Documentation
 
