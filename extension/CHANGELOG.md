@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.1] - 2025-12-20
+
+### Fixed
+
+- Task editor URI resolution - Added TextDocumentContentProvider for `kanban-task://` scheme
+
 ## [0.5.0] - 2025-12-20
 
 ### Added

@@ -100,13 +100,12 @@ Install the `dev-ops-X.X.X.vsix` from this repository:
 ```bash
 # Checklist management for complex tasks
 python scripts/kanban_ops.py checklist add TASK-001 "Step to complete"
-python scripts/kanban_ops.py checklist complete TASK-001 0
+python scripts/kanban_ops.py checklist complete TASK-001
 python scripts/kanban_ops.py checklist list TASK-001
 
 # Split complex task into simpler ones
 python scripts/kanban_ops.py replace TASK-001 --with "Task A" "Task B" "Task C"
 ```
-
 
 ## How It Works
 

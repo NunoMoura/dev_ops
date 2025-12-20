@@ -3,6 +3,30 @@ import { readKanban, writeKanban } from './features/boardStore';
 import { Task, COLUMN_FALLBACK_NAME } from './features/types';
 
 /**
+ * Content provider for kanban-task:// URIs.
+ * Required for CustomTextEditorProvider to work with virtual documents.
+ */
+class TaskDocumentContentProvider implements vscode.TextDocumentContentProvider {
+  public static readonly scheme = 'kanban-task';
+
+  async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
+    // Extract task ID from URI path (e.g., /task/TASK-001.kanban-task -> TASK-001)
+    const taskId = uri.path.replace('/task/', '').replace('.kanban-task', '');
+
+    try {
+      const board = await readKanban();
+      const task = board.items.find(t => t.id === taskId);
+      if (task) {
+        return JSON.stringify(task, null, 2);
+      }
+    } catch {
+      // Fall through to return empty
+    }
+    return JSON.stringify({ id: taskId, error: 'Task not found' });
+  }
+}
+
+/**
  * Custom editor provider for Kanban tasks.
  * Opens tasks in a new editor tab with a webview-based form.
  */
@@ -15,7 +39,14 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     const provider = new TaskEditorProvider(context);
     TaskEditorProvider.instance = provider;
 
-    const disposable = vscode.window.registerCustomEditorProvider(
+    // Register the content provider for the kanban-task scheme
+    const contentProvider = new TaskDocumentContentProvider();
+    const contentDisposable = vscode.workspace.registerTextDocumentContentProvider(
+      TaskDocumentContentProvider.scheme,
+      contentProvider
+    );
+
+    const editorDisposable = vscode.window.registerCustomEditorProvider(
       TaskEditorProvider.viewType,
       provider,
       {
@@ -24,7 +55,13 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       }
     );
 
-    return disposable;
+    // Return a combined disposable
+    return {
+      dispose: () => {
+        contentDisposable.dispose();
+        editorDisposable.dispose();
+      }
+    };
   }
 
   constructor(private readonly context: vscode.ExtensionContext) { }
