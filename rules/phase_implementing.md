@@ -1,9 +1,9 @@
 ---
 activation_mode: Model Decides
-description: In Progress phase - active implementation.
+description: Implementing phase - active implementation.
 ---
 
-# In Progress Phase
+# Implementing Phase
 
 Active implementation following approved plan.
 

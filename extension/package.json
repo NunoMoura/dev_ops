@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/NunoMoura/dev_ops"
   },
-  "version": "0.5.1",
+  "version": "0.6.0",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -119,6 +119,11 @@
         "command": "kanban.openTaskContext",
         "title": "DevOps: Open Task Context",
         "icon": "$(file-code)"
+      },
+      {
+        "command": "kanban.openSettings",
+        "title": "DevOps: Preferences",
+        "icon": "$(gear)"
       }
     ],
     "viewsContainers": {
@@ -134,18 +139,13 @@
       "kanban": [
         {
           "id": "kanbanView",
-          "name": "List",
+          "name": "Kanban",
           "icon": "resources/kanban-icon.svg"
         },
         {
           "id": "kanbanMetricsView",
-          "name": "Metrics",
+          "name": "Board Metrics",
           "type": "webview",
-          "icon": "resources/kanban-icon.svg"
-        },
-        {
-          "id": "kanbanManagerView",
-          "name": "Board Tools",
           "icon": "resources/kanban-icon.svg"
         }
       ]
@@ -199,6 +199,12 @@
           "when": "view == kanbanView",
           "group": "navigation@6",
           "icon": "$(issue-closed)"
+        },
+        {
+          "command": "kanban.openSettings",
+          "when": "view == kanbanView",
+          "group": "navigation@9",
+          "icon": "$(gear)"
         }
       ],
       "view/item/context": [

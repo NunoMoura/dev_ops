@@ -56,8 +56,8 @@ export function registerInitializeCommand(
                 path.join(workspaceRoot, "dev_ops", "scripts")
             );
 
-            // Initialize Kanban board
-            await initializeKanbanBoard(workspaceRoot);
+            // Initialize Kanban board with template selection
+            await initializeKanbanBoard(workspaceRoot, assetsPath);
 
             vscode.window.showInformationMessage(
                 "✅ DevOps: Framework initialized successfully!"
@@ -94,7 +94,7 @@ async function copyDirectory(src: string, dest: string): Promise<void> {
     }
 }
 
-async function initializeKanbanBoard(workspaceRoot: string): Promise<void> {
+async function initializeKanbanBoard(workspaceRoot: string, assetsPath: string): Promise<void> {
     const kanbanDir = path.join(workspaceRoot, "dev_ops", "kanban");
     const boardPath = path.join(kanbanDir, "board.json");
 
@@ -103,16 +103,56 @@ async function initializeKanbanBoard(workspaceRoot: string): Promise<void> {
         return;
     }
 
+    // Prompt user for board template
+    type TemplateOption = { label: string; description: string; template: string | null };
+    const options: TemplateOption[] = [
+        { label: "Empty Board", description: "Start with an empty Kanban board", template: null },
+        { label: "Greenfield Project", description: "New project - architecture, scaffolding, CI/CD setup", template: "board_greenfield.json" },
+        { label: "Brownfield Project", description: "Existing codebase - audit, dependencies, tests", template: "board_brownfield.json" },
+    ];
+
+    const selection = await vscode.window.showQuickPick(options, {
+        placeHolder: "Select a board template",
+        title: "DevOps: Initialize Kanban Board",
+    });
+
+    if (!selection) {
+        // User cancelled - still create empty board
+        console.log("User cancelled template selection, creating empty board");
+    }
+
     if (!fs.existsSync(kanbanDir)) {
         fs.mkdirSync(kanbanDir, { recursive: true });
+    }
+
+    // Load template if selected
+    let items: any[] = [];
+    if (selection?.template) {
+        const templatePath = path.join(assetsPath, "templates", selection.template);
+        if (fs.existsSync(templatePath)) {
+            try {
+                const templateData = JSON.parse(fs.readFileSync(templatePath, "utf-8"));
+                items = (templateData.items || []).map((item: any, index: number) => ({
+                    id: `TASK-${String(index + 1).padStart(3, "0")}`,
+                    columnId: "col-backlog",
+                    title: item.title,
+                    summary: item.summary,
+                    priority: item.priority,
+                    updatedAt: new Date().toISOString(),
+                }));
+            } catch (error) {
+                console.error("Failed to load board template:", error);
+            }
+        }
     }
 
     const initialBoard = {
         version: 1,
         columns: DEFAULT_COLUMN_BLUEPRINTS.map((col) => ({ ...col })),
-        items: [],
+        items,
     };
 
     fs.writeFileSync(boardPath, JSON.stringify(initialBoard, null, 2));
-    console.log("Kanban board initialized at dev_ops/kanban/board.json");
+    const taskCount = items.length ? ` with ${items.length} starter tasks` : "";
+    console.log(`Kanban board initialized${taskCount} at dev_ops/kanban/board.json`);
 }

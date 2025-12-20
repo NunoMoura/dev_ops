@@ -253,6 +253,16 @@ export function registerKanbanCommands(
     },
     'Unable to view task history',
   );
+
+  registerKanbanCommand(
+    context,
+    'kanban.openSettings',
+    async () => {
+      // Open extension settings filtered to DevOps
+      await vscode.commands.executeCommand('workbench.action.openSettings', '@ext:NunoMoura.dev-ops');
+    },
+    'Unable to open settings',
+  );
 }
 
 export async function handleBoardMoveTasks(request: MoveTasksRequest, provider: KanbanTreeProvider): Promise<void> {
