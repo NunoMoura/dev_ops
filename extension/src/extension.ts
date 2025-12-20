@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import { KanbanTaskDetailsViewProvider, registerTaskDetailsView } from './taskDetailsView';
 import { KanbanBoardPanelManager, createBoardPanelManager } from './boardView';
 import { KanbanTreeProvider, KanbanNode, KanbanItemNode, KanbanManagerProvider } from './ui/providers';
 import {
@@ -16,12 +15,18 @@ import { COLUMN_FALLBACK_NAME } from './features/types';
 import { buildCardPayload } from './features/taskPresentation';
 import { formatError } from './features/errors';
 import { createStatusBar, StatusBarManager } from './statusBar';
+import { TaskEditorProvider } from './taskEditorProvider';
+import { MetricsViewProvider, registerMetricsView } from './metricsView';
+
 
 export async function activate(context: vscode.ExtensionContext) {
   console.log('DevOps extension activating...');
   try {
     // Register DevOps: Initialize command first (always works)
     context.subscriptions.push(registerInitializeCommand(context));
+
+    // Register task editor for opening tasks in tabs
+    context.subscriptions.push(TaskEditorProvider.register(context));
 
     const services = await initializeKanbanServices(context);
     const syncFilterUI = createFilterSynchronizer(services.provider, services.kanbanView);
@@ -60,7 +65,7 @@ async function initializeKanbanServices(context: vscode.ExtensionContext): Promi
   });
   context.subscriptions.push(kanbanView);
 
-  const taskDetailsProvider = registerTaskDetailsView(context);
+  const metricsProvider = registerMetricsView(context);
   const boardPanelManager = createBoardPanelManager(context);
   const managerProvider = new KanbanManagerProvider(provider);
   const managerDragController = managerProvider.getDragAndDropController();
@@ -75,7 +80,7 @@ async function initializeKanbanServices(context: vscode.ExtensionContext): Promi
   // Create status bar
   const statusBar = createStatusBar(context);
 
-  return { provider, kanbanView, taskDetailsProvider, boardPanelManager, managerProvider, statusBar };
+  return { provider, kanbanView, metricsProvider, boardPanelManager, managerProvider, statusBar };
 }
 
 function createFilterSynchronizer(provider: KanbanTreeProvider, kanbanView: vscode.TreeView<KanbanNode>): () => void {
@@ -94,12 +99,11 @@ function createFilterSynchronizer(provider: KanbanTreeProvider, kanbanView: vsco
 function bindKanbanViews(
   context: vscode.ExtensionContext,
   services: KanbanExtensionServices,
-  syncFilterUI: () => void,
+  _syncFilterUI: () => void,
 ): void {
-  registerCardSelectionSync(context, services);
+  // Tasks now open in editor tabs - no card selection sync needed
   registerBoardSnapshotSync(context, services);
   registerBoardViewRequests(context, services);
-  registerCardViewHandlers(context, services, syncFilterUI);
 
   // Auto-open board when clicking on sidebar icon
   const { kanbanView, boardPanelManager } = services;
@@ -112,73 +116,46 @@ function bindKanbanViews(
   );
 }
 
-function registerCardSelectionSync(context: vscode.ExtensionContext, services: KanbanExtensionServices): void {
-  const { kanbanView, taskDetailsProvider } = services;
-  const syncTaskDetailsWithSelection = (selection: readonly KanbanNode[]) => {
-    const taskNode = selection.find((node): node is KanbanItemNode => node.kind === 'item');
-    if (taskNode) {
-      const columnName = taskNode.column.name || COLUMN_FALLBACK_NAME;
-      taskDetailsProvider.showTask(buildCardPayload(taskNode.item, columnName));
-      return;
-    }
-    if (!selection.length) {
-      taskDetailsProvider.showTask(undefined);
-    }
-  };
-  context.subscriptions.push(
-    kanbanView.onDidChangeSelection((event) => {
-      syncTaskDetailsWithSelection(event.selection);
-    }),
-  );
-  syncTaskDetailsWithSelection(kanbanView.selection ?? []);
-}
+// Card selection now opens tasks in editor tabs - no sidebar sync needed
 
 function registerBoardSnapshotSync(context: vscode.ExtensionContext, services: KanbanExtensionServices): void {
-  const { provider, boardPanelManager, managerProvider, statusBar } = services;
+  const { provider, boardPanelManager, managerProvider, statusBar, metricsProvider } = services;
   boardPanelManager.setBoard(provider.getBoardViewSnapshot());
 
-  // Update status bar with initial board state
-  readKanban().then((board) => statusBar.update(board)).catch(() => { });
+  // Update status bar and metrics with initial board state
+  readKanban().then((board) => {
+    statusBar.update(board);
+    metricsProvider.updateBoard(board);
+  }).catch(() => { });
 
   context.subscriptions.push(
     provider.onDidUpdateBoardView((snapshot) => {
       boardPanelManager.setBoard(snapshot);
       void managerProvider.refresh();
-      // Update status bar when board changes
-      readKanban().then((board) => statusBar.update(board)).catch(() => { });
+      // Update status bar and metrics when board changes
+      readKanban().then((board) => {
+        statusBar.update(board);
+        metricsProvider.updateBoard(board);
+      }).catch(() => { });
     }),
   );
 }
 
 function registerBoardViewRequests(context: vscode.ExtensionContext, services: KanbanExtensionServices): void {
-  const { provider, boardPanelManager, taskDetailsProvider } = services;
+  const { provider, boardPanelManager } = services;
   context.subscriptions.push(
     boardPanelManager.onDidRequestMoveTasks((request) => {
       void handleBoardMoveTasks(request, provider);
     }),
-    boardPanelManager.onDidRequestOpenTask((taskId) => {
-      void handleBoardOpenTask(taskId, taskDetailsProvider);
+    boardPanelManager.onDidRequestOpenTask((taskId: string) => {
+      void handleBoardOpenTask(taskId);
     }),
     boardPanelManager.onDidRequestCreateTask(() => {
       void Promise.resolve(vscode.commands.executeCommand('kanban.createTask')).catch((error: unknown) => {
-        vscode.window.showErrorMessage(`Unable to create feature: ${formatError(error)}`);
+        vscode.window.showErrorMessage(`Unable to create task: ${formatError(error)}`);
       });
     }),
   );
 }
 
-function registerCardViewHandlers(
-  context: vscode.ExtensionContext,
-  services: KanbanExtensionServices,
-  syncFilterUI: () => void,
-): void {
-  const { provider, taskDetailsProvider } = services;
-  context.subscriptions.push(
-    taskDetailsProvider.onDidSubmitUpdate((update) => {
-      void handleCardUpdateMessage(update, provider, taskDetailsProvider, syncFilterUI);
-    }),
-    taskDetailsProvider.onDidRequestDelete((taskId) => {
-      void handleCardDeleteMessage(taskId, provider, taskDetailsProvider, syncFilterUI);
-    }),
-  );
-}
+// Card view handlers removed - tasks now edit via editor tabs with auto-save

@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/NunoMoura/dev_ops"
   },
-  "version": "0.1.0",
+  "version": "0.5.0",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -138,8 +138,8 @@
           "icon": "resources/kanban-icon.svg"
         },
         {
-          "id": "kanbanTaskDetailsView",
-          "name": "Task Details",
+          "id": "kanbanMetricsView",
+          "name": "Metrics",
           "type": "webview",
           "icon": "resources/kanban-icon.svg"
         },
@@ -150,6 +150,18 @@
         }
       ]
     },
+    "customEditors": [
+      {
+        "viewType": "kanban.taskEditor",
+        "displayName": "Kanban Task Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.kanban-task"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
     "menus": {
       "view/title": [
         {

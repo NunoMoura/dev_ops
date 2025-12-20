@@ -147,13 +147,30 @@ function getCardHtml(): string {
       .actions button {
         flex: 1;
       }
-      #saveBtn {
-        background: var(--vscode-button-background);
-        color: var(--vscode-button-foreground);
-      }
       #deleteBtn {
-        background: var(--vscode-errorForeground);
-        color: var(--vscode-sideBar-background);
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 10px 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.15s ease, transform 0.1s ease;
+      }
+      #deleteBtn:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+      }
+      .save-indicator {
+        text-align: center;
+        font-size: 11px;
+        color: var(--vscode-descriptionForeground);
+        padding: 4px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      .save-indicator.visible {
+        opacity: 1;
       }
       #empty-state {
         text-align: center;
@@ -535,12 +552,29 @@ function getCardHtml(): string {
         };
       }
 
-      saveBtn.addEventListener('click', () => {
-        const payload = collectTaskPayload();
-        if (!payload) {
-          return;
-        }
-        vscode.postMessage({ type: 'update', task: payload });
+      // Auto-save with debounce
+      let saveTimeout;
+      const saveIndicator = document.getElementById('saveIndicator');
+      
+      function triggerAutoSave() {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+          const payload = collectTaskPayload();
+          if (payload) {
+            vscode.postMessage({ type: 'update', task: payload });
+            saveIndicator.textContent = '✓ Saved';
+            saveIndicator.classList.add('visible');
+            setTimeout(() => saveIndicator.classList.remove('visible'), 2000);
+          }
+        }, 500);
+      }
+
+      // Attach auto-save to all inputs
+      [titleInput, summaryInput, tagsInput].forEach(input => {
+        input.addEventListener('input', triggerAutoSave);
+      });
+      [prioritySelect, statusSelect].forEach(select => {
+        select.addEventListener('change', triggerAutoSave);
       });
 
       deleteBtn.addEventListener('click', () => {
@@ -556,7 +590,7 @@ function getCardHtml(): string {
     <body>
       <div id="empty-state">Select a task from the board to edit its details.</div>
       <form id="card-form" class="hidden" onsubmit="return false;">
-        <h2>Feature</h2>
+        <h2>Task Details</h2>
         <div
           id="columnLabel"
           style="margin-bottom: 8px; font-size: 12px; color: var(--vscode-descriptionForeground);"
@@ -602,9 +636,9 @@ function getCardHtml(): string {
         </div>
 
         <div class="actions">
-          <button id="deleteBtn" type="button">Delete</button>
-          <button id="saveBtn" type="button">Save</button>
+          <button id="deleteBtn" type="button">Delete Task</button>
         </div>
+        <div id="saveIndicator" class="save-indicator"></div>
       </form>
     </body>
   `;

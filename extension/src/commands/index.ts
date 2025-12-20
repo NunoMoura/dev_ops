@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { KanbanTaskDetailsViewProvider, TaskDetailsPayload } from '../taskDetailsView';
+import { TaskDetailsPayload } from '../taskDetailsView';
+import { MetricsViewProvider } from '../metricsView';
 import { KanbanTreeProvider, KanbanNode, KanbanManagerNode } from '../ui/providers';
 import {
   Board,
@@ -49,7 +50,7 @@ import { MoveTasksRequest } from './types';
 export type KanbanCommandServices = {
   provider: KanbanTreeProvider;
   kanbanView: vscode.TreeView<KanbanNode>;
-  taskDetailsProvider: KanbanTaskDetailsViewProvider;
+  metricsProvider: MetricsViewProvider;
 };
 
 export function registerKanbanCommands(
@@ -57,7 +58,7 @@ export function registerKanbanCommands(
   services: KanbanCommandServices,
   syncFilterUI: () => void,
 ): void {
-  const { provider, taskDetailsProvider, kanbanView } = services;
+  const { provider, kanbanView } = services;
 
   // Note: kanban.openBoard is registered in boardView.ts (opens the webview panel)
 
@@ -117,7 +118,7 @@ export function registerKanbanCommands(
     context,
     'kanban.createTask',
     async (node?: KanbanNode) => {
-      await handleCreateTask(provider, taskDetailsProvider, node);
+      await handleCreateTask(provider, node);
     },
     'Unable to create task',
   );
@@ -212,7 +213,7 @@ export function registerKanbanCommands(
     context,
     'kanban.showTaskDetails',
     async (taskId?: string) => {
-      await handleFocusTaskDetails(taskId, taskDetailsProvider);
+      await handleFocusTaskDetails(taskId);
     },
     'Unable to open card details',
   );
@@ -272,7 +273,7 @@ export async function handleBoardMoveTasks(request: MoveTasksRequest, provider: 
   }
 }
 
-export async function handleBoardOpenTask(taskId: string, taskDetailsView: KanbanTaskDetailsViewProvider): Promise<void> {
+export async function handleBoardOpenTask(taskId: string): Promise<void> {
   if (!taskId) {
     return;
   }
@@ -283,9 +284,10 @@ export async function handleBoardOpenTask(taskId: string, taskDetailsView: Kanba
       vscode.window.showWarningMessage('Task not found on the current Kanban board.');
       return;
     }
-    const columnName = board.columns.find((column) => column.id === task.columnId)?.name ?? COLUMN_FALLBACK_NAME;
-    taskDetailsView.showTask(buildCardPayload(task, columnName));
-    void vscode.commands.executeCommand('kanbanTaskDetailsView.focus');
+
+    // Open task in a new editor tab
+    const uri = vscode.Uri.parse(`kanban-task:/task/${taskId}.kanban-task`);
+    await vscode.commands.executeCommand('vscode.openWith', uri, 'kanban.taskEditor');
   } catch (error) {
     vscode.window.showErrorMessage(`Unable to open task: ${formatError(error)}`);
   }
@@ -294,7 +296,6 @@ export async function handleBoardOpenTask(taskId: string, taskDetailsView: Kanba
 export async function handleCardUpdateMessage(
   update: TaskDetailsPayload,
   provider: KanbanTreeProvider,
-  taskDetailsView: KanbanTaskDetailsViewProvider,
   syncFilterUI: () => void,
 ): Promise<void> {
   try {
@@ -321,8 +322,7 @@ export async function handleCardUpdateMessage(
     await writeKanban(board);
     await provider.refresh();
     syncFilterUI();
-    const columnName = board.columns.find((column) => column.id === task.columnId)?.name ?? COLUMN_FALLBACK_NAME;
-    taskDetailsView.showTask(buildCardPayload(task, columnName));
+    // Note: task details view replaced by editor tabs with their own rendering
   } catch (error) {
     vscode.window.showErrorMessage(`Unable to save task: ${formatError(error)}`);
   }
@@ -331,7 +331,6 @@ export async function handleCardUpdateMessage(
 export async function handleCardDeleteMessage(
   taskId: string,
   provider: KanbanTreeProvider,
-  taskDetailsView: KanbanTaskDetailsViewProvider,
   syncFilterUI: () => void,
 ): Promise<void> {
   try {
@@ -344,7 +343,7 @@ export async function handleCardDeleteMessage(
       throw new Error('Task not found in board');
     }
     const task = board.items[index];
-    const confirmDelete = 'Delete Feature';
+    const confirmDelete = 'Delete Task';
     const columnName = board.columns.find((column) => column.id === task.columnId)?.name ?? COLUMN_FALLBACK_NAME;
     const selection = await vscode.window.showWarningMessage(
       `Delete "${task.title}" from ${columnName}?`,
@@ -359,7 +358,7 @@ export async function handleCardDeleteMessage(
     await writeKanban(board);
     await provider.refresh();
     syncFilterUI();
-    taskDetailsView.showTask(undefined);
+    // Note: task editor tab will naturally close when task no longer exists
     vscode.window.showInformationMessage('Task deleted.');
   } catch (error) {
     vscode.window.showErrorMessage(`Unable to delete task: ${formatError(error)}`);
@@ -443,19 +442,18 @@ async function handleShowTaskDetails(
   }
 }
 
-async function handleFocusTaskDetails(taskId: string | undefined, taskDetailsView: KanbanTaskDetailsViewProvider): Promise<void> {
+async function handleFocusTaskDetails(taskId: string | undefined): Promise<void> {
   const board = await readKanban();
   let task = taskId ? board.items.find((item) => item.id === taskId) : undefined;
   if (!task) {
     task = await promptForTask(board);
     if (!task) {
-      taskDetailsView.showTask(undefined);
       return;
     }
   }
-  const columnName = board.columns.find((column) => column.id === task.columnId)?.name ?? COLUMN_FALLBACK_NAME;
-  taskDetailsView.showTask(buildCardPayload(task, columnName));
-  void vscode.commands.executeCommand('kanbanTaskDetailsView.focus');
+  // Open task in editor tab
+  const uri = vscode.Uri.parse(`kanban-task:/task/${task.id}.kanban-task`);
+  await vscode.commands.executeCommand('vscode.openWith', uri, 'kanban.taskEditor');
 }
 
 async function handleCreateColumn(provider: KanbanTreeProvider): Promise<void> {
@@ -561,7 +559,6 @@ async function handleDeleteColumn(provider: KanbanTreeProvider, node?: KanbanNod
 
 async function handleCreateTask(
   provider: KanbanTreeProvider,
-  taskDetailsView: KanbanTaskDetailsViewProvider,
   node?: KanbanNode,
 ): Promise<void> {
   try {
@@ -591,9 +588,10 @@ async function handleCreateTask(
     await writeKanban(board);
     await provider.refresh();
     await appendTaskHistory(task, `Created in column ${column.name || COLUMN_FALLBACK_NAME}`);
-    const columnName = column.name ?? COLUMN_FALLBACK_NAME;
-    taskDetailsView.showTask(buildCardPayload(task, columnName));
-    void vscode.commands.executeCommand('kanbanTaskDetailsView.focus');
+
+    // Open task in editor tab for immediate editing
+    const uri = vscode.Uri.parse(`kanban-task:/task/${taskId}.kanban-task`);
+    await vscode.commands.executeCommand('vscode.openWith', uri, 'kanban.taskEditor');
     vscode.window.showInformationMessage(`✅ Created task ${taskId}`);
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to create task: ${formatError(error)}`);

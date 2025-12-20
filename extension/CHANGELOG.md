@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.5.0] - 2025-12-20
+
+### Added
+
+- **Task Editor Tabs** - Double-click a task to open it in a full editor tab
+- **Metrics Dashboard** - Sidebar now shows board metrics instead of task details:
+  - Total tasks / Done today
+  - In Progress / Blocked counts
+  - Column distribution
+  - Status overview with traffic light indicators
+- **Agent Checklist CLI** - New Python commands for agents:
+  - `kanban_ops.py checklist add/complete/list` - Manage task checklists
+  - `kanban_ops.py replace --with` - Split complex tasks into simpler ones
+- **Custom Editor Provider** - Tasks use `kanban.taskEditor` custom editor
+
+### Changed
+
+- **Auto-save** - Task edits save automatically (no Save button needed)
+- **Clickable Cards** - Entire task card is clickable (removed Open button)
+- **Unified Button Styling** - Delete button uses gradient styling
+- **Task Details → Metrics** - Sidebar repurposed as metrics dashboard
+- **Feature → Task** - Renamed throughout UI for consistency
+
+### Fixed
+
+- Duplicate `board.json` file - Consolidated to `dev_ops/kanban/board.json`
+- Column IDs now use `col-implementing`, `col-review` consistently
+
 ## [0.1.0] - 2025-12-18
 
 ### Added

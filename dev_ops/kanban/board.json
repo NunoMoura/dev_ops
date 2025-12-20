@@ -17,18 +17,18 @@
       "position": 3
     },
     {
-      "id": "col-inprogress",
-      "name": "In Progress",
+      "id": "col-implementing",
+      "name": "Implementing",
       "position": 4
+    },
+    {
+      "id": "col-review",
+      "name": "Review",
+      "position": 5
     },
     {
       "id": "col-testing",
       "name": "Testing",
-      "position": 5
-    },
-    {
-      "id": "col-blocked",
-      "name": "Blocked",
       "position": 6
     },
     {
@@ -42,13 +42,24 @@
       "id": "TASK-001",
       "columnId": "col-testing",
       "title": "New Task",
+      "status": "todo",
       "updatedAt": "2025-12-19T20:33:15.713Z"
     },
     {
       "id": "TASK-002",
-      "columnId": "col-inprogress",
+      "columnId": "col-implementing",
       "title": "New Task",
+      "status": "in_progress",
       "updatedAt": "2025-12-19T20:52:31.313Z"
+    },
+    {
+      "id": "TASK-003",
+      "columnId": "col-planning",
+      "title": "Kanban UX Improvements",
+      "summary": "Phase 2 improvements: auto-save, clickable cards, checklist CLI, task editor tabs, sidebar metrics",
+      "priority": "high",
+      "status": "in_progress",
+      "updatedAt": "2025-12-19T23:39:47.959Z"
     }
   ]
 }

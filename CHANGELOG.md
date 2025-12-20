@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Extension v0.5.0 Features**:
+  - Task Editor Tabs - Double-click task opens in editor tab
+  - Metrics Dashboard sidebar (replaces Task Details)
+  - Auto-save for task edits (no Save button)
+  - Clickable cards (removed Open button)
+  - Agent Checklist CLI (`kanban_ops.py checklist add/complete/list`)
+  - Task Replace CLI (`kanban_ops.py replace --with`)
 - **Code Quality**:
   - `pyproject.toml` for modern Python packaging with ruff and pytest config
   - `.pre-commit-config.yaml` for automated code quality checks

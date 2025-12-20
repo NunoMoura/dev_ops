@@ -244,6 +244,113 @@ def set_status(task_id: str, status: str, project_root: Optional[str] = None) ->
     return False
 
 
+def checklist_add(task_id: str, item: str, project_root: Optional[str] = None) -> bool:
+    """Add a checklist item to a task."""
+    board = load_board(project_root)
+    for task in board.get("items", []):
+        if task.get("id") == task_id:
+            checklist = task.get("checklist", [])
+            checklist.append({"text": item, "done": False})
+            task["checklist"] = checklist
+            task["updatedAt"] = datetime.utcnow().isoformat() + "Z"
+            save_board(board, project_root)
+            print(f"✅ Added checklist item to {task_id}: {item}")
+            return True
+    print(f"⚠️ Task {task_id} not found")
+    return False
+
+
+def checklist_complete(task_id: str, index: int, project_root: Optional[str] = None) -> bool:
+    """Mark a checklist item as complete by index (0-based)."""
+    board = load_board(project_root)
+    for task in board.get("items", []):
+        if task.get("id") == task_id:
+            checklist = task.get("checklist", [])
+            if 0 <= index < len(checklist):
+                checklist[index]["done"] = True
+                task["updatedAt"] = datetime.utcnow().isoformat() + "Z"
+                save_board(board, project_root)
+                print(f"✅ Completed checklist item {index}: {checklist[index]['text']}")
+                return True
+            else:
+                print(f"⚠️ Invalid index {index}. Checklist has {len(checklist)} items.")
+                return False
+    print(f"⚠️ Task {task_id} not found")
+    return False
+
+
+def checklist_list(task_id: str, project_root: Optional[str] = None) -> list:
+    """List all checklist items for a task."""
+    board = load_board(project_root)
+    for task in board.get("items", []):
+        if task.get("id") == task_id:
+            checklist = task.get("checklist", [])
+            if not checklist:
+                print(f"ℹ️ Task {task_id} has no checklist items.")
+                return []
+            for i, item in enumerate(checklist):
+                status = "✓" if item.get("done") else " "
+                print(f"  [{status}] {i}: {item.get('text', '')}")
+            return checklist
+    print(f"⚠️ Task {task_id} not found")
+    return []
+
+
+def replace_task(
+    task_id: str,
+    new_titles: list[str],
+    project_root: Optional[str] = None,
+) -> list[str]:
+    """Replace a task with multiple simpler tasks. Returns IDs of new tasks."""
+    board = load_board(project_root)
+    new_ids = []
+
+    # Find original task
+    original_task = None
+    for task in board.get("items", []):
+        if task.get("id") == task_id:
+            original_task = task
+            break
+
+    if not original_task:
+        print(f"⚠️ Task {task_id} not found")
+        return []
+
+    # Get existing task IDs for unique ID generation
+    existing_ids = [t.get("id", "") for t in board.get("items", [])]
+    task_num = 1
+    while f"TASK-{task_num:03d}" in existing_ids:
+        task_num += 1
+
+    # Create new tasks with properties from original
+    for title in new_titles:
+        new_id = f"TASK-{task_num:03d}"
+        existing_ids.append(new_id)
+        task_num += 1
+        new_task = {
+            "id": new_id,
+            "columnId": original_task.get("columnId", "col-backlog"),
+            "title": title,
+            "summary": f"Split from {task_id}: {original_task.get('title', '')}",
+            "priority": original_task.get("priority"),
+            "status": "todo",
+            "upstream": [task_id],  # Link to original as reference
+            "updatedAt": datetime.utcnow().isoformat() + "Z",
+        }
+        board["items"].append(new_task)
+        new_ids.append(new_id)
+        print(f"✅ Created {new_id}: {title}")
+
+    # Mark original as archived/done
+    original_task["status"] = "done"
+    original_task["summary"] = f"[SPLIT] Replaced by: {', '.join(new_ids)}"
+    original_task["updatedAt"] = datetime.utcnow().isoformat() + "Z"
+
+    save_board(board, project_root)
+    print(f"✅ Marked original {task_id} as done (split into {len(new_ids)} tasks)")
+    return new_ids
+
+
 def create_pr(
     task_id: str,
     title: Optional[str] = None,
@@ -487,6 +594,30 @@ if __name__ == "__main__":
     claim_parser.add_argument("task_id", help="Task ID to claim")
     claim_parser.add_argument("--force", action="store_true", help="Skip prerequisite check")
 
+    # Checklist management
+    checklist_parser = subparsers.add_parser("checklist", help="Manage task checklist")
+    checklist_sub = checklist_parser.add_subparsers(dest="checklist_action", required=True)
+
+    checklist_add_parser = checklist_sub.add_parser("add", help="Add checklist item")
+    checklist_add_parser.add_argument("task_id", help="Task ID")
+    checklist_add_parser.add_argument("item", help="Checklist item text")
+
+    checklist_complete_parser = checklist_sub.add_parser("complete", help="Complete checklist item")
+    checklist_complete_parser.add_argument("task_id", help="Task ID")
+    checklist_complete_parser.add_argument("index", type=int, help="Item index (0-based)")
+
+    checklist_list_parser = checklist_sub.add_parser("list", help="List checklist items")
+    checklist_list_parser.add_argument("task_id", help="Task ID")
+
+    # Replace task with multiple simpler tasks
+    replace_parser = subparsers.add_parser(
+        "replace", help="Replace task with multiple simpler tasks"
+    )
+    replace_parser.add_argument("task_id", help="Task ID to replace")
+    replace_parser.add_argument(
+        "--with", nargs="+", dest="new_titles", required=True, help="Titles of new tasks"
+    )
+
     args = parser.parse_args()
 
     if args.command == "list":
@@ -524,3 +655,12 @@ if __name__ == "__main__":
             claim_task(task["id"])
     elif args.command == "claim":
         claim_task(args.task_id, force=args.force)
+    elif args.command == "checklist":
+        if args.checklist_action == "add":
+            checklist_add(args.task_id, args.item)
+        elif args.checklist_action == "complete":
+            checklist_complete(args.task_id, args.index)
+        elif args.checklist_action == "list":
+            checklist_list(args.task_id)
+    elif args.command == "replace":
+        replace_task(args.task_id, args.new_titles)

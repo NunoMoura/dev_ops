@@ -613,19 +613,8 @@ function getBoardHtml(panelMode = false): string {
             card.appendChild(statusIndicator);
           }
 
-          const actions = document.createElement('div');
-          actions.className = 'card-actions';
-          const openBtn = document.createElement('button');
-          openBtn.type = 'button';
-          openBtn.className = 'card-open-button';
-          openBtn.textContent = 'Open Card';
-          openBtn.addEventListener('click', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            openTask(task.id);
-          });
-          actions.appendChild(openBtn);
-          card.appendChild(actions);
+          // Entire card is clickable - double-click opens task details
+          // (click handler already exists at line 561, dblclick at 562)
 
           return card;
         }
@@ -648,7 +637,7 @@ function getBoardHtml(panelMode = false): string {
           const button = document.createElement('button');
           button.type = 'button';
           button.className = 'column-add-button';
-          button.title = 'Create Feature';
+          button.title = 'Create Task';
           button.textContent = '+';
           button.addEventListener('click', (event) => {
             event.preventDefault();
