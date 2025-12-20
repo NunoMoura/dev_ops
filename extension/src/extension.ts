@@ -68,13 +68,6 @@ async function initializeKanbanServices(context: vscode.ExtensionContext): Promi
   const metricsProvider = registerMetricsView(context);
   const boardPanelManager = createBoardPanelManager(context);
   const managerProvider = new KanbanManagerProvider(provider);
-  const managerDragController = managerProvider.getDragAndDropController();
-  const kanbanManagerView = vscode.window.createTreeView('kanbanManagerView', {
-    treeDataProvider: managerProvider,
-    showCollapseAll: false,
-    dragAndDropController: managerDragController,
-  });
-  context.subscriptions.push(kanbanManagerView, managerDragController);
   await managerProvider.refresh();
 
   // Create status bar
