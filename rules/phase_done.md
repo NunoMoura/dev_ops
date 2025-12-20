@@ -42,6 +42,20 @@ Completed work ready for merge.
      --create-pr
    ```
 
+## Commit Linking
+
+When you complete a task, the commit SHA is automatically captured:
+
+- Stored in task metadata as `commitSha` (first 7 characters)
+- Visible in task details on the Kanban board
+- Enables traceability from task to code
+
+**Optional: Attach git note for rich context:**
+
+```bash
+git notes add -m "TASK-XXX: Summary of changes" HEAD
+```
+
 ## PR Standards
 
 ### Title Format

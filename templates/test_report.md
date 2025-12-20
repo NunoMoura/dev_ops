@@ -43,6 +43,12 @@ tests/
 └── e2e/test_integration.py
 ```
 
+## TDD Compliance
+
+- [ ] Tests written before implementation (Red phase)
+- [ ] Tests pass after implementation (Green phase)
+- [ ] Code refactored with passing tests (Refactor phase)
+
 ## Next Steps
 
 - [ ] Fix failures (see linked BUG-XXX)

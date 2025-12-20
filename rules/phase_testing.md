@@ -25,46 +25,79 @@ tests/
 
 **Rule**: For every `src/module/file.py` there must be `tests/module/test_file.py`
 
-## How to Test
+## TDD Workflow
 
-1. **Verify Test Coverage**:
-   - For each modified file, ensure corresponding test exists
-   - Check what files changed: `git diff --name-only HEAD~1`
-   - Create missing test files if needed
+### 1. Red Phase (Write Failing Tests)
 
-2. **Run Test Suite**:
+Before implementing, write tests that define expected behavior:
 
-   ```bash
-   # All tests
-   python3 -m pytest tests/ -v
+```bash
+# Create test file mirroring source structure
+touch tests/module/test_feature.py
 
-   # With coverage
-   python3 -m pytest tests/ --cov=src --cov-report=term
+# Write test cases that define acceptance criteria
+# Run tests - they should FAIL (no implementation yet)
+python3 -m pytest tests/module/test_feature.py -v
+```
 
-   # Specific file
-   python3 -m pytest tests/module/test_file.py
-   ```
+> [!IMPORTANT]
+> Do NOT proceed until you have failing tests. This ensures tests
+> actually validate behavior, not just pass by accident.
 
-3. **Generate Test Report**:
-   - Create `dev_ops/tests/TST-XXX.md` from template
-   - Record: total/passed/failed counts, coverage %, failed test details
+### 2. Green Phase (Make Tests Pass)
 
-4. **Handle Failures**:
-   - For each failed test, create BUG-XXX:
+Implement the minimum code to make tests pass:
 
-     ```bash
-     python3 dev_ops/scripts/doc_ops.py create bug --title "Test failure"
-     ```
+```bash
+# Implement the feature
+# Run tests after implementation
+python3 -m pytest tests/module/test_feature.py -v
+# Expected: PASSED
+```
 
-   - Analyze failure: read traceback, diagnose root cause
-   - Fix code and re-run tests
-   - BUG stays open until test passes
+### 3. Refactor Phase (Improve Code)
 
-5. **Link Artifacts**:
+With passing tests as safety net, improve code quality:
 
-   ```bash
-   python3 dev_ops/scripts/kanban_ops.py downstream TASK-XXX TST-XXX
-   ```
+- Remove duplication
+- Improve naming
+- Extract functions
+- Optimize performance
+
+```bash
+# Re-run tests to ensure they still pass
+python3 -m pytest tests/module/test_feature.py -v
+```
+
+### 4. Verify Coverage
+
+```bash
+# Run with coverage
+python3 -m pytest tests/ --cov=src --cov-report=term
+
+# Target: >80% coverage for new code
+```
+
+### 5. Generate Test Report
+
+- Create `dev_ops/tests/TST-XXX.md` from template
+- Record: total/passed/failed counts, coverage %, TDD compliance
+
+### 6. Handle Failures
+
+For each failed test, create BUG-XXX:
+
+```bash
+python3 dev_ops/scripts/doc_ops.py create bug --title "Test failure"
+```
+
+Fix code and re-run tests. BUG stays open until test passes.
+
+### 7. Link Artifacts
+
+```bash
+python3 dev_ops/scripts/kanban_ops.py downstream TASK-XXX TST-XXX
+```
 
 ## Quality Gates
 

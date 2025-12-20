@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/NunoMoura/dev_ops"
   },
-  "version": "0.6.0",
+  "version": "0.0.8",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -26,8 +26,7 @@
       },
       {
         "command": "kanban.importPlan",
-        "title": "DevOps: Import Plan",
-        "icon": "$(cloud-upload)"
+        "title": "DevOps: Import Plan"
       },
       {
         "command": "kanban.openBoard",
@@ -43,22 +42,19 @@
       },
       {
         "command": "kanban.getTasks",
-        "title": "DevOps: Export Board JSON"
+        "title": "DevOps: Export Board"
       },
       {
         "command": "kanban.createColumn",
-        "title": "DevOps: Create Column",
-        "icon": "$(organization)"
+        "title": "DevOps: Create Column"
       },
       {
         "command": "kanban.renameColumn",
-        "title": "DevOps: Rename Column",
-        "icon": "$(edit)"
+        "title": "DevOps: Rename Column"
       },
       {
         "command": "kanban.deleteColumn",
-        "title": "DevOps: Delete Column",
-        "icon": "$(trash)"
+        "title": "DevOps: Delete Column"
       },
       {
         "command": "kanban.createTask",
@@ -67,86 +63,65 @@
       },
       {
         "command": "kanban.moveTask",
-        "title": "DevOps: Move Task",
-        "icon": "$(arrow-swap)"
+        "title": "DevOps: Move Task"
       },
       {
         "command": "kanban.filterTasks",
-        "title": "DevOps: Filter Tasks",
-        "icon": "$(filter)"
+        "title": "DevOps: Search Tasks",
+        "icon": "$(search)"
       },
       {
         "command": "kanban.clearTaskFilter",
-        "title": "DevOps: Clear Task Filter",
-        "icon": "$(close)"
+        "title": "DevOps: Clear Filters"
       },
       {
         "command": "kanban.markTaskInProgress",
-        "title": "DevOps: Mark In Progress",
-        "icon": "$(play)"
+        "title": "DevOps: Mark In Progress"
       },
       {
         "command": "kanban.markTaskBlocked",
-        "title": "DevOps: Mark Blocked",
-        "icon": "$(circle-slash)"
+        "title": "DevOps: Mark Blocked"
       },
       {
         "command": "kanban.markTaskDone",
-        "title": "DevOps: Mark Done",
-        "icon": "$(check)"
+        "title": "DevOps: Mark Done"
       },
       {
         "command": "kanban.viewTaskHistory",
-        "title": "DevOps: View Task History",
-        "icon": "$(history)"
-      },
-      {
-        "command": "kanban.toggleAgentReadyFilter",
-        "title": "DevOps: Toggle Agent-Ready Filter",
-        "icon": "$(rocket)"
-      },
-      {
-        "command": "kanban.toggleBlockedFilter",
-        "title": "DevOps: Toggle Blocked Filter",
-        "icon": "$(issue-closed)"
+        "title": "DevOps: View Task History"
       },
       {
         "command": "kanban.openEntryPoints",
-        "title": "DevOps: Open Entry Points",
-        "icon": "$(references)"
+        "title": "DevOps: Open Entry Points"
       },
       {
         "command": "kanban.openTaskContext",
-        "title": "DevOps: Open Task Context",
-        "icon": "$(file-code)"
+        "title": "DevOps: Open Task Context"
       },
       {
         "command": "kanban.openSettings",
-        "title": "DevOps: Preferences",
-        "icon": "$(gear)"
+        "title": "DevOps: Preferences"
       }
     ],
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "kanban",
-          "title": "Kanban",
+          "id": "devops",
+          "title": "DevOps",
           "icon": "resources/kanban-icon.svg"
         }
       ]
     },
     "views": {
-      "kanban": [
+      "devops": [
         {
-          "id": "kanbanView",
-          "name": "Kanban",
-          "icon": "resources/kanban-icon.svg"
+          "id": "devopsTasksView",
+          "name": "Tasks"
         },
         {
-          "id": "kanbanMetricsView",
-          "name": "Board Metrics",
-          "type": "webview",
-          "icon": "resources/kanban-icon.svg"
+          "id": "devopsMetricsView",
+          "name": "Metrics",
+          "type": "webview"
         }
       ]
     },
@@ -163,110 +138,16 @@
       }
     ],
     "menus": {
-      "view/title": [
-        {
-          "command": "kanban.importPlan",
-          "when": "view == kanbanView",
-          "group": "navigation@0",
-          "icon": "$(cloud-upload)"
-        },
+      "view/item/context": [
         {
           "command": "kanban.createTask",
-          "when": "view == kanbanView",
-          "group": "navigation@1",
-          "icon": "$(add)"
+          "when": "view == devopsTasksView && viewItem == devopsAction",
+          "group": "inline"
         },
         {
           "command": "kanban.filterTasks",
-          "when": "view == kanbanView",
-          "group": "navigation@3",
-          "icon": "$(filter)"
-        },
-        {
-          "command": "kanban.clearTaskFilter",
-          "when": "view == kanbanView && kanbanFilterActive",
-          "group": "navigation@4",
-          "icon": "$(close)"
-        },
-        {
-          "command": "kanban.toggleAgentReadyFilter",
-          "when": "view == kanbanView",
-          "group": "navigation@5",
-          "icon": "$(rocket)"
-        },
-        {
-          "command": "kanban.toggleBlockedFilter",
-          "when": "view == kanbanView",
-          "group": "navigation@6",
-          "icon": "$(issue-closed)"
-        },
-        {
-          "command": "kanban.openSettings",
-          "when": "view == kanbanView",
-          "group": "navigation@9",
-          "icon": "$(gear)"
-        }
-      ],
-      "view/item/context": [
-        {
-          "command": "kanban.showTaskDetails",
-          "when": "view == kanbanView && viewItem == kanbanTask",
-          "group": "inline@0",
-          "icon": "$(preview)"
-        },
-        {
-          "command": "kanban.openEntryPoints",
-          "when": "view == kanbanView && viewItem == kanbanTask",
-          "group": "inline@0",
-          "icon": "$(references)"
-        },
-        {
-          "command": "kanban.openTaskContext",
-          "when": "view == kanbanView && viewItem == kanbanTask",
-          "group": "inline@0",
-          "icon": "$(file-code)"
-        },
-        {
-          "command": "kanban.createTask",
-          "when": "view == kanbanView && viewItem == kanbanColumn",
-          "group": "inline@1",
-          "icon": "$(add)"
-        },
-        {
-          "command": "kanban.moveTask",
-          "when": "view == kanbanView && viewItem == kanbanTask",
-          "group": "inline@1",
-          "icon": "$(arrow-swap)"
-        },
-        {
-          "command": "kanban.markTaskInProgress",
-          "when": "view == kanbanView && viewItem == kanbanTask",
-          "group": "inline@2",
-          "icon": "$(play)"
-        },
-        {
-          "command": "kanban.markTaskBlocked",
-          "when": "view == kanbanView && viewItem == kanbanTask",
-          "group": "inline@3",
-          "icon": "$(circle-slash)"
-        },
-        {
-          "command": "kanban.markTaskDone",
-          "when": "view == kanbanView && viewItem == kanbanTask",
-          "group": "inline@4",
-          "icon": "$(check)"
-        },
-        {
-          "command": "kanban.viewTaskHistory",
-          "when": "view == kanbanView && viewItem == kanbanTask",
-          "group": "inline@5",
-          "icon": "$(history)"
-        },
-        {
-          "command": "kanban.createTask",
-          "when": "view == kanbanManagerView && viewItem == kanbanManagerColumn",
-          "group": "inline@0",
-          "icon": "$(add)"
+          "when": "view == devopsTasksView && viewItem == devopsAction",
+          "group": "inline"
         }
       ]
     }

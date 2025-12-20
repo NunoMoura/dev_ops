@@ -6,7 +6,7 @@ import { Board, Task, Column } from './features/types';
  * Shows development cycle metrics, WIP limits, and quick actions.
  */
 export class MetricsViewProvider implements vscode.WebviewViewProvider {
-  public static readonly viewType = 'kanbanMetricsView';
+  public static readonly viewType = 'devopsMetricsView';
 
   private view: vscode.WebviewView | undefined;
   private board: Board | undefined;
@@ -156,7 +156,7 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
   </style>
 </head>
 <body>
-  <h2>📊 Board Metrics</h2>
+  <h2>📊 Metrics</h2>
   
   <div class="metric-row">
     <div class="metric-card">

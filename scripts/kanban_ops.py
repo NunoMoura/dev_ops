@@ -421,15 +421,33 @@ def mark_done(
     task_id: str,
     outputs: Optional[list] = None,
     create_pr_flag: bool = False,
+    capture_sha: bool = True,
     project_root: Optional[str] = None,
 ) -> bool:
     """Move a task to Done column and optionally add output artifacts."""
+    import subprocess
+
     board = load_board(project_root)
 
     for task in board.get("items", []):
         if task.get("id") == task_id:
             task["columnId"] = "col-done"
             task["updatedAt"] = datetime.utcnow().isoformat() + "Z"
+
+            # Capture commit SHA if requested
+            if capture_sha:
+                try:
+                    result = subprocess.run(
+                        ["git", "rev-parse", "HEAD"],
+                        capture_output=True,
+                        text=True,
+                        cwd=project_root or os.getcwd(),
+                    )
+                    if result.returncode == 0:
+                        task["commitSha"] = result.stdout.strip()[:7]
+                except Exception:
+                    pass  # Git not available or not in a repo
+
             if outputs:
                 if "downstream" not in task:
                     task["downstream"] = []
@@ -437,7 +455,9 @@ def mark_done(
                     if output not in task["downstream"]:
                         task["downstream"].append(output)
             save_board(board, project_root)
-            print(f"✅ Marked {task_id} as done")
+
+            sha_info = f" (commit: {task.get('commitSha', 'N/A')})" if capture_sha else ""
+            print(f"✅ Marked {task_id} as done{sha_info}")
 
             # Create PR if requested
             if create_pr_flag:

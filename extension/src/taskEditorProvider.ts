@@ -108,8 +108,8 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
   }
 
   private getTaskIdFromUri(uri: vscode.Uri): string {
-    // URI format: kanban-task:/task/TASK-001
-    return uri.path.replace('/task/', '');
+    // URI format: kanban-task:/task/TASK-001.kanban-task
+    return uri.path.replace('/task/', '').replace('.kanban-task', '');
   }
 
   private async loadTask(taskId: string): Promise<Task | undefined> {

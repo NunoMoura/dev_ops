@@ -1,6 +1,35 @@
 # Changelog
 
-## [0.6.0] - 2025-12-20
+## [0.0.8] - 2025-12-21
+
+### Added
+
+- **Dynamic Filter Chips** - Active search filters show as clickable chips in sidebar
+
+### Changed
+
+- **Sidebar Simplified** - Removed Boards section, now just Tasks + Metrics
+- **Tasks Section** - Just "Create Task" and "Search" actions
+- **Board Commands** - Moved to command palette only (Import Plan, Export Board)
+
+### Fixed
+
+- **Create Task Bug** - Fixed "Task not found" error when creating new tasks
+
+## [0.0.7] - 2025-12-20
+
+### Added
+
+- **DevOps Sidebar Redesign** - Activity bar renamed from "Kanban" to "DevOps"
+- **Tasks Section** - Action-oriented task management
+- **Boards Section** - Board-level operations (New Board, Import, Export)
+
+### Changed
+
+- Removed column hierarchy from sidebar (tasks visible on board itself)
+- All commands accessible via sidebar tree or command palette
+
+## [0.0.6] - 2025-12-20
 
 ### Added
 
@@ -17,42 +46,24 @@
 - **Sidebar Simplified** - Removed "Board Tools" separator, now just Kanban + Metrics
 - **Onboard Agent** - Renamed "Spawn Agent" → "Onboard Agent" with improved prompt
 
-## [0.5.1] - 2025-12-20
-
-### Fixed
-
-- Task editor URI resolution - Added TextDocumentContentProvider for
-  `kanban-task://` scheme
-
-## [0.5.0] - 2025-12-20
+## [0.0.5] - 2025-12-20
 
 ### Added
 
 - **Task Editor Tabs** - Double-click a task to open it in a full editor tab
-- **Metrics Dashboard** - Sidebar now shows board metrics instead of task details:
-  - Total tasks / Done today
-  - In Progress / Blocked counts
-  - Column distribution
-  - Status overview with traffic light indicators
-- **Agent Checklist CLI** - New Python commands for agents:
-  - `kanban_ops.py checklist add/complete/list` - Manage task checklists
-  - `kanban_ops.py replace --with` - Split complex tasks into simpler ones
-- **Custom Editor Provider** - Tasks use `kanban.taskEditor` custom editor
+- **Metrics Dashboard** - Sidebar now shows board metrics instead of task details
+- **Agent Checklist CLI** - New Python commands for task checklists
 
 ### Changed
 
-- **Auto-save** - Task edits save automatically (no Save button needed)
-- **Clickable Cards** - Entire task card is clickable (removed Open button)
-- **Unified Button Styling** - Delete button uses gradient styling
-- **Task Details → Metrics** - Sidebar repurposed as metrics dashboard
+- **Auto-save** - Task edits save automatically
 - **Feature → Task** - Renamed throughout UI for consistency
 
 ### Fixed
 
 - Duplicate `board.json` file - Consolidated to `dev_ops/kanban/board.json`
-- Column IDs now use `col-implementing`, `col-review` consistently
 
-## [0.1.0] - 2025-12-18
+## [0.0.1] - 2025-12-18
 
 ### Added
 
@@ -63,17 +74,4 @@
 ### Changed
 
 - Board storage path: `local/kanban.json` → `dev_ops/kanban/board.json`
-- Plans path: `local/plans/` → `dev_ops/plans/`
-- Task history path: `local/tasks/` → `dev_ops/kanban/tasks/`
 - Initialize command now creates 7-column board (Backlog → Done)
-
-### Removed
-
-- `generateCodexPrompt` command (use Antigravity IDE workflows instead)
-- Deprecated `getStatusRank()` function
-- Legacy type aliases (KanbanItem, KanbanColumn, etc.)
-
-### Fixed
-
-- Column IDs now use `col-` prefix consistently
-- Task statuses determined by `columnId` instead of separate `status` field

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import os
+import subprocess
 import sys
 import tempfile
 
@@ -10,11 +11,53 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from utils import prompt_user, run_command
 
 
+def get_head_sha(short: bool = True) -> str | None:
+    """Get the current HEAD commit SHA.
+
+    Args:
+        short: If True, return first 7 characters only.
+
+    Returns:
+        Commit SHA string or None if not in a git repo.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            sha = result.stdout.strip()
+            return sha[:7] if short else sha
+    except Exception:
+        pass
+    return None
+
+
+def add_git_note(commit_sha: str, note_content: str) -> bool:
+    """Attach a git note to a commit.
+
+    Args:
+        commit_sha: The commit to annotate (full or short SHA).
+        note_content: The note text to attach.
+
+    Returns:
+        True if successful, False otherwise.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "notes", "add", "-f", "-m", note_content, commit_sha],
+            capture_output=True,
+            text=True,
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
+
+
 def get_commit_parser() -> argparse.ArgumentParser:
     """Returns the argument parser for the commit command."""
-    parser = argparse.ArgumentParser(
-        description="Commit changes with a structured message"
-    )
+    parser = argparse.ArgumentParser(description="Commit changes with a structured message")
     parser.add_argument("--context", help="Context (Why?)")
     parser.add_argument("--decision", help="Decision (What?)")
     parser.add_argument("--arch", help="Architecture Changes", default="None")
