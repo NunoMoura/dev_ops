@@ -9,7 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Extension v0.5.0 Features**:
+- **Extension v0.6.0 Features**:
+  - Board Templates (Greenfield/Brownfield) with starter tasks
+  - Initialize command prompts for template selection
+  - Phase rule alignment (`phase_implementing.md`, `phase_review.md`)
+  - Onboard Agent button with improved prompt
+  - Settings gear icon in sidebar
+- **Extension v0.5.x Features**:
   - Task Editor Tabs - Double-click task opens in editor tab
   - Metrics Dashboard sidebar (replaces Task Details)
   - Auto-save for task edits (no Save button)

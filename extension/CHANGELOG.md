@@ -1,10 +1,28 @@
 # Changelog
 
+## [0.6.0] - 2025-12-20
+
+### Added
+
+- **Board Templates** - Initialize command now offers template selection:
+  - Empty Board (blank slate)
+  - Greenfield Project (8 tasks: vision, tech stack, architecture, CI/CD)
+  - Brownfield Project (8 tasks: audit, dependencies, technical debt, tests)
+- **Phase Review Rule** - New `phase_review.md` for the Review column
+- **Settings Icon** - Gear icon in sidebar opens DevOps extension preferences
+
+### Changed
+
+- **Phase Rule Alignment** - `phase_inprogress.md` renamed to `phase_implementing.md`
+- **Sidebar Simplified** - Removed "Board Tools" separator, now just Kanban + Metrics
+- **Onboard Agent** - Renamed "Spawn Agent" → "Onboard Agent" with improved prompt
+
 ## [0.5.1] - 2025-12-20
 
 ### Fixed
 
-- Task editor URI resolution - Added TextDocumentContentProvider for `kanban-task://` scheme
+- Task editor URI resolution - Added TextDocumentContentProvider for
+  `kanban-task://` scheme
 
 ## [0.5.0] - 2025-12-20
 

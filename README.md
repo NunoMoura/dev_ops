@@ -83,16 +83,23 @@ Install the `dev-ops-X.X.X.vsix` from this repository:
    - `dev_ops/kanban/` — Task board
    - `dev_ops/scripts/` — Automation scripts
 
-## Extension Features (v0.5.0)
+## Extension Features (v0.6.0)
+
+### Board Templates
+
+When you run `DevOps: Initialize`, you can choose from:
+
+| Template | Description |
+|----------|-------------|
+| **Empty Board** | Start with a blank Kanban board |
+| **Greenfield** | New project: vision, tech stack, architecture, CI/CD |
+| **Brownfield** | Existing code: audit, dependencies, tests, docs |
 
 ### Kanban Board
 
 - **Visual Board** — Drag-and-drop task management
 - **Task Editor Tabs** — Double-click a task to edit in a full editor tab
-- **Metrics Dashboard** — Sidebar shows board metrics:
-  - Total tasks / Done today
-  - In Progress / Blocked counts
-  - Column distribution
+- **Metrics Dashboard** — Sidebar shows board metrics and Onboard Agent button
 - **Auto-save** — Edits save automatically
 
 ### Agent CLI Commands
@@ -100,7 +107,7 @@ Install the `dev-ops-X.X.X.vsix` from this repository:
 ```bash
 # Checklist management for complex tasks
 python scripts/kanban_ops.py checklist add TASK-001 "Step to complete"
-python scripts/kanban_ops.py checklist complete TASK-001
+python scripts/kanban_ops.py checklist complete TASK-001 0
 python scripts/kanban_ops.py checklist list TASK-001
 
 # Split complex task into simpler ones
