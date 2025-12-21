@@ -33,7 +33,8 @@ type WebviewMessage =
   | { type: 'ready' }
   | { type: 'moveTasks'; taskIds: string[]; columnId: string }
   | { type: 'openTask'; taskId: string }
-  | { type: 'createTask'; columnId?: string };
+  | { type: 'createTask'; columnId?: string }
+  | { type: 'deleteTasks'; taskIds: string[] };
 
 type WebviewEvent = { type: 'board'; data: BoardViewSnapshot };
 
@@ -44,10 +45,12 @@ export class KanbanBoardPanelManager {
   private readonly onMoveEmitter = new vscode.EventEmitter<{ taskIds: string[]; columnId: string }>();
   private readonly onOpenEmitter = new vscode.EventEmitter<string>();
   private readonly onCreateEmitter = new vscode.EventEmitter<{ columnId?: string }>();
+  private readonly onDeleteEmitter = new vscode.EventEmitter<string[]>();
 
   readonly onDidRequestMoveTasks = this.onMoveEmitter.event;
   readonly onDidRequestOpenTask = this.onOpenEmitter.event;
   readonly onDidRequestCreateTask = this.onCreateEmitter.event;
+  readonly onDidRequestDeleteTasks = this.onDeleteEmitter.event;
 
   constructor(private readonly extensionUri: vscode.Uri) { }
 
@@ -96,6 +99,8 @@ export class KanbanBoardPanelManager {
         this.onOpenEmitter.fire(message.taskId);
       } else if (message.type === 'createTask') {
         this.onCreateEmitter.fire({ columnId: message.columnId });
+      } else if (message.type === 'deleteTasks' && Array.isArray(message.taskIds) && message.taskIds.length > 0) {
+        this.onDeleteEmitter.fire(message.taskIds);
       }
     });
 
@@ -892,6 +897,11 @@ function getBoardHtml(panelMode = false): string {
         document.addEventListener('keydown', (event) => {
           if (event.key === 'Escape') {
             clearSelection();
+          }
+          // Delete selected tasks with Delete or Backspace key
+          if ((event.key === 'Delete' || event.key === 'Backspace') && state.selection.size > 0) {
+            const taskIds = Array.from(state.selection);
+            vscode.postMessage({ type: 'deleteTasks', taskIds });
           }
         });
 

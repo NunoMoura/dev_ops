@@ -32,18 +32,14 @@ export interface DocsFileNode {
 export type DocsNode = DocsCategoryNode | DocsFolderNode | DocsFileNode;
 
 /**
- * Document categories - Architecture is hierarchical, others are flat.
+ * Document categories - only user-facing ones shown in UI.
+ * Agent artifacts (research, plans, reviews, tests, completions) are accessed via component docs.
  */
 const DOC_CATEGORIES: DocsCategoryNode[] = [
     { kind: 'category', id: 'architecture', label: 'Architecture', directory: 'architecture', icon: 'symbol-structure' },
     { kind: 'category', id: 'prds', label: 'PRDs', directory: 'prds', icon: 'file-text' },
     { kind: 'category', id: 'features', label: 'Features', directory: 'features', icon: 'list-unordered' },
-    { kind: 'category', id: 'research', label: 'Research', directory: 'research', icon: 'lightbulb' },
-    { kind: 'category', id: 'plans', label: 'Plans', directory: 'plans', icon: 'checklist' },
-    { kind: 'category', id: 'reviews', label: 'Reviews', directory: 'reviews', icon: 'comment-discussion' },
-    { kind: 'category', id: 'tests', label: 'Tests', directory: 'tests', icon: 'beaker' },
     { kind: 'category', id: 'bugs', label: 'Bugs', directory: 'bugs', icon: 'bug' },
-    { kind: 'category', id: 'completions', label: 'Completions', directory: 'completions', icon: 'check' },
 ];
 
 /**

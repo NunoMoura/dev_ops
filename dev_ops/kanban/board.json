@@ -46,15 +46,6 @@
       "updatedAt": "2025-12-19T20:33:15.713Z"
     },
     {
-      "id": "TASK-002",
-      "columnId": "col-implementing",
-      "title": "New Task",
-      "status": "in_progress",
-      "updatedAt": "2025-12-21T03:45:25.808Z",
-      "summary": "",
-      "tags": []
-    },
-    {
       "id": "TASK-003",
       "columnId": "col-implementing",
       "title": "Kanban UX Improvements",
@@ -70,22 +61,10 @@
       "updatedAt": "2025-12-21T00:02:44.536Z"
     },
     {
-      "id": "TASK-005",
-      "columnId": "col-implementing",
-      "title": "New Task",
-      "updatedAt": "2025-12-21T00:51:27.014Z"
-    },
-    {
       "id": "TASK-006",
       "columnId": "col-implementing",
       "title": "New Task",
       "updatedAt": "2025-12-21T00:51:27.015Z"
-    },
-    {
-      "id": "TASK-007",
-      "columnId": "col-backlog",
-      "title": "New Task",
-      "updatedAt": "2025-12-20T11:39:48.938Z"
     }
   ]
 }

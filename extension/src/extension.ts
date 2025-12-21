@@ -9,7 +9,7 @@ import {
   KanbanCommandServices,
 } from './commands';
 import { registerInitializeCommand } from './commands/initializeCommand';
-import { readKanban, registerKanbanWatchers } from './features/boardStore';
+import { readKanban, writeKanban, registerKanbanWatchers } from './features/boardStore';
 import { formatError } from './features/errors';
 import { createStatusBar, StatusBarManager } from './statusBar';
 import { TaskEditorProvider } from './taskEditorProvider';
@@ -151,6 +151,25 @@ function registerBoardViewRequests(context: vscode.ExtensionContext, services: D
       void Promise.resolve(vscode.commands.executeCommand('kanban.createTask')).catch((error: unknown) => {
         vscode.window.showErrorMessage(`Unable to create task: ${formatError(error)}`);
       });
+    }),
+    boardPanelManager.onDidRequestDeleteTasks(async (taskIds: string[]) => {
+      const count = taskIds.length;
+      const confirmed = await vscode.window.showWarningMessage(
+        `Delete ${count} task${count > 1 ? 's' : ''}?`,
+        { modal: true },
+        'Delete'
+      );
+      if (confirmed === 'Delete') {
+        try {
+          const board = await readKanban();
+          board.items = board.items.filter(t => !taskIds.includes(t.id));
+          await writeKanban(board);
+          vscode.window.showInformationMessage(`Deleted ${count} task${count > 1 ? 's' : ''}`);
+          vscode.commands.executeCommand('kanban.refresh');
+        } catch (error: unknown) {
+          vscode.window.showErrorMessage(`Unable to delete tasks: ${formatError(error)}`);
+        }
+      }
     }),
   );
 }
