@@ -147,8 +147,14 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
   }
 
   private getEditorHtml(task: Task, columnName: string, columns: Array<{ id: string; name: string }>): string {
+    const statusLabel = { todo: 'Todo', in_progress: 'In Progress', blocked: 'Blocked', pending: 'Pending', done: 'Done' }[task.status || 'todo'] || task.status;
+    const upstreamList = (task.upstream || []).map((a: string) => `<span class="artifact-badge upstream">${a}</span>`).join('') || '<span class="empty-hint">None</span>';
+    const downstreamList = (task.downstream || []).map((a: string) => `<span class="artifact-badge downstream">${a}</span>`).join('') || '<span class="empty-hint">None</span>';
     const checklist = task.checklist || [];
-    const checklistHtml = checklist.length > 0
+    const checklistDone = checklist.filter((c: any) => c.done).length;
+    const checklistTotal = checklist.length;
+    const progressPercent = checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
+    const checklistHtml = checklistTotal > 0
       ? checklist.map((item: any, i: number) => `
         <div class="checklist-item">
           <input type="checkbox" ${item.done ? 'checked' : ''} data-index="${i}" class="checklist-check">
@@ -162,94 +168,200 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';">
   <style>
-    :root { color-scheme: var(--vscode-colorScheme); }
+    /* Design tokens - consistent across extension */
+    :root {
+      color-scheme: var(--vscode-colorScheme);
+      --status-todo: #6b7280;
+      --status-in-progress: #22c55e;
+      --status-blocked: #ef4444;
+      --status-pending: #f59e0b;
+      --status-done: #3b82f6;
+      --priority-high: #ef4444;
+      --priority-medium: #f59e0b;
+      --priority-low: #22c55e;
+      --accent-gradient: linear-gradient(90deg, #667eea, #764ba2);
+      --artifact-bg: rgba(102, 126, 234, 0.15);
+      --artifact-border: rgba(102, 126, 234, 0.3);
+      --artifact-text: #a5b4fc;
+    }
     body {
       font-family: var(--vscode-font-family);
       font-size: var(--vscode-font-size);
       color: var(--vscode-foreground);
       background: var(--vscode-editor-background);
-      padding: 20px;
-      max-width: 800px;
-      margin: 0 auto;
+      padding: 0;
+      margin: 0;
     }
-    h1 { margin: 0 0 20px; font-size: 24px; }
+    .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+
+    /* Status header - consistent with board cards */
+    .status-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-left: 4px solid var(--status-todo);
+      background: rgba(107, 114, 128, 0.1);
+      margin-bottom: 20px;
+    }
+    .status-header[data-status="in_progress"] { border-left-color: var(--status-in-progress); background: rgba(34, 197, 94, 0.1); }
+    .status-header[data-status="blocked"] { border-left-color: var(--status-blocked); background: rgba(239, 68, 68, 0.1); }
+    .status-header[data-status="pending"] { border-left-color: var(--status-pending); background: rgba(245, 158, 11, 0.1); }
+    .status-header[data-status="done"] { border-left-color: var(--status-done); background: rgba(59, 130, 246, 0.1); }
+    .task-id { font-weight: 700; font-size: 14px; }
+    .status-pill { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--status-todo); }
+    .status-header[data-status="in_progress"] .status-dot { background: var(--status-in-progress); }
+    .status-header[data-status="blocked"] .status-dot { background: var(--status-blocked); }
+    .status-header[data-status="pending"] .status-dot { background: var(--status-pending); }
+    .status-header[data-status="done"] .status-dot { background: var(--status-done); }
+
+    h1 { margin: 0 0 20px; font-size: 24px; outline: none; }
+    h1:focus { border-bottom: 2px solid var(--vscode-focusBorder); }
     .meta { color: var(--vscode-descriptionForeground); margin-bottom: 20px; font-size: 12px; }
-    label { display: block; font-weight: 600; margin-bottom: 4px; margin-top: 16px; }
+
+    label { display: block; font-weight: 600; margin-bottom: 4px; margin-top: 16px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--vscode-descriptionForeground); }
     input[type="text"], textarea, select {
-      width: 100%; box-sizing: border-box; padding: 8px;
-      border: 1px solid var(--vscode-input-border, #444);
+      width: 100%; box-sizing: border-box; padding: 10px 12px;
+      border: 1px solid var(--vscode-input-border, rgba(255,255,255,0.1));
       background: var(--vscode-input-background);
       color: var(--vscode-input-foreground);
-      border-radius: 4px;
+      border-radius: 6px;
+      transition: border-color 0.15s ease;
+    }
+    input[type="text"]:focus, textarea:focus, select:focus {
+      border-color: var(--vscode-focusBorder);
+      outline: none;
     }
     textarea { min-height: 100px; resize: vertical; }
     .row { display: flex; gap: 16px; }
     .row > div { flex: 1; }
-    .section { margin-top: 24px; border-top: 1px solid var(--vscode-panel-border, #333); padding-top: 16px; }
-    .section h2 { margin: 0 0 12px; font-size: 16px; }
-    .checklist-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
-    .checklist-item .done { text-decoration: line-through; opacity: 0.6; }
-    .empty-hint { color: var(--vscode-descriptionForeground); font-style: italic; }
-    .actions { margin-top: 24px; display: flex; gap: 12px; }
+
+    /* Section styling */
+    .section { margin-top: 24px; border-top: 1px solid var(--vscode-panel-border, rgba(255,255,255,0.1)); padding-top: 16px; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .section h2 { margin: 0; font-size: 14px; font-weight: 600; }
+
+    /* Artifact badges - consistent with board cards */
+    .artifact-row { margin-bottom: 12px; }
+    .artifact-badges { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; align-items: center; }
+    .artifact-badge {
+      background: var(--artifact-bg);
+      border: 1px solid var(--artifact-border);
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 11px;
+      color: var(--artifact-text);
+    }
+    .artifact-badge.upstream::before { content: "↑ "; opacity: 0.7; }
+    .artifact-badge.downstream::before { content: "↓ "; opacity: 0.7; }
+
+    /* Progress bar - consistent with board cards */
+    .progress-container { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .progress-bar { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--accent-gradient); transition: width 0.3s ease; }
+    .progress-text { font-size: 12px; color: var(--vscode-descriptionForeground); }
+
+    /* Checklist */
+    .checklist-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .checklist-item:last-child { border-bottom: none; }
+    .checklist-item .done { text-decoration: line-through; opacity: 0.5; }
+    .checklist-check { width: 18px; height: 18px; cursor: pointer; }
+    .empty-hint { color: var(--vscode-descriptionForeground); font-style: italic; font-size: 12px; }
+
+    /* Priority chips */
+    .priority-chip { padding: 2px 8px; border-radius: 999px; font-size: 10px; text-transform: uppercase; font-weight: 600; }
+    .priority-chip.high { background: rgba(239,68,68,0.15); color: var(--priority-high); }
+    .priority-chip.medium { background: rgba(245,158,11,0.15); color: var(--priority-medium); }
+    .priority-chip.low { background: rgba(34,197,94,0.15); color: var(--priority-low); }
+
+    /* Actions */
+    .actions { margin-top: 24px; display: flex; gap: 12px; align-items: center; }
     .btn {
       padding: 10px 20px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;
-      transition: opacity 0.15s ease;
+      transition: transform 0.1s ease, box-shadow 0.15s ease;
     }
-    .btn:hover { opacity: 0.9; }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
     .btn-delete { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
-    .save-indicator { color: var(--vscode-descriptionForeground); font-size: 12px; margin-left: auto; opacity: 0; transition: opacity 0.3s; }
+    .btn-delete:hover { box-shadow: 0 4px 12px rgba(239,68,68,0.4); }
+    .save-indicator { color: var(--status-in-progress); font-size: 12px; margin-left: auto; opacity: 0; transition: opacity 0.3s; }
     .save-indicator.visible { opacity: 1; }
   </style>
 </head>
 <body>
-  <h1 contenteditable="true" id="title">${task.title}</h1>
-  <div class="meta">
-    <span id="taskId">${task.id}</span> • Column: ${columnName} • Status: ${task.status || 'todo'}
-  </div>
-
-  <label for="summary">Summary</label>
-  <textarea id="summary">${task.summary || ''}</textarea>
-
-  <div class="row">
-    <div>
-      <label for="priority">Priority</label>
-      <select id="priority">
-        <option value="" ${!task.priority ? 'selected' : ''}></option>
-        <option value="high" ${task.priority === 'high' ? 'selected' : ''}>High</option>
-        <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>Medium</option>
-        <option value="low" ${task.priority === 'low' ? 'selected' : ''}>Low</option>
-      </select>
-    </div>
-    <div>
-      <label for="status">Status</label>
-      <select id="status">
-        <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>Todo</option>
-        <option value="in_progress" ${task.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
-        <option value="blocked" ${task.status === 'blocked' ? 'selected' : ''}>Blocked</option>
-        <option value="pending" ${task.status === 'pending' ? 'selected' : ''}>Pending Approval</option>
-        <option value="done" ${task.status === 'done' ? 'selected' : ''}>Done</option>
-      </select>
-    </div>
-    <div>
-      <label for="column">Column</label>
-      <select id="column">
-        ${columns.map(c => `<option value="${c.id}" ${c.id === task.columnId ? 'selected' : ''}>${c.name}</option>`).join('')}
-      </select>
+  <div class="status-header" data-status="${task.status || 'todo'}">
+    <span class="task-id">${task.id}</span>
+    <div class="status-pill">
+      <span class="status-dot"></span>
+      <span>${statusLabel}</span>
     </div>
   </div>
 
-  <label for="tags">Tags (comma separated)</label>
-  <input type="text" id="tags" value="${(task.tags || []).join(', ')}">
+  <div class="container">
+    <h1 contenteditable="true" id="title">${task.title}</h1>
+    <div class="meta">Column: ${columnName}</div>
 
-  <div class="section">
-    <h2>Checklist</h2>
-    <div id="checklist">${checklistHtml}</div>
-    <input type="text" id="newChecklistItem" placeholder="Add checklist item..." style="margin-top:8px;">
-  </div>
+    <label for="summary">Summary</label>
+    <textarea id="summary">${task.summary || ''}</textarea>
 
-  <div class="actions">
-    <button class="btn btn-delete" id="deleteBtn">Delete Task</button>
-    <span class="save-indicator" id="saveIndicator">✓ Saved</span>
+    <div class="row">
+      <div>
+        <label for="priority">Priority</label>
+        <select id="priority">
+          <option value="" ${!task.priority ? 'selected' : ''}></option>
+          <option value="high" ${task.priority === 'high' ? 'selected' : ''}>High</option>
+          <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>Medium</option>
+          <option value="low" ${task.priority === 'low' ? 'selected' : ''}>Low</option>
+        </select>
+      </div>
+      <div>
+        <label for="status">Status</label>
+        <select id="status">
+          <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>Todo</option>
+          <option value="in_progress" ${task.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+          <option value="blocked" ${task.status === 'blocked' ? 'selected' : ''}>Blocked</option>
+          <option value="pending" ${task.status === 'pending' ? 'selected' : ''}>Pending Approval</option>
+          <option value="done" ${task.status === 'done' ? 'selected' : ''}>Done</option>
+        </select>
+      </div>
+      <div>
+        <label for="column">Column</label>
+        <select id="column">
+          ${columns.map(c => `<option value="${c.id}" ${c.id === task.columnId ? 'selected' : ''}>${c.name}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <label for="tags">Tags (comma separated)</label>
+    <input type="text" id="tags" value="${(task.tags || []).join(', ')}">
+
+    <div class="section">
+      <h2>Linked Artifacts</h2>
+      <div class="artifact-row">
+        <label>Upstream (reads from)</label>
+        <div class="artifact-badges">${upstreamList}</div>
+      </div>
+      <div class="artifact-row">
+        <label>Downstream (produces)</label>
+        <div class="artifact-badges">${downstreamList}</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <h2>Checklist</h2>
+        ${checklistTotal > 0 ? `<span class="progress-text">${checklistDone}/${checklistTotal}</span>` : ''}
+      </div>
+      ${checklistTotal > 0 ? `<div class="progress-container"><div class="progress-bar"><div class="progress-fill" style="width:${progressPercent}%"></div></div></div>` : ''}
+      <div id="checklist">${checklistHtml}</div>
+      <input type="text" id="newChecklistItem" placeholder="Add checklist item..." style="margin-top:12px;">
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-delete" id="deleteBtn">Delete Task</button>
+      <span class="save-indicator" id="saveIndicator">✓ Saved</span>
+    </div>
   </div>
 
   <script>
