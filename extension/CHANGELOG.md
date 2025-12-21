@@ -13,14 +13,16 @@
 
 ### Changed
 
-- **Simplified Docs Sidebar** - Only user-facing categories (agent artifacts accessed via component docs)
+- **Simplified Docs Sidebar** - Only user-facing categories (agent artifacts
+  accessed via component docs)
 - **Component Field** - All artifact templates link to components
 - **Phase Rules** - Updated with component linking instructions
 - **Task Cards** - Removed task ID for cleaner design
 
 ### Fixed
 
-- **Delete Task Button** - Now uses VS Code confirmation dialog (webview `confirm()` doesn't work)
+- **Delete Task Button** - Now uses VS Code confirmation dialog (webview
+  `confirm()` doesn't work)
 - **Sidebar Icons** - Removed redundant inline icons
 
 ---

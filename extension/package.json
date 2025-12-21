@@ -100,7 +100,8 @@
       },
       {
         "command": "kanban.openSettings",
-        "title": "DevOps: Preferences"
+        "title": "DevOps: Preferences",
+        "icon": "$(gear)"
       }
     ],
     "viewsContainers": {
@@ -142,6 +143,13 @@
       }
     ],
     "menus": {
+      "view/title": [
+        {
+          "command": "kanban.openSettings",
+          "when": "view =~ /^devops/",
+          "group": "navigation"
+        }
+      ],
       "view/item/context": []
     }
   },
