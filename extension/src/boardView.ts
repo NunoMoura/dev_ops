@@ -393,28 +393,23 @@ function getBoardHtml(panelMode = false): string {
         color: var(--vscode-descriptionForeground);
         white-space: nowrap;
       }
-      /* Status indicator */
-      .status-indicator {
+      /* Card footer with status and date */
+      .card-footer {
         display: flex;
-        align-items: center;
-        gap: 6px;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 8px;
         font-size: 11px;
         color: var(--vscode-descriptionForeground);
+        opacity: 0.8;
       }
-      .status-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        display: inline-block;
+      .card-footer-item {
+        text-transform: capitalize;
       }
-      .status-in_progress { background: #22c55e; } /* Green */
-      .status-blocked { background: #ef4444; }     /* Red */
-      .status-pending { background: #f59e0b; }     /* Orange */
-      .status-done .status-dot { display: none; }
-      .status-check {
-        color: #3b82f6;
-        font-size: 14px;
-      }
+      .card-footer .status-in_progress { color: #22c55e; }
+      .card-footer .status-blocked { color: #ef4444; }
+      .card-footer .status-pending { color: #f59e0b; }
+      .card-footer .status-done { color: #3b82f6; }
       .card-actions {
         display: flex;
         justify-content: flex-end;
@@ -641,34 +636,6 @@ function getBoardHtml(panelMode = false): string {
           card.addEventListener('dragstart', (event) => handleDragStart(event, task.id, card));
           card.addEventListener('dragend', () => handleDragEnd(card));
 
-          // Header row: Status indicator only (task ID removed for cleaner design)
-          const header = document.createElement('div');
-          header.className = 'task-header';
-          
-          // Status indicator in header
-          const status = task.status || 'todo';
-          if (status !== 'todo') {
-            const statusIndicator = document.createElement('div');
-            statusIndicator.className = 'status-indicator';
-            if (status === 'done') {
-              statusIndicator.innerHTML = '<span class="status-check">✓</span>';
-            } else {
-              const dot = document.createElement('span');
-              dot.className = 'status-dot status-' + status;
-              statusIndicator.appendChild(dot);
-              const label = document.createElement('span');
-              const statusLabels = {
-                'in_progress': 'Active',
-                'blocked': 'Blocked',
-                'pending': 'Pending'
-              };
-              label.textContent = statusLabels[status] || status;
-              statusIndicator.appendChild(label);
-            }
-            header.appendChild(statusIndicator);
-          }
-          card.appendChild(header);
-
           // Title
           const title = document.createElement('div');
           title.className = 'task-title';
@@ -730,21 +697,45 @@ function getBoardHtml(panelMode = false): string {
             card.appendChild(progressContainer);
           }
 
-          // Meta chips (priority, date)
-          const meta = document.createElement('div');
-          meta.className = 'task-meta';
-          const chips = buildChips(task);
-          chips.forEach((chip) => meta.appendChild(chip));
-          if (meta.children.length) {
-            card.appendChild(meta);
-          }
-
           // Tags
           if (task.tags?.length) {
             const tags = document.createElement('div');
             tags.className = 'task-tags';
             tags.textContent = task.tags.join(', ');
             card.appendChild(tags);
+          }
+
+          // Footer: status and date on the right
+          const status = task.status || 'todo';
+          const hasStatus = status !== 'todo';
+          const hasDate = !!task.updatedAt;
+          
+          if (hasStatus || hasDate) {
+            const footer = document.createElement('div');
+            footer.className = 'card-footer';
+            
+            if (hasDate) {
+              const dateSpan = document.createElement('span');
+              dateSpan.className = 'card-footer-item';
+              const date = new Date(task.updatedAt);
+              dateSpan.textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+              footer.appendChild(dateSpan);
+            }
+            
+            if (hasStatus) {
+              const statusSpan = document.createElement('span');
+              statusSpan.className = 'card-footer-item status-' + status;
+              const statusLabels = {
+                'in_progress': 'Active',
+                'blocked': 'Blocked',
+                'pending': 'Pending',
+                'done': 'Done'
+              };
+              statusSpan.textContent = statusLabels[status] || status;
+              footer.appendChild(statusSpan);
+            }
+            
+            card.appendChild(footer);
           }
 
           return card;
