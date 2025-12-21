@@ -323,34 +323,28 @@ function getBoardHtml(panelMode = false): string {
       }
       .task-title {
         font-weight: 600;
-        flex: 1;
+        font-size: 13px;
+        line-height: 1.3;
+        margin-bottom: 6px;
       }
       .task-summary {
         font-size: 12px;
         color: var(--vscode-descriptionForeground);
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        margin-bottom: 8px;
       }
-      .task-meta {
-        font-size: 11px;
-        color: var(--vscode-descriptionForeground);
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        align-items: center;
-      }
-      .task-chip {
-        background: var(--vscode-editor-inactiveSelectionBackground, rgba(255, 255, 255, 0.08));
-        padding: 1px 6px;
-        border-radius: 999px;
-        text-transform: uppercase;
-        font-size: 10px;
-        letter-spacing: 0.05em;
-      }
-      .task-chip.priority-high { color: #ef4444; }
-      .task-chip.priority-medium { color: #f59e0b; }
-      .task-chip.priority-low { color: #22c55e; }
       .task-tags {
         font-size: 11px;
-        color: var(--vscode-descriptionForeground);
+        color: var(--vscode-textLink-foreground);
+        opacity: 0.8;
+        margin-bottom: 8px;
+      }
+      .task-tags::before {
+        content: "";
       }
       /* Artifact badges */
       .artifact-links {
@@ -393,23 +387,40 @@ function getBoardHtml(panelMode = false): string {
         color: var(--vscode-descriptionForeground);
         white-space: nowrap;
       }
-      /* Card footer with status and date */
+      /* Card footer: priority/date left, status right */
       .card-footer {
         display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-        margin-top: 8px;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 10px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
         font-size: 11px;
         color: var(--vscode-descriptionForeground);
-        opacity: 0.8;
+        opacity: 0.85;
       }
-      .card-footer-item {
+      .card-footer-left {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .card-footer-left .priority {
+        text-transform: uppercase;
+        font-size: 10px;
+        letter-spacing: 0.05em;
+        font-weight: 500;
+      }
+      .card-footer-left .priority-high { color: #ef4444; }
+      .card-footer-left .priority-medium { color: #f59e0b; }
+      .card-footer-left .priority-low { color: #22c55e; }
+      .card-footer-left .separator { opacity: 0.4; }
+      .card-footer-right {
         text-transform: capitalize;
       }
-      .card-footer .status-in_progress { color: #22c55e; }
-      .card-footer .status-blocked { color: #ef4444; }
-      .card-footer .status-pending { color: #f59e0b; }
-      .card-footer .status-done { color: #3b82f6; }
+      .card-footer-right.status-in_progress { color: #22c55e; }
+      .card-footer-right.status-blocked { color: #ef4444; }
+      .card-footer-right.status-pending { color: #f59e0b; }
+      .card-footer-right.status-done { color: #3b82f6; }
       .card-actions {
         display: flex;
         justify-content: flex-end;
@@ -705,26 +716,47 @@ function getBoardHtml(panelMode = false): string {
             card.appendChild(tags);
           }
 
-          // Footer: status and date on the right
+          // Footer: priority/date on left, status on right
           const status = task.status || 'todo';
           const hasStatus = status !== 'todo';
+          const hasPriority = !!task.priority;
           const hasDate = !!task.updatedAt;
           
-          if (hasStatus || hasDate) {
+          if (hasStatus || hasPriority || hasDate) {
             const footer = document.createElement('div');
             footer.className = 'card-footer';
             
-            if (hasDate) {
-              const dateSpan = document.createElement('span');
-              dateSpan.className = 'card-footer-item';
-              const date = new Date(task.updatedAt);
-              dateSpan.textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-              footer.appendChild(dateSpan);
+            // Left side: priority · date
+            const footerLeft = document.createElement('div');
+            footerLeft.className = 'card-footer-left';
+            
+            if (hasPriority) {
+              const prioritySpan = document.createElement('span');
+              prioritySpan.className = 'priority priority-' + task.priority;
+              prioritySpan.textContent = task.priority;
+              footerLeft.appendChild(prioritySpan);
             }
             
+            if (hasPriority && hasDate) {
+              const separator = document.createElement('span');
+              separator.className = 'separator';
+              separator.textContent = '·';
+              footerLeft.appendChild(separator);
+            }
+            
+            if (hasDate) {
+              const dateSpan = document.createElement('span');
+              const date = new Date(task.updatedAt);
+              dateSpan.textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+              footerLeft.appendChild(dateSpan);
+            }
+            
+            footer.appendChild(footerLeft);
+            
+            // Right side: status
             if (hasStatus) {
               const statusSpan = document.createElement('span');
-              statusSpan.className = 'card-footer-item status-' + status;
+              statusSpan.className = 'card-footer-right status-' + status;
               const statusLabels = {
                 'in_progress': 'Active',
                 'blocked': 'Blocked',
