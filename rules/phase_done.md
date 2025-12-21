@@ -7,40 +7,58 @@ description: Done phase - completion and PR creation.
 
 Completed work ready for merge.
 
-## Artifact
+## Artifacts
 
-**Output**: Pull Request
-**Links**: All upstream artifacts (RES, PLN, TST)
+**Output**: PR, COMP-XXX (completion report)
+**Links**: All upstream artifacts (RES, PLN, TST, REV)
 
-## How to Complete
+## Task Completion Procedure
 
-1. **Final Verification**:
-   - All tests pass
-   - Linting passes
-   - Build succeeds
-   - Documentation updated
+Follow these steps to complete a task:
 
-2. **Push Branch**:
+### 1. Final Verification
 
-   ```bash
-   git push origin <branch-name>
-   ```
+- [ ] All tests pass
+- [ ] Linting passes
+- [ ] Build succeeds
+- [ ] Documentation updated
 
-3. **Create Pull Request**:
+### 2. Create Completion Report
 
-   ```bash
-   gh pr create
-   ```
+```bash
+python3 dev_ops/scripts/doc_ops.py create report \
+  --type completion \
+  --task TASK-XXX
+```
 
-   Or use GitHub UI.
+This creates `COMP-XXX` documenting:
 
-4. **Complete Task**:
+- Commit SHA
+- PR link
+- All linked artifacts
+- Summary of work done
 
-   ```bash
-   python3 dev_ops/scripts/kanban_ops.py done TASK-XXX \
-     --outputs "PLN-001.md" "src/feature.py" \
-     --create-pr
-   ```
+### 3. Push Branch
+
+```bash
+git push origin <branch-name>
+```
+
+### 4. Create Pull Request
+
+```bash
+gh pr create
+```
+
+Or use GitHub UI.
+
+### 5. Mark Task Done
+
+```bash
+python3 dev_ops/scripts/kanban_ops.py done TASK-XXX \
+  --outputs "PLN-001.md" "COMP-001.md" \
+  --create-pr
+```
 
 ## Commit Linking
 
@@ -77,6 +95,8 @@ TASK-XXX
 - Research: RES-XXX
 - Plan: PLN-XXX
 - Tests: TST-XXX
+- Review: REV-XXX
+- Completion: COMP-XXX
 
 ## Changes
 - File 1: what changed
@@ -94,14 +114,21 @@ TASK-XXX
 - All artifacts linked to task's downstream
 - GitHub Issue linked if applicable
 
-## Standards
+## Context Handoff
 
-- All tests must pass before PR
-- Request review if `completionCriteria.review: true`
-- Address all review feedback before merge
+The completion report (COMP-XXX) serves as:
+
+- Summary for PR reviewers
+- Context for future agents/humans
+- Audit trail of what was done
+
+> [!IMPORTANT]
+> Always create COMP-XXX before marking done. This ensures
+> perfect context handoff for future work.
 
 ## Exit Criteria
 
+- [ ] COMP-XXX created
 - [ ] PR created and linked
 - [ ] Task in Done column
 - [ ] All artifacts linked

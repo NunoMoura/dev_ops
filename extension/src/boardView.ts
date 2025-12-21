@@ -16,6 +16,12 @@ export type BoardViewTask = {
   status?: string;               // Autonomy state: todo, in_progress, blocked, pending, done
   tags?: string[];
   updatedAt?: string;
+  // Artifact linking
+  upstream?: string[];           // Artifacts this task reads from
+  downstream?: string[];         // Artifacts this task produces
+  // Progress tracking
+  checklistTotal?: number;       // Total checklist items
+  checklistDone?: number;        // Completed checklist items
 };
 
 export type BoardViewSnapshot = {
@@ -276,23 +282,43 @@ function getBoardHtml(panelMode = false): string {
       .task-card {
         border: 1px solid var(--vscode-input-border, rgba(255, 255, 255, 0.1));
         border-radius: 8px;
-        padding: 10px;
+        padding: 10px 10px 10px 14px;
         background: var(--vscode-editor-background, rgba(0, 0, 0, 0.4));
         cursor: grab;
         display: flex;
         flex-direction: column;
         gap: 6px;
         transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+        position: relative;
+        border-left: 4px solid #6b7280; /* Default: todo gray */
       }
+      /* Status-based left border colors */
+      .task-card[data-status="in_progress"] { border-left-color: #22c55e; }
+      .task-card[data-status="blocked"] { border-left-color: #ef4444; }
+      .task-card[data-status="pending"] { border-left-color: #f59e0b; }
+      .task-card[data-status="done"] { border-left-color: #3b82f6; }
       .task-card.selected {
         border-color: var(--vscode-focusBorder);
+        border-left-width: 4px;
         box-shadow: 0 0 0 1px var(--vscode-focusBorder);
       }
       .task-card.dragging {
         opacity: 0.5;
       }
+      .task-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .task-id {
+        font-size: 10px;
+        color: var(--vscode-descriptionForeground);
+        opacity: 0.7;
+      }
       .task-title {
         font-weight: 600;
+        flex: 1;
       }
       .task-summary {
         font-size: 12px;
@@ -304,6 +330,7 @@ function getBoardHtml(panelMode = false): string {
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
+        align-items: center;
       }
       .task-chip {
         background: var(--vscode-editor-inactiveSelectionBackground, rgba(255, 255, 255, 0.08));
@@ -313,10 +340,55 @@ function getBoardHtml(panelMode = false): string {
         font-size: 10px;
         letter-spacing: 0.05em;
       }
+      .task-chip.priority-high { color: #ef4444; }
+      .task-chip.priority-medium { color: #f59e0b; }
+      .task-chip.priority-low { color: #22c55e; }
       .task-tags {
         font-size: 11px;
         color: var(--vscode-descriptionForeground);
       }
+      /* Artifact badges */
+      .artifact-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 4px;
+      }
+      .artifact-badge {
+        background: rgba(102, 126, 234, 0.15);
+        border: 1px solid rgba(102, 126, 234, 0.3);
+        border-radius: 4px;
+        padding: 1px 5px;
+        font-size: 9px;
+        color: #a5b4fc;
+      }
+      .artifact-badge.upstream::before { content: "↑ "; opacity: 0.7; }
+      .artifact-badge.downstream::before { content: "↓ "; opacity: 0.7; }
+      /* Progress bar */
+      .progress-container {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 4px;
+      }
+      .progress-bar {
+        flex: 1;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        transition: width 0.3s ease;
+      }
+      .progress-text {
+        font-size: 10px;
+        color: var(--vscode-descriptionForeground);
+        white-space: nowrap;
+      }
+      /* Status indicator */
       .status-indicator {
         display: flex;
         align-items: center;
@@ -335,7 +407,7 @@ function getBoardHtml(panelMode = false): string {
       .status-pending { background: #f59e0b; }     /* Orange */
       .status-done .status-dot { display: none; }
       .status-check {
-        color: #22c55e;
+        color: #3b82f6;
         font-size: 14px;
       }
       .card-actions {
@@ -555,6 +627,7 @@ function getBoardHtml(panelMode = false): string {
           card.className = 'task-card';
           card.draggable = true;
           card.dataset.taskId = task.id;
+          card.dataset.status = task.status || 'todo';
           if (state.selection.has(task.id)) {
             card.classList.add('selected');
           }
@@ -563,11 +636,45 @@ function getBoardHtml(panelMode = false): string {
           card.addEventListener('dragstart', (event) => handleDragStart(event, task.id, card));
           card.addEventListener('dragend', () => handleDragEnd(card));
 
+          // Header row: Task ID and Status
+          const header = document.createElement('div');
+          header.className = 'task-header';
+          const taskId = document.createElement('span');
+          taskId.className = 'task-id';
+          taskId.textContent = task.id;
+          header.appendChild(taskId);
+          
+          // Status indicator in header
+          const status = task.status || 'todo';
+          if (status !== 'todo') {
+            const statusIndicator = document.createElement('div');
+            statusIndicator.className = 'status-indicator';
+            if (status === 'done') {
+              statusIndicator.innerHTML = '<span class="status-check">✓</span>';
+            } else {
+              const dot = document.createElement('span');
+              dot.className = 'status-dot status-' + status;
+              statusIndicator.appendChild(dot);
+              const label = document.createElement('span');
+              const statusLabels = {
+                'in_progress': 'Active',
+                'blocked': 'Blocked',
+                'pending': 'Pending'
+              };
+              label.textContent = statusLabels[status] || status;
+              statusIndicator.appendChild(label);
+            }
+            header.appendChild(statusIndicator);
+          }
+          card.appendChild(header);
+
+          // Title
           const title = document.createElement('div');
           title.className = 'task-title';
           title.textContent = task.title;
           card.appendChild(title);
 
+          // Summary
           if (task.summary) {
             const summary = document.createElement('div');
             summary.className = 'task-summary';
@@ -575,6 +682,54 @@ function getBoardHtml(panelMode = false): string {
             card.appendChild(summary);
           }
 
+          // Artifact links (upstream and downstream)
+          const hasUpstream = task.upstream?.length > 0;
+          const hasDownstream = task.downstream?.length > 0;
+          if (hasUpstream || hasDownstream) {
+            const artifactLinks = document.createElement('div');
+            artifactLinks.className = 'artifact-links';
+            if (hasUpstream) {
+              task.upstream.forEach(artifact => {
+                const badge = document.createElement('span');
+                badge.className = 'artifact-badge upstream';
+                badge.textContent = artifact;
+                badge.title = 'Upstream: ' + artifact;
+                artifactLinks.appendChild(badge);
+              });
+            }
+            if (hasDownstream) {
+              task.downstream.forEach(artifact => {
+                const badge = document.createElement('span');
+                badge.className = 'artifact-badge downstream';
+                badge.textContent = artifact;
+                badge.title = 'Downstream: ' + artifact;
+                artifactLinks.appendChild(badge);
+              });
+            }
+            card.appendChild(artifactLinks);
+          }
+
+          // Progress bar (if checklist exists)
+          const total = task.checklistTotal || 0;
+          const done = task.checklistDone || 0;
+          if (total > 0) {
+            const progressContainer = document.createElement('div');
+            progressContainer.className = 'progress-container';
+            const progressBar = document.createElement('div');
+            progressBar.className = 'progress-bar';
+            const progressFill = document.createElement('div');
+            progressFill.className = 'progress-fill';
+            progressFill.style.width = Math.round((done / total) * 100) + '%';
+            progressBar.appendChild(progressFill);
+            progressContainer.appendChild(progressBar);
+            const progressText = document.createElement('span');
+            progressText.className = 'progress-text';
+            progressText.textContent = done + '/' + total;
+            progressContainer.appendChild(progressText);
+            card.appendChild(progressContainer);
+          }
+
+          // Meta chips (priority, date)
           const meta = document.createElement('div');
           meta.className = 'task-meta';
           const chips = buildChips(task);
@@ -583,6 +738,7 @@ function getBoardHtml(panelMode = false): string {
             card.appendChild(meta);
           }
 
+          // Tags
           if (task.tags?.length) {
             const tags = document.createElement('div');
             tags.className = 'task-tags';
@@ -590,39 +746,14 @@ function getBoardHtml(panelMode = false): string {
             card.appendChild(tags);
           }
 
-          // Status indicator (traffic light)
-          const status = task.status || 'todo';
-          if (status !== 'todo') {
-            const statusIndicator = document.createElement('div');
-            statusIndicator.className = 'status-indicator';
-            if (status === 'done') {
-              statusIndicator.innerHTML = '<span class="status-check">✓</span> Done';
-            } else {
-              const dot = document.createElement('span');
-              dot.className = 'status-dot status-' + status;
-              statusIndicator.appendChild(dot);
-              const label = document.createElement('span');
-              const statusLabels = {
-                'in_progress': 'In Progress',
-                'blocked': 'Blocked',
-                'pending': 'Pending Approval'
-              };
-              label.textContent = statusLabels[status] || status;
-              statusIndicator.appendChild(label);
-            }
-            card.appendChild(statusIndicator);
-          }
-
-          // Entire card is clickable - double-click opens task details
-          // (click handler already exists at line 561, dblclick at 562)
-
           return card;
         }
 
         function buildChips(task) {
           const chips = [];
           if (task.priority) {
-            chips.push(createChip(task.priority));
+            const priorityChip = createChip(task.priority, 'priority-' + task.priority);
+            chips.push(priorityChip);
           }
           if (task.updatedAt) {
             const date = new Date(task.updatedAt);
@@ -647,9 +778,9 @@ function getBoardHtml(panelMode = false): string {
           return button;
         }
 
-        function createChip(text) {
+        function createChip(text, extraClass) {
           const chip = document.createElement('span');
-          chip.className = 'task-chip';
+          chip.className = 'task-chip' + (extraClass ? ' ' + extraClass : '');
           chip.textContent = text;
           return chip;
         }

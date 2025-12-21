@@ -23,11 +23,16 @@ DOCS_DIR = os.path.join(PROJECT_ROOT, "dev_ops")  # Artifacts go to dev_ops/
 TEMPLATES_DIR = os.path.join(DEV_OPS_ROOT, "templates")
 
 DOC_TYPES = {
-    "adr": {"dir": "adrs", "prefix": "ADR"},
+    # Note: ADRs are now embedded in component.md files in dev_ops/architecture/
     "bug": {"dir": "bugs", "prefix": "BUG"},
     "plan": {"dir": "plans", "prefix": "PLN"},
     "research": {"dir": "research", "prefix": "RES"},
     "test": {"dir": "tests", "prefix": "TST"},
+    "prd": {"dir": "prds", "prefix": "PRD"},
+    "feature": {"dir": "features", "prefix": "FEAT"},
+    "review": {"dir": "reviews", "prefix": "REV"},
+    "completion": {"dir": "completions", "prefix": "COMP"},
+    "report": {"dir": "reports", "prefix": "REP"},
 }
 
 DOC_STATUS_REGEX = r"^status:\s*(.*)$"
@@ -213,7 +218,18 @@ def main():
     create_parser = subparsers.add_parser("create", help="Create a new document")
     create_parser.add_argument(
         "type",
-        choices=["adr", "bug", "plan", "research", "test", "backlog"],
+        choices=[
+            "bug",
+            "plan",
+            "research",
+            "test",
+            "prd",
+            "feature",
+            "review",
+            "completion",
+            "report",
+            "backlog",
+        ],
         help="Document type",
     )
     create_parser.add_argument("--title", help="Title")
@@ -223,7 +239,19 @@ def main():
     # LIST
     list_parser = subparsers.add_parser("list", help="List documents")
     list_parser.add_argument(
-        "type", choices=["adr", "bug", "plan", "research", "test"], help="Document type"
+        "type",
+        choices=[
+            "bug",
+            "plan",
+            "research",
+            "test",
+            "prd",
+            "feature",
+            "review",
+            "completion",
+            "report",
+        ],
+        help="Document type",
     )
 
     # RESOLVE

@@ -20,47 +20,71 @@ columnId: col-backlog
 title: Brief description
 summary: Detailed explanation
 priority: high | medium | low
-agentReady: true        # AI can claim
-upstream: []            # Input artifacts
+upstream: []            # Input artifacts (PRD, FEAT, RES)
 downstream: []          # Output artifacts
 ```
 
 ## Standards
 
 - Use TASK-XXX format
-- Set `agentReady: true` for AI-claimable work
 - Set priority based on urgency
+- Any unclaimed task is available for work
 
-## When to Brainstorm
+## Context Loading
 
-If the task is unclear or requires exploration before planning:
+When starting work on a task:
 
-1. Define the topic or problem to explore
-2. Research using Paper Search MCP for academic papers or Web Search for
-   broader understanding (if available)
-3. Document findings in a Research artifact (`RES-XXX`)
-4. If an architectural decision emerges → create ADR (`ADR-XXX`)
-5. Once direction is clear → move task to Research or Planning column
+1. **Load upstream docs**: Read all artifacts in task's `upstream` field
+2. **Check architecture**: Load `dev_ops/architecture/<component>/` if applicable
+3. **Review ADRs**: Check for relevant architectural decisions
+4. **Read related work**: Review linked completed tasks
+
+## Task Selection
+
+To pick the highest-priority available task:
+
+```bash
+python3 dev_ops/scripts/kanban_ops.py pick --claim
+```
+
+**Selection criteria:**
+
+1. In Backlog column
+2. Status is `todo` (not claimed)
+3. Highest priority first (high > medium > low)
+4. Oldest wins ties
+
+## Task Listing
+
+View tasks by column or status:
+
+```bash
+# All tasks
+python3 dev_ops/scripts/kanban_ops.py list
+
+# Filter by column
+python3 dev_ops/scripts/kanban_ops.py list --column col-backlog
+
+# Filter by status
+python3 dev_ops/scripts/kanban_ops.py list --status todo
+```
 
 ## Claiming Work
 
 ```bash
-# List available tasks
-python3 dev_ops/scripts/kanban_ops.py list --agent-ready
-
-# Claim a task
+# Claim a specific task
 python3 dev_ops/scripts/kanban_ops.py claim TASK-XXX
 ```
 
-## Multi-Agent Coordination
+## When to Brainstorm
 
-Before claiming work:
+If the task is unclear or requires exploration:
 
-- **Claimed tasks**: In `In Progress` column
-- **Available tasks**: In `Backlog` + `agentReady: true`
-
-> [!IMPORTANT]
-> Always check `/list_tasks` before starting to avoid conflicts.
+1. Define the topic or problem to explore
+2. Research using available tools
+3. Document findings in `RES-XXX`
+4. If an architectural decision emerges → update architecture docs
+5. Once direction is clear → move task to Research or Planning column
 
 ## Prerequisite Checking
 
@@ -78,4 +102,5 @@ prerequisites:
 ## Exit Criteria
 
 - [ ] Task claimed
-- [ ] Moved to appropriate column (Research/Planning/In Progress)
+- [ ] Upstream context loaded
+- [ ] Moved to appropriate column (Research/Planning/Implementing)

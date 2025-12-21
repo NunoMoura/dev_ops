@@ -134,6 +134,8 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     board.items = board.items.filter(t => t.id !== taskId);
     await writeKanban(board);
     vscode.window.showInformationMessage(`Deleted task ${taskId}`);
+    // Trigger board refresh
+    vscode.commands.executeCommand('kanban.refresh');
   }
 
   private getErrorHtml(message: string): string {

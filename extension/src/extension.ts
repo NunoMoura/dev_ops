@@ -14,6 +14,7 @@ import { formatError } from './features/errors';
 import { createStatusBar, StatusBarManager } from './statusBar';
 import { TaskEditorProvider } from './taskEditorProvider';
 import { MetricsViewProvider, registerMetricsView } from './metricsView';
+import { registerDocsView } from './ui/docsViewProvider';
 
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -68,8 +69,9 @@ async function initializeDevOpsServices(context: vscode.ExtensionContext): Promi
   });
   context.subscriptions.push(tasksView);
 
-  // Register metrics view and board panel
+  // Register metrics view, docs view, and board panel
   const metricsProvider = registerMetricsView(context);
+  registerDocsView(context);
   const boardPanelManager = createBoardPanelManager(context);
 
   // Create status bar

@@ -37,13 +37,6 @@ export class TasksActionProvider implements vscode.TreeDataProvider<TasksNode> {
     private readonly actions: DevOpsActionNode[] = [
         {
             kind: 'action',
-            id: 'tasks-create',
-            label: 'Create Task',
-            icon: 'add',
-            command: 'kanban.createTask',
-        },
-        {
-            kind: 'action',
             id: 'tasks-search',
             label: 'Search',
             icon: 'search',

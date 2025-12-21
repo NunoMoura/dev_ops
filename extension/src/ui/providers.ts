@@ -211,6 +211,13 @@ export class KanbanTreeProvider implements vscode.TreeDataProvider<KanbanNode> {
       const nodes = this.itemsByColumn.get(columnNode.column.id) ?? [];
       for (const itemNode of nodes) {
         const task = itemNode.item;
+        // Calculate checklist progress
+        const checklist = task.checklist ?? [];
+        const checklistTotal = checklist.length;
+        // Simple checklist: just strings; FeatureTasks have items with status
+        // For now, count strings as items (no completion tracking for simple strings)
+        const checklistDone = 0; // Would need item.done or similar to track
+
         tasks.push({
           id: task.id,
           columnId: columnNode.column.id,
@@ -221,6 +228,10 @@ export class KanbanTreeProvider implements vscode.TreeDataProvider<KanbanNode> {
           status: task.status,
           tags: task.tags,
           updatedAt: task.updatedAt,
+          upstream: task.upstream,
+          downstream: task.downstream,
+          checklistTotal,
+          checklistDone,
         });
       }
     }

@@ -284,6 +284,77 @@ function getCardHtml(): string {
         justify-content: flex-end;
         margin-top: 8px;
       }
+      /* Artifact badges */
+      .artifacts-section {
+        margin-top: 8px;
+      }
+      .artifacts-section label {
+        font-size: 11px;
+        margin-bottom: 4px;
+      }
+      .artifact-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-bottom: 8px;
+        min-height: 24px;
+      }
+      .artifact-badge {
+        background: rgba(102, 126, 234, 0.15);
+        border: 1px solid rgba(102, 126, 234, 0.3);
+        border-radius: 4px;
+        padding: 2px 8px;
+        font-size: 11px;
+        color: #a5b4fc;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .artifact-badge.upstream::before { content: "↑"; opacity: 0.7; }
+      .artifact-badge.downstream::before { content: "↓"; opacity: 0.7; }
+      .artifact-badge .remove-btn {
+        background: none;
+        border: none;
+        color: #ef4444;
+        cursor: pointer;
+        font-size: 14px;
+        padding: 0 2px;
+        line-height: 1;
+      }
+      .add-artifact-btn {
+        background: transparent;
+        border: 1px dashed rgba(102, 126, 234, 0.4);
+        border-radius: 4px;
+        padding: 2px 8px;
+        font-size: 11px;
+        color: #a5b4fc;
+        cursor: pointer;
+      }
+      .add-artifact-btn:hover {
+        background: rgba(102, 126, 234, 0.1);
+      }
+      /* Status header colors */
+      .status-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px;
+        border-radius: 6px;
+        margin-bottom: 12px;
+        border-left: 4px solid #6b7280;
+      }
+      .status-header[data-status="in_progress"] { border-left-color: #22c55e; background: rgba(34, 197, 94, 0.1); }
+      .status-header[data-status="blocked"] { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+      .status-header[data-status="pending"] { border-left-color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+      .status-header[data-status="done"] { border-left-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+      .status-header .task-id {
+        font-weight: 600;
+        color: var(--vscode-foreground);
+      }
+      .status-header .status-label {
+        font-size: 11px;
+        color: var(--vscode-descriptionForeground);
+      }
     </style>
   `;
 
@@ -302,9 +373,39 @@ function getCardHtml(): string {
       const saveBtn = document.getElementById('saveBtn');
       const featureTasksContainer = document.getElementById('featureTasksContainer');
       const addFeatureTaskBtn = document.getElementById('addFeatureTask');
+      const upstreamContainer = document.getElementById('upstreamArtifacts');
+      const downstreamContainer = document.getElementById('downstreamArtifacts');
 
       let currentTaskId;
       let featureTasks = [];
+      let upstreamArtifacts = [];
+      let downstreamArtifacts = [];
+
+      function renderArtifacts() {
+        // Render upstream
+        upstreamContainer.innerHTML = '';
+        upstreamArtifacts.forEach((artifact, index) => {
+          const badge = document.createElement('span');
+          badge.className = 'artifact-badge upstream';
+          badge.textContent = artifact;
+          upstreamContainer.appendChild(badge);
+        });
+        if (!upstreamArtifacts.length) {
+          upstreamContainer.innerHTML = '<span style="font-size:11px;color:var(--vscode-descriptionForeground);">None</span>';
+        }
+        
+        // Render downstream
+        downstreamContainer.innerHTML = '';
+        downstreamArtifacts.forEach((artifact, index) => {
+          const badge = document.createElement('span');
+          badge.className = 'artifact-badge downstream';
+          badge.textContent = artifact;
+          downstreamContainer.appendChild(badge);
+        });
+        if (!downstreamArtifacts.length) {
+          downstreamContainer.innerHTML = '<span style="font-size:11px;color:var(--vscode-descriptionForeground);">None</span>';
+        }
+      }
       const ITEM_STATUS_OPTIONS = [
         { value: 'todo', label: 'Todo' },
         { value: 'in_progress', label: 'In Progress' },
@@ -531,7 +632,10 @@ function getCardHtml(): string {
           statusSelect.value = message.task.status || 'todo';
           columnLabel.textContent = message.task.column ? 'Column: ' + message.task.column : '';
           featureTasks = cloneFeatureTasks(message.task.featureTasks);
+          upstreamArtifacts = Array.isArray(message.task.upstream) ? [...message.task.upstream] : [];
+          downstreamArtifacts = Array.isArray(message.task.downstream) ? [...message.task.downstream] : [];
           renderFeatureTasks();
+          renderArtifacts();
           form.classList.remove('hidden');
           emptyState.classList.add('hidden');
         }
@@ -628,12 +732,25 @@ function getCardHtml(): string {
 
         <div class="feature-section">
           <div class="section-header">
+            <h3>Linked Artifacts</h3>
+          </div>
+          <div class="artifacts-section">
+            <label>Upstream (reads from)</label>
+            <div id="upstreamArtifacts" class="artifact-list"></div>
+            <label>Downstream (produces)</label>
+            <div id="downstreamArtifacts" class="artifact-list"></div>
+          </div>
+        </div>
+
+        <div class="feature-section">
+          <div class="section-header">
             <h3>Checklist</h3>
             <button id="addFeatureTask" type="button" class="ghost-button">Add Checklist Task</button>
           </div>
           <p class="section-hint">Use the checklist to track progress without confusing parent tasks.</p>
           <div id="featureTasksContainer" class="feature-task-list"></div>
         </div>
+
 
         <div class="actions">
           <button id="deleteBtn" type="button">Delete Task</button>

@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/NunoMoura/dev_ops"
   },
-  "version": "0.0.8",
+  "version": "0.0.9",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -117,6 +117,10 @@
         {
           "id": "devopsTasksView",
           "name": "Tasks"
+        },
+        {
+          "id": "devopsDocsView",
+          "name": "Docs"
         },
         {
           "id": "devopsMetricsView",
