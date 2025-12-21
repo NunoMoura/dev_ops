@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.1.0-dev] - Development
+
+> **Note:** This is the development version. Version only bumps on actual releases.
+
+### Added
+
+- **Component-Centric Model** - Architecture docs mirror `src/` hierarchy
+- **Hierarchical Architecture View** - Docs sidebar shows folder structure
+- **Multi-Select Task Deletion** - Select tasks and press Delete/Backspace
+- **Docs Sidebar** - Shows Architecture, PRDs, Features, Bugs
+
+### Changed
+
+- **Simplified Docs Sidebar** - Only user-facing categories (agent artifacts accessed via component docs)
+- **Component Field** - All artifact templates link to components
+- **Phase Rules** - Updated with component linking instructions
+- **Task Cards** - Removed task ID for cleaner design
+
+### Fixed
+
+- **Delete Task Button** - Now uses VS Code confirmation dialog (webview `confirm()` doesn't work)
+- **Sidebar Icons** - Removed redundant inline icons
+
+---
+
 ## [0.0.8] - 2025-12-21
 
 ### Added
