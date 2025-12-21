@@ -4,6 +4,7 @@ title: "{{title}}"     # Research topic or question
 type: research
 date: "{{date}}"       # Creation date (YYYY-MM-DD)
 status: Active         # Active | Complete
+component: ""          # Component this research informs (e.g., architecture/domain/users/auth.md)
 upstream: []           # Artifacts this depends on
 downstream: []         # Artifacts that depend on this (e.g., PLAN-001)
 linked_tasks: []       # Related tasks (e.g., TASK-001)

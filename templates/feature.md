@@ -5,6 +5,7 @@ type: feature
 date: "{{date}}"       # Creation date (YYYY-MM-DD)
 status: Draft          # Draft | Approved | In Progress | Complete
 priority: Medium       # Low | Medium | High | Critical
+components: []         # Components this feature modifies (e.g., architecture/domain/users/auth.md)
 upstream: []           # Artifacts this depends on (e.g., RESEARCH-001)
 downstream: []         # Artifacts that depend on this (e.g., PLAN-001)
 linked_tasks: []       # Related tasks (e.g., TASK-001)

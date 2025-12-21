@@ -5,6 +5,7 @@ type: "{{report_type}}" # test | review | completion
 task: "{{task}}"        # TASK-XXX being reported on
 date: "{{date}}"        # Creation date (YYYY-MM-DD)
 status: "{{status}}"    # pass | fail | approved | changes_requested | pending
+component: ""           # Component this report verifies (e.g., architecture/domain/users/auth.md)
 upstream: []            # Artifacts this depends on
 downstream: []          # Artifacts that depend on this
 ---

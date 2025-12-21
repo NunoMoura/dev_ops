@@ -12,56 +12,99 @@ collaborative environment for **human teams and AI agents** working together.
 
 ## Overview
 
-DevOps Framework follows a **task-centric model**:
+DevOps Framework follows a **component-centric model**:
 
-- **Everything is a Task** — All work lives on the Kanban board
-- **Users are Project Managers** — Manage the board with simple commands
-- **Agents are Expert Developers** — Execute work guided by phase rules
-- **Artifacts are Linked** — All outputs in `dev_ops/`, linked to tasks
-- **Automation First** — Python scripts reduce agent token usage
+> **Components are permanent. Tasks are transient. Artifacts serve components.**
 
-## Architecture
+- **Components** — Architecture docs that mirror your `src/` folder hierarchy
+- **Tasks** — Work items that create or modify components
+- **Artifacts** — Context (Research, Plans, ADRs) or verification (Tests, Reviews)
+- **Features** — Optional, only for user-facing changes
+
+```text
+Component (mirrors src/ hierarchy)
+├── Context: Research, Plans, ADRs
+├── Implementation: Tasks that built it
+├── Verification: Tests, Reviews
+└── Code: src/...
+```
+
+## The Component Model
+
+### Why Components?
+
+Traditional approaches organize by artifact type (plans/, research/, tests/).
+This scatters related information across folders.
+
+**Component-centric** organizes by *what the artifact describes*:
+
+```text
+architecture/
+├── domain/
+│   ├── users/
+│   │   ├── auth.md        ← Everything about auth
+│   │   └── profile.md     ← Everything about profile
+│   └── orders/
+└── infrastructure/
+```
+
+Each component doc links to:
+
+- Research that informed it
+- Plans that guided it
+- Tasks that built it
+- Tests that verify it
+
+### The Hierarchy
+
+Architecture docs mirror your codebase structure:
+
+| Code Path | Architecture Doc |
+|-----------|-----------------|
+| `src/` | `architecture/README.md` |
+| `src/domain/` | `architecture/domain/README.md` |
+| `src/domain/users/auth/` | `architecture/domain/users/auth.md` |
+
+**Higher levels = broader concerns.** Navigate up to zoom out, down to dive in.
+
+### Work Flow
 
 ```mermaid
-graph TB
-    subgraph "User Commands"
-        C1["/create_task"]
-        C2["/list_tasks"]
-        C3["/pick_task"]
-        C4["/claim_task"]
-        C5["/complete_task"]
-        C6["/report_bug"]
+graph LR
+    subgraph "Work Items"
+        TASK[TASK-XXX]
+        FEAT[FEAT-XXX]
     end
 
-    subgraph "Kanban Board"
-        KB["board.json (7 phases)"]
+    subgraph "Context Artifacts"
+        RES[RES-XXX]
+        PLN[PLN-XXX]
+        ADR[ADR-XXX]
     end
 
-    subgraph "Agent (Phase Rules)"
-        RB["phase_backlog"]
-        RR["phase_research"]
-        RP["phase_planning"]
-        RI["phase_inprogress"]
-        RT["phase_testing"]
-        RD["phase_done"]
+    subgraph "Components"
+        COMP[architecture/*.md]
     end
 
-    subgraph "Artifacts (dev_ops/)"
-        A1["plans/"]
-        A2["research/"]
-        A3["tests/"]
-        A4["bugs/"]
-        A5["adrs/"]
+    subgraph "Verification"
+        TST[TST-XXX]
+        REV[REV-XXX]
     end
 
-    C1 --> KB
-    C3 --> KB
-    KB --> RB --> RR --> RP --> RI --> RT --> RD
-    RI --> A1
-    RR --> A2
-    RT --> A3
-    RR --> A5
+    RES --> COMP
+    PLN --> COMP
+    ADR --> COMP
+    TASK --> COMP
+    FEAT --> TASK
+    TASK --> TST
+    TASK --> REV
 ```
+
+1. **User creates work** → Task or Feature
+2. **Agent gathers context** → Research, Plans, ADRs (linked to component)
+3. **Agent implements** → Creates/modifies component
+4. **Agent verifies** → Tests, Reviews (linked to component)
+5. **Component doc accumulates** → Full history of what built it
 
 ## Installation
 

@@ -1,25 +1,50 @@
 # {{folder_name}}
 
-> Architecture doc for `src/{{folder_path}}/`
->
-> **Rule:** One doc per folder. Do not document individual files.
+> **Path:** `src/{{folder_path}}/`
+> **Tests:** `tests/{{folder_path}}/`
 
 ## Purpose
 
 <!-- What does this component/module do? Why does it exist? -->
 
-## Responsibilities
+## Context
 
-- Responsibility 1
-- Responsibility 2
-- Responsibility 3
+Artifacts that informed this component:
 
-## Folder Contents
+| Type | Artifacts | Description |
+|------|-----------|-------------|
+| Research | [[RES-XXX]] | Investigation findings |
+| Plans | [[PLN-XXX]] | Implementation guidance |
+| ADRs | [[ADR-XXX]] | Architectural decisions |
 
-| Item | Type | Purpose |
-|------|------|---------|
-| `subfolder/` | Directory | Description |
-| `main.py` | File | Description |
+## Implementation
+
+How this component was built:
+
+| Status | Task | Description |
+|--------|------|-------------|
+| Created | [[TASK-XXX]] | Initial implementation |
+| Modified | [[TASK-XXX]] | Added feature X |
+
+Related features (user-facing changes):
+
+- [[FEAT-XXX]]: Feature description
+
+## Verification
+
+| Type | Artifacts | Description |
+|------|-----------|-------------|
+| Tests | [[TST-XXX]] | Test report |
+| Reviews | [[REV-XXX]] | Code review |
+
+## Public Interface
+
+<!-- Key exports, entry points, or API surface -->
+
+```python
+# Example exports
+from .main import process_data
+```
 
 ## Dependencies
 
@@ -33,34 +58,9 @@
 |-------------|--------------|
 | `../consumer/` | Consumes X |
 
-## Public Interface
+## Folder Contents
 
-<!-- Key exports, entry points, or API surface -->
-
-```python
-# Example exports
-from .main import process_data
-```
-
-## Architectural Decisions
-
-<!-- ADRs for decisions affecting THIS folder -->
-
-### ADR-001: Decision Title
-
-**Date:** YYYY-MM-DD
-**Status:** Accepted | Superseded | Deprecated
-
-**Context:** Why was a decision needed?
-
-**Decision:** What was decided?
-
-**Consequences:** What are the implications?
-
----
-
-## Related Artifacts
-
-- PRD-XXX: Product context
-- FEAT-XXX: Feature that introduced this
-- PLN-XXX: Implementation plan
+| Item | Type | Purpose |
+|------|------|---------|
+| `subfolder/` | Directory | Description |
+| `main.py` | File | Description |

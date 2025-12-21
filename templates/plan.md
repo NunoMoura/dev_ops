@@ -4,6 +4,7 @@ title: "{{title}}"     # Short descriptive title
 type: plan
 date: "{{date}}"       # Creation date (YYYY-MM-DD)
 status: Draft          # Draft | Active | Complete | Superseded
+component: ""          # Component this plan guides (e.g., architecture/domain/users/auth.md)
 upstream: []           # Artifacts this depends on (e.g., RESEARCH-001)
 downstream: []         # Artifacts that depend on this
 linked_tasks: []       # Related tasks (e.g., TASK-001)
