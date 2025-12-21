@@ -100,8 +100,16 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
           await this.updateTask(taskId, message.data);
           break;
         case 'delete':
-          await this.deleteTask(taskId);
-          webviewPanel.dispose();
+          // Show confirmation dialog from extension host (confirm() doesn't work in webviews)
+          const confirmed = await vscode.window.showWarningMessage(
+            `Delete task ${taskId}?`,
+            { modal: true },
+            'Delete'
+          );
+          if (confirmed === 'Delete') {
+            await this.deleteTask(taskId);
+            webviewPanel.dispose();
+          }
           break;
       }
     });
@@ -397,11 +405,9 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     document.getElementById('column').addEventListener('change', triggerSave);
     document.getElementById('tags').addEventListener('input', triggerSave);
 
-    // Delete button
+    // Delete button - confirmation handled in extension host
     document.getElementById('deleteBtn').addEventListener('click', () => {
-      if (confirm('Delete this task?')) {
-        vscode.postMessage({ type: 'delete' });
-      }
+      vscode.postMessage({ type: 'delete' });
     });
 
     // New checklist item
