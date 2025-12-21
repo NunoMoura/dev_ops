@@ -53,6 +53,16 @@ downstream: [PLN-001, ADR-001]
    python3 dev_ops/scripts/kanban_ops.py downstream TASK-XXX RES-XXX
    ```
 
+5. **Link to Component**:
+
+   If this research informs a specific component, set the `component` field in the research frontmatter:
+
+   ```yaml
+   component: architecture/domain/users/auth.md
+   ```
+
+   Then update the component doc to reference this research in its Context section.
+
 ## When to Create ADR
 
 Create an Architectural Decision Record when:

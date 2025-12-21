@@ -114,7 +114,8 @@ Before moving to Done, all must pass:
 
 ## Exit Criteria
 
-- [ ] TST-XXX report created
+- [ ] TST-XXX report created with `component:` field set
 - [ ] All tests passing
+- [ ] Component doc's Verification section updated with TST-XXX reference
 - [ ] BUG-XXX created for any failures (and fixed)
 - [ ] Move task to Done

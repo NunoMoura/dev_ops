@@ -54,6 +54,16 @@ linked_tasks: [TASK-001]
    python3 dev_ops/scripts/kanban_ops.py downstream TASK-XXX PLN-XXX
    ```
 
+5. **Link to Component**:
+
+   Set the `component` field in the plan frontmatter:
+
+   ```yaml
+   component: architecture/domain/users/auth.md
+   ```
+
+   Update the component doc's Context section to reference this plan.
+
 ## Plan Structure
 
 ```markdown

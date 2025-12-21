@@ -3,48 +3,53 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 /**
- * Document category in the Docs sidebar.
+ * Node types for the Docs sidebar.
  */
 export interface DocsCategoryNode {
     kind: 'category';
     id: string;
     label: string;
     directory: string;
-    prefix: string;
     icon: string;
 }
 
-/**
- * Individual document file.
- */
+export interface DocsFolderNode {
+    kind: 'folder';
+    id: string;
+    label: string;
+    folderPath: string;
+    parentPath: string;
+}
+
 export interface DocsFileNode {
     kind: 'file';
     id: string;
     label: string;
     filePath: string;
-    category: string;
+    parentId: string;
 }
 
-export type DocsNode = DocsCategoryNode | DocsFileNode;
+export type DocsNode = DocsCategoryNode | DocsFolderNode | DocsFileNode;
 
 /**
- * Document categories aligned with dev_ops structure.
+ * Document categories - Architecture is hierarchical, others are flat.
  */
 const DOC_CATEGORIES: DocsCategoryNode[] = [
-    { kind: 'category', id: 'prds', label: 'PRDs', directory: 'prds', prefix: 'PRD-', icon: 'file-text' },
-    { kind: 'category', id: 'features', label: 'Features', directory: 'features', prefix: 'FEAT-', icon: 'list-unordered' },
-    { kind: 'category', id: 'research', label: 'Research', directory: 'research', prefix: 'RES-', icon: 'lightbulb' },
-    { kind: 'category', id: 'plans', label: 'Plans', directory: 'plans', prefix: 'PLN-', icon: 'checklist' },
-    { kind: 'category', id: 'architecture', label: 'Architecture', directory: 'architecture', prefix: '', icon: 'symbol-structure' },
-    { kind: 'category', id: 'reviews', label: 'Reviews', directory: 'reviews', prefix: 'REV-', icon: 'comment-discussion' },
-    { kind: 'category', id: 'tests', label: 'Tests', directory: 'tests', prefix: 'TST-', icon: 'beaker' },
-    { kind: 'category', id: 'bugs', label: 'Bugs', directory: 'bugs', prefix: 'BUG-', icon: 'bug' },
-    { kind: 'category', id: 'completions', label: 'Completions', directory: 'completions', prefix: 'COMP-', icon: 'check' },
+    { kind: 'category', id: 'architecture', label: 'Architecture', directory: 'architecture', icon: 'symbol-structure' },
+    { kind: 'category', id: 'prds', label: 'PRDs', directory: 'prds', icon: 'file-text' },
+    { kind: 'category', id: 'features', label: 'Features', directory: 'features', icon: 'list-unordered' },
+    { kind: 'category', id: 'research', label: 'Research', directory: 'research', icon: 'lightbulb' },
+    { kind: 'category', id: 'plans', label: 'Plans', directory: 'plans', icon: 'checklist' },
+    { kind: 'category', id: 'reviews', label: 'Reviews', directory: 'reviews', icon: 'comment-discussion' },
+    { kind: 'category', id: 'tests', label: 'Tests', directory: 'tests', icon: 'beaker' },
+    { kind: 'category', id: 'bugs', label: 'Bugs', directory: 'bugs', icon: 'bug' },
+    { kind: 'category', id: 'completions', label: 'Completions', directory: 'completions', icon: 'check' },
 ];
 
 /**
  * Tree data provider for the Docs section.
- * Shows categories -> files hierarchy.
+ * Architecture shows folder hierarchy mirroring src/.
+ * Other categories show flat file lists.
  */
 export class DocsViewProvider implements vscode.TreeDataProvider<DocsNode> {
     private readonly onDidChangeEmitter = new vscode.EventEmitter<DocsNode | undefined>();
@@ -78,20 +83,84 @@ export class DocsViewProvider implements vscode.TreeDataProvider<DocsNode> {
             });
         }
 
-        // Category level: show files
+        // Category level
         if (element.kind === 'category') {
-            return this.getFilesInCategory(element);
+            const catPath = path.join(this.devOpsPath, element.directory);
+
+            // Architecture: show hierarchical folders
+            if (element.id === 'architecture') {
+                return this.getHierarchicalChildren(catPath, element.id);
+            }
+
+            // Other categories: flat list of files
+            return this.getFlatFiles(catPath, element.id);
+        }
+
+        // Folder level: show subfolders and files
+        if (element.kind === 'folder') {
+            return this.getHierarchicalChildren(element.folderPath, element.id);
         }
 
         return [];
     }
 
-    private getFilesInCategory(category: DocsCategoryNode): DocsFileNode[] {
-        if (!this.devOpsPath) {
+    /**
+     * Get hierarchical children (folders + files) for architecture.
+     */
+    private getHierarchicalChildren(folderPath: string, parentId: string): DocsNode[] {
+        if (!fs.existsSync(folderPath)) {
             return [];
         }
 
-        const catPath = path.join(this.devOpsPath, category.directory);
+        try {
+            const entries = fs.readdirSync(folderPath, { withFileTypes: true });
+            const nodes: DocsNode[] = [];
+
+            // Add subfolders first
+            for (const entry of entries) {
+                if (entry.isDirectory() && !entry.name.startsWith('.')) {
+                    const subPath = path.join(folderPath, entry.name);
+                    nodes.push({
+                        kind: 'folder',
+                        id: `${parentId}/${entry.name}`,
+                        label: entry.name,
+                        folderPath: subPath,
+                        parentPath: folderPath,
+                    });
+                }
+            }
+
+            // Then add files
+            for (const entry of entries) {
+                if (entry.isFile() && entry.name.endsWith('.md')) {
+                    nodes.push({
+                        kind: 'file',
+                        id: `${parentId}/${entry.name}`,
+                        label: entry.name.replace('.md', ''),
+                        filePath: path.join(folderPath, entry.name),
+                        parentId: parentId,
+                    });
+                }
+            }
+
+            // Sort: folders first, then files
+            nodes.sort((a, b) => {
+                if (a.kind !== b.kind) {
+                    return a.kind === 'folder' ? -1 : 1;
+                }
+                return a.label.localeCompare(b.label);
+            });
+
+            return nodes;
+        } catch {
+            return [];
+        }
+    }
+
+    /**
+     * Get flat list of files for non-architecture categories.
+     */
+    private getFlatFiles(catPath: string, categoryId: string): DocsFileNode[] {
         if (!fs.existsSync(catPath)) {
             return [];
         }
@@ -104,15 +173,14 @@ export class DocsViewProvider implements vscode.TreeDataProvider<DocsNode> {
                 if (entry.isFile() && entry.name.endsWith('.md')) {
                     files.push({
                         kind: 'file',
-                        id: `${category.id}-${entry.name}`,
+                        id: `${categoryId}-${entry.name}`,
                         label: entry.name.replace('.md', ''),
                         filePath: path.join(catPath, entry.name),
-                        category: category.id,
+                        parentId: categoryId,
                     });
                 }
             }
 
-            // Sort by name
             files.sort((a, b) => a.label.localeCompare(b.label));
             return files;
         } catch {
@@ -132,6 +200,17 @@ export class DocsViewProvider implements vscode.TreeDataProvider<DocsNode> {
             return item;
         }
 
+        if (element.kind === 'folder') {
+            const item = new vscode.TreeItem(
+                element.label,
+                vscode.TreeItemCollapsibleState.Collapsed
+            );
+            item.id = element.id;
+            item.iconPath = new vscode.ThemeIcon('folder');
+            item.contextValue = 'docsFolder';
+            return item;
+        }
+
         // File node
         const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.None);
         item.id = element.id;
@@ -148,9 +227,7 @@ export class DocsViewProvider implements vscode.TreeDataProvider<DocsNode> {
     }
 
     getParent(element: DocsNode): DocsNode | undefined {
-        if (element.kind === 'file') {
-            return DOC_CATEGORIES.find(cat => cat.id === element.category);
-        }
+        // Not implementing full parent tracking for simplicity
         return undefined;
     }
 }
