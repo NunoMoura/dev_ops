@@ -636,13 +636,9 @@ function getBoardHtml(panelMode = false): string {
           card.addEventListener('dragstart', (event) => handleDragStart(event, task.id, card));
           card.addEventListener('dragend', () => handleDragEnd(card));
 
-          // Header row: Task ID and Status
+          // Header row: Status indicator only (task ID removed for cleaner design)
           const header = document.createElement('div');
           header.className = 'task-header';
-          const taskId = document.createElement('span');
-          taskId.className = 'task-id';
-          taskId.textContent = task.id;
-          header.appendChild(taskId);
           
           // Status indicator in header
           const status = task.status || 'todo';
