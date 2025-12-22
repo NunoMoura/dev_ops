@@ -7,7 +7,7 @@ dev_ops/kanban/board.json. Supports task prerequisites, completion criteria,
 and artifact linking with identifiers.
 
 Column = Workflow phase, Status = Autonomy state:
-- Columns: Backlog, Research, Planning, Implementing, Review, Testing, Done
+- Columns: Backlog, Planning, Aligning, Researching, Implementing, Testing, Reviewing, Done
 - Status: todo, in_progress, blocked, pending, done
 """
 
@@ -39,12 +39,13 @@ def _load_default_columns() -> list[dict]:
     # Fallback to hardcoded if file not found or invalid
     return [
         {"id": "col-backlog", "name": "Backlog", "position": 1},
-        {"id": "col-research", "name": "Research", "position": 2},
-        {"id": "col-planning", "name": "Planning", "position": 3},
-        {"id": "col-implementing", "name": "Implementing", "position": 4},
-        {"id": "col-review", "name": "Review", "position": 5},
+        {"id": "col-planning", "name": "Planning", "position": 2},
+        {"id": "col-aligning", "name": "Aligning", "position": 3},
+        {"id": "col-researching", "name": "Researching", "position": 4},
+        {"id": "col-implementing", "name": "Implementing", "position": 5},
         {"id": "col-testing", "name": "Testing", "position": 6},
-        {"id": "col-done", "name": "Done", "position": 7},
+        {"id": "col-reviewing", "name": "Reviewing", "position": 7},
+        {"id": "col-done", "name": "Done", "position": 8},
     ]
 
 

@@ -33,7 +33,8 @@ const AGENT_CATEGORIES: AgentCategoryNode[] = [
 
 /**
  * Tree data provider for the Agent section.
- * Shows workflows and rules from .agent folder.
+ * Shows workflows and rules from .agent folder (bootstrapped projects)
+ * or root folders (dev_ops source project).
  */
 export class AgentViewProvider implements vscode.TreeDataProvider<AgentNode> {
     private readonly onDidChangeEmitter = new vscode.EventEmitter<AgentNode | undefined>();
@@ -41,12 +42,21 @@ export class AgentViewProvider implements vscode.TreeDataProvider<AgentNode> {
 
     private workspaceRoot: string | undefined;
     private agentPath: string | undefined;
+    private useRootFolders: boolean = false;
 
     constructor() {
         const folders = vscode.workspace.workspaceFolders;
         if (folders?.length) {
             this.workspaceRoot = folders[0].uri.fsPath;
-            this.agentPath = path.join(this.workspaceRoot, '.agent');
+            // Try .agent folder first (bootstrapped projects)
+            const agentDir = path.join(this.workspaceRoot, '.agent');
+            if (fs.existsSync(agentDir)) {
+                this.agentPath = agentDir;
+            } else {
+                // Fallback to root folders (dev_ops source project)
+                this.agentPath = this.workspaceRoot;
+                this.useRootFolders = true;
+            }
         }
     }
 

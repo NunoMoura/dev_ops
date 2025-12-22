@@ -45,21 +45,28 @@ const DOC_CATEGORIES: DocsCategoryNode[] = [
 
 /**
  * Tree data provider for the Docs section.
- * Architecture shows folder hierarchy mirroring src/.
- * Other categories show flat file lists.
+ * Shows architecture, ux, tests from docs/ (bootstrapped projects)
+ * or dev_ops/ (source project). Architecture and UX show folder hierarchy.
  */
 export class DocsViewProvider implements vscode.TreeDataProvider<DocsNode> {
     private readonly onDidChangeEmitter = new vscode.EventEmitter<DocsNode | undefined>();
     readonly onDidChangeTreeData = this.onDidChangeEmitter.event;
 
     private workspaceRoot: string | undefined;
-    private devOpsPath: string | undefined;
+    private docsPath: string | undefined;
 
     constructor() {
         const folders = vscode.workspace.workspaceFolders;
         if (folders?.length) {
             this.workspaceRoot = folders[0].uri.fsPath;
-            this.devOpsPath = path.join(this.workspaceRoot, 'dev_ops');
+            // Try docs/ first (bootstrapped projects)
+            const docsDir = path.join(this.workspaceRoot, 'docs');
+            if (fs.existsSync(docsDir)) {
+                this.docsPath = docsDir;
+            } else {
+                // Fallback to dev_ops/ (source project)
+                this.docsPath = path.join(this.workspaceRoot, 'dev_ops');
+            }
         }
     }
 
@@ -68,24 +75,24 @@ export class DocsViewProvider implements vscode.TreeDataProvider<DocsNode> {
     }
 
     getChildren(element?: DocsNode): DocsNode[] {
-        if (!this.devOpsPath) {
+        if (!this.docsPath) {
             return [];
         }
 
         // Root level: show categories
         if (!element) {
             return DOC_CATEGORIES.filter(cat => {
-                const catPath = path.join(this.devOpsPath!, cat.directory);
+                const catPath = path.join(this.docsPath!, cat.directory);
                 return fs.existsSync(catPath);
             });
         }
 
         // Category level
         if (element.kind === 'category') {
-            const catPath = path.join(this.devOpsPath, element.directory);
+            const catPath = path.join(this.docsPath, element.directory);
 
-            // Architecture: show hierarchical folders
-            if (element.id === 'architecture') {
+            // Architecture and UX: show hierarchical folders
+            if (element.id === 'architecture' || element.id === 'ux') {
                 return this.getHierarchicalChildren(catPath, element.id);
             }
 
@@ -240,7 +247,7 @@ export function registerDocsView(context: vscode.ExtensionContext): DocsViewProv
     );
 
     // Watch for file changes in dev_ops directory
-    const watcher = vscode.workspace.createFileSystemWatcher('**/dev_ops/**/*.md');
+    const watcher = vscode.workspace.createFileSystemWatcher('**/docs/**/*.md');
     watcher.onDidCreate(() => provider.refresh());
     watcher.onDidDelete(() => provider.refresh());
     watcher.onDidChange(() => provider.refresh());
