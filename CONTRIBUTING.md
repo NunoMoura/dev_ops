@@ -162,6 +162,46 @@ pnpm run test
 # Uses @vscode/test-electron for integration testing
 ```
 
+### Testing with External Repositories
+
+To test the framework in realistic conditions, bootstrap it into an external
+project rather than the framework repo itself.
+
+**Recommended test repo**: [TodoMVC](https://github.com/nicknish/react-todomvc)
+(small React project, clean structure)
+
+```bash
+# Clone a test project
+git clone https://github.com/nicknish/react-todomvc.git ~/test-project
+cd ~/test-project
+
+# Build and install the extension
+cd /path/to/dev_ops/extension
+pnpm run package
+code --install-extension dev-ops-*.vsix
+
+# Open test project in VS Code
+code ~/test-project
+
+# Run "DevOps: Initialize" command to bootstrap
+```
+
+This creates the expected folder structure in the test project:
+
+```text
+~/test-project/
+├── .agent/
+│   ├── workflows/
+│   └── rules/
+├── docs/
+│   ├── architecture/
+│   ├── ux/
+│   └── tests/
+└── dev_ops/
+    └── kanban/
+        └── board.json
+```
+
 ### Adding a New Command
 
 1. Define command in `package.json` under `contributes.commands`

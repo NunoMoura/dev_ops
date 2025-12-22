@@ -1,7 +1,0 @@
-- [2025-12-19T23:15:35.889Z] Created in column Backlog
-- [2025-12-19T23:19:36.306Z] Moved to column Research
-- [2025-12-19T23:19:36.307Z] Moved to column Research
-- [2025-12-19T23:19:57.251Z] Moved to column Planning
-- [2025-12-19T23:19:57.251Z] Moved to column Planning
-- [2025-12-21T00:51:27.012Z] Moved to column Implementing
-- [2025-12-21T00:51:27.012Z] Moved to column Implementing

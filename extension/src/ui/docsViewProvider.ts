@@ -59,14 +59,9 @@ export class DocsViewProvider implements vscode.TreeDataProvider<DocsNode> {
         const folders = vscode.workspace.workspaceFolders;
         if (folders?.length) {
             this.workspaceRoot = folders[0].uri.fsPath;
-            // Try docs/ first (bootstrapped projects)
-            const docsDir = path.join(this.workspaceRoot, 'docs');
-            if (fs.existsSync(docsDir)) {
-                this.docsPath = docsDir;
-            } else {
-                // Fallback to dev_ops/ (source project)
-                this.docsPath = path.join(this.workspaceRoot, 'dev_ops');
-            }
+            // Use docs/ folder (created by bootstrap)
+            // Categories will show empty if folder doesn't exist yet
+            this.docsPath = path.join(this.workspaceRoot, 'docs');
         }
     }
 

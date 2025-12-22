@@ -14,7 +14,7 @@ rebranded as "DevOps Framework". The original MIT license permits this use.
 
 ### Original MIT License
 
-```
+```markdown
 MIT License
 
 Copyright (c) MissTitanK3

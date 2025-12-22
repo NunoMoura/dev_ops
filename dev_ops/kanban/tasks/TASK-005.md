@@ -1,3 +1,0 @@
-- [2025-12-20T05:37:53.084Z] Created in column Planning
-- [2025-12-21T00:51:27.014Z] Moved to column Implementing
-- [2025-12-21T00:51:27.014Z] Moved to column Implementing
