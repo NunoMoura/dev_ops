@@ -48,11 +48,12 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; font-src https://fonts.gstatic.com; style-src 'unsafe-inline' https://fonts.googleapis.com; script-src 'unsafe-inline';">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root { color-scheme: var(--vscode-colorScheme); }
     body {
-      font-family: var(--vscode-font-family);
+      font-family: 'IBM Plex Sans', var(--vscode-font-family), sans-serif;
       font-size: var(--vscode-font-size);
       color: var(--vscode-foreground);
       padding: 12px;

@@ -140,7 +140,8 @@ export function createBoardPanelManager(context: vscode.ExtensionContext): Kanba
 
 function getBoardHtml(panelMode = false): string {
   const cspMeta =
-    "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; img-src vscode-resource: data:; script-src 'unsafe-inline'; style-src 'unsafe-inline';\" />";
+    "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; img-src vscode-resource: data:; font-src https://fonts.gstatic.com; style-src 'unsafe-inline' https://fonts.googleapis.com; script-src 'unsafe-inline';\" />";
+  const fontLink = '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">';
 
   // Panel mode: horizontal Trello-like layout (columns side by side)
   // Sidebar mode: vertical stacked columns
@@ -208,7 +209,7 @@ function getBoardHtml(panelMode = false): string {
         color-scheme: var(--vscode-colorScheme);
       }
       body {
-        font-family: var(--vscode-font-family);
+        font-family: 'IBM Plex Sans', var(--vscode-font-family), sans-serif;
         font-size: var(--vscode-font-size);
         margin: 0;
         padding: 12px;
@@ -945,5 +946,5 @@ function getBoardHtml(panelMode = false): string {
     </script>
   `;
 
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" />${cspMeta}${styles}<style>${layoutStyles}</style></head>${body}${script}</html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" />${cspMeta}${fontLink}${styles}<style>${layoutStyles}</style></head>${body}${script}</html>`;
 }

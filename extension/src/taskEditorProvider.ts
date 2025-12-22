@@ -174,7 +174,8 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; font-src https://fonts.gstatic.com; style-src 'unsafe-inline' https://fonts.googleapis.com; script-src 'unsafe-inline';">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     /* Design tokens - consistent across extension */
     :root {
@@ -196,7 +197,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       --section-bg: var(--vscode-sideBarSectionHeader-background, rgba(255, 255, 255, 0.03));
     }
     body {
-      font-family: var(--vscode-font-family);
+      font-family: 'IBM Plex Sans', var(--vscode-font-family), sans-serif;
       font-size: var(--vscode-font-size);
       color: var(--vscode-foreground);
       background: var(--vscode-editor-background);
@@ -205,36 +206,43 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     }
     .container { max-width: 800px; margin: 0 auto; padding: 24px; }
 
-    /* Status header - consistent with board cards */
-    .status-header {
+    /* Title row - compact header with ID, title, and status */
+    .title-row {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      padding: 16px 24px;
-      border-left: 4px solid var(--status-todo);
-      background: rgba(107, 114, 128, 0.1);
-      border-radius: 0 8px 8px 0;
-      margin: 16px 16px 0 0;
+      gap: 12px;
+      margin-bottom: 8px;
     }
-    .status-header[data-status="in_progress"] { border-left-color: var(--status-in-progress); background: rgba(34, 197, 94, 0.1); }
-    .status-header[data-status="blocked"] { border-left-color: var(--status-blocked); background: rgba(239, 68, 68, 0.1); }
-    .status-header[data-status="pending"] { border-left-color: var(--status-pending); background: rgba(245, 158, 11, 0.1); }
-    .status-header[data-status="done"] { border-left-color: var(--status-done); background: rgba(59, 130, 246, 0.1); }
-    .task-id { font-weight: 700; font-size: 14px; letter-spacing: 0.02em; }
-    .status-pill { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--status-todo); }
-    .status-header[data-status="in_progress"] .status-dot { background: var(--status-in-progress); }
-    .status-header[data-status="blocked"] .status-dot { background: var(--status-blocked); }
-    .status-header[data-status="pending"] .status-dot { background: var(--status-pending); }
-    .status-header[data-status="done"] .status-dot { background: var(--status-done); }
+    .task-id-chip {
+      background: rgba(255,255,255,0.1);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--vscode-descriptionForeground);
+      white-space: nowrap;
+    }
+    .status-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    .status-indicator[data-status="todo"] { background: var(--status-todo); }
+    .status-indicator[data-status="in_progress"] { background: var(--status-in-progress); }
+    .status-indicator[data-status="blocked"] { background: var(--status-blocked); }
+    .status-indicator[data-status="pending"] { background: var(--status-pending); }
+    .status-indicator[data-status="done"] { background: var(--status-done); }
 
     /* Title styling */
     h1 { 
-      margin: 0 0 8px; 
-      font-size: 22px; 
+      margin: 0; 
+      font-size: 20px; 
       font-weight: 600;
       outline: none;
-      padding: 8px 0;
+      flex: 1;
+      padding: 4px 0;
       border-bottom: 2px solid transparent;
       transition: border-color 0.15s ease;
     }
@@ -245,11 +253,10 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       font-size: 12px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
-    .meta::before {
-      content: "📍";
-      font-size: 11px;
+    .meta-separator {
+      opacity: 0.5;
     }
 
     /* Card sections */
@@ -429,17 +436,17 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
   </style>
 </head>
 <body>
-  <div class="status-header" data-status="${task.status || 'todo'}">
-    <span class="task-id">${task.id}</span>
-    <div class="status-pill">
-      <span class="status-dot"></span>
-      <span>${statusLabel}</span>
-    </div>
-  </div>
-
   <div class="container">
-    <h1 contenteditable="true" id="title">${task.title}</h1>
-    <div class="meta">${columnName}</div>
+    <div class="title-row">
+      <span class="task-id-chip">${task.id}</span>
+      <h1 contenteditable="true" id="title">${task.title}</h1>
+      <span class="status-indicator" data-status="${task.status || 'todo'}" title="${statusLabel}"></span>
+    </div>
+    <div class="meta">
+      <span>Status: ${statusLabel}</span>
+      <span class="meta-separator">|</span>
+      <span>Phase: ${columnName}</span>
+    </div>
 
     <div class="card-section">
       <label for="summary">Summary</label>
