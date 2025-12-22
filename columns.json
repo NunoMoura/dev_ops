@@ -1,6 +1,6 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "description": "Default 7-column Kanban structure aligned with DevOps Framework phases",
+    "description": "8-column Kanban structure for Document-First DevOps Framework v2",
     "columns": [
         {
             "id": "col-backlog",
@@ -8,23 +8,23 @@
             "position": 1
         },
         {
-            "id": "col-research",
-            "name": "Research",
+            "id": "col-planning",
+            "name": "Planning",
             "position": 2
         },
         {
-            "id": "col-planning",
-            "name": "Planning",
+            "id": "col-aligning",
+            "name": "Aligning",
             "position": 3
+        },
+        {
+            "id": "col-researching",
+            "name": "Researching",
+            "position": 4
         },
         {
             "id": "col-implementing",
             "name": "Implementing",
-            "position": 4
-        },
-        {
-            "id": "col-review",
-            "name": "Review",
             "position": 5
         },
         {
@@ -33,9 +33,14 @@
             "position": 6
         },
         {
+            "id": "col-reviewing",
+            "name": "Reviewing",
+            "position": 7
+        },
+        {
             "id": "col-done",
             "name": "Done",
-            "position": 7
+            "position": 8
         }
     ]
 }

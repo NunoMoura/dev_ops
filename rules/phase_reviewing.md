@@ -1,11 +1,11 @@
 ---
 activation_mode: Model Decides
-description: Review phase - code review before testing.
+description: Reviewing phase - code review before done.
 ---
 
-# Review Phase
+# Reviewing Phase
 
-Code review and quality validation before testing.
+Code review and quality validation before marking done.
 
 ## Purpose
 

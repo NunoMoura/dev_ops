@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { KanbanBoardPanelManager, createBoardPanelManager } from './boardView';
 import { KanbanTreeProvider } from './ui/providers';
-import { TasksActionProvider } from './ui/actionProviders';
 import {
   registerKanbanCommands,
   handleBoardMoveTasks,
@@ -15,6 +14,7 @@ import { createStatusBar, StatusBarManager } from './statusBar';
 import { TaskEditorProvider } from './taskEditorProvider';
 import { MetricsViewProvider, registerMetricsView } from './metricsView';
 import { registerDocsView } from './ui/docsViewProvider';
+import { registerAgentView } from './ui/agentViewProvider';
 
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -50,9 +50,8 @@ export function deactivate() { }
 
 type DevOpsExtensionServices = KanbanCommandServices & {
   boardPanelManager: KanbanBoardPanelManager;
-  tasksProvider: TasksActionProvider;
   statusBar: StatusBarManager;
-  tasksView: vscode.TreeView<unknown>;
+  agentView: vscode.TreeView<unknown>;
   syncFilterUI: () => void;
 };
 
@@ -60,14 +59,12 @@ async function initializeDevOpsServices(context: vscode.ExtensionContext): Promi
   // Internal board state provider (not displayed as a tree anymore)
   const provider = new KanbanTreeProvider(readKanban);
 
-  // Tasks action provider for sidebar
-  const tasksProvider = new TasksActionProvider();
-
-  // Register tree view for Tasks section
-  const tasksView = vscode.window.createTreeView('devopsTasksView', {
-    treeDataProvider: tasksProvider,
+  // Register Agent view for sidebar
+  const agentProvider = registerAgentView(context);
+  const agentView = vscode.window.createTreeView('devopsAgentView', {
+    treeDataProvider: agentProvider,
   });
-  context.subscriptions.push(tasksView);
+  context.subscriptions.push(agentView);
 
   // Register metrics view, docs view, and board panel
   const metricsProvider = registerMetricsView(context);
@@ -77,23 +74,20 @@ async function initializeDevOpsServices(context: vscode.ExtensionContext): Promi
   // Create status bar
   const statusBar = createStatusBar(context);
 
-  // Create filter synchronizer (updates context and sidebar filter chips)
+  // Create filter synchronizer
   const syncFilterUI = () => {
     const active = provider.hasFilter();
-    const filterText = provider.getFilterText();
-    tasksProvider.setActiveFilter(active ? filterText : undefined);
     void vscode.commands.executeCommand('setContext', 'kanbanFilterActive', active);
   };
   syncFilterUI();
 
   return {
     provider,
-    kanbanView: tasksView as unknown as vscode.TreeView<import('./ui/providers').KanbanNode>,
+    kanbanView: agentView as unknown as vscode.TreeView<import('./ui/providers').KanbanNode>,
     metricsProvider,
     boardPanelManager,
-    tasksProvider,
     statusBar,
-    tasksView,
+    agentView,
     syncFilterUI,
   };
 }
@@ -105,10 +99,10 @@ function bindDevOpsViews(
   registerBoardSnapshotSync(context, services);
   registerBoardViewRequests(context, services);
 
-  // Auto-open board when clicking on Tasks section
-  const { tasksView, boardPanelManager } = services;
+  // Auto-open board when clicking on Agent section
+  const { agentView, boardPanelManager } = services;
   context.subscriptions.push(
-    tasksView.onDidChangeVisibility((e) => {
+    agentView.onDidChangeVisibility((e) => {
       if (e.visible) {
         boardPanelManager.openBoard();
       }

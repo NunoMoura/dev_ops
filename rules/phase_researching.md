@@ -1,11 +1,11 @@
 ---
 activation_mode: Model Decides
-description: Research phase - investigation before planning.
+description: Researching phase - investigation before implementation.
 ---
 
-# Research Phase
+# Researching Phase
 
-Background investigation before implementation planning.
+Background investigation before implementation.
 
 ## Artifact
 
@@ -104,4 +104,4 @@ If an existing ADR is outdated:
 - [ ] Findings and recommendations documented
 - [ ] ADR created if decision was made
 - [ ] Linked to task upstream
-- [ ] Move task to Planning
+- [ ] Move task to Implementing

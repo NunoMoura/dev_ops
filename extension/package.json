@@ -117,8 +117,8 @@
     "views": {
       "devops": [
         {
-          "id": "devopsTasksView",
-          "name": "Tasks"
+          "id": "devopsAgentView",
+          "name": "Agent"
         },
         {
           "id": "devopsDocsView",

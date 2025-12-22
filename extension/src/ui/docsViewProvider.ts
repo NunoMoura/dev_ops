@@ -32,14 +32,15 @@ export interface DocsFileNode {
 export type DocsNode = DocsCategoryNode | DocsFolderNode | DocsFileNode;
 
 /**
- * Document categories - only user-facing ones shown in UI.
- * Agent artifacts (research, plans, reviews, tests, completions) are accessed via component docs.
+ * Document categories - aligned with Framework v2 design.
+ * Architecture: Backend specs, API docs, data models
+ * UX: Users, stories, mockups, style
+ * Tests: Test plans, coverage reports
  */
 const DOC_CATEGORIES: DocsCategoryNode[] = [
     { kind: 'category', id: 'architecture', label: 'Architecture', directory: 'architecture', icon: 'symbol-structure' },
-    { kind: 'category', id: 'prds', label: 'PRDs', directory: 'prds', icon: 'file-text' },
-    { kind: 'category', id: 'features', label: 'Features', directory: 'features', icon: 'list-unordered' },
-    { kind: 'category', id: 'bugs', label: 'Bugs', directory: 'bugs', icon: 'bug' },
+    { kind: 'category', id: 'ux', label: 'UX', directory: 'ux', icon: 'person' },
+    { kind: 'category', id: 'tests', label: 'Tests', directory: 'tests', icon: 'beaker' },
 ];
 
 /**
