@@ -69,12 +69,9 @@ export class AgentViewProvider implements vscode.TreeDataProvider<AgentNode> {
             return [];
         }
 
-        // Root level: show categories
+        // Root level: show all categories (regardless of folder existence)
         if (!element) {
-            return AGENT_CATEGORIES.filter(cat => {
-                const catPath = path.join(this.agentPath!, cat.directory);
-                return fs.existsSync(catPath);
-            });
+            return [...AGENT_CATEGORIES];
         }
 
         // Category level: show files

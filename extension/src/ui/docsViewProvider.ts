@@ -79,12 +79,9 @@ export class DocsViewProvider implements vscode.TreeDataProvider<DocsNode> {
             return [];
         }
 
-        // Root level: show categories
+        // Root level: show all categories (regardless of folder existence)
         if (!element) {
-            return DOC_CATEGORIES.filter(cat => {
-                const catPath = path.join(this.docsPath!, cat.directory);
-                return fs.existsSync(catPath);
-            });
+            return [...DOC_CATEGORIES];
         }
 
         // Category level
