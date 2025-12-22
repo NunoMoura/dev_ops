@@ -144,13 +144,14 @@
       }
     ],
     "menus": {
-      "view/title": [
+      "viewContainer/title": [
         {
           "command": "kanban.openSettings",
-          "when": "view =~ /^devops/",
+          "when": "viewContainer == devops",
           "group": "navigation"
         }
       ],
+      "view/title": [],
       "view/item/context": []
     }
   },

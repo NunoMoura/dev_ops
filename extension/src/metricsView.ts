@@ -70,6 +70,7 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
       margin-bottom: 8px;
     }
     .metric-value {
+      font-family: 'IBM Plex Sans', var(--vscode-font-family), sans-serif;
       font-size: 28px;
       font-weight: 700;
       color: var(--vscode-charts-blue, #3b82f6);

@@ -206,12 +206,28 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     }
     .container { max-width: 800px; margin: 0 auto; padding: 24px; }
 
-    /* Title row - compact header with ID, title, and status */
+    /* Title row - single line: Title | ID ... Status | Phase */
     .title-row {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 8px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .title-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      min-width: 0;
+    }
+    .title-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      font-size: 12px;
+      color: var(--vscode-descriptionForeground);
     }
     .task-id-chip {
       background: rgba(255,255,255,0.1);
@@ -221,12 +237,12 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       font-weight: 600;
       color: var(--vscode-descriptionForeground);
       white-space: nowrap;
+      flex-shrink: 0;
     }
     .status-indicator {
       width: 10px;
       height: 10px;
       border-radius: 50%;
-      margin-left: auto;
       flex-shrink: 0;
     }
     .status-indicator[data-status="todo"] { background: var(--status-todo); }
@@ -234,6 +250,15 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     .status-indicator[data-status="blocked"] { background: var(--status-blocked); }
     .status-indicator[data-status="pending"] { background: var(--status-pending); }
     .status-indicator[data-status="done"] { background: var(--status-done); }
+    .status-text {
+      font-weight: 500;
+    }
+    .phase-text {
+      opacity: 0.8;
+    }
+    .meta-separator {
+      opacity: 0.4;
+    }
 
     /* Title styling */
     h1 { 
@@ -242,22 +267,14 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       font-weight: 600;
       outline: none;
       flex: 1;
+      min-width: 0;
       padding: 4px 0;
       border-bottom: 2px solid transparent;
       transition: border-color 0.15s ease;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     h1:focus { border-bottom-color: var(--vscode-focusBorder); }
-    .meta { 
-      color: var(--vscode-descriptionForeground); 
-      margin-bottom: 24px; 
-      font-size: 12px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .meta-separator {
-      opacity: 0.5;
-    }
 
     /* Card sections */
     .card-section {
@@ -438,14 +455,16 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 <body>
   <div class="container">
     <div class="title-row">
-      <span class="task-id-chip">${task.id}</span>
-      <h1 contenteditable="true" id="title">${task.title}</h1>
-      <span class="status-indicator" data-status="${task.status || 'todo'}" title="${statusLabel}"></span>
-    </div>
-    <div class="meta">
-      <span>Status: ${statusLabel}</span>
-      <span class="meta-separator">|</span>
-      <span>Phase: ${columnName}</span>
+      <div class="title-left">
+        <h1 contenteditable="true" id="title">${task.title}</h1>
+        <span class="task-id-chip">${task.id}</span>
+      </div>
+      <div class="title-right">
+        <span class="status-indicator" data-status="${task.status || 'todo'}"></span>
+        <span class="status-text">${statusLabel}</span>
+        <span class="meta-separator">|</span>
+        <span class="phase-text">${columnName}</span>
+      </div>
     </div>
 
     <div class="card-section">
