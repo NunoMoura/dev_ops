@@ -27,8 +27,8 @@ export type AgentNode = AgentCategoryNode | AgentFileNode;
  * Agent categories - workflows and rules from .agent folder.
  */
 const AGENT_CATEGORIES: AgentCategoryNode[] = [
-    { kind: 'category', id: 'workflows', label: 'Workflows', directory: 'workflows', icon: 'run-all' },
-    { kind: 'category', id: 'rules', label: 'Rules', directory: 'rules', icon: 'law' },
+    { kind: 'category', id: 'workflows', label: 'Workflows', directory: 'workflows', icon: 'folder' },
+    { kind: 'category', id: 'rules', label: 'Rules', directory: 'rules', icon: 'folder' },
 ];
 
 /**

@@ -38,9 +38,9 @@ export type DocsNode = DocsCategoryNode | DocsFolderNode | DocsFileNode;
  * Tests: Test plans, coverage reports
  */
 const DOC_CATEGORIES: DocsCategoryNode[] = [
-    { kind: 'category', id: 'architecture', label: 'Architecture', directory: 'architecture', icon: 'symbol-structure' },
-    { kind: 'category', id: 'ux', label: 'UX', directory: 'ux', icon: 'person' },
-    { kind: 'category', id: 'tests', label: 'Tests', directory: 'tests', icon: 'beaker' },
+    { kind: 'category', id: 'architecture', label: 'Architecture', directory: 'architecture', icon: 'folder' },
+    { kind: 'category', id: 'ux', label: 'UX', directory: 'ux', icon: 'folder' },
+    { kind: 'category', id: 'tests', label: 'Tests', directory: 'tests', icon: 'folder' },
 ];
 
 /**
