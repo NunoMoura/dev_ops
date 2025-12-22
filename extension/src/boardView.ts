@@ -413,6 +413,11 @@ function getBoardHtml(panelMode = false): string {
       .card-footer-left .priority-high { color: #ef4444; }
       .card-footer-left .priority-medium { color: #f59e0b; }
       .card-footer-left .priority-low { color: #22c55e; }
+      .card-footer-left .date {
+        text-transform: uppercase;
+        font-size: 10px;
+        letter-spacing: 0.05em;
+      }
       .card-footer-left .separator { opacity: 0.4; }
       .card-footer-right {
         text-transform: capitalize;
@@ -746,6 +751,7 @@ function getBoardHtml(panelMode = false): string {
             
             if (hasDate) {
               const dateSpan = document.createElement('span');
+              dateSpan.className = 'date';
               const date = new Date(task.updatedAt);
               dateSpan.textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
               footerLeft.appendChild(dateSpan);

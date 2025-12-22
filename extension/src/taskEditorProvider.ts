@@ -191,6 +191,9 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       --artifact-bg: rgba(102, 126, 234, 0.15);
       --artifact-border: rgba(102, 126, 234, 0.3);
       --artifact-text: #a5b4fc;
+      --card-bg: var(--vscode-editor-background, rgba(0, 0, 0, 0.4));
+      --card-border: var(--vscode-input-border, rgba(255,255,255,0.1));
+      --section-bg: var(--vscode-sideBarSectionHeader-background, rgba(255, 255, 255, 0.03));
     }
     body {
       font-family: var(--vscode-font-family);
@@ -200,81 +203,185 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       padding: 0;
       margin: 0;
     }
-    .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; padding: 24px; }
 
     /* Status header - consistent with board cards */
     .status-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 16px 20px;
+      padding: 16px 24px;
       border-left: 4px solid var(--status-todo);
       background: rgba(107, 114, 128, 0.1);
-      margin-bottom: 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 16px 16px 0 0;
     }
     .status-header[data-status="in_progress"] { border-left-color: var(--status-in-progress); background: rgba(34, 197, 94, 0.1); }
     .status-header[data-status="blocked"] { border-left-color: var(--status-blocked); background: rgba(239, 68, 68, 0.1); }
     .status-header[data-status="pending"] { border-left-color: var(--status-pending); background: rgba(245, 158, 11, 0.1); }
     .status-header[data-status="done"] { border-left-color: var(--status-done); background: rgba(59, 130, 246, 0.1); }
-    .task-id { font-weight: 700; font-size: 14px; }
-    .status-pill { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+    .task-id { font-weight: 700; font-size: 14px; letter-spacing: 0.02em; }
+    .status-pill { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--status-todo); }
     .status-header[data-status="in_progress"] .status-dot { background: var(--status-in-progress); }
     .status-header[data-status="blocked"] .status-dot { background: var(--status-blocked); }
     .status-header[data-status="pending"] .status-dot { background: var(--status-pending); }
     .status-header[data-status="done"] .status-dot { background: var(--status-done); }
 
-    h1 { margin: 0 0 20px; font-size: 24px; outline: none; }
-    h1:focus { border-bottom: 2px solid var(--vscode-focusBorder); }
-    .meta { color: var(--vscode-descriptionForeground); margin-bottom: 20px; font-size: 12px; }
+    /* Title styling */
+    h1 { 
+      margin: 0 0 8px; 
+      font-size: 22px; 
+      font-weight: 600;
+      outline: none;
+      padding: 8px 0;
+      border-bottom: 2px solid transparent;
+      transition: border-color 0.15s ease;
+    }
+    h1:focus { border-bottom-color: var(--vscode-focusBorder); }
+    .meta { 
+      color: var(--vscode-descriptionForeground); 
+      margin-bottom: 24px; 
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .meta::before {
+      content: "📍";
+      font-size: 11px;
+    }
 
-    label { display: block; font-weight: 600; margin-bottom: 4px; margin-top: 16px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--vscode-descriptionForeground); }
+    /* Card sections */
+    .card-section {
+      background: var(--section-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+    }
+
+    /* Labels - lowercase styling */
+    label { 
+      display: block; 
+      font-weight: 500; 
+      margin-bottom: 6px; 
+      margin-top: 0; 
+      font-size: 12px; 
+      color: var(--vscode-descriptionForeground);
+    }
+    .card-section > label:first-child { margin-top: 0; }
+
+    /* Form inputs */
     input[type="text"], textarea, select {
-      width: 100%; box-sizing: border-box; padding: 10px 12px;
-      border: 1px solid var(--vscode-input-border, rgba(255,255,255,0.1));
-      background: var(--vscode-input-background);
+      width: 100%; 
+      box-sizing: border-box; 
+      padding: 10px 12px;
+      border: 1px solid var(--card-border);
+      background: var(--card-bg);
       color: var(--vscode-input-foreground);
       border-radius: 6px;
-      transition: border-color 0.15s ease;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      font-size: 13px;
+    }
+    input[type="text"]:hover, textarea:hover, select:hover {
+      border-color: rgba(255,255,255,0.2);
     }
     input[type="text"]:focus, textarea:focus, select:focus {
       border-color: var(--vscode-focusBorder);
+      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.15);
       outline: none;
     }
-    textarea { min-height: 100px; resize: vertical; }
-    .row { display: flex; gap: 16px; }
+    textarea { min-height: 100px; resize: vertical; line-height: 1.5; }
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M3 4.5L6 8l3-3.5H3z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+
+    /* Row layout */
+    .row { display: flex; gap: 12px; }
     .row > div { flex: 1; }
+    .row label { margin-top: 0; }
 
     /* Section styling */
-    .section { margin-top: 24px; border-top: 1px solid var(--vscode-panel-border, rgba(255,255,255,0.1)); padding-top: 16px; }
-    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .section h2 { margin: 0; font-size: 14px; font-weight: 600; }
+    .section { 
+      margin-top: 24px; 
+      padding-top: 0;
+    }
+    .section-header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .section h2 { 
+      margin: 0; 
+      font-size: 13px; 
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section h2::before {
+      font-size: 14px;
+    }
 
     /* Artifact badges - consistent with board cards */
-    .artifact-row { margin-bottom: 12px; }
-    .artifact-badges { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; align-items: center; }
+    .artifact-row { margin-bottom: 16px; }
+    .artifact-row:last-child { margin-bottom: 0; }
+    .artifact-row label { 
+      font-size: 11px; 
+      margin-bottom: 8px;
+      opacity: 0.8;
+    }
+    .artifact-badges { display: flex; flex-wrap: wrap; gap: 8px; min-height: 32px; align-items: center; }
     .artifact-badge {
       background: var(--artifact-bg);
       border: 1px solid var(--artifact-border);
-      border-radius: 4px;
-      padding: 4px 10px;
+      border-radius: 6px;
+      padding: 6px 12px;
       font-size: 11px;
       color: var(--artifact-text);
+      font-weight: 500;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+    .artifact-badge:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
     }
     .artifact-badge.upstream::before { content: "↑ "; opacity: 0.7; }
     .artifact-badge.downstream::before { content: "↓ "; opacity: 0.7; }
 
     /* Progress bar - consistent with board cards */
-    .progress-container { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .progress-container { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
     .progress-bar { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
     .progress-fill { height: 100%; background: var(--accent-gradient); transition: width 0.3s ease; }
-    .progress-text { font-size: 12px; color: var(--vscode-descriptionForeground); }
+    .progress-text { font-size: 12px; color: var(--vscode-descriptionForeground); font-weight: 500; }
 
     /* Checklist */
-    .checklist-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .checklist-item { 
+      display: flex; 
+      align-items: center; 
+      gap: 12px; 
+      padding: 10px 0; 
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      transition: background 0.1s ease;
+    }
+    .checklist-item:hover { background: rgba(255,255,255,0.02); margin: 0 -8px; padding: 10px 8px; border-radius: 4px; }
     .checklist-item:last-child { border-bottom: none; }
     .checklist-item .done { text-decoration: line-through; opacity: 0.5; }
-    .checklist-check { width: 18px; height: 18px; cursor: pointer; }
+    .checklist-check { 
+      width: 18px; 
+      height: 18px; 
+      cursor: pointer;
+      accent-color: #667eea;
+    }
     .empty-hint { color: var(--vscode-descriptionForeground); font-style: italic; font-size: 12px; }
 
     /* Priority chips */
@@ -284,16 +391,40 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     .priority-chip.low { background: rgba(34,197,94,0.15); color: var(--priority-low); }
 
     /* Actions */
-    .actions { margin-top: 24px; display: flex; gap: 12px; align-items: center; }
+    .actions { 
+      margin-top: 32px; 
+      padding-top: 24px;
+      border-top: 1px solid var(--card-border);
+      display: flex; 
+      gap: 12px; 
+      align-items: center; 
+    }
     .btn {
-      padding: 10px 20px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;
+      padding: 10px 20px; 
+      border: none; 
+      border-radius: 6px; 
+      font-weight: 600; 
+      cursor: pointer;
+      font-size: 13px;
       transition: transform 0.1s ease, box-shadow 0.15s ease;
     }
     .btn:hover { transform: translateY(-1px); }
     .btn:active { transform: translateY(0); }
-    .btn-delete { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
+    .btn-delete { 
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
+      color: white;
+    }
     .btn-delete:hover { box-shadow: 0 4px 12px rgba(239,68,68,0.4); }
-    .save-indicator { color: var(--status-in-progress); font-size: 12px; margin-left: auto; opacity: 0; transition: opacity 0.3s; }
+    .save-indicator { 
+      color: var(--status-in-progress); 
+      font-size: 12px; 
+      margin-left: auto; 
+      opacity: 0; 
+      transition: opacity 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
     .save-indicator.visible { opacity: 1; }
   </style>
 </head>
@@ -308,44 +439,52 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
   <div class="container">
     <h1 contenteditable="true" id="title">${task.title}</h1>
-    <div class="meta">Column: ${columnName}</div>
+    <div class="meta">${columnName}</div>
 
-    <label for="summary">Summary</label>
-    <textarea id="summary">${task.summary || ''}</textarea>
+    <div class="card-section">
+      <label for="summary">Summary</label>
+      <textarea id="summary">${task.summary || ''}</textarea>
+    </div>
 
-    <div class="row">
-      <div>
-        <label for="priority">Priority</label>
-        <select id="priority">
-          <option value="" ${!task.priority ? 'selected' : ''}></option>
-          <option value="high" ${task.priority === 'high' ? 'selected' : ''}>High</option>
-          <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>Medium</option>
-          <option value="low" ${task.priority === 'low' ? 'selected' : ''}>Low</option>
-        </select>
-      </div>
-      <div>
-        <label for="status">Status</label>
-        <select id="status">
-          <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>Todo</option>
-          <option value="in_progress" ${task.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
-          <option value="blocked" ${task.status === 'blocked' ? 'selected' : ''}>Blocked</option>
-          <option value="pending" ${task.status === 'pending' ? 'selected' : ''}>Pending Approval</option>
-          <option value="done" ${task.status === 'done' ? 'selected' : ''}>Done</option>
-        </select>
-      </div>
-      <div>
-        <label for="column">Column</label>
-        <select id="column">
-          ${columns.map(c => `<option value="${c.id}" ${c.id === task.columnId ? 'selected' : ''}>${c.name}</option>`).join('')}
-        </select>
+    <div class="card-section">
+      <div class="row">
+        <div>
+          <label for="priority">Priority</label>
+          <select id="priority">
+            <option value="" ${!task.priority ? 'selected' : ''}>None</option>
+            <option value="high" ${task.priority === 'high' ? 'selected' : ''}>High</option>
+            <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>Medium</option>
+            <option value="low" ${task.priority === 'low' ? 'selected' : ''}>Low</option>
+          </select>
+        </div>
+        <div>
+          <label for="status">Status</label>
+          <select id="status">
+            <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>Todo</option>
+            <option value="in_progress" ${task.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+            <option value="blocked" ${task.status === 'blocked' ? 'selected' : ''}>Blocked</option>
+            <option value="pending" ${task.status === 'pending' ? 'selected' : ''}>Pending Approval</option>
+            <option value="done" ${task.status === 'done' ? 'selected' : ''}>Done</option>
+          </select>
+        </div>
+        <div>
+          <label for="column">Column</label>
+          <select id="column">
+            ${columns.map(c => `<option value="${c.id}" ${c.id === task.columnId ? 'selected' : ''}>${c.name}</option>`).join('')}
+          </select>
+        </div>
       </div>
     </div>
 
-    <label for="tags">Tags (comma separated)</label>
-    <input type="text" id="tags" value="${(task.tags || []).join(', ')}">
+    <div class="card-section">
+      <label for="tags">Tags (comma separated)</label>
+      <input type="text" id="tags" value="${(task.tags || []).join(', ')}">
+    </div>
 
-    <div class="section">
-      <h2>Linked Artifacts</h2>
+    <div class="card-section section">
+      <div class="section-header">
+        <h2>🔗 Linked Artifacts</h2>
+      </div>
       <div class="artifact-row">
         <label>Upstream (reads from)</label>
         <div class="artifact-badges">${upstreamList}</div>
@@ -356,9 +495,9 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       </div>
     </div>
 
-    <div class="section">
+    <div class="card-section section">
       <div class="section-header">
-        <h2>Checklist</h2>
+        <h2>☑️ Checklist</h2>
         ${checklistTotal > 0 ? `<span class="progress-text">${checklistDone}/${checklistTotal}</span>` : ''}
       </div>
       ${checklistTotal > 0 ? `<div class="progress-container"><div class="progress-bar"><div class="progress-fill" style="width:${progressPercent}%"></div></div></div>` : ''}
