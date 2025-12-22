@@ -1,7 +1,6 @@
 {
   "name": "dev-ops",
   "displayName": "DevOps Framework",
-  "icon": "resources/devops-logo.svg",
   "description": "Kanban board + DevOps workflows for AI-assisted development",
   "publisher": "NunoMoura",
   "repository": {
