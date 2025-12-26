@@ -4,118 +4,181 @@ import * as fs from 'fs';
 
 /**
  * Node types for the Agent sidebar.
+ * Shows: Current Task, Quick Actions, and optionally workflow files.
  */
+export interface AgentCurrentTaskNode {
+    kind: 'current-task';
+    id: string;
+    taskId: string;
+    title: string;
+    phase: string;
+    status: string;
+}
+
+export interface AgentActionNode {
+    kind: 'action';
+    id: string;
+    label: string;
+    icon: string;
+    command: string;
+    args?: unknown[];
+}
+
 export interface AgentCategoryNode {
     kind: 'category';
     id: string;
     label: string;
-    directory: string;
     icon: string;
 }
 
-export interface AgentFileNode {
-    kind: 'file';
+export interface AgentInfoNode {
+    kind: 'info';
     id: string;
     label: string;
-    filePath: string;
-    parentId: string;
+    description?: string;
 }
 
-export type AgentNode = AgentCategoryNode | AgentFileNode;
+export type AgentNode = AgentCurrentTaskNode | AgentActionNode | AgentCategoryNode | AgentInfoNode;
 
 /**
- * Agent categories - workflows and rules from .agent folder.
+ * Quick action buttons for the Agent sidebar.
  */
-const AGENT_CATEGORIES: AgentCategoryNode[] = [
-    { kind: 'category', id: 'workflows', label: 'Workflows', directory: 'workflows', icon: 'folder' },
-    { kind: 'category', id: 'rules', label: 'Rules', directory: 'rules', icon: 'folder' },
+const QUICK_ACTIONS: AgentActionNode[] = [
+    { kind: 'action', id: 'spawn-agent', label: 'Spawn Agent', icon: 'play', command: 'devops.spawnAgent' },
+    { kind: 'action', id: 'next-phase', label: 'Next Phase', icon: 'arrow-right', command: 'devops.nextPhase' },
+    { kind: 'action', id: 'create-task', label: 'Create Task', icon: 'add', command: 'kanban.createTask' },
+    { kind: 'action', id: 'claim-task', label: 'Claim Task', icon: 'person', command: 'kanban.claimTask' },
 ];
 
 /**
  * Tree data provider for the Agent section.
- * Shows workflows and rules from .agent folder (bootstrapped projects)
- * or root folders (dev_ops source project).
+ * Shows Current Task context and Quick Actions for project management.
  */
 export class AgentViewProvider implements vscode.TreeDataProvider<AgentNode> {
     private readonly onDidChangeEmitter = new vscode.EventEmitter<AgentNode | undefined>();
     readonly onDidChangeTreeData = this.onDidChangeEmitter.event;
 
     private workspaceRoot: string | undefined;
-    private agentPath: string | undefined;
-    private useRootFolders: boolean = false;
+    private currentTask: { id: string; title: string; phase: string; status: string } | null = null;
 
     constructor() {
         const folders = vscode.workspace.workspaceFolders;
         if (folders?.length) {
             this.workspaceRoot = folders[0].uri.fsPath;
-            // Try .agent folder first (bootstrapped projects)
-            const agentDir = path.join(this.workspaceRoot, '.agent');
-            if (fs.existsSync(agentDir)) {
-                this.agentPath = agentDir;
-            } else {
-                // Fallback to root folders (dev_ops source project)
-                this.agentPath = this.workspaceRoot;
-                this.useRootFolders = true;
-            }
         }
     }
 
     refresh(): void {
+        this.loadCurrentTask();
         this.onDidChangeEmitter.fire(undefined);
     }
 
-    getChildren(element?: AgentNode): AgentNode[] {
-        if (!this.agentPath) {
-            return [];
-        }
-
-        // Root level: show all categories (regardless of folder existence)
-        if (!element) {
-            return [...AGENT_CATEGORIES];
-        }
-
-        // Category level: show files
-        if (element.kind === 'category') {
-            const catPath = path.join(this.agentPath, element.directory);
-            return this.getFiles(catPath, element.id);
-        }
-
-        return [];
-    }
-
-    private getFiles(folderPath: string, parentId: string): AgentFileNode[] {
-        if (!fs.existsSync(folderPath)) {
-            return [];
+    private loadCurrentTask(): void {
+        if (!this.workspaceRoot) {
+            this.currentTask = null;
+            return;
         }
 
         try {
-            const entries = fs.readdirSync(folderPath, { withFileTypes: true });
-            const files: AgentFileNode[] = [];
-
-            for (const entry of entries) {
-                if (entry.isFile() && entry.name.endsWith('.md')) {
-                    files.push({
-                        kind: 'file',
-                        id: `${parentId}-${entry.name}`,
-                        label: entry.name.replace('.md', ''),
-                        filePath: path.join(folderPath, entry.name),
-                        parentId: parentId,
-                    });
-                }
+            // Read .current_task file
+            const currentTaskPath = path.join(this.workspaceRoot, 'dev_ops', '.current_task');
+            if (!fs.existsSync(currentTaskPath)) {
+                this.currentTask = null;
+                return;
             }
 
-            files.sort((a, b) => a.label.localeCompare(b.label));
-            return files;
+            const taskId = fs.readFileSync(currentTaskPath, 'utf8').trim();
+            if (!taskId) {
+                this.currentTask = null;
+                return;
+            }
+
+            // Read board.json to get task details
+            const boardPath = path.join(this.workspaceRoot, 'dev_ops', 'board.json');
+            if (!fs.existsSync(boardPath)) {
+                this.currentTask = { id: taskId, title: 'Unknown', phase: 'Unknown', status: 'unknown' };
+                return;
+            }
+
+            const board = JSON.parse(fs.readFileSync(boardPath, 'utf8'));
+            const task = board.items?.find((t: { id: string }) => t.id === taskId);
+            if (!task) {
+                this.currentTask = { id: taskId, title: 'Not found', phase: 'Unknown', status: 'unknown' };
+                return;
+            }
+
+            const column = board.columns?.find((c: { id: string }) => c.id === task.columnId);
+            this.currentTask = {
+                id: taskId,
+                title: task.title || 'Untitled',
+                phase: column?.name || 'Unknown',
+                status: task.status || 'todo',
+            };
         } catch {
-            return [];
+            this.currentTask = null;
         }
+    }
+
+    getChildren(element?: AgentNode): AgentNode[] {
+        // Root level: show sections
+        if (!element) {
+            this.loadCurrentTask();
+
+            const nodes: AgentNode[] = [];
+
+            // Current Task section
+            nodes.push({
+                kind: 'category',
+                id: 'current-task-section',
+                label: 'Current Task',
+                icon: 'target',
+            });
+
+            // Quick Actions section
+            nodes.push({
+                kind: 'category',
+                id: 'quick-actions-section',
+                label: 'Quick Actions',
+                icon: 'zap',
+            });
+
+            return nodes;
+        }
+
+        // Current Task section children
+        if (element.kind === 'category' && element.id === 'current-task-section') {
+            if (!this.currentTask) {
+                return [{
+                    kind: 'info',
+                    id: 'no-task',
+                    label: 'No active task',
+                    description: 'Use "Spawn Agent" to start',
+                }];
+            }
+
+            return [{
+                kind: 'current-task',
+                id: 'current-task-info',
+                taskId: this.currentTask.id,
+                title: this.currentTask.title,
+                phase: this.currentTask.phase,
+                status: this.currentTask.status,
+            }];
+        }
+
+        // Quick Actions section children
+        if (element.kind === 'category' && element.id === 'quick-actions-section') {
+            return [...QUICK_ACTIONS];
+        }
+
+        return [];
     }
 
     getTreeItem(element: AgentNode): vscode.TreeItem {
         if (element.kind === 'category') {
             const item = new vscode.TreeItem(
                 element.label,
-                vscode.TreeItemCollapsibleState.Collapsed
+                vscode.TreeItemCollapsibleState.Expanded
             );
             item.id = element.id;
             item.iconPath = new vscode.ThemeIcon(element.icon);
@@ -123,19 +186,48 @@ export class AgentViewProvider implements vscode.TreeDataProvider<AgentNode> {
             return item;
         }
 
-        // File node
-        const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.None);
-        item.id = element.id;
-        item.iconPath = new vscode.ThemeIcon('file');
-        item.resourceUri = vscode.Uri.file(element.filePath);
-        item.command = {
-            command: 'markdown.showPreviewToSide',
-            title: 'Open Document',
-            arguments: [vscode.Uri.file(element.filePath)],
-        };
-        item.contextValue = 'agentFile';
-        item.tooltip = element.filePath;
-        return item;
+        if (element.kind === 'current-task') {
+            const item = new vscode.TreeItem(
+                `${element.taskId}: ${element.title}`,
+                vscode.TreeItemCollapsibleState.None
+            );
+            item.id = element.id;
+            item.description = `${element.phase} • ${element.status}`;
+            item.iconPath = new vscode.ThemeIcon('bookmark');
+            item.tooltip = `Task: ${element.taskId}\nTitle: ${element.title}\nPhase: ${element.phase}\nStatus: ${element.status}`;
+            item.command = {
+                command: 'kanban.showTaskDetails',
+                title: 'Show Task Details',
+                arguments: [element.taskId],
+            };
+            item.contextValue = 'agentCurrentTask';
+            return item;
+        }
+
+        if (element.kind === 'action') {
+            const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.None);
+            item.id = element.id;
+            item.iconPath = new vscode.ThemeIcon(element.icon);
+            item.command = {
+                command: element.command,
+                title: element.label,
+                arguments: element.args,
+            };
+            item.contextValue = 'agentAction';
+            return item;
+        }
+
+        if (element.kind === 'info') {
+            const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.None);
+            item.id = element.id;
+            item.description = element.description;
+            item.iconPath = new vscode.ThemeIcon('info');
+            item.contextValue = 'agentInfo';
+            return item;
+        }
+
+        // Fallback
+        return new vscode.TreeItem('Unknown');
     }
 
     getParent(): AgentNode | undefined {
@@ -153,12 +245,16 @@ export function registerAgentView(context: vscode.ExtensionContext): AgentViewPr
         vscode.window.registerTreeDataProvider('devopsAgentView', provider)
     );
 
-    // Watch for file changes in .agent directory
-    const watcher = vscode.workspace.createFileSystemWatcher('**/.agent/**/*.md');
-    watcher.onDidCreate(() => provider.refresh());
-    watcher.onDidDelete(() => provider.refresh());
-    watcher.onDidChange(() => provider.refresh());
-    context.subscriptions.push(watcher);
+    // Watch for changes to .current_task and board.json
+    const currentTaskWatcher = vscode.workspace.createFileSystemWatcher('**/dev_ops/.current_task');
+    currentTaskWatcher.onDidCreate(() => provider.refresh());
+    currentTaskWatcher.onDidDelete(() => provider.refresh());
+    currentTaskWatcher.onDidChange(() => provider.refresh());
+    context.subscriptions.push(currentTaskWatcher);
+
+    const boardWatcher = vscode.workspace.createFileSystemWatcher('**/dev_ops/board.json');
+    boardWatcher.onDidChange(() => provider.refresh());
+    context.subscriptions.push(boardWatcher);
 
     // Register refresh command
     context.subscriptions.push(

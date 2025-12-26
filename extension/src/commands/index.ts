@@ -261,9 +261,27 @@ export function registerKanbanCommands(
 
   registerKanbanCommand(
     context,
+    'devops.spawnAgent',
+    async () => {
+      await handleSpawnAgent(provider);
+    },
+    'Unable to spawn agent',
+  );
+
+  registerKanbanCommand(
+    context,
+    'devops.nextPhase',
+    async (node?: KanbanNode) => {
+      await handleNextPhase(provider, node);
+    },
+    'Unable to move to next phase',
+  );
+
+  registerKanbanCommand(
+    context,
     'kanban.markTaskDone',
     async (node?: KanbanNode) => {
-      await handleStatusUpdate('col-done', 'Marked Done', provider, kanbanView, node);
+      await handleMarkDoneViaPython(provider, node);
     },
     'Unable to update status',
   );
@@ -695,12 +713,12 @@ async function handleSetStatusViaPython(
   if (!cwd) {
     throw new Error('No workspace folder open');
   }
-  
+
   const result = await runKanbanOps(['status', task.id, status], cwd);
   if (result.code !== 0) {
     throw new Error(result.stderr || `Failed to set status: exit code ${result.code}`);
   }
-  
+
   await provider.refresh();
   vscode.window.showInformationMessage(`${task.title} — ${successMessage}`);
 }
@@ -722,14 +740,107 @@ async function handleClaimTaskViaPython(
   if (!cwd) {
     throw new Error('No workspace folder open');
   }
-  
+
   const result = await runKanbanOps(['claim', task.id], cwd);
   if (result.code !== 0) {
     throw new Error(result.stderr || `Failed to claim task: exit code ${result.code}`);
   }
-  
+
   await provider.refresh();
   vscode.window.showInformationMessage(`✅ Claimed ${task.id}: ${task.title}`);
+}
+
+/**
+ * Spawn a new agent by picking and claiming the highest priority task.
+ * Wraps: kanban_ops.py pick --claim
+ */
+async function handleSpawnAgent(provider: KanbanTreeProvider): Promise<void> {
+  const cwd = getWorkspaceRoot();
+  if (!cwd) {
+    throw new Error('No workspace folder open');
+  }
+
+  const result = await runKanbanOps(['pick', '--claim'], cwd);
+  if (result.code !== 0) {
+    if (result.stdout?.includes('No tasks available')) {
+      vscode.window.showInformationMessage('ℹ️ No tasks available in Backlog');
+      return;
+    }
+    throw new Error(result.stderr || `Failed to spawn agent: exit code ${result.code}`);
+  }
+
+  await provider.refresh();
+  vscode.window.showInformationMessage(`▶ Agent spawned! ${result.stdout.trim()}`);
+}
+
+/**
+ * Move the current task to the next phase.
+ * Reads current column, calculates next column, then moves.
+ */
+async function handleNextPhase(
+  provider: KanbanTreeProvider,
+  node?: KanbanNode,
+): Promise<void> {
+  const board = await readKanban();
+  const task = node && node.kind === 'item' ? node.item : await promptForTask(board);
+  if (!task) {
+    return;
+  }
+
+  // Find current column position
+  const currentColumn = board.columns.find((c) => c.id === task.columnId);
+  if (!currentColumn) {
+    throw new Error('Task is in unknown column');
+  }
+
+  // Find next column
+  const sortedColumns = [...board.columns].sort((a, b) => a.position - b.position);
+  const currentIndex = sortedColumns.findIndex((c) => c.id === currentColumn.id);
+  if (currentIndex === -1 || currentIndex >= sortedColumns.length - 1) {
+    vscode.window.showInformationMessage(`${task.title} is already in the final phase`);
+    return;
+  }
+
+  const nextColumn = sortedColumns[currentIndex + 1];
+  const cwd = getWorkspaceRoot();
+  if (!cwd) {
+    throw new Error('No workspace folder open');
+  }
+
+  const result = await runKanbanOps(['move', task.id, nextColumn.id], cwd);
+  if (result.code !== 0) {
+    throw new Error(result.stderr || `Failed to move task: exit code ${result.code}`);
+  }
+
+  await provider.refresh();
+  vscode.window.showInformationMessage(`→ ${task.id} moved to ${nextColumn.name}`);
+}
+
+/**
+ * Mark a task as done using Python CLI.
+ * Wraps: kanban_ops.py done TASK_ID
+ */
+async function handleMarkDoneViaPython(
+  provider: KanbanTreeProvider,
+  node?: KanbanNode,
+): Promise<void> {
+  const board = await readKanban();
+  const task = node && node.kind === 'item' ? node.item : await promptForTask(board);
+  if (!task) {
+    return;
+  }
+  const cwd = getWorkspaceRoot();
+  if (!cwd) {
+    throw new Error('No workspace folder open');
+  }
+
+  const result = await runKanbanOps(['done', task.id], cwd);
+  if (result.code !== 0) {
+    throw new Error(result.stderr || `Failed to mark done: exit code ${result.code}`);
+  }
+
+  await provider.refresh();
+  vscode.window.showInformationMessage(`✅ ${task.id} marked done and archived`);
 }
 
 async function handleFilterTasks(provider: KanbanTreeProvider): Promise<void> {

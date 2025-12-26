@@ -121,8 +121,33 @@
         "command": "devops.refreshDocs",
         "title": "DevOps: Refresh Docs View",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "devops.spawnAgent",
+        "title": "DevOps: Spawn Agent",
+        "icon": "$(play)"
+      },
+      {
+        "command": "devops.nextPhase",
+        "title": "DevOps: Next Phase",
+        "icon": "$(arrow-right)"
       }
     ],
+    "configuration": {
+      "title": "DevOps Framework",
+      "properties": {
+        "devops.pythonPath": {
+          "type": "string",
+          "default": "python3",
+          "description": "Path to Python executable for running framework scripts"
+        },
+        "devops.autoOpenBoard": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically open Kanban board when workspace opens"
+        }
+      }
+    },
     "viewsContainers": {
       "activitybar": [
         {
