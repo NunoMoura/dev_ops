@@ -47,8 +47,17 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
       padding: 12px;
       margin: 0;
     }
-    h2 { font-size: 14px; margin: 0 0 12px; font-weight: 600; }
-    h3 { font-size: 12px; margin: 16px 0 8px; font-weight: 600; color: var(--vscode-descriptionForeground); text-transform: uppercase; letter-spacing: 0.5px; }
+    h3 { 
+      font-size: 12px; 
+      margin: 0 0 8px; 
+      font-weight: 600; 
+      color: var(--vscode-descriptionForeground); 
+      text-transform: uppercase; 
+      letter-spacing: 0.5px; 
+    }
+    h3:not(:first-child) {
+      margin-top: 16px;
+    }
     
     .metric-card {
       background: var(--vscode-editor-background);
@@ -57,44 +66,26 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
       padding: 12px;
       margin-bottom: 8px;
     }
-    .metric-value {
-      font-family: 'IBM Plex Sans', var(--vscode-font-family), sans-serif;
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--vscode-charts-blue, #3b82f6);
-      margin-bottom: 4px;
-    }
-    .metric-label {
-      font-size: 11px;
-      color: var(--vscode-descriptionForeground);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .metric-row {
-      display: flex;
-      gap: 8px;
-    }
-    .metric-row .metric-card {
-      flex: 1;
-      text-align: center;
-    }
     
-    .column-stats {
+    /* Compact stat rows - consistent with Column Distribution and Status Overview */
+    .stat-row {
       display: flex;
       justify-content: space-between;
       padding: 6px 0;
       border-bottom: 1px solid var(--vscode-panel-border, rgba(255,255,255,0.05));
       font-size: 12px;
     }
-    .column-stats:last-child { border-bottom: none; }
-    .column-name { flex: 1; }
-    .column-count {
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { flex: 1; }
+    .stat-value {
       min-width: 30px;
       text-align: right;
       font-weight: 600;
     }
-    .wip-warning { color: #ef4444; }
-    .wip-ok { color: #22c55e; }
+    .stat-value.highlight { color: var(--vscode-charts-blue, #3b82f6); }
+    .stat-value.success { color: #22c55e; }
+    .stat-value.warning { color: #ef4444; }
+    .stat-value.pending { color: #f97316; }
     
     .status-dot {
       display: inline-block;
@@ -107,29 +98,6 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
     .status-blocked { background: #ef4444; }
     .status-pending { background: #f97316; }
     
-    .quick-action {
-      display: block;
-      width: 100%;
-      padding: 8px 12px;
-      margin-top: 8px;
-      border: 1px solid var(--vscode-button-border, transparent);
-      border-radius: 4px;
-      background: var(--vscode-button-secondaryBackground);
-      color: var(--vscode-button-secondaryForeground);
-      cursor: pointer;
-      font-size: 12px;
-      text-align: left;
-    }
-    .quick-action:hover {
-      background: var(--vscode-button-secondaryHoverBackground);
-    }
-    .hint {
-      font-size: 11px;
-      color: var(--vscode-descriptionForeground);
-      margin: 4px 0 0;
-      font-style: italic;
-    }
-    
     .empty-state {
       text-align: center;
       padding: 24px;
@@ -138,53 +106,49 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
   </style>
 </head>
 <body>
-  <h2>📊 Metrics</h2>
-  
-  <div class="metric-row">
-    <div class="metric-card">
-      <div class="metric-value">${metrics.totalTasks}</div>
-      <div class="metric-label">Total Tasks</div>
+  <h3>Summary</h3>
+  <div class="metric-card">
+    <div class="stat-row">
+      <span class="stat-label">Total Tasks</span>
+      <span class="stat-value highlight">${metrics.totalTasks}</span>
     </div>
-    <div class="metric-card">
-      <div class="metric-value">${metrics.completedToday}</div>
-      <div class="metric-label">Done Today</div>
+    <div class="stat-row">
+      <span class="stat-label">Completed Today</span>
+      <span class="stat-value success">${metrics.completedToday}</span>
     </div>
-  </div>
-  
-  <div class="metric-row">
-    <div class="metric-card">
-      <div class="metric-value">${metrics.inProgress}</div>
-      <div class="metric-label">In Progress</div>
+    <div class="stat-row">
+      <span class="stat-label">In Progress</span>
+      <span class="stat-value">${metrics.inProgress}</span>
     </div>
-    <div class="metric-card">
-      <div class="metric-value">${metrics.blocked}</div>
-      <div class="metric-label">Blocked</div>
+    <div class="stat-row">
+      <span class="stat-label">Blocked</span>
+      <span class="stat-value ${metrics.blocked > 0 ? 'warning' : ''}">${metrics.blocked}</span>
     </div>
   </div>
   
   <h3>Column Distribution</h3>
   <div class="metric-card">
     ${metrics.columnStats.map(col => `
-      <div class="column-stats">
-        <span class="column-name">${col.name}</span>
-        <span class="column-count ${col.overLimit ? 'wip-warning' : ''}">${col.count}</span>
+      <div class="stat-row">
+        <span class="stat-label">${col.name}</span>
+        <span class="stat-value ${col.overLimit ? 'warning' : ''}">${col.count}</span>
       </div>
     `).join('')}
   </div>
   
   <h3>Status Overview</h3>
   <div class="metric-card">
-    <div class="column-stats">
+    <div class="stat-row">
       <span><span class="status-dot status-in_progress"></span>In Progress</span>
-      <span class="column-count wip-ok">${metrics.statusCounts.in_progress}</span>
+      <span class="stat-value success">${metrics.statusCounts.in_progress}</span>
     </div>
-    <div class="column-stats">
+    <div class="stat-row">
       <span><span class="status-dot status-blocked"></span>Blocked</span>
-      <span class="column-count wip-warning">${metrics.statusCounts.blocked}</span>
+      <span class="stat-value warning">${metrics.statusCounts.blocked}</span>
     </div>
-    <div class="column-stats">
+    <div class="stat-row">
       <span><span class="status-dot status-pending"></span>Pending Approval</span>
-      <span class="column-count">${metrics.statusCounts.pending}</span>
+      <span class="stat-value pending">${metrics.statusCounts.pending}</span>
     </div>
   </div>
   

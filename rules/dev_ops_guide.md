@@ -60,7 +60,10 @@ dev_ops/
 ├── .current_task        # Currently active task ID
 ├── docs/                # Persistent documentation
 │   ├── architecture/
-│   ├── features/
+│   ├── ux/
+│   │   ├── users/
+│   │   ├── stories/
+│   │   └── mockups/
 │   ├── prds/
 │   └── tests/
 ├── archive/             # Archived TASK-XXX.tar.gz

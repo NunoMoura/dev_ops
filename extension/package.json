@@ -131,6 +131,16 @@
         "command": "devops.nextPhase",
         "title": "DevOps: Next Phase",
         "icon": "$(arrow-right)"
+      },
+      {
+        "command": "devops.createUser",
+        "title": "DevOps: Create User Persona",
+        "icon": "$(person)"
+      },
+      {
+        "command": "devops.createStory",
+        "title": "DevOps: Create User Story",
+        "icon": "$(note)"
       }
     ],
     "configuration": {

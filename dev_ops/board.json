@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "columns": [
+    {
+      "id": "col-backlog",
+      "name": "Backlog",
+      "position": 1
+    },
+    {
+      "id": "col-researching",
+      "name": "Researching",
+      "position": 2
+    },
+    {
+      "id": "col-documenting",
+      "name": "Documenting",
+      "position": 3
+    },
+    {
+      "id": "col-planning",
+      "name": "Planning",
+      "position": 4
+    },
+    {
+      "id": "col-implementing",
+      "name": "Implementing",
+      "position": 5
+    },
+    {
+      "id": "col-validating",
+      "name": "Validating",
+      "position": 6
+    },
+    {
+      "id": "col-pr",
+      "name": "PR",
+      "position": 7
+    },
+    {
+      "id": "col-done",
+      "name": "Done",
+      "position": 8
+    }
+  ],
+  "items": [
+    {
+      "id": "TASK-001",
+      "columnId": "col-backlog",
+      "title": "New Task",
+      "updatedAt": "2025-12-26T09:53:43.456Z",
+      "summary": "",
+      "priority": "high",
+      "status": "in_progress",
+      "tags": []
+    }
+  ]
+}

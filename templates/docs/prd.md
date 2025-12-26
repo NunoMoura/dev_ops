@@ -5,7 +5,7 @@ type: prd
 date: "{{date}}"       # Creation date (YYYY-MM-DD)
 status: Draft          # Draft | Approved | In Progress | Complete
 owner: "{{owner}}"     # Product owner
-downstream: []         # FEAT-XXX items derived from this
+downstream: []         # STORY-XXX items derived from this
 ---
 
 # {{id}} - {{title}}
@@ -27,16 +27,6 @@ downstream: []         # FEAT-XXX items derived from this
 - Non-goal 1
 - Non-goal 2
 
-## User Personas
-
-<!-- Who is this for? -->
-
-### Persona 1: {{name}}
-
-- **Role:** ...
-- **Needs:** ...
-- **Pain Points:** ...
-
 ## Success Metrics
 
 <!-- How will we measure success? -->
@@ -46,16 +36,6 @@ downstream: []         # FEAT-XXX items derived from this
 
 | Metric 1 | X | - |
 | Metric 2 | Y | - |
-
-## Features
-
-<!-- High-level features, each should become a FEAT-XXX -->
-
-| Feature | Priority | Status | FEAT ID |
-|---------|----------|--------|---------|
-
-| Feature 1 | High | Draft | FEAT-001 |
-| Feature 2 | Medium | Draft | FEAT-002 |
 
 ## Timeline
 

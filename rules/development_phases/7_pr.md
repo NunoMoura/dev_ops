@@ -51,7 +51,7 @@ triggers: [task_in_pr]
 
    For each comment with `Status: pending`:
    - Analyze with full project context
-   - Categorize: `bug`, `feature`, `quickfix`, `dismiss`
+   - Categorize: `bug`, `story`, `quickfix`, `dismiss`
    - Take action, update status to `resolved`
 
 6. **For each comment needing action**:
@@ -59,7 +59,7 @@ triggers: [task_in_pr]
    | Type | Action |
    |------|--------|
    | `bug` | Spawn task for backlog |
-   | `feature` | Spawn task for backlog |
+   | `story` | Spawn task for backlog |
    | `quickfix` | Fix directly, commit |
    | `dismiss` | Respond with reason |
 

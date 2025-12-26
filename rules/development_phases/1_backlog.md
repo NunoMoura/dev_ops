@@ -10,7 +10,7 @@ triggers: [task_created, agent_spawned]
 
 | Key | Value |
 |-----|-------|
-| INPUTS | Trigger doc (PRD/FEAT/BUG) |
+| INPUTS | Trigger doc (PRD/STORY/BUG) |
 | ARTIFACT | TASK-XXX in `dev_ops/board.json` |
 | EXIT_TO | Researching |
 
@@ -22,7 +22,7 @@ triggers: [task_created, agent_spawned]
    python3 dev_ops/scripts/kanban_ops.py pick --claim
    ```
 
-2. **Load trigger doc** — Read linked PRD/FEAT/BUG for context
+2. **Load trigger doc** — Read linked PRD/STORY/BUG for context
 
 3. **Move to Researching**
 

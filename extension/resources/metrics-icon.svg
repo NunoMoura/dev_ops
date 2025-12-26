@@ -9,8 +9,8 @@
   <!-- Outer box -->
   <rect x="2" y="2" width="20" height="20" rx="3" stroke="url(#grad)" stroke-width="0.75" fill="none"/>
   
-  <!-- Bar chart - ascending -->
-  <rect x="5" y="14" width="4" height="5" rx="0.75" fill="url(#grad)"/>
-  <rect x="10" y="10" width="4" height="9" rx="0.75" fill="url(#grad)"/>
-  <rect x="15" y="5" width="4" height="14" rx="0.75" fill="url(#grad)"/>
+  <!-- Horizontal lines representing data rows -->
+  <rect x="5" y="6" width="14" height="2.5" rx="0.75" fill="url(#grad)"/>
+  <rect x="5" y="10.75" width="14" height="2.5" rx="0.75" fill="url(#grad)"/>
+  <rect x="5" y="15.5" width="14" height="2.5" rx="0.75" fill="url(#grad)"/>
 </svg>

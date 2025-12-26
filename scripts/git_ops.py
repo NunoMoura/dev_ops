@@ -20,7 +20,6 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from utils import DevOpsError, prompt_user, run_command
 
-
 # ==========================================
 # EXCEPTIONS
 # ==========================================
@@ -154,9 +153,9 @@ def pr_create(title: str, body: str, base: str = "main") -> str:
 def pr_triage(pr_number: int | str) -> None:
     """Interactively triage PR feedback into Bugs or Backlog items."""
     try:
-        import artifact_ops
+        import doc_ops
     except ImportError:
-        print("⚠️ artifact_ops module not available. Cannot triage feedback.")
+        print("⚠️ doc_ops module not available. Cannot triage feedback.")
         return
 
     print(f"🕵️  Triaging PR #{pr_number}...")
@@ -178,19 +177,21 @@ def pr_triage(pr_number: int | str) -> None:
         print(f"Content: {body}")
         print("-" * 40)
 
-        choice = input("Action? (b)ug / (f)eature / (s)kip / (q)uit: ").lower().strip()
+        choice = input("Action? (b)ug / (s)tory / (k)ip / (q)uit: ").lower().strip()
 
         if choice == "q":
             break
-        elif choice == "s":
+        elif choice == "k":
             continue
         elif choice == "b":
+            import artifact_ops
+
             title = input("Bug Title: ")
             desc = f"Reported by {author} in PR #{pr_number}\nSource: {url}\n\n{body}"
             artifact_ops.create_artifact("bug", title, "high", desc)
-        elif choice == "f":
-            title = input("Feature Title: ")
-            artifact_ops.create_artifact("feature", title)
+        elif choice == "s":
+            title = input("Story Title: ")
+            doc_ops.create_story(title)
 
 
 # ==========================================

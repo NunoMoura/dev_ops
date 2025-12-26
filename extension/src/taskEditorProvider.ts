@@ -99,6 +99,14 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         case 'update':
           await this.updateTask(taskId, message.data);
           break;
+        case 'save':
+          // Explicit save - update, show message, and close
+          await this.updateTask(taskId, message.data);
+          vscode.window.showInformationMessage(`✅ Saved task ${taskId}`);
+          webviewPanel.dispose();
+          // Trigger board refresh
+          vscode.commands.executeCommand('kanban.refresh');
+          break;
         case 'delete':
           // Show confirmation dialog from extension host (confirm() doesn't work in webviews)
           const confirmed = await vscode.window.showWarningMessage(
@@ -156,6 +164,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
   private getEditorHtml(task: Task, columnName: string, columns: Array<{ id: string; name: string }>): string {
     const statusLabel = { todo: 'Todo', in_progress: 'In Progress', blocked: 'Blocked', pending: 'Pending', done: 'Done' }[task.status || 'todo'] || task.status;
+    const isNewTask = task.title === 'New Task';
     const upstreamList = (task.upstream || []).map((a: string) => `<span class="artifact-badge upstream">${a}</span>`).join('') || '<span class="empty-hint">None</span>';
     const downstreamList = (task.downstream || []).map((a: string) => `<span class="artifact-badge downstream">${a}</span>`).join('') || '<span class="empty-hint">None</span>';
     const checklist = task.checklist || [];
@@ -434,6 +443,11 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     }
     .btn:hover { transform: translateY(-1px); }
     .btn:active { transform: translateY(0); }
+    .btn-save {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: white;
+    }
+    .btn-save:hover { box-shadow: 0 4px 12px rgba(34,197,94,0.4); }
     .btn-delete { 
       background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
       color: white;
@@ -509,7 +523,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
     <div class="card-section section">
       <div class="section-header">
-        <h2>🔗 Linked Artifacts</h2>
+        <h2>Linked Artifacts</h2>
       </div>
       <div class="artifact-row">
         <label>Upstream (reads from)</label>
@@ -523,7 +537,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
     <div class="card-section section">
       <div class="section-header">
-        <h2>☑️ Checklist</h2>
+        <h2>Checklist</h2>
         ${checklistTotal > 0 ? `<span class="progress-text">${checklistDone}/${checklistTotal}</span>` : ''}
       </div>
       ${checklistTotal > 0 ? `<div class="progress-container"><div class="progress-bar"><div class="progress-fill" style="width:${progressPercent}%"></div></div></div>` : ''}
@@ -532,8 +546,9 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     </div>
 
     <div class="actions">
-      <button class="btn btn-delete" id="deleteBtn">Delete Task</button>
-      <span class="save-indicator" id="saveIndicator">✓ Saved</span>
+      <button class="btn btn-save" id="saveBtn">Save & Close</button>
+      ${!isNewTask ? '<button class="btn btn-delete" id="deleteBtn">Delete Task</button>' : ''}
+      <span class="save-indicator" id="saveIndicator">✓ Auto-saved</span>
     </div>
   </div>
 
@@ -570,10 +585,18 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     document.getElementById('column').addEventListener('change', triggerSave);
     document.getElementById('tags').addEventListener('input', triggerSave);
 
-    // Delete button - confirmation handled in extension host
-    document.getElementById('deleteBtn').addEventListener('click', () => {
-      vscode.postMessage({ type: 'delete' });
+    // Save button - save and close
+    document.getElementById('saveBtn').addEventListener('click', () => {
+      vscode.postMessage({ type: 'save', data: collectData() });
     });
+
+    // Delete button - confirmation handled in extension host
+    const deleteBtn = document.getElementById('deleteBtn');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', () => {
+        vscode.postMessage({ type: 'delete' });
+      });
+    }
 
     // New checklist item
     document.getElementById('newChecklistItem').addEventListener('keypress', (e) => {

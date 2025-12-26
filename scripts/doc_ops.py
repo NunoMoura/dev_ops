@@ -4,11 +4,10 @@
 Handles persistent documents in dev_ops/docs/:
 - Architecture docs (dev_ops/docs/architecture/)
 - Test docs (dev_ops/docs/tests/)
-- Features (dev_ops/docs/features/)
+- UX docs (dev_ops/docs/ux/) - users, stories, mockups
 - PRDs (dev_ops/docs/prds/)
-- Research (dev_ops/docs/research/) - supports ADRs
 
-Documents use descriptive names, not sequential IDs.
+Documents use descriptive names, except stories which use STORY-XXX IDs.
 """
 
 import argparse
@@ -19,7 +18,7 @@ import sys
 # Add current directory to sys.path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from utils import read_file, sanitize_slug, write_file
+from utils import get_next_id, read_file, sanitize_slug, write_file
 
 # ==========================================
 # CONSTANTS
@@ -90,27 +89,61 @@ status: undocumented
 """
 
 
-def get_feature_template() -> str:
-    """Load feature template from templates/docs/feature.md."""
-    template_path = os.path.join(TEMPLATES_DIR, "docs", "feature.md")
+def get_user_template() -> str:
+    """Load user persona template from templates/docs/user.md."""
+    template_path = os.path.join(TEMPLATES_DIR, "docs", "user.md")
     if os.path.exists(template_path):
         return read_file(template_path)
     # Fallback
     return """---
 title: "{{title}}"
-type: feature
-lifecycle: persistent
+type: user
 date: "{{date}}"
 status: Draft
 ---
 
 # {{title}}
 
-## Summary
+## Role
 
-## User Stories
+## Goals
+
+## Frustrations
+
+## Behaviors
+
+## Context
+"""
+
+
+def get_story_template() -> str:
+    """Load user story template from templates/docs/story.md."""
+    template_path = os.path.join(TEMPLATES_DIR, "docs", "story.md")
+    if os.path.exists(template_path):
+        return read_file(template_path)
+    # Fallback
+    return """---
+id: "{{id}}"
+title: "{{title}}"
+type: story
+date: "{{date}}"
+status: Draft
+persona: "{{persona}}"
+---
+
+# {{id}} - {{title}}
+
+## User Story
+
+As a **{{persona}}**,
+I want **[goal]**,
+so that **[benefit]**.
 
 ## Acceptance Criteria
+
+- [ ] Criterion 1
+
+## UX Notes
 """
 
 
@@ -184,9 +217,9 @@ def create_doc(title: str, path: str = "", category: str = "architecture") -> st
     return filepath
 
 
-def create_feature(title: str) -> str:
-    """Create a new feature document. Returns the filepath."""
-    target_dir = os.path.join(DOCS_DIR, "features")
+def create_user(title: str) -> str:
+    """Create a new user persona document. Returns the filepath."""
+    target_dir = os.path.join(DOCS_DIR, "ux", "users")
     os.makedirs(target_dir, exist_ok=True)
 
     slug = sanitize_slug(title)
@@ -194,17 +227,37 @@ def create_feature(title: str) -> str:
     filepath = os.path.join(target_dir, filename)
 
     if os.path.exists(filepath):
-        print(f"⚠️  Feature already exists: {filepath}")
+        print(f"⚠️  User persona already exists: {filepath}")
         return filepath
 
-    template = get_feature_template()
+    template = get_user_template()
     content = template.replace("{{title}}", title)
     content = content.replace("{{date}}", datetime.date.today().isoformat())
-    # Remove ID placeholder since features use slugs
-    content = content.replace("{{id}}", slug.upper())
 
     write_file(filepath, content)
-    print(f"✅ Created feature: {filepath}")
+    print(f"✅ Created user persona: {filepath}")
+    return filepath
+
+
+def create_story(title: str, persona: str = "") -> str:
+    """Create a new user story document. Returns the filepath."""
+    target_dir = os.path.join(DOCS_DIR, "ux", "stories")
+    os.makedirs(target_dir, exist_ok=True)
+
+    # Generate STORY-XXX ID
+    story_id = get_next_id("STORY", target_dir)
+    slug = sanitize_slug(title)
+    filename = f"{story_id}-{slug}.md"
+    filepath = os.path.join(target_dir, filename)
+
+    template = get_story_template()
+    content = template.replace("{{id}}", story_id)
+    content = content.replace("{{title}}", title)
+    content = content.replace("{{date}}", datetime.date.today().isoformat())
+    content = content.replace("{{persona}}", persona)
+
+    write_file(filepath, content)
+    print(f"✅ Created user story: {filepath}")
     return filepath
 
 
@@ -374,18 +427,18 @@ def main():
     list_parser.add_argument(
         "--category",
         default="architecture",
-        choices=["architecture", "tests", "features", "prds", "research"],
+        choices=["architecture", "tests", "ux", "prds"],
         help="Document category",
     )
 
-    # CREATE-FEATURE
-    feature_parser = subparsers.add_parser("create-feature", help="Create a new feature doc")
-    feature_parser.add_argument("--title", required=True, help="Feature title")
+    # CREATE-USER
+    user_parser = subparsers.add_parser("create-user", help="Create a new user persona")
+    user_parser.add_argument("--title", required=True, help="Persona name")
 
-    # CREATE-PRD
-    prd_parser = subparsers.add_parser("create-prd", help="Create a new PRD doc")
-    prd_parser.add_argument("--title", required=True, help="PRD title")
-    prd_parser.add_argument("--owner", default="", help="Product owner")
+    # CREATE-STORY
+    story_parser = subparsers.add_parser("create-story", help="Create a new user story")
+    story_parser.add_argument("--title", required=True, help="Story title")
+    story_parser.add_argument("--persona", default="", help="Linked persona")
 
     args = parser.parse_args()
 
@@ -398,8 +451,10 @@ def main():
         sys.exit(0 if success else 1)
     elif args.command == "list":
         list_docs(args.category)
-    elif args.command == "create-feature":
-        create_feature(args.title)
+    elif args.command == "create-user":
+        create_user(args.title)
+    elif args.command == "create-story":
+        create_story(args.title, args.persona)
     elif args.command == "create-prd":
         create_prd(args.title, args.owner)
 

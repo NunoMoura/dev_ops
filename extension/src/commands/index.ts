@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { runKanbanOps } from './pythonRunner';
+import { runKanbanOps, runDocOps } from './pythonRunner';
 import { TaskDetailsPayload } from '../taskDetailsView';
 import { MetricsViewProvider } from '../metricsView';
 import { KanbanTreeProvider, KanbanNode, KanbanManagerNode } from '../ui/providers';
@@ -303,6 +303,24 @@ export function registerKanbanCommands(
       await vscode.commands.executeCommand('workbench.action.openSettings', '@ext:NunoMoura.dev-ops');
     },
     'Unable to open settings',
+  );
+
+  registerKanbanCommand(
+    context,
+    'devops.createUser',
+    async () => {
+      await handleCreateUser();
+    },
+    'Unable to create user persona',
+  );
+
+  registerKanbanCommand(
+    context,
+    'devops.createStory',
+    async () => {
+      await handleCreateStory();
+    },
+    'Unable to create user story',
   );
 }
 
@@ -641,9 +659,9 @@ async function handleCreateTask(
     await appendTaskHistory(task, `Created in column ${column.name || COLUMN_FALLBACK_NAME}`);
 
     // Open task in editor tab for immediate editing
+    // Note: "task created" notification will show when user saves via Save & Close button
     const uri = vscode.Uri.parse(`kanban-task:/task/${taskId}.kanban-task`);
     await vscode.commands.executeCommand('vscode.openWith', uri, 'kanban.taskEditor');
-    vscode.window.showInformationMessage(`✅ Created task ${taskId}`);
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to create task: ${formatError(error)}`);
   }
@@ -1002,3 +1020,72 @@ async function handleViewTaskHistory(node?: KanbanNode): Promise<void> {
     }
   }
 }
+
+/**
+ * Create a new user persona via doc_ops.py
+ */
+async function handleCreateUser(): Promise<void> {
+  const title = await vscode.window.showInputBox({
+    prompt: 'Enter user persona name',
+    placeHolder: 'e.g., Project Manager, Developer',
+  });
+
+  if (!title) {
+    return;
+  }
+
+  const root = getWorkspaceRoot();
+  if (!root) {
+    vscode.window.showWarningMessage('No workspace folder open.');
+    return;
+  }
+
+  const result = await runDocOps(['create-user', '--title', title], root);
+  if (result.code === 0) {
+    vscode.window.showInformationMessage(`✅ Created user persona: ${title}`);
+    // Refresh docs view
+    await vscode.commands.executeCommand('devops.refreshDocs');
+  } else {
+    vscode.window.showErrorMessage(`Failed to create user: ${result.stderr || result.stdout}`);
+  }
+}
+
+/**
+ * Create a new user story via doc_ops.py
+ */
+async function handleCreateStory(): Promise<void> {
+  const title = await vscode.window.showInputBox({
+    prompt: 'Enter user story title',
+    placeHolder: 'e.g., Filter tasks by status',
+  });
+
+  if (!title) {
+    return;
+  }
+
+  const persona = await vscode.window.showInputBox({
+    prompt: 'Enter linked user persona (optional)',
+    placeHolder: 'e.g., project_manager',
+  });
+
+  const root = getWorkspaceRoot();
+  if (!root) {
+    vscode.window.showWarningMessage('No workspace folder open.');
+    return;
+  }
+
+  const args = ['create-story', '--title', title];
+  if (persona) {
+    args.push('--persona', persona);
+  }
+
+  const result = await runDocOps(args, root);
+  if (result.code === 0) {
+    vscode.window.showInformationMessage(`✅ Created user story: ${title}`);
+    // Refresh docs view
+    await vscode.commands.executeCommand('devops.refreshDocs');
+  } else {
+    vscode.window.showErrorMessage(`Failed to create story: ${result.stderr || result.stdout}`);
+  }
+}
+
