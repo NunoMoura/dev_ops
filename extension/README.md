@@ -5,7 +5,7 @@ Part of the DevOps Framework for structured task management and artifact trackin
 
 ## Features
 
-- **Board storage** in `dev_ops/kanban/board.json`, automatically created with
+- **Board storage** in `dev_ops/board.json`, automatically created with
   default columns if missing
 - **7-column workflow**: Backlog → Research → Planning → In Progress → Testing →
   Blocked → Done
@@ -35,7 +35,7 @@ Part of the DevOps Framework for structured task management and artifact trackin
 
 ## Board Schema
 
-`dev_ops/kanban/board.json`:
+`dev_ops/board.json`:
 
 ```jsonc
 {

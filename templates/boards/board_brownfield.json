@@ -1,0 +1,56 @@
+{
+    "name": "Brownfield Project",
+    "description": "Existing codebase - understanding and improving",
+    "items": [
+        {
+            "title": "Audit existing architecture",
+            "summary": "Understand current system architecture, technologies, and design patterns",
+            "priority": "high"
+        },
+        {
+            "title": "Map system dependencies",
+            "summary": "Identify internal and external dependencies, integrations, and data flows",
+            "priority": "high"
+        },
+        {
+            "title": "Scaffold documentation structure",
+            "summary": "Create docs/architecture/ mirroring code folder structure for documentation",
+            "priority": "high"
+        },
+        {
+            "title": "Assess technical debt",
+            "summary": "Identify areas of technical debt, outdated code, and improvement opportunities",
+            "priority": "medium"
+        },
+        {
+            "title": "Review existing documentation",
+            "summary": "Gather and review available docs, READMEs, and architectural decision records",
+            "priority": "medium"
+        },
+        {
+            "title": "Identify key entry points",
+            "summary": "Document main entry points, APIs, and user-facing interfaces",
+            "priority": "high"
+        },
+        {
+            "title": "Document core components",
+            "summary": "Fill in documentation stubs for critical domain slices and infrastructure",
+            "priority": "medium"
+        },
+        {
+            "title": "Create test coverage plan",
+            "summary": "Assess current test coverage and plan for filling gaps",
+            "priority": "medium"
+        },
+        {
+            "title": "Add critical missing tests",
+            "summary": "Write tests for untested critical paths and core functionality",
+            "priority": "low"
+        },
+        {
+            "title": "Update documentation",
+            "summary": "Create or update documentation to reflect current system state",
+            "priority": "low"
+        }
+    ]
+}

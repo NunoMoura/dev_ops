@@ -103,6 +103,24 @@
         "command": "kanban.openSettings",
         "title": "DevOps: Preferences",
         "icon": "$(gear)"
+      },
+      {
+        "command": "kanban.setStatus",
+        "title": "DevOps: Set Task Status"
+      },
+      {
+        "command": "kanban.claimTask",
+        "title": "DevOps: Claim Task"
+      },
+      {
+        "command": "devops.refreshAgent",
+        "title": "DevOps: Refresh Agent View",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "devops.refreshDocs",
+        "title": "DevOps: Refresh Docs View",
+        "icon": "$(refresh)"
       }
     ],
     "viewsContainers": {
@@ -154,7 +172,23 @@
           "group": "navigation"
         }
       ],
-      "view/title": [],
+      "view/title": [
+        {
+          "command": "kanban.createTask",
+          "when": "view == devopsAgentView",
+          "group": "navigation"
+        },
+        {
+          "command": "devops.refreshAgent",
+          "when": "view == devopsAgentView",
+          "group": "navigation"
+        },
+        {
+          "command": "devops.refreshDocs",
+          "when": "view == devopsDocsView",
+          "group": "navigation"
+        }
+      ],
       "view/item/context": []
     }
   },

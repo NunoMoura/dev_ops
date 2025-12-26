@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { runKanbanOps } from './pythonRunner';
 import { TaskDetailsPayload } from '../taskDetailsView';
 import { MetricsViewProvider } from '../metricsView';
 import { KanbanTreeProvider, KanbanNode, KanbanManagerNode } from '../ui/providers';
@@ -222,7 +223,7 @@ export function registerKanbanCommands(
     context,
     'kanban.markTaskInProgress',
     async (node?: KanbanNode) => {
-      await handleStatusUpdate('col-inprogress', 'Marked In Progress', provider, kanbanView, node);
+      await handleSetStatusViaPython('in_progress', 'Marked In Progress', provider, node);
     },
     'Unable to update status',
   );
@@ -231,9 +232,31 @@ export function registerKanbanCommands(
     context,
     'kanban.markTaskBlocked',
     async (node?: KanbanNode) => {
-      await handleStatusUpdate('col-blocked', 'Marked Blocked', provider, kanbanView, node);
+      await handleSetStatusViaPython('blocked', 'Marked Blocked', provider, node);
     },
     'Unable to update status',
+  );
+
+  registerKanbanCommand(
+    context,
+    'kanban.setStatus',
+    async (node?: KanbanNode) => {
+      const statuses = ['todo', 'in_progress', 'blocked', 'pending', 'done'];
+      const picked = await vscode.window.showQuickPick(statuses, { placeHolder: 'Select new status' });
+      if (picked) {
+        await handleSetStatusViaPython(picked, `Set to ${picked}`, provider, node);
+      }
+    },
+    'Unable to set status',
+  );
+
+  registerKanbanCommand(
+    context,
+    'kanban.claimTask',
+    async (node?: KanbanNode) => {
+      await handleClaimTaskViaPython(provider, node);
+    },
+    'Unable to claim task',
   );
 
   registerKanbanCommand(
@@ -395,7 +418,7 @@ function registerKanbanCommand(
 async function handlePickNextTask(provider: KanbanTreeProvider, view: vscode.TreeView<KanbanNode>) {
   const board = await readKanban();
   if (!board.items.length) {
-    vscode.window.showInformationMessage('No tasks found in dev_ops/kanban/board.json.');
+    vscode.window.showInformationMessage('No tasks found in dev_ops/board.json.');
     return;
   }
   const ranked = [...board.items].sort(compareTasks);
@@ -651,6 +674,62 @@ async function handleStatusUpdate(
   await appendTaskHistory(task, `Moved to ${columnName}`);
   vscode.window.showInformationMessage(`${task.title} — ${successMessage}`);
   await provider.revealTask(task.id, view);
+}
+
+/**
+ * Set task status using Python CLI (kanban_ops.py status).
+ * This is the correct approach - status is a field, not a column.
+ */
+async function handleSetStatusViaPython(
+  status: string,
+  successMessage: string,
+  provider: KanbanTreeProvider,
+  node?: KanbanNode,
+): Promise<void> {
+  const board = await readKanban();
+  const task = node && node.kind === 'item' ? node.item : await promptForTask(board);
+  if (!task) {
+    return;
+  }
+  const cwd = getWorkspaceRoot();
+  if (!cwd) {
+    throw new Error('No workspace folder open');
+  }
+  
+  const result = await runKanbanOps(['status', task.id, status], cwd);
+  if (result.code !== 0) {
+    throw new Error(result.stderr || `Failed to set status: exit code ${result.code}`);
+  }
+  
+  await provider.refresh();
+  vscode.window.showInformationMessage(`${task.title} — ${successMessage}`);
+}
+
+/**
+ * Claim a task using Python CLI (kanban_ops.py claim).
+ * Sets status to in_progress and updates .current_task file.
+ */
+async function handleClaimTaskViaPython(
+  provider: KanbanTreeProvider,
+  node?: KanbanNode,
+): Promise<void> {
+  const board = await readKanban();
+  const task = node && node.kind === 'item' ? node.item : await promptForTask(board);
+  if (!task) {
+    return;
+  }
+  const cwd = getWorkspaceRoot();
+  if (!cwd) {
+    throw new Error('No workspace folder open');
+  }
+  
+  const result = await runKanbanOps(['claim', task.id], cwd);
+  if (result.code !== 0) {
+    throw new Error(result.stderr || `Failed to claim task: exit code ${result.code}`);
+  }
+  
+  await provider.refresh();
+  vscode.window.showInformationMessage(`✅ Claimed ${task.id}: ${task.title}`);
 }
 
 async function handleFilterTasks(provider: KanbanTreeProvider): Promise<void> {

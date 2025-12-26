@@ -11,7 +11,7 @@ Create a PRD (Product Requirements Document) to define product vision and goals.
 1. **Create PRD artifact**:
 
    ```bash
-   python3 dev_ops/scripts/doc_ops.py create prd --title "Product Name"
+   python3 dev_ops/scripts/artifact_ops.py create prd --title "Product Name"
    ```
 
 2. **Fill in sections** using `templates/prd.md`:

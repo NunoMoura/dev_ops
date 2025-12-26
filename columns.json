@@ -1,46 +1,147 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "description": "8-column Kanban structure for Document-First DevOps Framework v2",
+    "description": "8-column Kanban structure for AI Agent Development Flow",
     "columns": [
         {
             "id": "col-backlog",
             "name": "Backlog",
-            "position": 1
-        },
-        {
-            "id": "col-planning",
-            "name": "Planning",
-            "position": 2
-        },
-        {
-            "id": "col-aligning",
-            "name": "Aligning",
-            "position": 3
+            "position": 1,
+            "contract": {
+                "input": [
+                    "trigger (PRD/FEAT/BUG)"
+                ],
+                "output": [
+                    "TASK-XXX"
+                ],
+                "exit_conditions": [
+                    "Task claimed",
+                    "Trigger reviewed"
+                ]
+            }
         },
         {
             "id": "col-researching",
             "name": "Researching",
-            "position": 4
+            "position": 2,
+            "contract": {
+                "input": [
+                    "TASK-XXX"
+                ],
+                "output": [
+                    "RES-XXX"
+                ],
+                "exit_conditions": [
+                    "Scope defined",
+                    "Alignment verified",
+                    "Recommendation documented"
+                ]
+            }
+        },
+        {
+            "id": "col-documenting",
+            "name": "Documenting",
+            "position": 3,
+            "contract": {
+                "input": [
+                    "RES-XXX"
+                ],
+                "output": [
+                    "Updated architecture docs"
+                ],
+                "exit_conditions": [
+                    "Docs created/updated",
+                    "ADRs added",
+                    "Coherence verified"
+                ]
+            }
+        },
+        {
+            "id": "col-planning",
+            "name": "Planning",
+            "position": 4,
+            "contract": {
+                "input": [
+                    "Architecture docs",
+                    "RES-XXX"
+                ],
+                "output": [
+                    "PLN-XXX"
+                ],
+                "exit_conditions": [
+                    "Checklist defined",
+                    "Acceptance criteria set"
+                ]
+            }
         },
         {
             "id": "col-implementing",
             "name": "Implementing",
-            "position": 5
+            "position": 5,
+            "contract": {
+                "input": [
+                    "PLN-XXX"
+                ],
+                "output": [
+                    "Code",
+                    "Tests"
+                ],
+                "exit_conditions": [
+                    "Checklist complete",
+                    "Tests pass",
+                    "Lint passes"
+                ]
+            }
         },
         {
-            "id": "col-testing",
-            "name": "Testing",
-            "position": 6
+            "id": "col-validating",
+            "name": "Validating",
+            "position": 6,
+            "contract": {
+                "input": [
+                    "Code",
+                    "Tests"
+                ],
+                "output": [
+                    "VAL-XXX"
+                ],
+                "exit_conditions": [
+                    "All checks pass",
+                    "Security reviewed"
+                ]
+            }
         },
         {
-            "id": "col-reviewing",
-            "name": "Reviewing",
-            "position": 7
+            "id": "col-pr",
+            "name": "PR",
+            "position": 7,
+            "contract": {
+                "input": [
+                    "VAL-XXX"
+                ],
+                "output": [
+                    "Pull Request"
+                ],
+                "exit_conditions": [
+                    "PR merged",
+                    "Feedback handled"
+                ]
+            }
         },
         {
             "id": "col-done",
             "name": "Done",
-            "position": 8
+            "position": 8,
+            "contract": {
+                "input": [
+                    "Pull Request"
+                ],
+                "output": [
+                    "Archived TASK"
+                ],
+                "exit_conditions": [
+                    "Ephemeral artifacts archived"
+                ]
+            }
         }
     ]
 }

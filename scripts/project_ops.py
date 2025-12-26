@@ -1,7 +1,7 @@
 """Project operations for detecting technology stack and generating rules."""
 
-import os
 import glob
+import os
 from typing import Any, Optional
 
 
@@ -15,7 +15,7 @@ def get_file_content(path: str) -> str:
         File contents as string, or empty string if file doesn't exist.
     """
     if os.path.exists(path):
-        with open(path, "r") as f:
+        with open(path) as f:
             return f.read()
     return ""
 
@@ -61,7 +61,7 @@ def detect_stack(project_root: str) -> list[dict[str, Any]]:
                 {
                     "name": f"{lang_name}.md",
                     "category": "Language",
-                    "template": "rules/languages/_template.md",
+                    "template": "templates/rules/languages.md",
                     "replacements": {
                         "[Language Name]": lang_name.capitalize(),
                         "[Language]": lang_name.capitalize(),
@@ -94,7 +94,7 @@ def detect_stack(project_root: str) -> list[dict[str, Any]]:
                 {
                     "name": f"{tool_name}.md",
                     "category": "Linter",
-                    "template": "rules/linters/_template.md",
+                    "template": "templates/rules/linters.md",
                     "replacements": {
                         "[Linter Name]": tool_name.capitalize(),
                         "[Linter/Tool Name]": tool_name.capitalize(),
@@ -128,7 +128,7 @@ def detect_stack(project_root: str) -> list[dict[str, Any]]:
                 {
                     "name": f"{lib_name}.md",
                     "category": "Library",
-                    "template": "rules/libraries/_template.md",
+                    "template": "templates/rules/libraries.md",
                     "replacements": {
                         "[Library Name]": lib_name.capitalize(),
                     },
@@ -139,14 +139,10 @@ def detect_stack(project_root: str) -> list[dict[str, Any]]:
 
 
 # Directories to exclude from glob searches
-_EXCLUDED_DIRS = frozenset(
-    [".git", "node_modules", "venv", "__pycache__", "dist", "out"]
-)
+_EXCLUDED_DIRS = frozenset([".git", "node_modules", "venv", "__pycache__", "dist", "out"])
 
 
-def _check_triggers(
-    root: str, triggers: list[str], content_search: Optional[str] = None
-) -> bool:
+def _check_triggers(root: str, triggers: list[str], content_search: Optional[str] = None) -> bool:
     """Check if any trigger file or pattern matches in the project.
 
     Args:
@@ -163,9 +159,7 @@ def _check_triggers(
             try:
                 matches = glob.glob(os.path.join(root, t), recursive=True)
                 # Filter out matches in excluded dirs
-                matches = [
-                    m for m in matches if not any(x in m for x in _EXCLUDED_DIRS)
-                ]
+                matches = [m for m in matches if not any(x in m for x in _EXCLUDED_DIRS)]
                 if matches:
                     return True
             except Exception:

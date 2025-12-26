@@ -45,8 +45,8 @@ const DOC_CATEGORIES: DocsCategoryNode[] = [
 
 /**
  * Tree data provider for the Docs section.
- * Shows architecture, ux, tests from docs/ (bootstrapped projects)
- * or dev_ops/ (source project). Architecture and UX show folder hierarchy.
+ * Shows architecture, ux, tests from dev_ops/docs/ (bootstrapped projects).
+ * Architecture and UX show folder hierarchy.
  */
 export class DocsViewProvider implements vscode.TreeDataProvider<DocsNode> {
     private readonly onDidChangeEmitter = new vscode.EventEmitter<DocsNode | undefined>();
@@ -59,9 +59,9 @@ export class DocsViewProvider implements vscode.TreeDataProvider<DocsNode> {
         const folders = vscode.workspace.workspaceFolders;
         if (folders?.length) {
             this.workspaceRoot = folders[0].uri.fsPath;
-            // Use docs/ folder (created by bootstrap)
+            // Use dev_ops/docs/ folder (created by bootstrap)
             // Categories will show empty if folder doesn't exist yet
-            this.docsPath = path.join(this.workspaceRoot, 'docs');
+            this.docsPath = path.join(this.workspaceRoot, 'dev_ops', 'docs');
         }
     }
 
@@ -238,8 +238,8 @@ export function registerDocsView(context: vscode.ExtensionContext): DocsViewProv
         vscode.window.registerTreeDataProvider('devopsDocsView', provider)
     );
 
-    // Watch for file changes in dev_ops directory
-    const watcher = vscode.workspace.createFileSystemWatcher('**/docs/**/*.md');
+    // Watch for file changes in dev_ops/docs directory
+    const watcher = vscode.workspace.createFileSystemWatcher('**/dev_ops/docs/**/*.md');
     watcher.onDidCreate(() => provider.refresh());
     watcher.onDidDelete(() => provider.refresh());
     watcher.onDidChange(() => provider.refresh());

@@ -8,7 +8,7 @@ produces: BUG-XXX
 ## Prerequisites
 
 - [ ] Bug behavior is reproducible (if applicable).
-- [ ] Checked for duplicates via `python3 dev_ops/scripts/doc_ops.py list bug`.
+- [ ] Checked for duplicates via `python3 dev_ops/scripts/artifact_ops.py list bug`.
 
 ## Relations
 
@@ -19,7 +19,7 @@ produces: BUG-XXX
 
 ## Template
 
-Use [bug.md](file:///home/nunoc/projects/dev_ops/templates/bug.md).
+Use `templates/artifacts/bug.md`.
 
 **Example fill-in**:
 
@@ -38,8 +38,8 @@ Use [bug.md](file:///home/nunoc/projects/dev_ops/templates/bug.md).
 ## Steps
 
 1. **Create the file**:
-   - Run `python3 dev_ops/scripts/doc_ops.py create bug --title "Brief failure description"`.
-   - This generates `dev_ops/bugs/BUG-XXX-title.md`.
+   - Run `python3 dev_ops/scripts/artifact_ops.py create bug --title "Brief failure description"`.
+   - This generates `dev_ops/artifacts/bugs/BUG-XXX-title.md`.
 
 2. **Fill in the details**:
    - **Status**: Set to `open`.

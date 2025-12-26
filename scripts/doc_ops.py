@@ -1,81 +1,160 @@
 #!/usr/bin/env python3
+"""Document Operations - Create and manage persistent documents.
+
+Handles persistent documents in dev_ops/docs/:
+- Architecture docs (dev_ops/docs/architecture/)
+- Test docs (dev_ops/docs/tests/)
+- Features (dev_ops/docs/features/)
+- PRDs (dev_ops/docs/prds/)
+- Research (dev_ops/docs/research/) - supports ADRs
+
+Documents use descriptive names, not sequential IDs.
+"""
+
 import argparse
 import datetime
 import os
-import re
 import sys
 
 # Add current directory to sys.path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from utils import get_next_id, prompt_user, read_file, sanitize_slug, write_file
+from utils import read_file, sanitize_slug, write_file
 
 # ==========================================
 # CONSTANTS
 # ==========================================
 
-# We assume this script runs from [Project]/dev_ops/scripts/doc_ops.py
-# So Project Root is ../../
 script_dir = os.path.dirname(os.path.abspath(__file__))
-DEV_OPS_ROOT = os.path.dirname(script_dir)  # dev_ops/
-PROJECT_ROOT = os.path.dirname(DEV_OPS_ROOT)  # actual project root
-DOCS_DIR = os.path.join(PROJECT_ROOT, "dev_ops")  # Artifacts go to dev_ops/
+DEV_OPS_ROOT = os.path.dirname(script_dir)
+PROJECT_ROOT = os.path.dirname(DEV_OPS_ROOT)
+DOCS_DIR = os.path.join(PROJECT_ROOT, "dev_ops", "docs")
 TEMPLATES_DIR = os.path.join(DEV_OPS_ROOT, "templates")
 
-DOC_TYPES = {
-    # Note: ADRs are now embedded in component.md files in dev_ops/architecture/
-    "bug": {"dir": "bugs", "prefix": "BUG"},
-    "plan": {"dir": "plans", "prefix": "PLN"},
-    "research": {"dir": "research", "prefix": "RES"},
-    "test": {"dir": "tests", "prefix": "TST"},
-    "prd": {"dir": "prds", "prefix": "PRD"},
-    "feature": {"dir": "features", "prefix": "FEAT"},
-    "review": {"dir": "reviews", "prefix": "REV"},
-    "completion": {"dir": "completions", "prefix": "COMP"},
-    "report": {"dir": "reports", "prefix": "REP"},
+# Directories to skip when scaffolding
+SCAFFOLD_SKIP_DIRS = {
+    ".git",
+    "node_modules",
+    "__pycache__",
+    "venv",
+    "dist",
+    "out",
+    ".agent",
+    "dev_ops",
+    "docs",
+    ".vscode",
+    ".idea",
+    "coverage",
+    "build",
+    "target",
+    "bin",
+    "obj",
+    ".next",
+    ".nuxt",
 }
 
-DOC_STATUS_REGEX = r"^status:\s*(.*)$"
+# File extensions that indicate code folders
+CODE_EXTENSIONS = {".py", ".ts", ".tsx", ".js", ".jsx", ".go", ".rs", ".java", ".cpp", ".c", ".h"}
+
+# Test directory patterns
+TEST_DIRS = {"tests", "test", "__tests__", "spec", "e2e"}
+
 
 # ==========================================
-# Helpers
+# HELPERS
 # ==========================================
 
 
-def extract_template(workflow_path: str) -> str:
-    """Extracts template content from a workflow markdown file."""
-    if not os.path.exists(workflow_path):
-        return ""
-
-    content = read_file(workflow_path)
-    # Naive extraction: Look for a block that looks like a template
-    # Or just returning the whole thing might be wrong if it has steps.
-    # Usually we put the template inside a code block or just prompt the agent to write it.
-    # For now, let's look for a `Template:` section or similar if we defined one.
-    # If not, we might need a fallback default template.
-
-    # Let's try to find ```markdown ... ``` block?
-    matches = re.findall(r"```markdown(.*?)```", content, re.DOTALL)
-    if matches:
-        return matches[0].strip()
-
-    return ""
-
-
-def get_default_template(doc_type: str) -> str:
-    """Load template from templates/ directory."""
-    template_path = os.path.join(TEMPLATES_DIR, f"{doc_type}.md")
+def get_doc_template() -> str:
+    """Load doc template from templates/docs/doc.md."""
+    template_path = os.path.join(TEMPLATES_DIR, "docs", "doc.md")
     if os.path.exists(template_path):
         return read_file(template_path)
 
-    # Fallback for backwards compatibility
-    fallbacks = {
-        "adr": "# {{id}} - {{title}}\n\nDate: {{date}}\n\n## Status\nProposed\n\n## Context\n\n## Decision\n\n## Consequences\n",
-        "bug": "# {{id}} - {{title}}\n\nPriority: {{priority}}\nStatus: Open\n\n## Description\n{{description}}\n\n## Context\n{{context}}\n",
-        "plan": "# {{id}} - {{title}}\n\n## Goal\n\n## Proposed Changes\n\n## Verification\n",
-        "research": "# {{id}} - {{title}}\n\n## Question\n\n## Findings\n\n## Conclusion\n",
-    }
-    return fallbacks.get(doc_type, "# {{title}}")
+    # Fallback
+    return """---
+title: "{{title}}"
+type: doc
+lifecycle: persistent
+path: "{{path}}"
+status: undocumented
+---
+
+# {{title}}
+
+## Purpose
+
+## Overview
+
+## Decisions
+"""
+
+
+def get_feature_template() -> str:
+    """Load feature template from templates/docs/feature.md."""
+    template_path = os.path.join(TEMPLATES_DIR, "docs", "feature.md")
+    if os.path.exists(template_path):
+        return read_file(template_path)
+    # Fallback
+    return """---
+title: "{{title}}"
+type: feature
+lifecycle: persistent
+date: "{{date}}"
+status: Draft
+---
+
+# {{title}}
+
+## Summary
+
+## User Stories
+
+## Acceptance Criteria
+"""
+
+
+def get_prd_template() -> str:
+    """Load PRD template from templates/docs/prd.md."""
+    template_path = os.path.join(TEMPLATES_DIR, "docs", "prd.md")
+    if os.path.exists(template_path):
+        return read_file(template_path)
+    # Fallback
+    return """---
+title: "{{title}}"
+type: prd
+lifecycle: persistent
+date: "{{date}}"
+status: Draft
+---
+
+# {{title}}
+
+## Vision
+
+## Goals
+
+## Features
+"""
+
+
+def _is_test_folder(folder_path: str) -> bool:
+    """Check if folder is a test folder."""
+    parts = folder_path.split(os.sep)
+    return any(p in TEST_DIRS for p in parts)
+
+
+def _has_code_files(folder_path: str) -> bool:
+    """Check if folder contains any code files."""
+    try:
+        for entry in os.listdir(folder_path):
+            if os.path.isfile(os.path.join(folder_path, entry)):
+                ext = os.path.splitext(entry)[1]
+                if ext in CODE_EXTENSIONS:
+                    return True
+    except PermissionError:
+        pass
+    return False
 
 
 # ==========================================
@@ -83,126 +162,184 @@ def get_default_template(doc_type: str) -> str:
 # ==========================================
 
 
-def create_doc(doc_type: str, title: str, priority: str = "medium", desc: str = ""):
-    if doc_type not in DOC_TYPES:
-        print(f"Unknown doc type: {doc_type}")
-        return
+def create_doc(title: str, path: str = "", category: str = "architecture") -> str:
+    """Create a new document. Returns the filepath."""
+    target_dir = os.path.join(DOCS_DIR, category)
+    os.makedirs(target_dir, exist_ok=True)
 
-    config = DOC_TYPES[doc_type]
+    slug = sanitize_slug(title)
+    filename = f"{slug}.md"
+    filepath = os.path.join(target_dir, filename)
 
-    # 1. Prepare Paths
-    if "dir" in config:
-        target_dir = os.path.join(DOCS_DIR, config["dir"])
-        os.makedirs(target_dir, exist_ok=True)
-        doc_id = get_next_id(config["prefix"], target_dir)
-        slug = sanitize_slug(title)
-        filename = f"{doc_id}-{slug}.md"
-        filepath = os.path.join(target_dir, filename)
-    if doc_type == "backlog":
-        backlog_path = os.path.join(DOCS_DIR, "backlog.md")
-        if not os.path.exists(backlog_path):
-            write_file(
-                backlog_path,
-                "# Project Backlog\n\n## High Priority\n\n## Medium Priority\n\n## Low Priority\n",
-            )
-            print(f"✅ Created Backlog: {backlog_path}")
+    if os.path.exists(filepath):
+        print(f"⚠️  Document already exists: {filepath}")
+        return filepath
 
-        # Append item
-        if title:
-            content = read_file(backlog_path)
-            # Naive append to High Priority (or just end)
-            # Let's just append to High Priority for now or bottom
-            new_item = f"\n- [ ] {title}\n"
-            # Try to insert after "## High Priority" if exists
-            if "## High Priority" in content:
-                content = content.replace("## High Priority", f"## High Priority{new_item}", 1)
-            else:
-                content += new_item
-            write_file(backlog_path, content, overwrite=True)
-            print(f"✅ Added to Backlog: {title}")
-        return
+    template = get_doc_template()
+    content = template.replace("{{title}}", title)
+    content = content.replace("{{path}}", path)
 
-    # 2. Get Template
-    # Try to find workflow file in .agent/workflows to extract template?
-    workflow_file = f"{doc_type}.md"
-    workflow_path = os.path.join(PROJECT_ROOT, ".agent", "workflows", workflow_file)
-    template = extract_template(workflow_path)
-    if not template:
-        template = get_default_template(doc_type)
-
-    # 3. Fill Template
-    content = template.replace("{{id}}", doc_id)
-    content = content.replace("{{title}}", title)
-    content = content.replace("{{date}}", datetime.date.today().isoformat())
-    content = content.replace("{{priority}}", priority)
-    content = content.replace("{{description}}", desc)
-    content = content.replace("{{context}}", f"Created via doc_ops at {datetime.datetime.now()}")
-
-    # 4. Write
     write_file(filepath, content)
-    print(f"✅ Created {doc_type.upper()}: {filepath}")
+    print(f"✅ Created document: {filepath}")
+    return filepath
 
 
-def list_docs(doc_type: str):
-    if doc_type not in DOC_TYPES:
-        print(f"Unknown doc type: {doc_type}")
-        return
+def create_feature(title: str) -> str:
+    """Create a new feature document. Returns the filepath."""
+    target_dir = os.path.join(DOCS_DIR, "features")
+    os.makedirs(target_dir, exist_ok=True)
 
-    config = DOC_TYPES[doc_type]
-    if "dir" not in config:
-        print(f"Cannot list {doc_type} (single file?)")
-        return
+    slug = sanitize_slug(title)
+    filename = f"{slug}.md"
+    filepath = os.path.join(target_dir, filename)
 
-    target_dir = os.path.join(DOCS_DIR, config["dir"])
-    if not os.path.exists(target_dir):
-        print(f"No {doc_type}s found.")
-        return
+    if os.path.exists(filepath):
+        print(f"⚠️  Feature already exists: {filepath}")
+        return filepath
 
-    print(f"\n📂 {doc_type.upper()} List:")
-    for f in sorted(os.listdir(target_dir)):
-        print(f" - {f}")
+    template = get_feature_template()
+    content = template.replace("{{title}}", title)
+    content = content.replace("{{date}}", datetime.date.today().isoformat())
+    # Remove ID placeholder since features use slugs
+    content = content.replace("{{id}}", slug.upper())
+
+    write_file(filepath, content)
+    print(f"✅ Created feature: {filepath}")
+    return filepath
 
 
-def resolve_doc(doc_type: str, doc_id: str):
-    """Resolves a document (sets status to closed/completed)."""
-    if doc_type not in DOC_TYPES:
-        print(f"Unknown doc type: {doc_type}")
-        return
+def create_prd(title: str, owner: str = "") -> str:
+    """Create a new PRD document. Returns the filepath."""
+    target_dir = os.path.join(DOCS_DIR, "prds")
+    os.makedirs(target_dir, exist_ok=True)
 
-    config = DOC_TYPES[doc_type]
-    if "dir" not in config:
-        print("Cannot resolve single-file types via ID yet.")
-        return
+    slug = sanitize_slug(title)
+    filename = f"{slug}.md"
+    filepath = os.path.join(target_dir, filename)
 
-    target_dir = os.path.join(DOCS_DIR, config["dir"])
-    # Find file with ID prefix
-    target_file = None
-    if not os.path.exists(target_dir):
-        print("Directory not found.")
-        return
+    if os.path.exists(filepath):
+        print(f"⚠️  PRD already exists: {filepath}")
+        return filepath
 
-    for f in os.listdir(target_dir):
-        if f.startswith(doc_id):
-            target_file = os.path.join(target_dir, f)
-            break
+    template = get_prd_template()
+    content = template.replace("{{title}}", title)
+    content = content.replace("{{date}}", datetime.date.today().isoformat())
+    content = content.replace("{{owner}}", owner)
+    content = content.replace("{{id}}", slug.upper())
 
-    if not target_file:
-        print(f"File with ID {doc_id} not found.")
-        return
+    write_file(filepath, content)
+    print(f"✅ Created PRD: {filepath}")
+    return filepath
 
-    content = read_file(target_file)
-    # Regex replace status
-    # Needs to match `status: open` or similar in YAML frontmatter usually
-    # Our templates use `status: active` or `status: open`
 
-    if re.search(DOC_STATUS_REGEX, content, re.MULTILINE):
-        new_content = re.sub(
-            DOC_STATUS_REGEX, "status: closed", content, count=1, flags=re.MULTILINE
-        )
-        write_file(target_file, new_content, overwrite=True)
-        print(f"✅ Resolved {doc_id}: Status set to closed.")
+def scaffold_docs(project_root: str) -> dict:
+    """Scaffold documentation from source folder structure."""
+    docs_arch = os.path.join(project_root, "docs", "architecture")
+    docs_tests = os.path.join(project_root, "docs", "tests")
+
+    created = {"architecture": [], "tests": []}
+    processed_folders = set()
+
+    print(f"🔍 Scaffolding docs for: {project_root}")
+    print()
+
+    for root, dirs, _ in os.walk(project_root):
+        # Skip excluded directories
+        dirs[:] = [d for d in dirs if d not in SCAFFOLD_SKIP_DIRS]
+
+        # Skip the root itself
+        if root == project_root:
+            continue
+
+        rel_path = os.path.relpath(root, project_root)
+
+        # Skip if no code files in this folder
+        if not _has_code_files(root):
+            continue
+
+        # Skip if already processed
+        if rel_path in processed_folders:
+            continue
+        processed_folders.add(rel_path)
+
+        folder_name = os.path.basename(root)
+
+        if _is_test_folder(rel_path):
+            md_path = os.path.join(docs_tests, rel_path + ".md")
+            category = "tests"
+        else:
+            md_path = os.path.join(docs_arch, rel_path + ".md")
+            category = "architecture"
+
+        # Skip if exists
+        if os.path.exists(md_path):
+            continue
+
+        # Create parent directories
+        os.makedirs(os.path.dirname(md_path), exist_ok=True)
+
+        # Generate stub
+        template = get_doc_template()
+        content = template.replace("{{title}}", folder_name)
+        content = content.replace("{{path}}", rel_path)
+
+        with open(md_path, "w") as f:
+            f.write(content)
+
+        created[category].append(rel_path)
+        print(f"  📄 {category}: {rel_path}.md")
+
+    print()
+    print(f"✅ Architecture docs: {len(created['architecture'])}")
+    print(f"✅ Test docs: {len(created['tests'])}")
+
+    if not created["architecture"] and not created["tests"]:
+        print("   (No new docs created - folders may already be documented)")
+
+    return created
+
+
+def validate_docs() -> bool:
+    """Validate that all documentation files are readable."""
+    print("🔍 Validating documentation...")
+    error_count = 0
+
+    if not os.path.exists(DOCS_DIR):
+        print(f"❌ Docs directory not found: {DOCS_DIR}")
+        return False
+
+    for category in ["architecture", "tests"]:
+        target_dir = os.path.join(DOCS_DIR, category)
+        if os.path.exists(target_dir):
+            for f in os.listdir(target_dir):
+                if f.endswith(".md"):
+                    path = os.path.join(target_dir, f)
+                    content = read_file(path)
+                    if not content.strip():
+                        print(f"⚠️  Empty file: {f}")
+                        error_count += 1
+
+    if error_count == 0:
+        print("✅ Documentation is valid.")
+        return True
     else:
-        print(f"⚠️  Could not find 'status:' field in {target_file}")
+        print(f"❌ Found {error_count} issues.")
+        return False
+
+
+def list_docs(category: str = "architecture") -> None:
+    """List all documents in a category."""
+    target_dir = os.path.join(DOCS_DIR, category)
+
+    if not os.path.exists(target_dir):
+        print(f"No {category} docs found.")
+        return
+
+    files = sorted(os.listdir(target_dir))
+    print(f"\n📂 {category.upper()} Documents:")
+    for f in files:
+        if f.endswith(".md"):
+            print(f"  - {f}")
 
 
 # ==========================================
@@ -211,98 +348,60 @@ def resolve_doc(doc_type: str, doc_id: str):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Manage dev_ops documentation.")
+    parser = argparse.ArgumentParser(description="Manage persistent documents.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # CREATE
     create_parser = subparsers.add_parser("create", help="Create a new document")
+    create_parser.add_argument("--title", required=True, help="Document title")
+    create_parser.add_argument("--path", default="", help="Path being documented")
     create_parser.add_argument(
-        "type",
-        choices=[
-            "bug",
-            "plan",
-            "research",
-            "test",
-            "prd",
-            "feature",
-            "review",
-            "completion",
-            "report",
-            "backlog",
-        ],
-        help="Document type",
-    )
-    create_parser.add_argument("--title", help="Title")
-    create_parser.add_argument("--desc", help="Description")
-    create_parser.add_argument("--priority", default="medium", help="Priority (for bugs)")
-
-    # LIST
-    list_parser = subparsers.add_parser("list", help="List documents")
-    list_parser.add_argument(
-        "type",
-        choices=[
-            "bug",
-            "plan",
-            "research",
-            "test",
-            "prd",
-            "feature",
-            "review",
-            "completion",
-            "report",
-        ],
-        help="Document type",
+        "--category",
+        default="architecture",
+        choices=["architecture", "tests", "research"],
+        help="Document category",
     )
 
-    # RESOLVE
-    resolve_parser = subparsers.add_parser("resolve", help="Resolve a document")
-    resolve_parser.add_argument("type", choices=["bug", "plan"], help="Document type")
-    resolve_parser.add_argument("id", help="Document ID (e.g. BUG-001)")
+    # SCAFFOLD
+    scaffold_parser = subparsers.add_parser("scaffold", help="Scaffold docs from source structure")
+    scaffold_parser.add_argument("--root", default=PROJECT_ROOT, help="Project root")
 
     # VALIDATE
     subparsers.add_parser("validate", help="Validate documentation")
 
+    # LIST
+    list_parser = subparsers.add_parser("list", help="List documents")
+    list_parser.add_argument(
+        "--category",
+        default="architecture",
+        choices=["architecture", "tests", "features", "prds", "research"],
+        help="Document category",
+    )
+
+    # CREATE-FEATURE
+    feature_parser = subparsers.add_parser("create-feature", help="Create a new feature doc")
+    feature_parser.add_argument("--title", required=True, help="Feature title")
+
+    # CREATE-PRD
+    prd_parser = subparsers.add_parser("create-prd", help="Create a new PRD doc")
+    prd_parser.add_argument("--title", required=True, help="PRD title")
+    prd_parser.add_argument("--owner", default="", help="Product owner")
+
     args = parser.parse_args()
 
     if args.command == "create":
-        title = args.title or prompt_user("Title")
-        create_doc(args.type, title, args.priority, args.desc or "")
-    elif args.command == "list":
-        list_docs(args.type)
-    elif args.command == "resolve":
-        resolve_doc(args.type, args.id)
+        create_doc(args.title, args.path, args.category)
+    elif args.command == "scaffold":
+        scaffold_docs(args.root)
     elif args.command == "validate":
-        validate_docs()
-
-
-def validate_docs():
-    """Validates that all documentation files are readable and have basic metadata."""
-    print("🔍 Validating documentation...")
-    error_count = 0
-
-    # 1. Check directories
-    if not os.path.exists(DOCS_DIR):
-        print(f"❌ Docs directory not found: {DOCS_DIR}")
-        return
-
-    # 2. Iterate all known types
-    for config in DOC_TYPES.values():
-        if "dir" in config:
-            target_dir = os.path.join(DOCS_DIR, config["dir"])
-            if os.path.exists(target_dir):
-                for f in os.listdir(target_dir):
-                    if f.endswith(".md"):
-                        path = os.path.join(target_dir, f)
-                        content = read_file(path)
-                        if not content.strip():
-                            print(f"⚠️  Empty file: {f}")
-                            error_count += 1
-
-    if error_count == 0:
-        print("✅ Documentation is valid.")
-    else:
-        print(f"❌ Found {error_count} issues.")
-        sys.exit(1)
+        success = validate_docs()
+        sys.exit(0 if success else 1)
+    elif args.command == "list":
+        list_docs(args.category)
+    elif args.command == "create-feature":
+        create_feature(args.title)
+    elif args.command == "create-prd":
+        create_prd(args.title, args.owner)
 
 
 if __name__ == "__main__":

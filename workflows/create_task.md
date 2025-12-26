@@ -19,33 +19,29 @@ work across human developers and AI agents.
 1. **Create the Task**:
    - Run command: `Kanban: Create Task` (Ctrl+Shift+P)
    - Or use the `+` button in the Kanban Board view
-   - Fill in title, summary, and set `agentReady: true` if ready for agent work
+   - Fill in title, summary, and priority
 
-2. **Set Priority and Metadata**:
+2. **Set Priority**:
    - `priority`: high | medium | low
-   - `agentReady`: true if AI agent can work on it
+   - Higher priority tasks are picked first by agents
 
 3. **Via CLI** (alternative):
 
    ```bash
    python3 dev_ops/scripts/kanban_ops.py create \
      --title "Task title" \
-     --priority medium \
-     --agent-ready
+     --priority medium
    ```
 
 ## Multi-Agent Coordination
 
-Before starting work, check for already-claimed tasks:
+Agents are spawned per phase and pick tasks based on priority:
 
-- Run `Kanban: Get Tasks` to see structured JSON
-- Or run `Kanban: Pick Next Task` for the extension to suggest work
-- Look for `agentReady: true` tasks without an assigned owner
-
-**Claimed tasks**: In `In Progress` column with an owner name
-**Available tasks**: In `Backlog` column with `agentReady: true`
+- **Backlog** tasks are picked by priority order (high → medium → low)
+- When claimed, a task moves through phases with fresh agent context per phase
+- Context is provided exclusively through artifacts, task data, and phase rules
 
 ## Exit Criteria
 
 - [ ] Task created in Kanban board
-- [ ] Priority and agentReady set appropriately
+- [ ] Priority set appropriately

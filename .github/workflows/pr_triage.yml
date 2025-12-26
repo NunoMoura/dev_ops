@@ -1,4 +1,4 @@
-name: PR Triage Reminder
+name: Collect PR Comments
 
 on:
   pull_request_review_comment:
@@ -7,56 +7,71 @@ on:
     types: [created]
 
 jobs:
-  reminder:
+  collect:
     if: github.event.issue.pull_request || github.event.pull_request
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Post Triage Reminder
-        uses: actions/github-script@v6
         with:
-          script: |
-            const body = context.payload.comment.body.toLowerCase();
-            // Skip if comment is from a bot or already contains triage keywords
-            if (context.payload.comment.user.type === 'Bot') return;
-            
-            // Check if comment seems actionable (bug report, suggestion, etc.)
-            const actionableKeywords = ['bug', 'issue', 'fix', 'should', 'could', 'suggestion', 'idea', 'problem', 'error'];
-            const isActionable = actionableKeywords.some(kw => body.includes(kw));
-            
-            if (isActionable) {
-              // Check if already triaged
-              const existingComments = await github.rest.issues.listComments({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-              });
-              
-              const alreadyTriaged = existingComments.data.some(c => 
-                c.body.includes('Triage Reminder') && c.user.type === 'Bot'
-              );
-              
-              if (!alreadyTriaged) {
-                await github.rest.issues.createComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: context.issue.number,
-                  body: `### 🔍 Triage Reminder
-            
-            This PR has new feedback that may need tracking!
-            
-            **To triage**, run:
-            \`\`\`bash
-            python3 dev_ops/scripts/pr_ops.py triage --pr ${context.issue.number}
-            \`\`\`
-            
-            Or manually categorize:
-            - 🐛 **Bug** → Track in \`dev_ops/bugs/\`
-            - 📋 **Feature/Improvement** → Add task to Kanban board
-            - ❓ **Question** → Reply directly in PR
-            
-            See [triage_feedback workflow](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/.agent/workflows/triage_feedback.md) for details.`
-                });
-              }
-            }
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Collect Comment
+        run: |
+          # Skip bot comments
+          if [ "${{ github.event.comment.user.type }}" = "Bot" ]; then
+            echo "Skipping bot comment"
+            exit 0
+          fi
+          
+          PR_NUMBER="${{ github.event.issue.number }}"
+          AUTHOR="${{ github.event.comment.user.login }}"
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          COMMENT_ID="${{ github.event.comment.id }}"
+          
+          # Create pr_comments directory if needed
+          mkdir -p dev_ops/pr_comments
+          
+          # Append to PR-specific comments file
+          COMMENTS_FILE="dev_ops/pr_comments/PR-${PR_NUMBER}.md"
+          
+          # Create file with header if new
+          if [ ! -f "$COMMENTS_FILE" ]; then
+            cat > "$COMMENTS_FILE" << EOF
+          # PR #${PR_NUMBER} Comments
+          
+          Comments collected for agent triage during PR phase.
+          
+          ---
+          
+          EOF
+          fi
+          
+          # Append new comment
+          cat >> "$COMMENTS_FILE" << EOF
+          
+          ## Comment #${COMMENT_ID}
+          
+          | Field | Value |
+          |-------|-------|
+          | Author | @${AUTHOR} |
+          | Time | ${TIMESTAMP} |
+          | Status | pending |
+          
+          ### Content
+          
+          ${{ github.event.comment.body }}
+          
+          ---
+          
+          EOF
+          
+          echo "Collected comment #${COMMENT_ID} to ${COMMENTS_FILE}"
+
+      - name: Commit Comments
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add dev_ops/pr_comments/
+          git diff --staged --quiet && exit 0  # Skip if no changes
+          git commit -m "chore: collect PR comment for triage"
+          git push

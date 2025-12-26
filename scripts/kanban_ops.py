@@ -6,14 +6,16 @@ Provides Python functions to interact with the Kanban board stored at
 dev_ops/kanban/board.json. Supports task prerequisites, completion criteria,
 and artifact linking with identifiers.
 
-Column = Workflow phase, Status = Autonomy state:
-- Columns: Backlog, Planning, Aligning, Researching, Implementing, Testing, Reviewing, Done
+Column = Workflow phase (8 phases), Status = Autonomy state:
+- Columns: Backlog, Researching, Documenting, Planning, Implementing, Validating, PR, Done
 - Status: todo, in_progress, blocked, pending, done
 """
 
 import argparse
 import json
 import os
+import shutil
+import tarfile
 from datetime import datetime
 from typing import Any, Optional
 
@@ -39,12 +41,12 @@ def _load_default_columns() -> list[dict]:
     # Fallback to hardcoded if file not found or invalid
     return [
         {"id": "col-backlog", "name": "Backlog", "position": 1},
-        {"id": "col-planning", "name": "Planning", "position": 2},
-        {"id": "col-aligning", "name": "Aligning", "position": 3},
-        {"id": "col-researching", "name": "Researching", "position": 4},
+        {"id": "col-researching", "name": "Researching", "position": 2},
+        {"id": "col-documenting", "name": "Documenting", "position": 3},
+        {"id": "col-planning", "name": "Planning", "position": 4},
         {"id": "col-implementing", "name": "Implementing", "position": 5},
-        {"id": "col-testing", "name": "Testing", "position": 6},
-        {"id": "col-reviewing", "name": "Reviewing", "position": 7},
+        {"id": "col-validating", "name": "Validating", "position": 6},
+        {"id": "col-pr", "name": "PR", "position": 7},
         {"id": "col-done", "name": "Done", "position": 8},
     ]
 
@@ -59,7 +61,35 @@ def get_board_path(project_root: Optional[str] = None) -> str:
         # Assume script is in [project]/dev_ops/scripts/
         script_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(os.path.dirname(script_dir))
-    return os.path.join(project_root, "dev_ops", "kanban", "board.json")
+    return os.path.join(project_root, "dev_ops", "board.json")
+
+
+def get_current_task_path(project_root: Optional[str] = None) -> str:
+    """Get the path to the .current_task file."""
+    if project_root is None:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(os.path.dirname(script_dir))
+    return os.path.join(project_root, "dev_ops", ".current_task")
+
+
+def get_current_task(project_root: Optional[str] = None) -> Optional[str]:
+    """Read the current task ID from .current_task file."""
+    path = get_current_task_path(project_root)
+    if os.path.exists(path):
+        with open(path) as f:
+            return f.read().strip() or None
+    return None
+
+
+def set_current_task(task_id: Optional[str], project_root: Optional[str] = None) -> None:
+    """Write the current task ID to .current_task file."""
+    path = get_current_task_path(project_root)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    if task_id:
+        with open(path, "w") as f:
+            f.write(task_id + "\n")
+    elif os.path.exists(path):
+        os.remove(path)
 
 
 def load_board(project_root: Optional[str] = None) -> dict:
@@ -118,9 +148,14 @@ def create_task(
     upstream: Optional[list[str]] = None,
     downstream: Optional[list[str]] = None,
     column_id: str = "col-backlog",
+    spawn_from: Optional[str] = None,
     project_root: Optional[str] = None,
 ) -> str:
-    """Create a new task on the Kanban board. Returns the task ID."""
+    """Create a new task on the Kanban board. Returns the task ID.
+
+    Args:
+        spawn_from: Optional parent task ID if this task was spawned from a blocker/conflict.
+    """
     # Validate priority
     if priority.lower() not in VALID_PRIORITIES:
         raise ValueError(
@@ -152,12 +187,20 @@ def create_task(
         "updatedAt": datetime.utcnow().isoformat() + "Z",
     }
 
+    # Track spawned-from relationship for traceability
+    if spawn_from:
+        task["spawnedFrom"] = spawn_from
+        task["summary"] = (
+            f"Spawned from {spawn_from}: {summary}" if summary else f"Spawned from {spawn_from}"
+        )
+
     if "items" not in board:
         board["items"] = []
     board["items"].append(task)
     save_board(board, project_root)
 
-    print(f"✅ Created task: {task_id} - {title}")
+    spawn_info = f" (spawned from {spawn_from})" if spawn_from else ""
+    print(f"✅ Created task: {task_id} - {title}{spawn_info}")
     return task_id
 
 
@@ -418,14 +461,46 @@ def create_pr(
         return None
 
 
+def record_phase_session(
+    task_id: str,
+    phase_name: str,
+    session_id: str,
+    project_root: Optional[str] = None,
+) -> bool:
+    """Record the session ID for a completed phase.
+
+    Called when a phase is completed to store the AG session ID
+    in the task's phases tracking.
+    """
+    board = load_board(project_root)
+
+    for task in board.get("items", []):
+        if task.get("id") == task_id:
+            if "phases" not in task:
+                task["phases"] = {}
+            task["phases"][phase_name] = {"sessionId": session_id}
+            task["updatedAt"] = datetime.utcnow().isoformat() + "Z"
+            save_board(board, project_root)
+            print(f"✅ Recorded session {session_id[:8]}... for phase '{phase_name}'")
+            return True
+
+    print(f"⚠️ Task {task_id} not found")
+    return False
+
+
 def mark_done(
     task_id: str,
     outputs: Optional[list] = None,
     create_pr_flag: bool = False,
     capture_sha: bool = True,
+    archive: bool = True,
     project_root: Optional[str] = None,
 ) -> bool:
-    """Move a task to Done column and optionally add output artifacts."""
+    """Move a task to Done column, optionally add output artifacts, and archive.
+
+    Args:
+        archive: If True (default), automatically archive the task after completion.
+    """
     import subprocess
 
     board = load_board(project_root)
@@ -463,6 +538,13 @@ def mark_done(
             # Create PR if requested
             if create_pr_flag:
                 create_pr(task_id, project_root=project_root)
+
+            # Archive task and artifacts
+            if archive:
+                archive_task(task_id, project_root=project_root)
+
+            # Clear .current_task file
+            set_current_task(None, project_root)
 
             return True
     print(f"⚠️ Task {task_id} not found")
@@ -517,8 +599,18 @@ def check_prerequisites(task: dict, project_root: Optional[str] = None) -> tuple
     return all_ok, missing
 
 
-def claim_task(task_id: str, force: bool = False, project_root: Optional[str] = None) -> bool:
-    """Claim a task by moving it to Implementing. Validates prerequisites first."""
+def claim_task(
+    task_id: str,
+    force: bool = False,
+    session_id: Optional[str] = None,
+    project_root: Optional[str] = None,
+) -> bool:
+    """Claim a task by setting status to in_progress. Works at any phase.
+
+    Does not change the task's column - just marks it as claimed.
+    Both agents and humans can claim tasks at any phase.
+    Optionally tracks the Antigravity session ID.
+    """
     board = load_board(project_root)
 
     for task in board.get("items", []):
@@ -532,12 +624,24 @@ def claim_task(task_id: str, force: bool = False, project_root: Optional[str] = 
                         print(f"   Missing tasks: {missing['tasks']}")
                     return False
 
-            # Move to Implementing and set status to in_progress
-            task["columnId"] = "col-implementing"
+            # Set status to in_progress (keep current column)
             task["status"] = "in_progress"
             task["updatedAt"] = datetime.utcnow().isoformat() + "Z"
+
+            # Track session ID if provided
+            if session_id:
+                task["currentSessionId"] = session_id
+                # Initialize phases tracking if needed
+                if "phases" not in task:
+                    task["phases"] = {}
+
             save_board(board, project_root)
-            print(f"✅ Claimed {task_id} - moved to Implementing")
+
+            # Update .current_task file
+            set_current_task(task_id, project_root)
+
+            column_name = get_column_name(board, task.get("columnId", ""))
+            print(f"✅ Claimed {task_id} in {column_name}")
             return True
 
     print(f"⚠️ Task {task_id} not found")
@@ -608,6 +712,115 @@ def revert_task(
         return False
 
 
+def archive_task(task_id: str, project_root: Optional[str] = None) -> bool:
+    """Archive a completed task and its linked artifacts to a compressed archive.
+
+    Creates dev_ops/archive/TASK-XXX.tar.gz containing:
+    - task.json: Snapshot of task state
+    - Linked artifacts: RES-XXX, PLN-XXX, VAL-XXX files
+
+    Args:
+        task_id: The task ID to archive
+        project_root: Optional project root path
+
+    Returns:
+        True if archive created successfully, False otherwise
+    """
+    if project_root is None:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(os.path.dirname(script_dir))
+
+    board = load_board(project_root)
+    task = None
+    task_index = -1
+
+    for i, t in enumerate(board.get("items", [])):
+        if t.get("id") == task_id:
+            task = t
+            task_index = i
+            break
+
+    if not task:
+        print(f"⚠️ Task {task_id} not found")
+        return False
+
+    # Create archive directory
+    dev_ops_dir = os.path.join(project_root, "dev_ops")
+    archive_dir = os.path.join(dev_ops_dir, "artifacts", "archive")
+    os.makedirs(archive_dir, exist_ok=True)
+
+    # Create temp directory for staging
+    staging_dir = os.path.join(archive_dir, f".{task_id}_staging")
+    os.makedirs(staging_dir, exist_ok=True)
+
+    try:
+        # Save task JSON
+        task_json_path = os.path.join(staging_dir, "task.json")
+        with open(task_json_path, "w") as f:
+            json.dump(task, f, indent=2)
+
+        # Copy linked artifacts (now under dev_ops/artifacts/ and dev_ops/docs/)
+        artifact_dirs = {
+            "artifacts/plans": "PLN",
+            "artifacts/validation_reports": "VAL",
+            "docs/research": "RES",
+        }
+
+        # Check upstream for artifact references
+        upstream = task.get("upstream", [])
+        for artifact_id in upstream:
+            for subdir, prefix in artifact_dirs.items():
+                if artifact_id.startswith(prefix):
+                    artifact_dir = os.path.join(dev_ops_dir, subdir)
+                    if os.path.exists(artifact_dir):
+                        for f in os.listdir(artifact_dir):
+                            if f.startswith(artifact_id):
+                                src = os.path.join(artifact_dir, f)
+                                dst = os.path.join(staging_dir, f)
+                                shutil.copy2(src, dst)
+                                # Remove source after copying
+                                os.remove(src)
+
+        # Also check artifacts field (from task.md schema)
+        artifacts = task.get("artifacts", {})
+        for _, artifact_id in artifacts.items():
+            if artifact_id:
+                for subdir, prefix in artifact_dirs.items():
+                    if artifact_id.startswith(prefix):
+                        artifact_dir = os.path.join(dev_ops_dir, subdir)
+                        if os.path.exists(artifact_dir):
+                            for f in os.listdir(artifact_dir):
+                                if f.startswith(artifact_id):
+                                    src = os.path.join(artifact_dir, f)
+                                    dst = os.path.join(staging_dir, f)
+                                    if not os.path.exists(dst):
+                                        shutil.copy2(src, dst)
+                                        os.remove(src)
+
+        # Create tar.gz archive
+        archive_path = os.path.join(archive_dir, f"{task_id}.tar.gz")
+        with tarfile.open(archive_path, "w:gz") as tar:
+            for f in os.listdir(staging_dir):
+                tar.add(os.path.join(staging_dir, f), arcname=f)
+
+        # Remove task from board
+        board["items"].pop(task_index)
+        save_board(board, project_root)
+
+        # Cleanup staging dir
+        shutil.rmtree(staging_dir)
+
+        print(f"✅ Archived {task_id} → archive/{task_id}.tar.gz")
+        return True
+
+    except Exception as e:
+        # Cleanup on failure
+        if os.path.exists(staging_dir):
+            shutil.rmtree(staging_dir)
+        print(f"⚠️ Failed to archive {task_id}: {e}")
+        return False
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Kanban board operations.")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -635,6 +848,11 @@ if __name__ == "__main__":
         default="medium",
         choices=["high", "medium", "low"],
         help="Task priority (default: medium)",
+    )
+    create_parser.add_argument(
+        "--spawn-from",
+        dest="spawn_from",
+        help="Parent task ID if spawned from blocker/conflict (e.g., TASK-001)",
     )
 
     # Mark done
@@ -678,6 +896,18 @@ if __name__ == "__main__":
     claim_parser = subparsers.add_parser("claim", help="Claim a task")
     claim_parser.add_argument("task_id", help="Task ID to claim")
     claim_parser.add_argument("--force", action="store_true", help="Skip prerequisite check")
+    claim_parser.add_argument("--session-id", dest="session_id", help="Antigravity session ID")
+
+    # Record phase session
+    record_phase_parser = subparsers.add_parser(
+        "record-phase", help="Record session ID for a phase"
+    )
+    record_phase_parser.add_argument("task_id", help="Task ID")
+    record_phase_parser.add_argument("phase_name", help="Phase name (e.g., researching, planning)")
+    record_phase_parser.add_argument("session_id", help="Antigravity session ID")
+
+    # Get current task
+    subparsers.add_parser("current-task", help="Get current task ID from .current_task file")
 
     # Checklist management
     checklist_parser = subparsers.add_parser("checklist", help="Manage task checklist")
@@ -727,6 +957,7 @@ if __name__ == "__main__":
             priority=args.priority,
             assignee=args.assignee,
             column_id=args.column,
+            spawn_from=args.spawn_from,
         )
     elif args.command == "done":
         mark_done(args.task_id, outputs=args.outputs, create_pr_flag=args.create_pr)
@@ -743,7 +974,7 @@ if __name__ == "__main__":
         if task and args.claim:
             claim_task(task["id"])
     elif args.command == "claim":
-        claim_task(args.task_id, force=args.force)
+        claim_task(args.task_id, force=args.force, session_id=args.session_id)
     elif args.command == "checklist":
         if args.checklist_action == "add":
             checklist_add(args.task_id, args.item)
@@ -755,3 +986,11 @@ if __name__ == "__main__":
         replace_task(args.task_id, args.new_titles)
     elif args.command == "revert":
         revert_task(args.task_id)
+    elif args.command == "record-phase":
+        record_phase_session(args.task_id, args.phase_name, args.session_id)
+    elif args.command == "current-task":
+        current = get_current_task()
+        if current:
+            print(current)
+        else:
+            print("No current task")

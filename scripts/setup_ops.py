@@ -58,15 +58,15 @@ def install_kanban_extension(dev_ops_root: str):
 
 def init_kanban_board(project_root: str):
     """Initialize the Kanban board if not exists."""
-    kanban_dir = os.path.join(project_root, "dev_ops", "kanban")
-    board_path = os.path.join(kanban_dir, "board.json")
+    dev_ops_dir = os.path.join(project_root, "dev_ops")
+    board_path = os.path.join(dev_ops_dir, "board.json")
 
     if os.path.exists(board_path):
         print("   ✅ Kanban board already exists")
         return
 
     print("   📋 Initializing Kanban board...")
-    os.makedirs(kanban_dir, exist_ok=True)
+    os.makedirs(dev_ops_dir, exist_ok=True)
 
     # Load columns from shared schema via kanban_ops
     columns = DEFAULT_COLUMNS
@@ -80,7 +80,7 @@ def init_kanban_board(project_root: str):
     with open(board_path, "w") as f:
         json.dump(initial_board, f, indent=2)
 
-    print("   ✅ Kanban board initialized at dev_ops/kanban/board.json")
+    print("   ✅ Kanban board initialized at dev_ops/board.json")
 
 
 # ==========================================
@@ -111,54 +111,61 @@ def summarize_project(project_root: str):
 # ==========================================
 
 
-def get_core_rules(rules_src: str) -> list:
+def get_core_rules(core_rules_src: str) -> list:
     """Get all Core rules that should always be present (phase rules and guide)."""
     proposed = []
-    # Core rules are now in the root of the rules directory
+    # Core rules are in rules/
     core_files = [
         "dev_ops_guide.md",
-        "phase_backlog.md",
-        "phase_research.md",
-        "phase_planning.md",
-        "phase_inprogress.md",
-        "phase_testing.md",
-        "phase_done.md",
-        "phase_blocked.md",
+    ]
+    # Phase rules are in rules/development_phases/
+    phase_files = [
+        "1_backlog.md",
+        "2_researching.md",
+        "3_documenting.md",
+        "4_planning.md",
+        "5_implementing.md",
+        "6_validating.md",
+        "7_pr.md",
     ]
     for file in core_files:
-        src_path = os.path.join(rules_src, file)
+        src_path = os.path.join(core_rules_src, file)
         if os.path.exists(src_path):
             proposed.append(
                 {
                     "name": file,
                     "src": src_path,
                     "category": "Core",
-                    "reason": "Essential DevOps rule",
+                    "reason": "Essential DevOps guide",
+                    "replacements": {},
+                }
+            )
+    for file in phase_files:
+        src_path = os.path.join(core_rules_src, "development_phases", file)
+        if os.path.exists(src_path):
+            proposed.append(
+                {
+                    "name": file,
+                    "src": src_path,
+                    "category": "Core",
+                    "reason": "Development phase rule",
                     "replacements": {},
                 }
             )
     return proposed
 
 
-def get_all_rules(rules_src: str, project_root: str):
+def get_all_rules(core_rules_src: str, templates_rules_src: str, project_root: str):
     """Combines Core rules with Dynamic Stack rules."""
-    core_rules = get_core_rules(rules_src)
+    core_rules = get_core_rules(core_rules_src)
     dynamic_rules = detect_stack(project_root)
 
     # Fix paths for dynamic rules (templates need full path)
+    # project_ops returns 'templates/rules/languages.md'
+    # templates_rules_src is '.../templates/rules'
+    # So we go up two levels to get repo root, then join with template path
     for rule in dynamic_rules:
-        # Prepend rules_src to the template relative path
-        rule["src"] = os.path.join(
-            rules_src, "..", rule["template"]
-        )  # template is like 'rules/languages/_template.md'
-        # Actually rules_src is '.../rules', so we need to go up one level if template starts with rules/
-        # Or just construct it correctly.
-        # project_ops returns 'rules/languages/_template.md'.
-        # rules_src is '/path/to/rules'.
-        # So we want '/path/to/rules/languages/_template.md'
-        # project_ops template is relative to Repo Root.
-        # rules_src is '.../dev_ops/rules'
-        repo_root = os.path.dirname(rules_src)
+        repo_root = os.path.dirname(os.path.dirname(templates_rules_src))
         rule["src"] = os.path.join(repo_root, rule["template"])
 
     return sorted(core_rules + dynamic_rules, key=lambda x: (x["category"], x["name"]))
@@ -219,7 +226,8 @@ def bootstrap(target_dir: str):
     # Assuming this script is running from [dev_ops_core]/scripts/setup_ops.py
     DEV_OPS_CORE_ROOT = os.path.dirname(SCRIPT_DIR)
 
-    RULES_SRC_DIR = os.path.join(DEV_OPS_CORE_ROOT, "rules")
+    RULES_SRC_DIR = os.path.join(DEV_OPS_CORE_ROOT, "templates", "rules")  # Generator templates
+    CORE_RULES_SRC_DIR = os.path.join(DEV_OPS_CORE_ROOT, "rules")  # Actual rules (phases, guide)
     WORKFLOWS_SRC_DIR = os.path.join(DEV_OPS_CORE_ROOT, "workflows")
     SCRIPTS_SRC_DIR = os.path.join(DEV_OPS_CORE_ROOT, "scripts")
 
@@ -237,7 +245,7 @@ def bootstrap(target_dir: str):
     # 2. Detect & Propose Rules
     print("🔍 Analyzing project stack...")
 
-    proposed_rules = get_all_rules(RULES_SRC_DIR, PROJECT_ROOT)
+    proposed_rules = get_all_rules(CORE_RULES_SRC_DIR, RULES_SRC_DIR, PROJECT_ROOT)
 
     # 3. Plan Rule Installation
     AGENT_RULES_DIR = os.path.join(AGENT_DIR, "rules")

@@ -6,7 +6,7 @@ import { Board, Column, DEFAULT_COLUMN_BLUEPRINTS } from './types';
 export async function ensureKanbanUri(): Promise<vscode.Uri> {
   const kanbanPath = await getKanbanPath();
   if (!kanbanPath) {
-    throw new Error('Open a workspace folder to load dev_ops/kanban/board.json.');
+    throw new Error('Open a workspace folder to load dev_ops/board.json.');
   }
   try {
     await fs.stat(kanbanPath);
@@ -29,7 +29,7 @@ export async function getKanbanPath(): Promise<string | undefined> {
   if (!root) {
     return undefined;
   }
-  return path.join(root, 'dev_ops', 'kanban', 'board.json');
+  return path.join(root, 'dev_ops', 'board.json');
 }
 
 export async function readKanban(): Promise<Board> {
@@ -88,12 +88,12 @@ export async function registerKanbanWatchers(
     }, 200);
   };
   const patterns = [
-    'dev_ops/kanban/board.json',
-    'dev_ops/plans/*.md',
-    'dev_ops/research/*.md',
-    'dev_ops/tests/*.md',
-    'dev_ops/bugs/*.md',
-    'dev_ops/adrs/*.md',
+    'dev_ops/board.json',
+    'dev_ops/artifacts/plans/*.md',
+    'dev_ops/docs/research/*.md',
+    'dev_ops/docs/tests/*.md',
+    'dev_ops/artifacts/bugs/*.md',
+    'dev_ops/docs/architecture/*.md',
   ];
   for (const glob of patterns) {
     const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, glob));
@@ -115,7 +115,7 @@ export async function handleCorruptKanbanFile(filePath: string, contents: string
   const repairOption = 'Repair Kanban board';
   const openOption = 'Open file';
   const selection = await vscode.window.showErrorMessage(
-    'DevOps Kanban cannot read dev_ops/kanban/board.json because it is not valid JSON.',
+    'DevOps Kanban cannot read dev_ops/board.json because it is not valid JSON.',
     repairOption,
     openOption,
   );
@@ -131,7 +131,7 @@ export async function handleCorruptKanbanFile(filePath: string, contents: string
     const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
     await vscode.window.showTextDocument(doc, { preview: false });
   }
-  throw new Error('dev_ops/kanban/board.json is invalid. Repair or fix it, then refresh DevOps Kanban.');
+  throw new Error('dev_ops/board.json is invalid. Repair or fix it, then refresh DevOps Kanban.');
 }
 
 export async function backupCorruptKanbanFile(filePath: string, contents: string): Promise<string> {

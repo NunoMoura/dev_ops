@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 """Tests for setup_ops.py."""
 
+import json
 import os
 import sys
 import tempfile
-import json
-
-import pytest
 
 # Add scripts to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
-from setup_ops import get_core_rules, init_kanban_board, get_all_rules, install_kanban_extension
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+from setup_ops import get_all_rules, get_core_rules, init_kanban_board, install_kanban_extension
 
 
 class TestGetCoreRules:
@@ -60,7 +59,7 @@ class TestInitKanbanBoard:
         with tempfile.TemporaryDirectory() as tmpdir:
             init_kanban_board(tmpdir)
 
-            board_path = os.path.join(tmpdir, "dev_ops", "kanban", "board.json")
+            board_path = os.path.join(tmpdir, "dev_ops", "board.json")
             assert os.path.exists(board_path)
 
             with open(board_path) as f:
@@ -73,9 +72,9 @@ class TestInitKanbanBoard:
     def test_does_not_overwrite_existing(self):
         """Test that existing board is not overwritten."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            kanban_dir = os.path.join(tmpdir, "dev_ops", "kanban")
-            os.makedirs(kanban_dir)
-            board_path = os.path.join(kanban_dir, "board.json")
+            dev_ops_dir = os.path.join(tmpdir, "dev_ops")
+            os.makedirs(dev_ops_dir)
+            board_path = os.path.join(dev_ops_dir, "board.json")
 
             # Create existing board with custom content
             existing = {"version": 1, "columns": [], "items": [{"id": "existing"}]}
@@ -105,7 +104,7 @@ class TestGetAllRules:
             rules = get_all_rules(rules_src, tmpdir)
 
             # Should have at least the core rules
-            categories = set(r["category"] for r in rules)
+            categories = {r["category"] for r in rules}
             assert "Core" in categories
 
 

@@ -88,7 +88,7 @@ graph LR
 
     subgraph "Verification"
         TST[TST-XXX]
-        REV[REV-XXX]
+        VAL[VAL-XXX]
     end
 
     RES --> COMP
@@ -200,18 +200,17 @@ sequenceDiagram
 
 ## Available Commands
 
-### Board Management (User Commands)
+### User Workflows (Slash Commands)
 
 | Command | Description |
 |---------|-------------|
-| `/create_task` | Add a new task to the backlog |
-| `/list_tasks` | View all tasks on the board |
-| `/pick_task` | Pick the next available task |
-| `/claim_task` | Claim a task as yours |
-| `/complete_task` | Mark a task as complete |
-| `/report_bug` | Report a new bug |
-| `/triage_feedback` | Process PR feedback into tasks |
 | `/bootstrap` | Initialize DevOps in a project |
+| `/create_prd` | Create a Product Requirements Document |
+| `/create_constitution` | Create project constitution from PRD |
+| `/add_feature` | Add a feature → decompose to tasks |
+| `/create_task` | Add a new task to the backlog |
+| `/spawn_agent` | Pick the next available task |
+| `/report_bug` | Report a new bug |
 
 ### Agent-Guided Procedures (Phase Rules)
 
@@ -220,12 +219,13 @@ based on the task's current column:
 
 | Column | Phase Rule | What Agent Does |
 |--------|------------|-----------------|
-| Backlog | `phase_backlog` | Brainstorm, prioritize |
-| Research | `phase_research` | Investigate, create RES-XXX, ADR-XXX |
-| Planning | `phase_planning` | Create PLN-XXX |
-| In Progress | `phase_inprogress` | Implement, debug, commit |
-| Testing | `phase_testing` | Run tests, create TST-XXX |
-| Done | `phase_done` | Create PR |
+| Backlog | `1_backlog` | Claim task, review trigger |
+| Researching | `2_researching` | Investigate, create RES-XXX |
+| Documenting | `3_documenting` | Update architecture docs |
+| Planning | `4_planning` | Create PLN-XXX with checklist |
+| Implementing | `5_implementing` | TDD workflow, implement code |
+| Validating | `6_validating` | Quality gates, create VAL-XXX |
+| PR | `7_pr` | Create PR, archive task |
 
 ## Project Structure
 
@@ -233,24 +233,30 @@ based on the task's current column:
 your-project/
 ├── .agent/
 │   ├── rules/
-│   │   ├── dev_ops_guide.md     # Framework overview
-│   │   ├── phase_backlog.md     # Backlog phase
-│   │   ├── phase_research.md    # Research phase
-│   │   ├── phase_planning.md    # Planning phase
-│   │   ├── phase_inprogress.md  # Implementation phase
-│   │   ├── phase_testing.md     # Testing phase
-│   │   ├── phase_done.md        # Completion phase
-│   │   └── phase_blocked.md     # Blocked handling
-│   └── workflows/               # User commands (8 files)
+│   │   ├── dev_ops_guide.md     # Framework overview (Always On)
+│   │   ├── 1_backlog.md         # Backlog phase
+│   │   ├── 2_researching.md     # Researching phase
+│   │   ├── 3_documenting.md     # Documenting phase
+│   │   ├── 4_planning.md        # Planning phase
+│   │   ├── 5_implementing.md    # Implementing phase
+│   │   ├── 6_validating.md      # Validating phase
+│   │   └── 7_pr.md              # PR phase
+│   └── workflows/               # User commands (7 files)
 └── dev_ops/
+    ├── board.json               # Task board (flattened)
+    ├── docs/                    # Persistent documentation
+    │   ├── architecture/        # Component docs, ADRs
+    │   ├── features/            # Feature specs
+    │   ├── prds/                # Product requirements
+    │   ├── tests/               # Test documentation
+    │   └── research/            # Research (supports ADRs)
+    ├── artifacts/               # Ephemeral artifacts
+    │   ├── plans/               # PLN-XXX
+    │   ├── validation_reports/  # VAL-XXX
+    │   ├── bugs/                # BUG-XXX
+    │   └── archive/             # Archived TASK-XXX.tar.gz
     ├── scripts/                 # Automation scripts
-    ├── kanban/
-    │   └── board.json           # Task board
-    ├── plans/                   # PLN-XXX artifacts
-    ├── research/                # RES-XXX artifacts
-    ├── tests/                   # TST-XXX artifacts
-    ├── bugs/                    # BUG-XXX artifacts
-    └── adrs/                    # ADR-XXX artifacts
+    └── templates/               # Document templates
 ```
 
 ## Development

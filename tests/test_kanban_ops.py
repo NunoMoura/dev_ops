@@ -2,27 +2,28 @@
 """Tests for kanban_ops.py."""
 
 import os
-import tempfile
-import pytest
 
 # Add scripts to path
 import sys
+import tempfile
+
+import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
 from kanban_ops import (
-    get_board_path,
-    load_board,
-    save_board,
-    create_task,
-    get_tasks,
-    add_upstream,
     add_downstream,
-    move_to_column,
-    mark_done,
-    pick_task,
-    claim_task,
+    add_upstream,
     check_prerequisites,
+    claim_task,
+    create_task,
+    get_board_path,
+    get_tasks,
+    load_board,
+    mark_done,
+    move_to_column,
+    pick_task,
+    save_board,
 )
 
 
@@ -30,9 +31,9 @@ from kanban_ops import (
 def temp_project():
     """Create a temporary project directory for testing."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        # Create the dev_ops/kanban directory
-        kanban_dir = os.path.join(tmpdir, "dev_ops", "kanban")
-        os.makedirs(kanban_dir)
+        # Create the dev_ops directory
+        dev_ops_dir = os.path.join(tmpdir, "dev_ops")
+        os.makedirs(dev_ops_dir)
         yield tmpdir
 
 
@@ -42,7 +43,7 @@ class TestBoardOperations:
     def test_get_board_path(self, temp_project):
         """Test board path generation."""
         path = get_board_path(temp_project)
-        assert path.endswith("dev_ops/kanban/board.json")
+        assert path.endswith("dev_ops/board.json")
         assert temp_project in path
 
     def test_load_empty_board(self, temp_project):
@@ -206,12 +207,8 @@ class TestTaskPicking:
 
     def test_pick_task_priority_order(self, temp_project):
         """Test that pick_task selects highest priority first."""
-        create_task(
-            title="Low", priority="low", agent_ready=True, project_root=temp_project
-        )
-        create_task(
-            title="High", priority="high", agent_ready=True, project_root=temp_project
-        )
+        create_task(title="Low", priority="low", agent_ready=True, project_root=temp_project)
+        create_task(title="High", priority="high", agent_ready=True, project_root=temp_project)
         create_task(
             title="Medium",
             priority="medium",

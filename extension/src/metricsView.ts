@@ -20,18 +20,6 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
       localResourceRoots: [this.extensionUri],
     };
     webviewView.webview.html = this.getHtml();
-
-    // Handle messages from webview
-    webviewView.webview.onDidReceiveMessage(async (message) => {
-      switch (message.type) {
-        case 'onboardAgent': {
-          const prompt = `Read the DevOps framework rules in .agent/rules/ (especially dev_ops_guide.md and the phase_* rules). Then pick the highest priority available task from the Kanban board using /pick_task and start working on it following the appropriate phase rule.`;
-          await vscode.env.clipboard.writeText(prompt);
-          vscode.window.showInformationMessage('Agent prompt copied! Paste it in a new agent window to start.');
-          break;
-        }
-      }
-    });
   }
 
   public updateBoard(board: Board): void {
@@ -135,14 +123,6 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
     .quick-action:hover {
       background: var(--vscode-button-secondaryHoverBackground);
     }
-    .spawn-agent {
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-      color: white;
-      font-weight: 600;
-    }
-    .spawn-agent:hover {
-      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-    }
     .hint {
       font-size: 11px;
       color: var(--vscode-descriptionForeground);
@@ -208,16 +188,8 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
     </div>
   </div>
   
-  <h3>Agent</h3>
-  <button class="quick-action spawn-agent" onclick="onboardAgent()">🚀 Onboard Agent</button>
-  <p class="hint">Copies prompt to start an agent with framework context</p>
-  
   <script>
     const vscode = acquireVsCodeApi();
-    
-    function onboardAgent() {
-      vscode.postMessage({ type: 'onboardAgent' });
-    }
   </script>
 </body>
 </html>`;
