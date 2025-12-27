@@ -147,8 +147,8 @@ function getCardHtml(): string {
       .actions button {
         flex: 1;
       }
-      #deleteBtn {
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      .primary-btn {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
         color: white;
         border: none;
         border-radius: 6px;
@@ -157,9 +157,22 @@ function getCardHtml(): string {
         cursor: pointer;
         transition: opacity 0.15s ease, transform 0.1s ease;
       }
-      #deleteBtn:hover {
+      .primary-btn:hover {
         opacity: 0.9;
         transform: translateY(-1px);
+      }
+      #deleteBtn {
+        background: transparent;
+        color: #ef4444;
+        border: 1px solid #ef4444;
+        border-radius: 6px;
+        padding: 10px 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.15s ease, background 0.15s ease;
+      }
+      #deleteBtn:hover {
+        background: rgba(239, 68, 68, 0.1);
       }
       .save-indicator {
         text-align: center;
@@ -188,9 +201,14 @@ function getCardHtml(): string {
         font-weight: 400;
       }
       .feature-section {
-        border-top: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.1));
-        padding-top: 12px;
-        margin-top: 12px;
+        margin-top: 16px;
+        padding-top: 0;
+      }
+      .feature-section h3 {
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--vscode-foreground);
       }
       .section-header {
         display: flex;
@@ -682,6 +700,16 @@ function getCardHtml(): string {
         select.addEventListener('change', triggerAutoSave);
       });
 
+      saveBtn.addEventListener('click', () => {
+        const payload = collectTaskPayload();
+        if (payload) {
+          vscode.postMessage({ type: 'update', task: payload });
+          saveIndicator.textContent = '✓ Saved';
+          saveIndicator.classList.add('visible');
+          setTimeout(() => saveIndicator.classList.remove('visible'), 2000);
+        }
+      });
+
       deleteBtn.addEventListener('click', () => {
         if (!currentTaskId) {
           return;
@@ -752,8 +780,8 @@ function getCardHtml(): string {
           <div id="featureTasksContainer" class="feature-task-list"></div>
         </div>
 
-
         <div class="actions">
+          <button id="saveBtn" type="button" class="primary-btn">Save</button>
           <button id="deleteBtn" type="button">Delete Task</button>
         </div>
         <div id="saveIndicator" class="save-indicator"></div>
