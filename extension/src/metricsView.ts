@@ -49,33 +49,34 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
     }
     h3 { 
       font-size: 12px; 
-      margin: 0 0 8px; 
+      margin: 0 0 10px; 
       font-weight: 600; 
       color: var(--vscode-descriptionForeground); 
       text-transform: uppercase; 
       letter-spacing: 0.5px; 
     }
     h3:not(:first-child) {
-      margin-top: 16px;
+      margin-top: 20px;
     }
     
     .metric-card {
       background: var(--vscode-editor-background);
       border: 1px solid var(--vscode-panel-border, rgba(255,255,255,0.1));
-      border-radius: 6px;
-      padding: 12px;
-      margin-bottom: 8px;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
     }
     
-    /* Compact stat rows - consistent with Column Distribution and Status Overview */
+    /* Stat rows with more breathing room */
     .stat-row {
       display: flex;
       justify-content: space-between;
-      padding: 6px 0;
+      align-items: center;
+      padding: 10px 0;
       border-bottom: 1px solid var(--vscode-panel-border, rgba(255,255,255,0.05));
-      font-size: 12px;
+      font-size: 13px;
     }
-    .stat-row:last-child { border-bottom: none; }
+    .stat-row:last-child { border-bottom: none; padding-bottom: 0; }
     .stat-label { flex: 1; }
     .stat-value {
       min-width: 30px;
@@ -92,7 +93,7 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      margin-right: 6px;
+      margin-right: 8px;
     }
     .status-in_progress { background: #22c55e; }
     .status-blocked { background: #ef4444; }
@@ -100,10 +101,10 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
     
     .priority-dot {
       display: inline-block;
-      width: 8px;
-      height: 8px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
-      margin-right: 6px;
+      margin-right: 10px;
     }
     .priority-high { background: #ef4444; }
     .priority-medium { background: #f97316; }
@@ -130,15 +131,15 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
   <h3>Status Overview</h3>
   <div class="metric-card">
     <div class="stat-row">
-      <span><span class="status-dot status-in_progress"></span>In Progress</span>
+      <span class="stat-label">In Progress</span>
       <span class="stat-value">${metrics.statusCounts.in_progress}</span>
     </div>
     <div class="stat-row">
-      <span><span class="status-dot status-blocked"></span>Blocked</span>
+      <span class="stat-label">Blocked</span>
       <span class="stat-value ${metrics.statusCounts.blocked > 0 ? 'warning' : ''}">${metrics.statusCounts.blocked}</span>
     </div>
     <div class="stat-row">
-      <span><span class="status-dot status-pending"></span>Pending Approval</span>
+      <span class="stat-label">Pending Approval</span>
       <span class="stat-value">${metrics.statusCounts.pending}</span>
     </div>
   </div>

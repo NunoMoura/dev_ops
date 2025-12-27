@@ -43,26 +43,30 @@ export type DocsNode = DocsCategoryNode | DocsFolderNode | DocsFileNode | DocsAc
  * Document categories - aligned with Framework v2 design.
  * Architecture: Backend specs, API docs, data models
  * UX: Users, stories, mockups, style
- * Tests: Test plans, coverage reports
  */
 const DOC_CATEGORIES: DocsCategoryNode[] = [
-    { kind: 'category', id: 'architecture', label: 'Architecture', directory: 'architecture', icon: 'folder' },
-    { kind: 'category', id: 'ux', label: 'UX', directory: 'ux', icon: 'folder' },
+    { kind: 'category', id: 'architecture', label: 'Architecture', directory: 'architecture', icon: 'folder-library' },
+    { kind: 'category', id: 'ux', label: 'UX', directory: 'ux', icon: 'folder-library' },
 ];
 
 /**
- * Quick actions for creating documents.
+ * Actions per category - shown as first items in category.
+ * Using 'add' icon for all to reduce visual noise.
  */
-const DOC_ACTIONS: DocsActionNode[] = [
-    { kind: 'action', id: 'new-arch-doc', label: 'New Architecture Doc', icon: 'new-file', command: 'devops.newArchDoc' },
-    { kind: 'action', id: 'new-user-persona', label: 'New User Persona', icon: 'person', command: 'devops.newUserPersona' },
-    { kind: 'action', id: 'new-user-story', label: 'New User Story', icon: 'book', command: 'devops.newUserStory' },
-    { kind: 'action', id: 'new-mockup', label: 'New Mockup', icon: 'preview', command: 'devops.newMockup' },
-];
+const CATEGORY_ACTIONS: Record<string, DocsActionNode[]> = {
+    architecture: [
+        { kind: 'action', id: 'new-arch-doc', label: 'New Doc', icon: 'add', command: 'devops.newArchDoc' },
+    ],
+    ux: [
+        { kind: 'action', id: 'new-user-persona', label: 'New Persona', icon: 'add', command: 'devops.newUserPersona' },
+        { kind: 'action', id: 'new-user-story', label: 'New Story', icon: 'add', command: 'devops.newUserStory' },
+        { kind: 'action', id: 'new-mockup', label: 'New Mockup', icon: 'add', command: 'devops.newMockup' },
+    ],
+};
 
 /**
  * Tree data provider for the Docs section.
- * Shows architecture, ux, tests from dev_ops/docs/ (bootstrapped projects).
+ * Shows architecture, ux from dev_ops/docs/ (bootstrapped projects).
  * Architecture and UX show folder hierarchy.
  */
 export class DocsViewProvider implements vscode.TreeDataProvider<DocsNode> {
@@ -91,18 +95,20 @@ export class DocsViewProvider implements vscode.TreeDataProvider<DocsNode> {
             return [];
         }
 
-        // Root level: show actions first, then categories
+        // Root level: show categories only (actions are inside categories)
         if (!element) {
-            return [...DOC_ACTIONS, ...DOC_CATEGORIES];
+            return [...DOC_CATEGORIES];
         }
 
         // Category level
         if (element.kind === 'category') {
             const catPath = path.join(this.docsPath, element.directory);
+            const actions = CATEGORY_ACTIONS[element.id] || [];
 
-            // Architecture and UX: show hierarchical folders
+            // Architecture and UX: show actions first, then hierarchical folders
             if (element.id === 'architecture' || element.id === 'ux') {
-                return this.getHierarchicalChildren(catPath, element.id);
+                const children = this.getHierarchicalChildren(catPath, element.id);
+                return [...actions, ...children];
             }
 
             // Other categories: flat list of files

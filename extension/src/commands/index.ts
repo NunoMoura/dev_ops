@@ -306,6 +306,15 @@ export function registerKanbanCommands(
 
   registerKanbanCommand(
     context,
+    'kanban.deleteTask',
+    async (node?: KanbanNode) => {
+      await handleDeleteTask(provider, syncFilterUI, node);
+    },
+    'Unable to delete task',
+  );
+
+  registerKanbanCommand(
+    context,
     'kanban.viewTaskHistory',
     async (node?: KanbanNode) => {
       await handleViewTaskHistory(node);
@@ -487,6 +496,22 @@ export async function handleCardDeleteMessage(
   } catch (error) {
     vscode.window.showErrorMessage(`Unable to delete task: ${formatError(error)}`);
   }
+}
+
+/**
+ * Delete a task via sidebar action - prompts for task selection if not provided.
+ */
+async function handleDeleteTask(
+  provider: KanbanTreeProvider,
+  syncFilterUI: () => void,
+  node?: KanbanNode,
+): Promise<void> {
+  const board = await readKanban();
+  const task = node && node.kind === 'item' ? node.item : await promptForTask(board);
+  if (!task) {
+    return;
+  }
+  await handleCardDeleteMessage(task.id, provider, syncFilterUI);
 }
 
 function registerKanbanCommand(
