@@ -117,26 +117,6 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
   </style>
 </head>
 <body>
-  <h3>Summary</h3>
-  <div class="metric-card">
-    <div class="stat-row">
-      <span class="stat-label">Total Tasks</span>
-      <span class="stat-value highlight">${metrics.totalTasks}</span>
-    </div>
-    <div class="stat-row">
-      <span class="stat-label">Completed Today</span>
-      <span class="stat-value success">${metrics.completedToday}</span>
-    </div>
-    <div class="stat-row">
-      <span class="stat-label">In Progress</span>
-      <span class="stat-value">${metrics.inProgress}</span>
-    </div>
-    <div class="stat-row">
-      <span class="stat-label">Blocked</span>
-      <span class="stat-value ${metrics.blocked > 0 ? 'warning' : ''}">${metrics.blocked}</span>
-    </div>
-  </div>
-  
   <h3>Column Distribution</h3>
   <div class="metric-card">
     ${metrics.columnStats.map(col => `
@@ -151,15 +131,15 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
   <div class="metric-card">
     <div class="stat-row">
       <span><span class="status-dot status-in_progress"></span>In Progress</span>
-      <span class="stat-value success">${metrics.statusCounts.in_progress}</span>
+      <span class="stat-value">${metrics.statusCounts.in_progress}</span>
     </div>
     <div class="stat-row">
       <span><span class="status-dot status-blocked"></span>Blocked</span>
-      <span class="stat-value warning">${metrics.statusCounts.blocked}</span>
+      <span class="stat-value ${metrics.statusCounts.blocked > 0 ? 'warning' : ''}">${metrics.statusCounts.blocked}</span>
     </div>
     <div class="stat-row">
       <span><span class="status-dot status-pending"></span>Pending Approval</span>
-      <span class="stat-value pending">${metrics.statusCounts.pending}</span>
+      <span class="stat-value">${metrics.statusCounts.pending}</span>
     </div>
   </div>
   
@@ -167,15 +147,15 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
   <div class="metric-card">
     <div class="stat-row">
       <span><span class="priority-dot priority-high"></span>High Priority</span>
-      <span class="stat-value warning">${metrics.priorityCounts.high}</span>
+      <span class="stat-value">${metrics.priorityCounts.high}</span>
     </div>
     <div class="stat-row">
       <span><span class="priority-dot priority-medium"></span>Medium Priority</span>
-      <span class="stat-value pending">${metrics.priorityCounts.medium}</span>
+      <span class="stat-value">${metrics.priorityCounts.medium}</span>
     </div>
     <div class="stat-row">
       <span><span class="priority-dot priority-low"></span>Low Priority</span>
-      <span class="stat-value success">${metrics.priorityCounts.low}</span>
+      <span class="stat-value">${metrics.priorityCounts.low}</span>
     </div>
   </div>
   

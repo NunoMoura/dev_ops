@@ -286,7 +286,8 @@ function getCardHtml(): string {
       }
       /* Artifact badges */
       .artifacts-section {
-        margin-top: 8px;
+        margin-top: 12px;
+        padding-top: 4px;
       }
       .artifacts-section label {
         font-size: 11px;

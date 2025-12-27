@@ -171,18 +171,15 @@
       "devops": [
         {
           "id": "devopsAgentView",
-          "name": "Agent",
-          "icon": "resources/agent-icon.svg"
+          "name": "Agent"
         },
         {
           "id": "devopsDocsView",
-          "name": "Docs",
-          "icon": "resources/docs-icon.svg"
+          "name": "Docs"
         },
         {
           "id": "devopsMetricsView",
           "name": "Metrics",
-          "icon": "resources/metrics-icon.svg",
           "type": "webview"
         }
       ]

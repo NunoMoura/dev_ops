@@ -4,6 +4,7 @@ type: doc
 lifecycle: persistent  # Documents are persistent across tasks
 path: "{{path}}"       # Path to the thing being documented
 status: undocumented   # undocumented | draft | complete
+coverage: 0            # Test coverage percentage (0-100)
 ---
 
 # {{title}}
@@ -43,3 +44,15 @@ status: undocumented   # undocumented | draft | complete
 **Context**: Why this decision was needed
 **Decision**: What was decided
 **Consequences**: Trade-offs accepted
+
+## Test Coverage
+
+<!-- Tests for this component - keeps tests documented alongside the code they test -->
+
+| Test | Status | Notes |
+|------|--------|-------|
+| `test_example_happy_path` | ⬜ | — |
+| `test_example_error_handling` | ⬜ | — |
+
+**Coverage**: {{coverage}}%
+**Last Verified**: {{date}}

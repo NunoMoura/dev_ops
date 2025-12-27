@@ -340,6 +340,43 @@ export function registerKanbanCommands(
     },
     'Unable to create user story',
   );
+
+  // Doc creation commands for Docs view buttons
+  registerKanbanCommand(
+    context,
+    'devops.newArchDoc',
+    async () => {
+      await handleNewArchDoc();
+    },
+    'Unable to create architecture doc',
+  );
+
+  registerKanbanCommand(
+    context,
+    'devops.newUserPersona',
+    async () => {
+      await handleCreateUser();
+    },
+    'Unable to create user persona',
+  );
+
+  registerKanbanCommand(
+    context,
+    'devops.newUserStory',
+    async () => {
+      await handleCreateStory();
+    },
+    'Unable to create user story',
+  );
+
+  registerKanbanCommand(
+    context,
+    'devops.newMockup',
+    async () => {
+      await handleNewMockup();
+    },
+    'Unable to create mockup',
+  );
 }
 
 export async function handleBoardMoveTasks(request: MoveTasksRequest, provider: KanbanTreeProvider): Promise<void> {
@@ -1121,3 +1158,98 @@ async function handleCreateStory(): Promise<void> {
   }
 }
 
+/**
+ * Create a new architecture doc via doc_ops.py, then create a linked task in Backlog.
+ */
+async function handleNewArchDoc(): Promise<void> {
+  const title = await vscode.window.showInputBox({
+    prompt: 'Enter component/module name',
+    placeHolder: 'e.g., AuthService, PaymentGateway',
+  });
+
+  if (!title) {
+    return;
+  }
+
+  const componentPath = await vscode.window.showInputBox({
+    prompt: 'Enter path to component (optional)',
+    placeHolder: 'e.g., src/services/auth.ts',
+  });
+
+  const root = getWorkspaceRoot();
+  if (!root) {
+    vscode.window.showWarningMessage('No workspace folder open.');
+    return;
+  }
+
+  // Create architecture doc
+  const args = ['create', '--type', 'architecture', '--title', title];
+  if (componentPath) {
+    args.push('--path', componentPath);
+  }
+
+  const result = await runDocOps(args, root);
+  if (result.code !== 0) {
+    vscode.window.showErrorMessage(`Failed to create doc: ${result.stderr || result.stdout}`);
+    return;
+  }
+
+  // Create linked task in Backlog
+  const createTask = await vscode.window.showInformationMessage(
+    `✅ Created architecture doc: ${title}`,
+    'Create Backlog Task',
+    'Skip'
+  );
+
+  if (createTask === 'Create Backlog Task') {
+    const taskResult = await runKanbanOps(
+      ['create', '--title', `Implement ${title}`, '--summary', `Implementation for ${title} component`, '--column', 'col-backlog'],
+      root
+    );
+    if (taskResult.code === 0) {
+      vscode.window.showInformationMessage(`✅ Created task for ${title}`);
+    } else {
+      vscode.window.showWarningMessage(`Doc created, but task creation failed: ${taskResult.stderr}`);
+    }
+  }
+
+  await vscode.commands.executeCommand('devops.refreshDocs');
+}
+
+/**
+ * Create a new mockup via doc_ops.py
+ */
+async function handleNewMockup(): Promise<void> {
+  const title = await vscode.window.showInputBox({
+    prompt: 'Enter mockup name',
+    placeHolder: 'e.g., Task Filter Dialog, Kanban Board View',
+  });
+
+  if (!title) {
+    return;
+  }
+
+  const component = await vscode.window.showInputBox({
+    prompt: 'Enter component/feature this mockup represents (optional)',
+    placeHolder: 'e.g., TaskFilter, BoardView',
+  });
+
+  const root = getWorkspaceRoot();
+  if (!root) {
+    vscode.window.showWarningMessage('No workspace folder open.');
+    return;
+  }
+
+  const args = ['create-mockup', '--title', title];
+  if (component) {
+    args.push('--component', component);
+  }
+
+  const result = await runDocOps(args, root);
+  if (result.code === 0) {
+    vscode.window.showInformationMessage(`✅ Created mockup: ${title}`);
+    await vscode.commands.executeCommand('devops.refreshDocs');
+  } else {
+    vscode.window.showErrorMessage(`Failed to create mockup: ${result.stderr || result.stdout}`);
+  }
+}

@@ -29,7 +29,15 @@ export interface DocsFileNode {
     parentId: string;
 }
 
-export type DocsNode = DocsCategoryNode | DocsFolderNode | DocsFileNode;
+export interface DocsActionNode {
+    kind: 'action';
+    id: string;
+    label: string;
+    icon: string;
+    command: string;
+}
+
+export type DocsNode = DocsCategoryNode | DocsFolderNode | DocsFileNode | DocsActionNode;
 
 /**
  * Document categories - aligned with Framework v2 design.
@@ -40,7 +48,16 @@ export type DocsNode = DocsCategoryNode | DocsFolderNode | DocsFileNode;
 const DOC_CATEGORIES: DocsCategoryNode[] = [
     { kind: 'category', id: 'architecture', label: 'Architecture', directory: 'architecture', icon: 'folder' },
     { kind: 'category', id: 'ux', label: 'UX', directory: 'ux', icon: 'folder' },
-    { kind: 'category', id: 'tests', label: 'Tests', directory: 'tests', icon: 'folder' },
+];
+
+/**
+ * Quick actions for creating documents.
+ */
+const DOC_ACTIONS: DocsActionNode[] = [
+    { kind: 'action', id: 'new-arch-doc', label: 'New Architecture Doc', icon: 'new-file', command: 'devops.newArchDoc' },
+    { kind: 'action', id: 'new-user-persona', label: 'New User Persona', icon: 'person', command: 'devops.newUserPersona' },
+    { kind: 'action', id: 'new-user-story', label: 'New User Story', icon: 'book', command: 'devops.newUserStory' },
+    { kind: 'action', id: 'new-mockup', label: 'New Mockup', icon: 'preview', command: 'devops.newMockup' },
 ];
 
 /**
@@ -74,9 +91,9 @@ export class DocsViewProvider implements vscode.TreeDataProvider<DocsNode> {
             return [];
         }
 
-        // Root level: show all categories (regardless of folder existence)
+        // Root level: show actions first, then categories
         if (!element) {
-            return [...DOC_CATEGORIES];
+            return [...DOC_ACTIONS, ...DOC_CATEGORIES];
         }
 
         // Category level
@@ -207,19 +224,35 @@ export class DocsViewProvider implements vscode.TreeDataProvider<DocsNode> {
             return item;
         }
 
+        if (element.kind === 'action') {
+            const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.None);
+            item.id = element.id;
+            item.iconPath = new vscode.ThemeIcon(element.icon);
+            item.command = {
+                command: element.command,
+                title: element.label,
+            };
+            item.contextValue = 'docsAction';
+            return item;
+        }
+
         // File node
-        const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.None);
-        item.id = element.id;
-        item.iconPath = new vscode.ThemeIcon('file');
-        item.resourceUri = vscode.Uri.file(element.filePath);
-        item.command = {
-            command: 'markdown.showPreviewToSide',
-            title: 'Open Document',
-            arguments: [vscode.Uri.file(element.filePath)],
-        };
-        item.contextValue = 'docsFile';
-        item.tooltip = element.filePath;
-        return item;
+        if (element.kind === 'file') {
+            const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.None);
+            item.id = element.id;
+            item.iconPath = new vscode.ThemeIcon('file');
+            item.resourceUri = vscode.Uri.file(element.filePath);
+            item.command = {
+                command: 'markdown.showPreviewToSide',
+                title: 'Open Document',
+                arguments: [vscode.Uri.file(element.filePath)],
+            };
+            item.contextValue = 'docsFile';
+            item.tooltip = element.filePath;
+            return item;
+        }
+
+        return new vscode.TreeItem('Unknown');
     }
 
     getParent(element: DocsNode): DocsNode | undefined {
