@@ -343,7 +343,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     /* Section styling */
     .section { 
       margin-top: 24px; 
-      padding-top: 0;
+      /* padding-top: 0; Removed to fix spacing */
     }
     .section-header { 
       display: flex; 
@@ -546,8 +546,8 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     </div>
 
     <div class="actions">
-      <button class="btn btn-save" id="saveBtn">Save & Close</button>
-      ${!isNewTask ? '<button class="btn btn-delete" id="deleteBtn">Delete Task</button>' : ''}
+      <button class="btn btn-save" id="saveBtn">Save</button>
+      <button class="btn btn-delete" id="deleteBtn">Delete</button>
       <span class="save-indicator" id="saveIndicator">✓ Auto-saved</span>
     </div>
   </div>
@@ -585,9 +585,12 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     document.getElementById('column').addEventListener('change', triggerSave);
     document.getElementById('tags').addEventListener('input', triggerSave);
 
-    // Save button - save and close
+    // Save button - save without closing
     document.getElementById('saveBtn').addEventListener('click', () => {
-      vscode.postMessage({ type: 'save', data: collectData() });
+      vscode.postMessage({ type: 'update', data: collectData() });
+      saveIndicator.textContent = '✓ Saved';
+      saveIndicator.classList.add('visible');
+      setTimeout(() => saveIndicator.classList.remove('visible'), 2000);
     });
 
     // Delete button - confirmation handled in extension host
