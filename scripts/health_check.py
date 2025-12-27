@@ -87,7 +87,7 @@ def run_health_check(project_root: str = None, verbose: bool = False) -> int:
         "doc_ops.py",
         "setup_ops.py",
         "utils.py",
-        "template_ops.py",
+        "kanban_ops.py",
         "project_ops.py",
     ]
     if os.path.isdir(scripts_dir):
@@ -102,10 +102,11 @@ def run_health_check(project_root: str = None, verbose: bool = False) -> int:
     # Check 3: Rules Directory (Flat Structure)
     print("📂 Rules Directory:")
     rules_dir = os.path.join(framework_root, "rules")
-    if os.path.isdir(rules_dir):
-        phase_rules = [f for f in os.listdir(rules_dir) if f.startswith("phase_")]
+    phases_dir = os.path.join(rules_dir, "development_phases")
+    if os.path.isdir(phases_dir):
+        phase_rules = [f for f in os.listdir(phases_dir) if f.endswith(".md")]
         if not phase_rules:
-            print(f"  ⚠️  No phase rules found in {rules_dir}")
+            print(f"  ⚠️  No phase rules found in {phases_dir}")
             warnings += 1
         else:
             print(f"  ✅ Phase rules: {len(phase_rules)} found")
@@ -125,23 +126,23 @@ def run_health_check(project_root: str = None, verbose: bool = False) -> int:
             "bootstrap.md",
             "create_task.md",
             "report_bug.md",
-            "complete_task.md",
+            "next_phase.md",
         ]
         for wf in essential:
             check_path_exists(os.path.join(workflows_dir, wf), wf)
     print()
 
-    # Check 5: Kanban Board (7-Column Model)
+    # Check 5: Kanban Board (6-Column Model)
     print("📋 Kanban Board:")
     try:
         from scripts.kanban_ops import load_board
 
         board = load_board(project_root)
         columns = board.get("columns", [])
-        if len(columns) == 7:
-            print("  ✅ Kanban board: 7 columns found")
+        if len(columns) == 6:
+            print("  ✅ Kanban board: 6 columns found")
         else:
-            print(f"  ❌ Kanban board: {len(columns)} columns (expected 7)")
+            print(f"  ❌ Kanban board: {len(columns)} columns (expected 6)")
             errors += 1
     except Exception as e:
         print(f"  ⚠️  Could not validate Kanban board: {e}")
@@ -154,7 +155,7 @@ def run_health_check(project_root: str = None, verbose: bool = False) -> int:
     sys.path.insert(0, framework_root)
     check_import("scripts.utils")
     check_import("scripts.doc_ops")
-    check_import("scripts.template_ops")
+    check_import("scripts.artifact_ops")
     check_import("scripts.kanban_ops")
     print()
 
@@ -166,9 +167,7 @@ def run_health_check(project_root: str = None, verbose: bool = False) -> int:
 
         if os.path.exists(agent_dir):
             check_directory_not_empty(os.path.join(agent_dir, "rules"), ".agent/rules")
-            check_directory_not_empty(
-                os.path.join(agent_dir, "workflows"), ".agent/workflows"
-            )
+            check_directory_not_empty(os.path.join(agent_dir, "workflows"), ".agent/workflows")
         else:
             print("  ⚠️  .agent directory not found - run /bootstrap first")
             warnings += 1
@@ -176,9 +175,7 @@ def run_health_check(project_root: str = None, verbose: bool = False) -> int:
         if os.path.exists(dev_ops_dir):
             # Check for direct artifact directories
             for subdir in ["plans", "research", "bugs", "adrs", "tests"]:
-                check_path_exists(
-                    os.path.join(dev_ops_dir, subdir), f"dev_ops/{subdir}"
-                )
+                check_path_exists(os.path.join(dev_ops_dir, subdir), f"dev_ops/{subdir}")
         else:
             print("  ⚠️  dev_ops directory not found - run /bootstrap first")
             warnings += 1
@@ -204,9 +201,7 @@ def main():
         default=None,
         help="Target project directory (default: current directory)",
     )
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Show verbose output"
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Show verbose output")
 
     args = parser.parse_args()
     sys.exit(run_health_check(args.project_root, args.verbose))

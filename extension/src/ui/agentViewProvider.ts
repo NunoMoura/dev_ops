@@ -13,6 +13,8 @@ export interface AgentCurrentTaskNode {
     title: string;
     phase: string;
     status: string;
+    checklistDone: number;
+    checklistTotal: number;
 }
 
 export interface AgentActionNode {
@@ -61,7 +63,7 @@ export class AgentViewProvider implements vscode.TreeDataProvider<AgentNode> {
     readonly onDidChangeTreeData = this.onDidChangeEmitter.event;
 
     private workspaceRoot: string | undefined;
-    private currentTask: { id: string; title: string; phase: string; status: string } | null = null;
+    private currentTask: { id: string; title: string; phase: string; status: string; checklistDone: number; checklistTotal: number } | null = null;
 
     constructor() {
         const folders = vscode.workspace.workspaceFolders;
@@ -98,23 +100,31 @@ export class AgentViewProvider implements vscode.TreeDataProvider<AgentNode> {
             // Read board.json to get task details
             const boardPath = path.join(this.workspaceRoot, 'dev_ops', 'board.json');
             if (!fs.existsSync(boardPath)) {
-                this.currentTask = { id: taskId, title: 'Unknown', phase: 'Unknown', status: 'unknown' };
+                this.currentTask = { id: taskId, title: 'Unknown', phase: 'Unknown', status: 'unknown', checklistDone: 0, checklistTotal: 0 };
                 return;
             }
 
             const board = JSON.parse(fs.readFileSync(boardPath, 'utf8'));
             const task = board.items?.find((t: { id: string }) => t.id === taskId);
             if (!task) {
-                this.currentTask = { id: taskId, title: 'Not found', phase: 'Unknown', status: 'unknown' };
+                this.currentTask = { id: taskId, title: 'Not found', phase: 'Unknown', status: 'unknown', checklistDone: 0, checklistTotal: 0 };
                 return;
             }
 
             const column = board.columns?.find((c: { id: string }) => c.id === task.columnId);
+
+            // Calculate checklist progress
+            const checklist = task.checklist || [];
+            const checklistDone = checklist.filter((item: string) => item.startsWith('[x]')).length;
+            const checklistTotal = checklist.length;
+
             this.currentTask = {
                 id: taskId,
                 title: task.title || 'Untitled',
                 phase: column?.name || 'Unknown',
                 status: task.status || 'todo',
+                checklistDone,
+                checklistTotal,
             };
         } catch {
             this.currentTask = null;
@@ -165,6 +175,8 @@ export class AgentViewProvider implements vscode.TreeDataProvider<AgentNode> {
                 title: this.currentTask.title,
                 phase: this.currentTask.phase,
                 status: this.currentTask.status,
+                checklistDone: this.currentTask.checklistDone,
+                checklistTotal: this.currentTask.checklistTotal,
             }];
         }
 
@@ -194,9 +206,33 @@ export class AgentViewProvider implements vscode.TreeDataProvider<AgentNode> {
                 vscode.TreeItemCollapsibleState.None
             );
             item.id = element.id;
-            item.description = `${element.phase} • ${element.status}`;
-            item.iconPath = new vscode.ThemeIcon('bookmark');
-            item.tooltip = `Task: ${element.taskId}\nTitle: ${element.title}\nPhase: ${element.phase}\nStatus: ${element.status}`;
+
+            // Build description with phase, status, and checklist progress
+            const parts = [element.phase, element.status];
+            if (element.checklistTotal > 0) {
+                parts.push(`${element.checklistDone}/${element.checklistTotal} ✓`);
+            }
+            item.description = parts.join(' • ');
+
+            // Use different icon based on progress
+            const progress = element.checklistTotal > 0
+                ? element.checklistDone / element.checklistTotal
+                : 0;
+            const icon = progress === 1 ? 'check-all' : progress > 0 ? 'tasklist' : 'bookmark';
+            item.iconPath = new vscode.ThemeIcon(icon);
+
+            // Rich tooltip
+            const tooltipLines = [
+                `Task: ${element.taskId}`,
+                `Title: ${element.title}`,
+                `Phase: ${element.phase}`,
+                `Status: ${element.status}`,
+            ];
+            if (element.checklistTotal > 0) {
+                tooltipLines.push(`Checklist: ${element.checklistDone}/${element.checklistTotal} complete`);
+            }
+            item.tooltip = tooltipLines.join('\n');
+
             item.command = {
                 command: 'kanban.showTaskDetails',
                 title: 'Show Task Details',

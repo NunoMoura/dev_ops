@@ -121,12 +121,10 @@ def get_core_rules(core_rules_src: str) -> list:
     # Phase rules are in rules/development_phases/
     phase_files = [
         "1_backlog.md",
-        "2_researching.md",
-        "3_documenting.md",
-        "4_planning.md",
-        "5_implementing.md",
-        "6_validating.md",
-        "7_pr.md",
+        "2_understand.md",
+        "3_plan.md",
+        "4_build.md",
+        "5_verify.md",
     ]
     for file in core_files:
         src_path = os.path.join(core_rules_src, file)
@@ -335,11 +333,10 @@ def bootstrap(target_dir: str):
         "git_ops.py",
         "setup_ops.py",
         "utils.py",
-        "pr_ops.py",
+        "artifact_ops.py",
         "project_ops.py",
         "kanban_ops.py",
         "health_check.py",
-        "template_ops.py",
     ]
     for script in scripts_to_copy:
         src = os.path.join(SCRIPTS_SRC_DIR, script)

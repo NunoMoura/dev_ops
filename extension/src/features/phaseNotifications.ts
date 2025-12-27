@@ -93,7 +93,7 @@ export async function showPhaseNotification(
     }
 
     const { workflow, isBackward } = result;
-    const workflowPath = path.join(workspaceRoot, 'dev_ops', 'workflows', `${workflow}.md`);
+    const workflowPath = path.join(workspaceRoot, '.agent', 'workflows', `${workflow}.md`);
 
     // Build notification message
     const direction = isBackward ? '← Back to' : '▶';

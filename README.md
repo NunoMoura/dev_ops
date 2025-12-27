@@ -220,12 +220,10 @@ based on the task's current column:
 | Column | Phase Rule | What Agent Does |
 |--------|------------|-----------------|
 | Backlog | `1_backlog` | Claim task, review trigger |
-| Researching | `2_researching` | Investigate, create RES-XXX |
-| Documenting | `3_documenting` | Update architecture docs |
-| Planning | `4_planning` | Create PLN-XXX with checklist |
-| Implementing | `5_implementing` | TDD workflow, implement code |
-| Validating | `6_validating` | Quality gates, create VAL-XXX |
-| PR | `7_pr` | Create PR, archive task |
+| Understand | `2_understand` | Research, create RES-XXX, update docs |
+| Plan | `3_plan` | Create PLN-XXX with checklist |
+| Build | `4_build` | TDD workflow, implement code |
+| Verify | `5_verify` | Quality gates, PR, archive |
 
 ## Project Structure
 
@@ -235,13 +233,11 @@ your-project/
 │   ├── rules/
 │   │   ├── dev_ops_guide.md     # Framework overview (Always On)
 │   │   ├── 1_backlog.md         # Backlog phase
-│   │   ├── 2_researching.md     # Researching phase
-│   │   ├── 3_documenting.md     # Documenting phase
-│   │   ├── 4_planning.md        # Planning phase
-│   │   ├── 5_implementing.md    # Implementing phase
-│   │   ├── 6_validating.md      # Validating phase
-│   │   └── 7_pr.md              # PR phase
-│   └── workflows/               # User commands (7 files)
+│   │   ├── 2_understand.md      # Understand phase
+│   │   ├── 3_plan.md            # Plan phase
+│   │   ├── 4_build.md           # Build phase
+│   │   └── 5_verify.md          # Verify phase
+│   └── workflows/               # User commands
 └── dev_ops/
     ├── board.json               # Task board (flattened)
     ├── docs/                    # Persistent documentation

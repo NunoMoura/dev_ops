@@ -861,7 +861,7 @@ async function handleOpenWorkflow(workflowName: string): Promise<void> {
     throw new Error('No workspace folder open');
   }
 
-  const workflowPath = path.join(cwd, 'dev_ops', 'workflows', `${workflowName}.md`);
+  const workflowPath = path.join(cwd, '.agent', 'workflows', `${workflowName}.md`);
   const uri = vscode.Uri.file(workflowPath);
   await vscode.commands.executeCommand('vscode.open', uri);
 }

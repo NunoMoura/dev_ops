@@ -7,8 +7,7 @@ Part of the DevOps Framework for structured task management and artifact trackin
 
 - **Board storage** in `dev_ops/board.json`, automatically created with
   default columns if missing
-- **7-column workflow**: Backlog → Research → Planning → In Progress → Testing →
-  Blocked → Done
+- **6-column workflow**: Backlog → Understand → Plan → Build → Verify → Done
 - **Dual views**: List view for compact navigation, Board view for drag-and-drop
 - **Task dependencies**: Track upstream (inputs) and downstream (outputs) artifacts
 - **Agent-ready commands** for automation integration
@@ -42,12 +41,11 @@ Part of the DevOps Framework for structured task management and artifact trackin
   "version": 1,
   "columns": [
     { "id": "col-backlog", "name": "Backlog", "position": 1 },
-    { "id": "col-research", "name": "Research", "position": 2 },
-    { "id": "col-planning", "name": "Planning", "position": 3 },
-    { "id": "col-inprogress", "name": "In Progress", "position": 4 },
-    { "id": "col-testing", "name": "Testing", "position": 5 },
-    { "id": "col-blocked", "name": "Blocked", "position": 6 },
-    { "id": "col-done", "name": "Done", "position": 7 }
+    { "id": "col-understand", "name": "Understand", "position": 2 },
+    { "id": "col-plan", "name": "Plan", "position": 3 },
+    { "id": "col-build", "name": "Build", "position": 4 },
+    { "id": "col-verify", "name": "Verify", "position": 5 },
+    { "id": "col-done", "name": "Done", "position": 6 }
   ],
   "items": [
     {
@@ -89,11 +87,10 @@ Tasks don't have a separate `status` field. The column determines status:
 | Column | Meaning |
 |--------|---------|
 | Backlog | Not started |
-| Research | Producing RES-XXX |
-| Planning | Producing PLN-XXX |
-| In Progress | Active work |
-| Testing | Verification |
-| Blocked | Waiting |
+| Understand | Researching, creating RES-XXX |
+| Plan | Creating PLN-XXX with checklist |
+| Build | TDD implementation |
+| Verify | Quality gates, PR |
 | Done | Complete |
 
 ## Integration with Python CLI

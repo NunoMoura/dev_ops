@@ -98,6 +98,17 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
     .status-blocked { background: #ef4444; }
     .status-pending { background: #f97316; }
     
+    .priority-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    .priority-high { background: #ef4444; }
+    .priority-medium { background: #f97316; }
+    .priority-low { background: #22c55e; }
+    
     .empty-state {
       text-align: center;
       padding: 24px;
@@ -152,6 +163,22 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
     </div>
   </div>
   
+  <h3>Priority Breakdown</h3>
+  <div class="metric-card">
+    <div class="stat-row">
+      <span><span class="priority-dot priority-high"></span>High Priority</span>
+      <span class="stat-value warning">${metrics.priorityCounts.high}</span>
+    </div>
+    <div class="stat-row">
+      <span><span class="priority-dot priority-medium"></span>Medium Priority</span>
+      <span class="stat-value pending">${metrics.priorityCounts.medium}</span>
+    </div>
+    <div class="stat-row">
+      <span><span class="priority-dot priority-low"></span>Low Priority</span>
+      <span class="stat-value success">${metrics.priorityCounts.low}</span>
+    </div>
+  </div>
+  
   <script>
     const vscode = acquireVsCodeApi();
   </script>
@@ -168,6 +195,7 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
         blocked: 0,
         columnStats: [],
         statusCounts: { todo: 0, in_progress: 0, blocked: 0, pending: 0, done: 0 },
+        priorityCounts: { high: 0, medium: 0, low: 0 },
       };
     }
 
@@ -184,13 +212,28 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
       }
     });
 
-    // Count tasks by column
-    const columnStats = columns.map(col => ({
-      id: col.id,
-      name: col.name,
-      count: items.filter(t => t.columnId === col.id).length,
-      overLimit: false, // TODO: implement WIP limits
-    }));
+    // Count tasks by column with WIP limits
+    const WIP_LIMIT = 3; // Max tasks in active columns
+    const activeColumns = ['col-understand', 'col-plan', 'col-build', 'col-verify'];
+    const columnStats = columns.map(col => {
+      const count = items.filter(t => t.columnId === col.id).length;
+      const hasLimit = activeColumns.includes(col.id);
+      return {
+        id: col.id,
+        name: col.name,
+        count,
+        overLimit: hasLimit && count > WIP_LIMIT,
+      };
+    });
+
+    // Count tasks by priority
+    const priorityCounts = { high: 0, medium: 0, low: 0 };
+    items.forEach(task => {
+      const priority = task.priority || 'medium';
+      if (priority in priorityCounts) {
+        priorityCounts[priority as keyof typeof priorityCounts]++;
+      }
+    });
 
     // Count completed today
     const completedToday = items.filter(task => {
@@ -208,6 +251,7 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
       blocked: statusCounts.blocked,
       columnStats,
       statusCounts,
+      priorityCounts,
     };
   }
 }
@@ -219,6 +263,7 @@ interface BoardMetrics {
   blocked: number;
   columnStats: Array<{ id: string; name: string; count: number; overLimit: boolean }>;
   statusCounts: { todo: number; in_progress: number; blocked: number; pending: number; done: number };
+  priorityCounts: { high: number; medium: number; low: number };
 }
 
 export function registerMetricsView(context: vscode.ExtensionContext): MetricsViewProvider {
