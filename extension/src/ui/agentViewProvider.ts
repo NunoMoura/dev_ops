@@ -46,6 +46,8 @@ export type AgentNode = AgentCurrentTaskNode | AgentActionNode | AgentCategoryNo
 const QUICK_ACTIONS: AgentActionNode[] = [
     { kind: 'action', id: 'spawn-agent', label: 'Spawn Agent', icon: 'play', command: 'devops.spawnAgent' },
     { kind: 'action', id: 'next-phase', label: 'Next Phase', icon: 'arrow-right', command: 'devops.nextPhase' },
+    { kind: 'action', id: 'retry-phase', label: 'Retry Phase', icon: 'refresh', command: 'devops.retryPhase' },
+    { kind: 'action', id: 'refine-phase', label: 'Refine Phase', icon: 'comment', command: 'devops.refinePhase' },
     { kind: 'action', id: 'create-task', label: 'Create Task', icon: 'add', command: 'kanban.createTask' },
     { kind: 'action', id: 'claim-task', label: 'Claim Task', icon: 'person', command: 'kanban.claimTask' },
 ];

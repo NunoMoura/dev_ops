@@ -19,22 +19,20 @@ export function compareTasks(a: Task, b: Task): number {
  */
 export function getColumnRank(columnId?: string): number {
   switch (columnId) {
-    case 'col-inprogress':
+    case 'col-build':
       return 0;  // Active work first
-    case 'col-testing':
-      return 1;  // Testing next
-    case 'col-research':
-      return 2;
-    case 'col-planning':
-      return 3;
+    case 'col-verify':
+      return 1;  // Verification next
+    case 'col-plan':
+      return 2;  // Planning
+    case 'col-understand':
+      return 3;  // Research
     case 'col-backlog':
-      return 4;
-    case 'col-blocked':
-      return 5;
+      return 4;  // Waiting
     case 'col-done':
-      return 6;
+      return 5;  // Completed
     default:
-      return 7;
+      return 6;
   }
 }
 

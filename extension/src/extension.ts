@@ -10,6 +10,7 @@ import {
 import { registerInitializeCommand } from './commands/initializeCommand';
 import { readKanban, writeKanban, registerKanbanWatchers } from './features/boardStore';
 import { formatError } from './features/errors';
+import { showPhaseNotification } from './features/phaseNotifications';
 import { createStatusBar, StatusBarManager } from './statusBar';
 import { TaskEditorProvider } from './taskEditorProvider';
 import { MetricsViewProvider, registerMetricsView } from './metricsView';
@@ -135,8 +136,12 @@ function registerBoardSnapshotSync(context: vscode.ExtensionContext, services: D
 function registerBoardViewRequests(context: vscode.ExtensionContext, services: DevOpsExtensionServices): void {
   const { provider, boardPanelManager } = services;
   context.subscriptions.push(
-    boardPanelManager.onDidRequestMoveTasks((request) => {
-      void handleBoardMoveTasks(request, provider);
+    boardPanelManager.onDidRequestMoveTasks(async (request) => {
+      await handleBoardMoveTasks(request, provider);
+      // Show phase notification for the first moved task
+      if (request.taskIds?.length > 0) {
+        await showPhaseNotification(request.taskIds[0], request.columnId);
+      }
     }),
     boardPanelManager.onDidRequestOpenTask((taskId: string) => {
       void handleBoardOpenTask(taskId);

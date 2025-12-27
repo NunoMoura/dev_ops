@@ -5,52 +5,95 @@ description: Core DevOps behavioral invariants (always-on context)
 
 # DevOps Framework Guide
 
-AI Agent development with document-first approach.
-
 ## Core Principle
 
-> **Documents define goals. Code is the manifestation.**
+> **Quality over speed. Understand before you build.**
+
+Documents define intent. Code manifests that intent with production-grade quality.
+
+## Quality Standards
+
+These standards apply to ALL outputs:
+
+### Code
+
+- Production-ready: handles errors, edge cases, invalid inputs
+- Readable: clear names, logical structure, minimal complexity
+- Maintainable: follows existing patterns, documented where non-obvious
+- Tested: meaningful tests that verify behavior, not just coverage
+
+### Documentation
+
+- Accurate: reflects actual implementation, not aspirations
+- Actionable: tells the reader what to do, not just what exists
+- Current: updated when code changes
+
+### Decisions
+
+- Documented: non-trivial choices captured in ADRs
+- Justified: includes context and trade-offs considered
+- Reversible: prefer options that don't lock in forever
 
 ## Session Model
 
-> **One Antigravity session = One phase**
-
-Each phase of work runs in a bounded AG session:
+> **One agent session = One phase**
 
 - Session creates AG-native artifacts (plan, walkthrough)
 - Session ends with `notify_user` at exit criteria
-- User triggers `/next_phase` to continue
+- User triggers `/next_phase`, `/retry_phase`, or `/refine_phase`
 
-## Phase Navigation
-
-See `rules/<N>_<phase>.md` for specific phase instructions.
+## Phase Flow
 
 ```text
-Backlog → Researching → Documenting → Planning → Implementing → Validating → PR → Done
+Backlog → Understand → Plan → Build → Verify → Done
 ```
+
+| Phase | Goal | Key Question |
+|-------|------|--------------|
+| Understand | Deep comprehension | "Do I fully understand the problem and constraints?" |
+| Plan | Clear path forward | "Would another developer understand what to build from this?" |
+| Build | Working, quality code | "Would I be proud to ship this?" |
+| Verify | Confidence it works | "Have I proven this works correctly?" |
+
+## Task Structure
+
+> **TASK = pointer, not content**
+
+A task contains **references** to documents and artifacts, not their content:
+
+- `trigger`: PRD-XXX, STORY-XXX, or BUG-XXX
+- `upstream`: RES-XXX, PLN-XXX (inputs from previous phases)
+- `downstream`: artifacts this task produces
+
+When you need context, **read the referenced documents**.
 
 ## Invariants
 
-These rules apply across **all phases**:
+### Movement Rules
 
-### Documents vs Artifacts
+- **Forward is default** — complete exit criteria, move to next phase
+- **Backward is allowed** — if you discover blind spots or missing research, move back
+- **Spawn for blockers** — unrelated blockers become new tasks, don't delay current work
 
-| Type | Examples | Lifecycle | Owner |
-|------|----------|-----------|-------|
-| Persistent Docs | Architecture, PRDs | Long-lived | DevOps |
-| Ephemeral Artifacts | plan.md, walkthrough.md | Session-scoped | Antigravity |
+### When to Move Backward
 
-### Navigation Rules
+Move back to a previous phase when:
 
-- **Never move backward** — spawn new tasks for blockers
-- **TASK is pointer** — content lives in session artifacts/docs
-- **Forward-only flow** — each phase has one exit direction
-- **Session boundaries** — call `notify_user` at exit criteria
+- Plan phase reveals you don't understand the problem well enough → Understand
+- Build phase reveals the plan is missing critical details → Plan
+- You discover assumptions that need validation → Understand
 
-### Quality Rules
+```bash
+# Example: discovered research gap during Build
+python3 dev_ops/scripts/kanban_ops.py move TASK-XXX col-understand
+```
 
-- **Test first** — TDD embedded in Implementing
-- **ADRs inline** — decisions in docs under `## Decisions`
+### Always
+
+- Question unclear requirements
+- Document non-obvious decisions
+- Test behavior, not just lines of code
+- Leave code better than you found it
 
 ## Directory Structure
 
@@ -60,16 +103,12 @@ dev_ops/
 ├── .current_task        # Currently active task ID
 ├── docs/                # Persistent documentation
 │   ├── architecture/
-│   ├── ux/
-│   │   ├── users/
-│   │   ├── stories/
-│   │   └── mockups/
 │   ├── prds/
 │   └── tests/
 ├── archive/             # Archived TASK-XXX.tar.gz
 └── scripts/
 
-.gemini/antigravity/brain/{session}/  # AG-native artifacts
+.gemini/antigravity/brain/{session}/
 ├── task.md
 ├── implementation_plan.md
 └── walkthrough.md

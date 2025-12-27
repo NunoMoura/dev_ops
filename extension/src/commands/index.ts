@@ -279,6 +279,24 @@ export function registerKanbanCommands(
 
   registerKanbanCommand(
     context,
+    'devops.retryPhase',
+    async () => {
+      await handleOpenWorkflow('retry_phase');
+    },
+    'Unable to open retry workflow',
+  );
+
+  registerKanbanCommand(
+    context,
+    'devops.refinePhase',
+    async () => {
+      await handleOpenWorkflow('refine_phase');
+    },
+    'Unable to open refine workflow',
+  );
+
+  registerKanbanCommand(
+    context,
     'kanban.markTaskDone',
     async (node?: KanbanNode) => {
       await handleMarkDoneViaPython(provider, node);
@@ -832,6 +850,20 @@ async function handleNextPhase(
 
   await provider.refresh();
   vscode.window.showInformationMessage(`→ ${task.id} moved to ${nextColumn.name}`);
+}
+
+/**
+ * Open a workflow file for the user to execute.
+ */
+async function handleOpenWorkflow(workflowName: string): Promise<void> {
+  const cwd = getWorkspaceRoot();
+  if (!cwd) {
+    throw new Error('No workspace folder open');
+  }
+
+  const workflowPath = path.join(cwd, 'dev_ops', 'workflows', `${workflowName}.md`);
+  const uri = vscode.Uri.file(workflowPath);
+  await vscode.commands.executeCommand('vscode.open', uri);
 }
 
 /**

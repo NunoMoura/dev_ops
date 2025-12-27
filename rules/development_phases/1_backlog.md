@@ -11,8 +11,8 @@ triggers: [task_created, agent_spawned]
 | Key | Value |
 |-----|-------|
 | INPUTS | Trigger doc (PRD/STORY/BUG) |
-| ARTIFACT | TASK-XXX in `dev_ops/board.json` |
-| EXIT_TO | Researching |
+| ARTIFACT | Claimed TASK-XXX |
+| EXIT_TO | Understand |
 
 ## ACTIONS
 
@@ -22,16 +22,19 @@ triggers: [task_created, agent_spawned]
    python3 dev_ops/scripts/kanban_ops.py pick --claim
    ```
 
-2. **Load trigger doc** — Read linked PRD/STORY/BUG for context
+2. **Read trigger doc thoroughly** — Understand the "why" before the "what"
 
-3. **Move to Researching**
+3. **Identify gaps** — Note any missing information or unclear requirements
+
+4. **Move to Understand**
 
    ```bash
-   python3 dev_ops/scripts/kanban_ops.py move TASK-XXX col-researching
+   python3 dev_ops/scripts/kanban_ops.py move TASK-XXX col-understand
    ```
 
 ## EXIT_CRITERIA
 
-- [ ] Task claimed (status != `todo`)
-- [ ] Trigger doc reviewed
-- [ ] Task in Researching column
+- [ ] Task claimed
+- [ ] Trigger doc read and understood
+- [ ] Gaps or questions noted (if any)
+- [ ] Task in Understand column

@@ -41,12 +41,11 @@ Validate that the current phase exit criteria are met and transition to the next
 
 | Current | Next Column |
 |---------|-------------|
-| Researching | col-documenting |
-| Documenting | col-planning |
-| Planning | col-implementing |
-| Implementing | col-validating |
-| Validating | col-pr |
-| PR | col-done |
+| Backlog | col-understand |
+| Understand | col-plan |
+| Plan | col-build |
+| Build | col-verify |
+| Verify | col-done |
 
 ## Notes
 

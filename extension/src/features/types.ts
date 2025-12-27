@@ -137,28 +137,24 @@ export const PLAN_EXTENSIONS = new Set(['.md', '.markdown', '.json', '.jsonc']);
 export const DEFAULT_COLUMN_NAME = 'Backlog';
 
 /**
- * Default 8-column structure aligned with DevOps workflow phases.
+ * Default 6-column structure aligned with DevOps workflow phases.
  *
- * | Column       | Purpose                    | Tied Artifact |
- * |--------------|----------------------------|---------------|
- * | Backlog      | Work not yet started       | -             |
- * | Researching  | Producing RES-XXX          | research.md   |
- * | Documenting  | Updating architecture docs | ADRs          |
- * | Planning     | Producing PLN-XXX          | plan.md       |
- * | Implementing | Active implementation      | -             |
- * | Validating   | Validation & testing       | VAL-XXX       |
- * | PR           | Pull request review        | PR            |
- * | Done         | Completed work             | -             |
+ * | Column     | Purpose                           | Tied Artifact |
+ * |------------|-----------------------------------|---------------|
+ * | Backlog    | Work not yet started              | -             |
+ * | Understand | Research + docs, question decisions | RES-XXX       |
+ * | Plan       | Acceptance criteria, test design  | PLN-XXX       |
+ * | Build      | Tests first, then code (TDD)      | -             |
+ * | Verify     | Validation, walkthrough, PR       | VAL-XXX, PR   |
+ * | Done       | Completed work                    | -             |
  */
 export const DEFAULT_COLUMN_BLUEPRINTS: ReadonlyArray<Column> = [
   { id: 'col-backlog', name: 'Backlog', position: 1 },
-  { id: 'col-researching', name: 'Researching', position: 2 },
-  { id: 'col-documenting', name: 'Documenting', position: 3 },
-  { id: 'col-planning', name: 'Planning', position: 4 },
-  { id: 'col-implementing', name: 'Implementing', position: 5 },
-  { id: 'col-validating', name: 'Validating', position: 6 },
-  { id: 'col-pr', name: 'PR', position: 7 },
-  { id: 'col-done', name: 'Done', position: 8 },
+  { id: 'col-understand', name: 'Understand', position: 2 },
+  { id: 'col-plan', name: 'Plan', position: 3 },
+  { id: 'col-build', name: 'Build', position: 4 },
+  { id: 'col-verify', name: 'Verify', position: 5 },
+  { id: 'col-done', name: 'Done', position: 6 },
 ];
 
 

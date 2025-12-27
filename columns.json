@@ -1,6 +1,6 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "description": "8-column Kanban structure for AI Agent Development Flow",
+    "description": "6-column Kanban structure for AI Agent Development Flow",
     "columns": [
         {
             "id": "col-backlog",
@@ -11,7 +11,7 @@
                     "trigger (PRD/FEAT/BUG)"
                 ],
                 "output": [
-                    "TASK-XXX"
+                    "TASK-XXX claimed"
                 ],
                 "exit_conditions": [
                     "Task claimed",
@@ -20,120 +20,94 @@
             }
         },
         {
-            "id": "col-researching",
-            "name": "Researching",
+            "id": "col-understand",
+            "name": "Understand",
             "position": 2,
             "contract": {
                 "input": [
-                    "TASK-XXX"
+                    "TASK-XXX",
+                    "Trigger doc"
                 ],
                 "output": [
-                    "RES-XXX"
+                    "RES-XXX",
+                    "Updated architecture docs"
                 ],
                 "exit_conditions": [
-                    "Scope defined",
-                    "Alignment verified",
+                    "Research complete",
+                    "Docs created/updated",
+                    "ADRs added if needed",
                     "Recommendation documented"
                 ]
             }
         },
         {
-            "id": "col-documenting",
-            "name": "Documenting",
+            "id": "col-plan",
+            "name": "Plan",
             "position": 3,
             "contract": {
                 "input": [
-                    "RES-XXX"
+                    "RES-XXX",
+                    "Architecture docs"
                 ],
                 "output": [
-                    "Updated architecture docs"
+                    "PLN-XXX with test stubs"
                 ],
                 "exit_conditions": [
-                    "Docs created/updated",
-                    "ADRs added",
-                    "Coherence verified"
+                    "Acceptance criteria defined",
+                    "Test design complete",
+                    "Checklist created"
                 ]
             }
         },
         {
-            "id": "col-planning",
-            "name": "Planning",
+            "id": "col-build",
+            "name": "Build",
             "position": 4,
             "contract": {
                 "input": [
-                    "Architecture docs",
-                    "RES-XXX"
-                ],
-                "output": [
                     "PLN-XXX"
                 ],
+                "output": [
+                    "Tests (passing)",
+                    "Code"
+                ],
                 "exit_conditions": [
-                    "Checklist defined",
-                    "Acceptance criteria set"
+                    "Tests written first",
+                    "All tests pass",
+                    "Lint passes",
+                    "Checklist complete"
                 ]
             }
         },
         {
-            "id": "col-implementing",
-            "name": "Implementing",
+            "id": "col-verify",
+            "name": "Verify",
             "position": 5,
             "contract": {
                 "input": [
-                    "PLN-XXX"
-                ],
-                "output": [
-                    "Code",
-                    "Tests"
-                ],
-                "exit_conditions": [
-                    "Checklist complete",
-                    "Tests pass",
-                    "Lint passes"
-                ]
-            }
-        },
-        {
-            "id": "col-validating",
-            "name": "Validating",
-            "position": 6,
-            "contract": {
-                "input": [
                     "Code",
                     "Tests"
                 ],
                 "output": [
-                    "VAL-XXX"
-                ],
-                "exit_conditions": [
-                    "All checks pass",
-                    "Security reviewed"
-                ]
-            }
-        },
-        {
-            "id": "col-pr",
-            "name": "PR",
-            "position": 7,
-            "contract": {
-                "input": [
-                    "VAL-XXX"
-                ],
-                "output": [
+                    "walkthrough.md",
                     "Pull Request"
                 ],
                 "exit_conditions": [
-                    "PR merged",
-                    "Feedback handled"
+                    "Full test suite passes",
+                    "Security reviewed",
+                    "Docs coherent",
+                    "PR opened",
+                    "PR merged"
                 ]
             }
         },
         {
             "id": "col-done",
             "name": "Done",
-            "position": 8,
+            "position": 6,
             "contract": {
                 "input": [
-                    "Pull Request"
+                    "Merged PR"
                 ],
                 "output": [
                     "Archived TASK"

@@ -6,8 +6,8 @@ Provides Python functions to interact with the Kanban board stored at
 dev_ops/kanban/board.json. Supports task prerequisites, completion criteria,
 and artifact linking with identifiers.
 
-Column = Workflow phase (8 phases), Status = Autonomy state:
-- Columns: Backlog, Researching, Documenting, Planning, Implementing, Validating, PR, Done
+Column = Workflow phase (6 phases), Status = Autonomy state:
+- Columns: Backlog, Understand, Plan, Build, Verify, Done
 - Status: todo, in_progress, blocked, pending, done
 """
 
@@ -41,13 +41,11 @@ def _load_default_columns() -> list[dict]:
     # Fallback to hardcoded if file not found or invalid
     return [
         {"id": "col-backlog", "name": "Backlog", "position": 1},
-        {"id": "col-researching", "name": "Researching", "position": 2},
-        {"id": "col-documenting", "name": "Documenting", "position": 3},
-        {"id": "col-planning", "name": "Planning", "position": 4},
-        {"id": "col-implementing", "name": "Implementing", "position": 5},
-        {"id": "col-validating", "name": "Validating", "position": 6},
-        {"id": "col-pr", "name": "PR", "position": 7},
-        {"id": "col-done", "name": "Done", "position": 8},
+        {"id": "col-understand", "name": "Understand", "position": 2},
+        {"id": "col-plan", "name": "Plan", "position": 3},
+        {"id": "col-build", "name": "Build", "position": 4},
+        {"id": "col-verify", "name": "Verify", "position": 5},
+        {"id": "col-done", "name": "Done", "position": 6},
     ]
 
 
@@ -264,9 +262,9 @@ def move_to_column(task_id: str, column_id: str, project_root: Optional[str] = N
     return False
 
 
-def mark_implementing(task_id: str, project_root: Optional[str] = None) -> bool:
-    """Move a task to Implementing column."""
-    return move_to_column(task_id, "col-implementing", project_root)
+def mark_build(task_id: str, project_root: Optional[str] = None) -> bool:
+    """Move a task to Build column."""
+    return move_to_column(task_id, "col-build", project_root)
 
 
 def set_status(task_id: str, status: str, project_root: Optional[str] = None) -> bool:
