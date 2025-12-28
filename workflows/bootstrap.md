@@ -1,8 +1,9 @@
 ---
-description: Initialize the project with DevOps framework.
+description: Initialize project with DevOps framework
+category: automated
 ---
 
-# Bootstrap Workflow
+# Bootstrap
 
 Initialize a project with the DevOps framework.
 
@@ -11,36 +12,15 @@ Initialize a project with the DevOps framework.
 1. **Run setup**:
 
    ```bash
-   python3 dev_ops/scripts/setup_ops.py
+   python3 scripts/setup_ops.py --target {{user_input}}
    ```
 
-   Or use the **DevOps: Initialize** VS Code command.
+   Or use VS Code command: `DevOps: Initialize`
 
-2. **Setup creates**:
-   - `dev_ops/board.json` — Task board
-   - `dev_ops/constitution.md` — Project non-negotiables
-   - `dev_ops/docs/` — Persistent documentation
-   - `dev_ops/artifacts/` — Ephemeral artifacts
-   - `.agent/rules/` — Dynamic rules
+2. **Configure constitution**: Open `dev_ops/constitution.md` and fill in Non-negotiables, Constraints, Values
 
-3. **Configure constitution**:
-   - Open `dev_ops/constitution.md`
-   - Fill in: Non-negotiables, Constraints, Values
-   - These are checked during Researching phase alignment
+## Outputs
 
-4. **Dynamic rule generation**:
-   - Detected languages → `.agent/rules/languages/`
-   - Detected linters → `.agent/rules/linters/`
-   - Detected libraries → `.agent/rules/libraries/`
-
-## Output
-
-- Kanban board initialized
-- Constitution created
-- Agent rules installed
-
-## Exit Criteria
-
-- [ ] `dev_ops/board.json` exists
-- [ ] `dev_ops/constitution.md` populated
-- [ ] `.agent/rules/` contains project-specific rules
+- `dev_ops/board.json` — Kanban board
+- `dev_ops/constitution.md` — Project principles
+- `.agent/rules/` — Phase rules and dynamic rules

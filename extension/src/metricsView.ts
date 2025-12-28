@@ -95,20 +95,11 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
       border-radius: 50%;
       margin-right: 8px;
     }
-    .status-in_progress { background: #22c55e; }
+    .status-ready { background: #3b82f6; }
+    .status-agent_active { background: #22c55e; }
+    .status-needs_feedback { background: #f97316; }
     .status-blocked { background: #ef4444; }
-    .status-pending { background: #f97316; }
-    
-    .priority-dot {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      margin-right: 10px;
-    }
-    .priority-high { background: #ef4444; }
-    .priority-medium { background: #f97316; }
-    .priority-low { background: #22c55e; }
+    .status-done { background: #6b7280; }
     
     .empty-state {
       text-align: center;
@@ -131,31 +122,35 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
   <h3>Status Overview</h3>
   <div class="metric-card">
     <div class="stat-row">
-      <span class="stat-label">In Progress</span>
-      <span class="stat-value">${metrics.statusCounts.in_progress}</span>
+      <span><span class="status-dot status-ready"></span>Ready</span>
+      <span class="stat-value">${metrics.statusCounts.ready || 0}</span>
     </div>
     <div class="stat-row">
-      <span class="stat-label">Blocked</span>
-      <span class="stat-value ${metrics.statusCounts.blocked > 0 ? 'warning' : ''}">${metrics.statusCounts.blocked}</span>
+      <span><span class="status-dot status-agent_active"></span>Agent Active</span>
+      <span class="stat-value">${metrics.statusCounts.agent_active || 0}</span>
     </div>
     <div class="stat-row">
-      <span class="stat-label">Pending Approval</span>
-      <span class="stat-value">${metrics.statusCounts.pending}</span>
+      <span><span class="status-dot status-needs_feedback"></span>Needs Feedback</span>
+      <span class="stat-value">${metrics.statusCounts.needs_feedback || 0}</span>
+    </div>
+    <div class="stat-row">
+      <span><span class="status-dot status-blocked"></span>Blocked</span>
+      <span class="stat-value ${metrics.statusCounts.blocked > 0 ? 'warning' : ''}">${metrics.statusCounts.blocked || 0}</span>
     </div>
   </div>
   
   <h3>Priority Breakdown</h3>
   <div class="metric-card">
     <div class="stat-row">
-      <span><span class="priority-dot priority-high"></span>High Priority</span>
+      <span class="stat-label">High</span>
       <span class="stat-value">${metrics.priorityCounts.high}</span>
     </div>
     <div class="stat-row">
-      <span><span class="priority-dot priority-medium"></span>Medium Priority</span>
+      <span class="stat-label">Medium</span>
       <span class="stat-value">${metrics.priorityCounts.medium}</span>
     </div>
     <div class="stat-row">
-      <span><span class="priority-dot priority-low"></span>Low Priority</span>
+      <span class="stat-label">Low</span>
       <span class="stat-value">${metrics.priorityCounts.low}</span>
     </div>
   </div>
@@ -175,7 +170,7 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
         inProgress: 0,
         blocked: 0,
         columnStats: [],
-        statusCounts: { todo: 0, in_progress: 0, blocked: 0, pending: 0, done: 0 },
+        statusCounts: { ready: 0, agent_active: 0, needs_feedback: 0, blocked: 0, done: 0 },
         priorityCounts: { high: 0, medium: 0, low: 0 },
       };
     }
@@ -185,9 +180,9 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
     const today = new Date().toISOString().split('T')[0];
 
     // Count tasks by status
-    const statusCounts = { todo: 0, in_progress: 0, blocked: 0, pending: 0, done: 0 };
+    const statusCounts = { ready: 0, agent_active: 0, needs_feedback: 0, blocked: 0, done: 0 };
     items.forEach(task => {
-      const status = task.status || 'todo';
+      const status = task.status || 'ready';
       if (status in statusCounts) {
         statusCounts[status as keyof typeof statusCounts]++;
       }
@@ -228,7 +223,7 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
     return {
       totalTasks: items.length,
       completedToday,
-      inProgress: statusCounts.in_progress,
+      inProgress: statusCounts.agent_active,
       blocked: statusCounts.blocked,
       columnStats,
       statusCounts,
@@ -243,7 +238,7 @@ interface BoardMetrics {
   inProgress: number;
   blocked: number;
   columnStats: Array<{ id: string; name: string; count: number; overLimit: boolean }>;
-  statusCounts: { todo: number; in_progress: number; blocked: number; pending: number; done: number };
+  statusCounts: { ready: number; agent_active: number; needs_feedback: number; blocked: number; done: number };
   priorityCounts: { high: number; medium: number; low: number };
 }
 

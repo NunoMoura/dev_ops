@@ -1,5 +1,6 @@
 import { spawn } from "child_process";
 import * as path from "path";
+import * as fs from "fs";
 
 /**
  * Python CLI wrapper for kanban operations.
@@ -41,6 +42,24 @@ export async function findPython(): Promise<string | null> {
 }
 
 /**
+ * Find script path with smart resolution.
+ * Checks dev_ops/scripts/ first (installed), then scripts/ (development).
+ */
+function findScriptPath(cwd: string, scriptName: string): string {
+    // Installed project: scripts are in dev_ops/scripts/
+    const installedPath = path.join(cwd, "dev_ops", "scripts", scriptName);
+    // Development: scripts are in scripts/ (framework repo)
+    const devPath = path.join(cwd, "scripts", scriptName);
+
+    if (fs.existsSync(installedPath)) {
+        return installedPath;
+    } else if (fs.existsSync(devPath)) {
+        return devPath;
+    }
+    throw new Error(`Script not found: ${scriptName}. Checked:\n  - ${installedPath}\n  - ${devPath}`);
+}
+
+/**
  * Run kanban_ops.py with the given arguments.
  * 
  * @param args - CLI arguments (e.g., ["status", "TASK-001", "in_progress"])
@@ -56,9 +75,7 @@ export async function runKanbanOps(
         throw new Error("Python 3 not found. Please install Python 3.");
     }
 
-    // Script path: dev_ops/scripts/kanban_ops.py relative to project root
-    const scriptPath = path.join(cwd, "dev_ops", "scripts", "kanban_ops.py");
-
+    const scriptPath = findScriptPath(cwd, "kanban_ops.py");
     return runCommand(python, [scriptPath, ...args], cwd);
 }
 
@@ -78,9 +95,8 @@ export async function runDocOps(
         throw new Error("Python 3 not found. Please install Python 3.");
     }
 
-    // Script path: dev_ops/scripts/doc_ops.py relative to project root
-    const scriptPath = path.join(cwd, "dev_ops", "scripts", "doc_ops.py");
-
+    // Script path: uses smart resolution (dev_ops/scripts/ or scripts/)
+    const scriptPath = findScriptPath(cwd, "doc_ops.py");
     return runCommand(python, [scriptPath, ...args], cwd);
 }
 

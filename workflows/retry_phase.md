@@ -1,42 +1,27 @@
 ---
-description: Re-run phase with identical context (self-consistency)
+description: Re-run phase with identical context
+category: manual
 ---
 
 # Retry Phase
 
-Spawn new agent with exact same prompt. Previous artifacts preserved.
-
-## When to Use
-
-- PM wants to see alternative output
-- First attempt was close but not quite right
-- Exploring different reasoning paths
+Spawn new agent with same prompt. Previous artifacts preserved.
 
 ## Steps
 
-1. **Read current task and phase**
+1. **Check current task and phase**:
 
    ```bash
    cat dev_ops/.current_task
-   python3 dev_ops/scripts/kanban_ops.py list --status in_progress
+   python3 scripts/kanban_ops.py list --status agent_active
    ```
 
-2. **Get phase workflow** — Determine which workflow to re-run
+2. **Spawn new agent** with identical phase rule prompt
 
-3. **Spawn NEW agent** with identical prompt (same phase rule)
-
-4. **Agent works independently** — May produce different output
-
-5. **PM compares outputs** — Keep best or merge artifacts
-
-## Why This Works
-
-- **Self-consistency**: Diverse reasoning paths find different solutions
-- **No lost work**: Previous artifacts preserved (RES-001, RES-002, etc.)
-- **Incremental improvement**: Each attempt may catch what others missed
+3. **Compare outputs** — Keep best or merge artifacts
 
 ## Notes
 
 - Task stays in current column
-- Session versioned (e.g., understand-v1, understand-v2)
-- PM decides which output to keep
+- Each attempt produces separate artifacts (RES-001, RES-002)
+- Use `/refine_phase` for directed feedback instead

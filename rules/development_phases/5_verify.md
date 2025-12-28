@@ -52,7 +52,7 @@ This phase exists to catch what Build missed and create evidence of correctness.
 6. **Create PR**
 
    ```bash
-   python3 dev_ops/scripts/pr_ops.py create TASK-XXX
+   python3 dev_ops/scripts/kanban_ops.py done TASK-XXX --create-pr
    ```
 
 7. **Address feedback** — Treat review comments as opportunities to improve

@@ -1,40 +1,29 @@
 ---
-description: Add a feature and decompose it into backlog tasks.
+description: Create feature spec and decompose into tasks
+category: guided
 ---
 
 # Add Feature
 
-Create a feature specification and break it into backlog tasks.
+Create FEAT-XXX and decompose into backlog tasks.
 
 ## Steps
 
-1. **Create Feature artifact**:
+1. **Create feature**:
 
    ```bash
-   python3 dev_ops/scripts/artifact_ops.py create feature --title "Feature Name"
+   python3 scripts/artifact_ops.py create feature --title "{{user_input}}"
    ```
 
-2. **Fill in sections** (see `templates/feature.md`):
-   - Summary — What the feature does
-   - User Stories — Who benefits and how
-   - Acceptance Criteria — Definition of done
-   - Technical Notes — Implementation hints
+2. **Fill sections**: Summary, User Stories, Acceptance Criteria, Technical Notes
 
-3. **Decompose into tasks**:
-
-   For each acceptance criterion:
+3. **Decompose to tasks** (one per acceptance criterion):
 
    ```bash
-   python3 dev_ops/scripts/kanban_ops.py create \
-     --title "Implement X" \
-     --trigger FEAT-XXX
+   python3 scripts/kanban_ops.py create --title "Implement X" --trigger FEAT-XXX
    ```
 
-4. **Link artifacts**:
+## Outputs
 
-   The `--trigger` flag automatically links FEAT-XXX as the task's trigger.
-
-## Output
-
-- `dev_ops/features/FEAT-XXX.md` — Feature specification
-- Multiple TASK-XXX items in Backlog
+- `dev_ops/artifacts/features/FEAT-XXX.md`
+- TASK-XXX items in Backlog

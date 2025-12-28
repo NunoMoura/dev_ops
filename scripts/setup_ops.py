@@ -102,6 +102,146 @@ def summarize_project(project_root: str):
 
 
 # ==========================================
+# IDE Detection & Format Conversion
+# ==========================================
+
+
+def detect_ide() -> str:
+    """
+    Detect which IDE is being used based on available binaries.
+    Returns: 'antigravity', 'cursor', or 'unknown'
+    """
+    # Check for Cursor first (more specific)
+    if shutil.which("cursor"):
+        try:
+            result = subprocess.run(
+                ["cursor", "--version"], capture_output=True, text=True, timeout=5
+            )
+            if result.returncode == 0:
+                print("   🔍 Detected IDE: Cursor")
+                return "cursor"
+        except Exception:
+            pass
+
+    # Check for Antigravity (code binary with specific marker)
+    if shutil.which("code"):
+        try:
+            result = subprocess.run(
+                ["code", "--version"], capture_output=True, text=True, timeout=5
+            )
+            # Antigravity typically identifies itself in version output
+            if "antigravity" in result.stdout.lower():
+                print("   🔍 Detected IDE: Antigravity")
+                return "antigravity"
+            # Default VS Code / Antigravity variant
+            print("   🔍 Detected IDE: VS Code (assuming Antigravity-compatible)")
+            return "antigravity"
+        except Exception:
+            pass
+
+    print("   ⚠️ Could not detect IDE, defaulting to Antigravity format")
+    return "antigravity"
+
+
+def convert_frontmatter_for_cursor(content: str) -> str:
+    """
+    Convert Antigravity frontmatter format to Cursor .mdc format.
+
+    Antigravity format:
+        ---
+        phase: build
+        activation_mode: Model Decides
+        triggers: [task_in_build]
+        description: Build phase instructions
+        ---
+
+    Cursor format:
+        ---
+        alwaysApply: false
+        description: Apply during Build phase - when implementing code from a plan
+        ---
+
+    Key differences:
+    - Cursor uses alwaysApply (bool) instead of activation_mode (string)
+    - Cursor doesn't have event-based triggers, uses description for AI context
+    - Phase rules need enhanced descriptions for proper AI activation
+    """
+    import re
+
+    # Find frontmatter block
+    match = re.match(r"^---\n(.*?)\n---\n", content, re.DOTALL)
+    if not match:
+        return content
+
+    frontmatter = match.group(1)
+    body = content[match.end() :]
+
+    # Extract phase for enhanced description (before removing it)
+    phase_match = re.search(r"phase:\s*(\w+)", frontmatter)
+    phase_name = phase_match.group(1) if phase_match else None
+
+    # Extract existing description
+    desc_match = re.search(r"description:\s*(.+?)(?:\n|$)", frontmatter)
+    existing_desc = desc_match.group(1).strip() if desc_match else ""
+
+    # Phase-to-context mapping for Cursor AI activation
+    phase_contexts = {
+        "backlog": "when claiming a new task from the backlog",
+        "understand": "when researching and understanding a task's requirements",
+        "plan": "when creating implementation plans and breaking down tasks",
+        "build": "when implementing code and writing tests",
+        "verify": "when testing, reviewing, and validating completed work",
+    }
+
+    # Convert activation_mode to alwaysApply
+    always_apply = "activation_mode: Always On" in frontmatter
+
+    # Extract globs (same syntax for both IDEs)
+    globs_match = re.search(r"globs:\s*(\[.*?\])", frontmatter)
+    globs_value = globs_match.group(1) if globs_match else None
+
+    # Build new frontmatter
+    new_lines = []
+    new_lines.append(f"alwaysApply: {'true' if always_apply else 'false'}")
+
+    # Add globs if present (file-pattern activation)
+    if globs_value:
+        new_lines.append(f"globs: {globs_value}")
+
+    # Create enhanced description for phase rules
+    if phase_name and phase_name.lower() in phase_contexts:
+        phase_context = phase_contexts[phase_name.lower()]
+        if existing_desc:
+            new_desc = f"{existing_desc} - Apply {phase_context}"
+        else:
+            new_desc = f"{phase_name.capitalize()} phase rule - Apply {phase_context}"
+        new_lines.append(f"description: {new_desc}")
+    elif existing_desc:
+        new_lines.append(f"description: {existing_desc}")
+
+    # Ensure proper formatting
+    new_frontmatter = "\n".join(new_lines) + "\n"
+
+    return f"---\n{new_frontmatter}---\n{body}"
+
+
+def get_ide_paths(project_root: str, ide: str) -> tuple:
+    """Get the correct paths for rules and workflows based on IDE."""
+    if ide == "cursor":
+        agent_dir = os.path.join(project_root, ".cursor")
+        rules_dir = os.path.join(agent_dir, "rules")
+        workflows_dir = os.path.join(agent_dir, "commands")  # Cursor uses .cursor/commands/
+        file_ext = ".mdc"
+    else:  # antigravity or unknown
+        agent_dir = os.path.join(project_root, ".agent")
+        rules_dir = os.path.join(agent_dir, "rules")
+        workflows_dir = os.path.join(agent_dir, "workflows")
+        file_ext = ".md"
+
+    return agent_dir, rules_dir, workflows_dir, file_ext
+
+
+# ==========================================
 # Workflows & Rules Installation
 # ==========================================
 
@@ -169,14 +309,9 @@ def get_all_rules(core_rules_src: str, templates_rules_src: str, project_root: s
     return sorted(core_rules + dynamic_rules, key=lambda x: (x["category"], x["name"]))
 
 
-def install_rules(proposed_rules: list, rules_dest: str):
-    """Installs the selected rules with text replacement."""
-    print("\n📦 Installing Rules...")
-
-    # Flatten structure by categories? No, user wants .agent/rules/ filled.
-    # We should probably respect categories in destination?
-    # Original logic: dest_path = os.path.join(rules_dest, rule["name"]) -> Flat structure if name is just "python.md"
-    # But names could collide if flatten. Let's create subdirs.
+def install_rules(proposed_rules: list, rules_dest: str, ide: str = "antigravity"):
+    """Installs the selected rules with text replacement and IDE-specific formatting."""
+    print(f"\n📦 Installing Rules (format: {ide})...")
 
     for rule in proposed_rules:
         # Create subfolder based on category if needed
@@ -206,9 +341,19 @@ def install_rules(proposed_rules: list, rules_dest: str):
         custom_repls = rule.get("replacements", {})
         for key, value in custom_repls.items():
             content = content.replace(key, str(value))
-        dest_path = os.path.join(target_dir, rule["name"])
+
+        # Convert frontmatter for Cursor
+        if ide == "cursor":
+            content = convert_frontmatter_for_cursor(content)
+
+        # Use correct file extension (rename .md to .mdc for Cursor)
+        rule_name = rule["name"]
+        if ide == "cursor" and rule_name.endswith(".md"):
+            rule_name = rule_name[:-3] + ".mdc"
+
+        dest_path = os.path.join(target_dir, rule_name)
         write_file(dest_path, content)
-        print(f"   - Installed {cat_dir}/{rule['name']} ({rule['category']})")
+        print(f"   - Installed {cat_dir}/{rule_name} ({rule['category']})")
 
 
 # ==========================================
@@ -237,6 +382,13 @@ def bootstrap(target_dir: str):
 
     print(f"🚀 Bootstrapping dev_ops in {PROJECT_ROOT}...")
 
+    # 0. Detect IDE
+    print("\n🔍 Detecting IDE...")
+    detected_ide = detect_ide()
+
+    # Get IDE-specific paths
+    AGENT_DIR, AGENT_RULES_DIR, AGENT_WORKFLOWS_DIR, _ = get_ide_paths(PROJECT_ROOT, detected_ide)
+
     # 1. Summarize & Detect
     summarize_project(PROJECT_ROOT)
 
@@ -245,12 +397,10 @@ def bootstrap(target_dir: str):
 
     proposed_rules = get_all_rules(CORE_RULES_SRC_DIR, RULES_SRC_DIR, PROJECT_ROOT)
 
-    # 3. Plan Rule Installation
-    AGENT_RULES_DIR = os.path.join(AGENT_DIR, "rules")
-
-    # 4. Interactive Confirmation
+    # 3. Interactive Confirmation
+    ide_folder = ".cursor" if detected_ide == "cursor" else ".agent"
     print("\n📋 Proposed Rules Configuration:")
-    print(f"   Target: {AGENT_RULES_DIR}")
+    print(f"   IDE: {detected_ide} → Target: {ide_folder}/rules/")
     print("   -------------------------------------------------")
     print(f"   {'Category':<15} | {'Rule':<20} | {'Reason'}")
     print("   -------------------------------------------------")
@@ -346,12 +496,13 @@ def bootstrap(target_dir: str):
         else:
             print(f"   ! Warning: Script {script} not found in source.")
 
-    # Install Rules (using the plan)
-    install_rules(proposed_rules, AGENT_RULES_DIR)
+    # Install Rules (using the plan and IDE-specific format)
+    install_rules(proposed_rules, AGENT_RULES_DIR, detected_ide)
 
+    # Install Workflows/Commands (Antigravity: .agent/workflows, Cursor: .cursor/commands)
     if os.path.exists(WORKFLOWS_SRC_DIR):
-        print("\n📦 Installing Workflows...")
-        AGENT_WORKFLOWS_DIR = os.path.join(AGENT_DIR, "workflows")
+        folder_name = "commands" if detected_ide == "cursor" else "workflows"
+        print(f"\n📦 Installing {folder_name.capitalize()}...")
         os.makedirs(AGENT_WORKFLOWS_DIR, exist_ok=True)
         for file in os.listdir(WORKFLOWS_SRC_DIR):
             if file.endswith(".md") and not file.startswith("_"):

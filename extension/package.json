@@ -133,6 +133,16 @@
         "icon": "$(arrow-right)"
       },
       {
+        "command": "devops.retryPhase",
+        "title": "DevOps: Retry Phase",
+        "icon": "$(debug-restart)"
+      },
+      {
+        "command": "devops.refinePhase",
+        "title": "DevOps: Refine Phase",
+        "icon": "$(edit)"
+      },
+      {
         "command": "devops.createUser",
         "title": "DevOps: Create User Persona",
         "icon": "$(person)"
@@ -141,6 +151,26 @@
         "command": "devops.createStory",
         "title": "DevOps: Create User Story",
         "icon": "$(note)"
+      },
+      {
+        "command": "kanban.deleteTask",
+        "title": "DevOps: Delete Task",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "devops.newArchDoc",
+        "title": "DevOps: New Architecture Doc",
+        "icon": "$(file-add)"
+      },
+      {
+        "command": "devops.newUserStory",
+        "title": "DevOps: New User Story",
+        "icon": "$(note)"
+      },
+      {
+        "command": "devops.newMockup",
+        "title": "DevOps: New Mockup",
+        "icon": "$(file-media)"
       }
     ],
     "configuration": {

@@ -6,9 +6,9 @@ Provides Python functions to interact with the Kanban board stored at
 dev_ops/kanban/board.json. Supports task prerequisites, completion criteria,
 and artifact linking with identifiers.
 
-Column = Workflow phase (6 phases), Status = Autonomy state:
+Column = Workflow phase (6 phases), Status = Prediction-ready autonomy state:
 - Columns: Backlog, Understand, Plan, Build, Verify, Done
-- Status: todo, in_progress, blocked, pending, done
+- Status: ready, agent_active, needs_feedback, blocked, done
 """
 
 import argparse
@@ -141,7 +141,7 @@ def create_task(
     summary: str = "",
     workflow: Optional[str] = None,
     priority: str = "medium",
-    status: str = "todo",
+    status: str = "ready",
     assignee: Optional[str] = None,
     upstream: Optional[list[str]] = None,
     downstream: Optional[list[str]] = None,
@@ -268,8 +268,8 @@ def mark_build(task_id: str, project_root: Optional[str] = None) -> bool:
 
 
 def set_status(task_id: str, status: str, project_root: Optional[str] = None) -> bool:
-    """Set the status of a task (todo, in_progress, blocked, pending, done)."""
-    valid_statuses = {"todo", "in_progress", "blocked", "pending", "done"}
+    """Set the status of a task (ready, agent_active, needs_feedback, blocked, done)."""
+    valid_statuses = {"ready", "agent_active", "needs_feedback", "blocked", "done"}
     if status not in valid_statuses:
         print(f"⚠️ Invalid status: {status}. Must be one of: {', '.join(valid_statuses)}")
         return False
@@ -375,7 +375,7 @@ def replace_task(
             "title": title,
             "summary": f"Split from {task_id}: {original_task.get('title', '')}",
             "priority": original_task.get("priority"),
-            "status": "todo",
+            "status": "ready",
             "upstream": [task_id],  # Link to original as reference
             "updatedAt": datetime.utcnow().isoformat() + "Z",
         }
@@ -623,7 +623,7 @@ def claim_task(
                     return False
 
             # Set status to in_progress (keep current column)
-            task["status"] = "in_progress"
+            task["status"] = "agent_active"
             task["updatedAt"] = datetime.utcnow().isoformat() + "Z"
 
             # Track session ID if provided
@@ -819,6 +819,185 @@ def archive_task(task_id: str, project_root: Optional[str] = None) -> bool:
         return False
 
 
+def gather_session_context(task: dict, session_dir: Optional[str] = None) -> dict:
+    """Gather context from the most recent Antigravity session.
+
+    Looks for walkthrough.md and implementation_plan.md in the session directory.
+    Also tries to get a git diff summary of recent changes.
+    """
+    import subprocess
+
+    context = {
+        "walkthrough": None,
+        "plan": None,
+        "git_summary": None,
+    }
+
+    # Try to find session artifacts
+    if session_dir and os.path.isdir(session_dir):
+        walkthrough_path = os.path.join(session_dir, "walkthrough.md")
+        if os.path.exists(walkthrough_path):
+            with open(walkthrough_path) as f:
+                context["walkthrough"] = f.read()
+
+        plan_path = os.path.join(session_dir, "implementation_plan.md")
+        if os.path.exists(plan_path):
+            with open(plan_path) as f:
+                context["plan"] = f.read()
+
+    # Try to get recent git changes
+    try:
+        result = subprocess.run(
+            ["git", "diff", "--stat", "HEAD~3", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            context["git_summary"] = result.stdout.strip()
+    except Exception:
+        pass
+
+    return context
+
+
+def build_refinement_prompt(
+    task: dict,
+    feedback: str,
+    context: dict,
+    iteration: int,
+    column_name: str,
+) -> str:
+    """Build a structured refinement prompt for the agent."""
+    lines = [
+        f"# Refinement Request for {task['id']}",
+        "",
+        f"**Task**: {task.get('title', 'Untitled')}",
+        f"**Phase**: {column_name}",
+        f"**Iteration**: {iteration}",
+        "",
+        "---",
+        "",
+        "## PM Feedback",
+        "",
+        feedback,
+        "",
+    ]
+
+    if context.get("walkthrough"):
+        # Truncate if too long
+        walkthrough = context["walkthrough"]
+        if len(walkthrough) > 3000:
+            walkthrough = walkthrough[:3000] + "\n\n... (truncated)"
+        lines.extend(
+            [
+                "---",
+                "",
+                "## Previous Work Summary",
+                "",
+                walkthrough,
+                "",
+            ]
+        )
+
+    if context.get("git_summary"):
+        lines.extend(
+            [
+                "---",
+                "",
+                "## Recent Changes",
+                "",
+                "```",
+                context["git_summary"],
+                "```",
+                "",
+            ]
+        )
+
+    lines.extend(
+        [
+            "---",
+            "",
+            "## Instructions",
+            "",
+            "1. Review the previous work and PM feedback above",
+            "2. Apply the current phase rules with this feedback in mind",
+            "3. Address the specific concerns raised",
+            "4. Update artifacts as needed",
+            "",
+        ]
+    )
+
+    return "\n".join(lines)
+
+
+def refine_phase(
+    task_id: str,
+    feedback: str,
+    session_dir: Optional[str] = None,
+    project_root: Optional[str] = None,
+) -> Optional[str]:
+    """Generate a refinement prompt with context from previous session.
+
+    1. Loads task and previous session context
+    2. Structures PM feedback
+    3. Updates task with refinement tracking
+    4. Returns formatted prompt for agent
+
+    Args:
+        task_id: The task ID to refine
+        feedback: PM's free-form feedback
+        session_dir: Optional path to AG session directory with artifacts
+        project_root: Optional project root path
+
+    Returns:
+        Formatted prompt string, or None if task not found
+    """
+    board = load_board(project_root)
+
+    # Find the task
+    task = None
+    for t in board.get("items", []):
+        if t.get("id") == task_id:
+            task = t
+            break
+
+    if not task:
+        print(f"⚠️ Task {task_id} not found")
+        return None
+
+    # Gather previous session context
+    context = gather_session_context(task, session_dir)
+
+    # Track iteration
+    refinement_count = task.get("refinementCount", 0) + 1
+    task["refinementCount"] = refinement_count
+
+    if "refinementHistory" not in task:
+        task["refinementHistory"] = []
+    task["refinementHistory"].append(
+        {
+            "iteration": refinement_count,
+            "feedback": feedback,
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+        }
+    )
+
+    task["updatedAt"] = datetime.utcnow().isoformat() + "Z"
+
+    # Get column name for prompt
+    column_name = get_column_name(board, task.get("columnId", ""))
+
+    # Build structured prompt
+    prompt = build_refinement_prompt(task, feedback, context, refinement_count, column_name)
+
+    # Save
+    save_board(board, project_root)
+
+    print(f"✅ Generated refinement prompt for {task_id} (iteration {refinement_count})")
+    return prompt
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Kanban board operations.")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -828,7 +1007,7 @@ if __name__ == "__main__":
     list_parser.add_argument("--column", help="Filter by column ID (e.g., col-backlog)")
     list_parser.add_argument(
         "--status",
-        choices=["todo", "in_progress", "blocked", "pending", "done"],
+        choices=["ready", "agent_active", "needs_feedback", "blocked", "done"],
         help="Filter by status",
     )
 
@@ -868,7 +1047,9 @@ if __name__ == "__main__":
     status_parser = subparsers.add_parser("status", help="Set task status")
     status_parser.add_argument("task_id", help="Task ID")
     status_parser.add_argument(
-        "status", choices=["todo", "in_progress", "blocked", "pending", "done"], help="New status"
+        "status",
+        choices=["ready", "agent_active", "needs_feedback", "blocked", "done"],
+        help="New status",
     )
 
     # Add upstream
@@ -935,6 +1116,19 @@ if __name__ == "__main__":
     revert_parser = subparsers.add_parser("revert", help="Revert a task using its commit SHA")
     revert_parser.add_argument("task_id", help="Task ID to revert")
 
+    # Refine phase - generate refinement prompt
+    refine_parser = subparsers.add_parser(
+        "refine", help="Generate refinement prompt with PM feedback"
+    )
+    refine_parser.add_argument("task_id", help="Task ID to refine")
+    refine_parser.add_argument("--feedback", "-f", required=True, help="PM feedback for refinement")
+    refine_parser.add_argument(
+        "--session-dir",
+        "-s",
+        dest="session_dir",
+        help="Path to AG session directory with walkthrough.md",
+    )
+
     args = parser.parse_args()
 
     if args.command == "list":
@@ -992,3 +1186,14 @@ if __name__ == "__main__":
             print(current)
         else:
             print("No current task")
+    elif args.command == "refine":
+        prompt = refine_phase(
+            args.task_id,
+            args.feedback,
+            session_dir=args.session_dir,
+        )
+        if prompt:
+            # Output prompt to stdout for extension to capture
+            print("---PROMPT_START---")
+            print(prompt)
+            print("---PROMPT_END---")

@@ -1,2 +1,6 @@
 - [2025-12-27T11:03:20.817Z] Created in column Backlog
 - [2025-12-27T12:10:36.773Z] Created in column Backlog
+- [2025-12-27T12:19:26.522Z] Created in column Backlog
+- [2025-12-27T12:37:31.614Z] Created in column Backlog
+- [2025-12-27T21:47:24.367Z] Moved to column Understand
+- [2025-12-27T21:47:24.367Z] Moved to column Understand

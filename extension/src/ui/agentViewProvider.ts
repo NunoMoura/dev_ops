@@ -46,11 +46,13 @@ export type AgentNode = AgentCurrentTaskNode | AgentActionNode | AgentCategoryNo
  * Quick action buttons for the Agent sidebar.
  * Primary actions have icons, secondary actions use empty string for cleaner UI.
  */
-const QUICK_ACTIONS: AgentActionNode[] = [
-    { kind: 'action', id: 'spawn-agent', label: 'Spawn Agent', icon: 'play', command: 'devops.spawnAgent' },
-    { kind: 'action', id: 'next-phase', label: 'Next Phase', icon: 'arrow-right', command: 'devops.nextPhase' },
-    { kind: 'action', id: 'create-task', label: 'Create Task', icon: 'add', command: 'kanban.createTask' },
-    { kind: 'action', id: 'delete-task', label: 'Delete Task', icon: 'trash', command: 'kanban.deleteTask' },
+const QUICK_ACTIONS: (AgentActionNode & { description?: string })[] = [
+    { kind: 'action', id: 'spawn-agent', label: 'Spawn Agent', icon: 'play', command: 'devops.spawnAgent', description: 'Start working on a task' },
+    { kind: 'action', id: 'next-phase', label: 'Next Phase', icon: 'arrow-right', command: 'devops.nextPhase', description: 'Move task to next phase' },
+    { kind: 'action', id: 'retry-phase', label: 'Retry Phase', icon: 'debug-restart', command: 'devops.retryPhase', description: 'Re-attempt current phase' },
+    { kind: 'action', id: 'refine-phase', label: 'Refine Phase', icon: 'edit', command: 'devops.refinePhase', description: 'Refine current phase work' },
+    { kind: 'action', id: 'create-task', label: 'Create Task', icon: 'add', command: 'kanban.createTask', description: 'Add a new task' },
+    { kind: 'action', id: 'delete-task', label: 'Delete Task', icon: 'trash', command: 'kanban.deleteTask', description: 'Remove a task' },
 ];
 
 /**
@@ -121,7 +123,7 @@ export class AgentViewProvider implements vscode.TreeDataProvider<AgentNode> {
                 id: taskId,
                 title: task.title || 'Untitled',
                 phase: column?.name || 'Unknown',
-                status: task.status || 'todo',
+                status: task.status || 'ready',
                 checklistDone,
                 checklistTotal,
             };
@@ -245,6 +247,11 @@ export class AgentViewProvider implements vscode.TreeDataProvider<AgentNode> {
             const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.None);
             item.id = element.id;
             item.iconPath = new vscode.ThemeIcon(element.icon);
+            // Descriptions add visual breathing room between items
+            const actionDef = QUICK_ACTIONS.find(a => a.id === element.id);
+            if (actionDef?.description) {
+                item.description = actionDef.description;
+            }
             item.command = {
                 command: element.command,
                 title: element.label,

@@ -21,7 +21,7 @@ PRD: PRD-001 - DevOps Framework for AI Agent Development
 ## Vision
 
 A document-first development framework enabling AI agents to produce
-high-quality, consistent code through an 8-phase Kanban workflow.
+high-quality, consistent code through a 6-phase Kanban workflow.
 
 > **Exceptional code starts with exceptional documentation.**
 
@@ -31,12 +31,13 @@ high-quality, consistent code through an 8-phase Kanban workflow.
 
 - **Document-first**: Documents define goals; code is the manifestation
 - **Document coherence**: All docs must be consistent with each other
-- **8-phase flow**: Every task progresses through all phases
+- **6-phase flow**: Every task progresses through all phases
 - **Artifact production**: Each phase produces its standardized artifact
-- **Alignment verification**: Technical and project alignment checked in Researching
+- Alignment verification: Technical and project alignment checked in Understand phase
 - **Typed checklists**: PLN items have types (code, test)
 - **Minimal TASK**: TASK cards contain pointers only, content lives in artifacts
-- **No backward moves**: Blockers spawn new tasks, never move backward
+- **Backward moves allowed**: Return to previous phases when gaps are discovered
+- **Spawn for blockers**: Unrelated blockers become new tasks
 
 ---
 

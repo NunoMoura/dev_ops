@@ -1,52 +1,31 @@
 ---
-description: Triage a PR comment using full project context.
+description: Triage PR comment with project context
+category: manual
 ---
 
 # Triage Comment
 
-Analyze a PR comment with full project context and take appropriate action.
-
-## Input
-
-Provide the comment text and PR number:
-
-```bash
-# Comment text from PR #123
-COMMENT="This could cause a memory leak in the database connection pool"
-PR_NUMBER=123
-```
+Analyze PR comment and take appropriate action.
 
 ## Steps
 
-1. **Read comment context** — Understand what's being reported
+1. **Analyze comment** (`{{user_input}}`): Understand what's being reported
 
-2. **Analyze with project knowledge**:
-   - Check relevant architecture docs
-   - Review affected component's ADRs
-   - Consider existing patterns
+2. **Check relevant docs**: Architecture docs, ADRs, existing patterns
 
-3. **Categorize**:
+3. **Categorize and act**:
 
    | Category | Action |
    |----------|--------|
-   | **Bug** | Create task, add to backlog |
-   | **Feature** | Create task, add to backlog |
-   | **Quick Fix** | Fix directly in current session |
-   | **Dismiss** | Add triage comment explaining why |
+   | Bug | Create task in backlog |
+   | Feature | Create task in backlog |
+   | Quick Fix | Fix in current session |
+   | Dismiss | Explain in PR comment |
 
 4. **For Bug/Feature**:
 
    ```bash
-   python3 dev_ops/scripts/kanban_ops.py create \
-     --title "PR#${PR_NUMBER}: <summary>" \
-     --summary "From PR comment: <details>"
+   python3 scripts/kanban_ops.py create --title "PR#XXX: <summary>"
    ```
 
 5. **Respond in PR** with action taken
-
-## Output
-
-- Comment categorized
-- Task created (if bug/feature)
-- OR fix committed (if quick fix)
-- OR dismissal comment added

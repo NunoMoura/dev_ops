@@ -223,7 +223,7 @@ export function registerKanbanCommands(
     context,
     'kanban.markTaskInProgress',
     async (node?: KanbanNode) => {
-      await handleSetStatusViaPython('in_progress', 'Marked In Progress', provider, node);
+      await handleSetStatusViaPython('agent_active', 'Marked Agent Active', provider, node);
     },
     'Unable to update status',
   );
@@ -241,7 +241,7 @@ export function registerKanbanCommands(
     context,
     'kanban.setStatus',
     async (node?: KanbanNode) => {
-      const statuses = ['todo', 'in_progress', 'blocked', 'pending', 'done'];
+      const statuses = ['ready', 'agent_active', 'needs_feedback', 'blocked', 'done'];
       const picked = await vscode.window.showQuickPick(statuses, { placeHolder: 'Select new status' });
       if (picked) {
         await handleSetStatusViaPython(picked, `Set to ${picked}`, provider, node);
@@ -290,9 +290,9 @@ export function registerKanbanCommands(
     context,
     'devops.refinePhase',
     async () => {
-      await handleOpenWorkflow('refine_phase');
+      await handleRefinePhase(provider);
     },
-    'Unable to open refine workflow',
+    'Unable to refine phase',
   );
 
   registerKanbanCommand(
@@ -912,6 +912,75 @@ async function handleNextPhase(
 
   await provider.refresh();
   vscode.window.showInformationMessage(`→ ${task.id} moved to ${nextColumn.name}`);
+}
+
+/**
+ * Generate a refinement prompt with PM feedback.
+ * Prompts for feedback, calls CLI, and copies result to clipboard.
+ */
+async function handleRefinePhase(
+  provider: KanbanTreeProvider,
+): Promise<void> {
+  const cwd = getWorkspaceRoot();
+  if (!cwd) {
+    throw new Error('No workspace folder open');
+  }
+
+  // Get current task
+  const currentTaskResult = await runKanbanOps(['current-task'], cwd);
+  const currentTaskId = currentTaskResult.stdout.trim();
+
+  if (!currentTaskId || currentTaskId === 'No current task') {
+    vscode.window.showWarningMessage('No active task. Use "Spawn Agent" first to claim a task.');
+    return;
+  }
+
+  // Prompt for feedback
+  const feedback = await vscode.window.showInputBox({
+    prompt: 'Enter refinement feedback for the agent',
+    placeHolder: 'e.g., "Focus more on error handling" or "Add tests for edge cases"',
+    ignoreFocusOut: true,
+  });
+
+  if (!feedback) {
+    return;
+  }
+
+  // Call CLI to generate prompt
+  const result = await runKanbanOps(['refine', currentTaskId, '--feedback', feedback], cwd);
+
+  if (result.code !== 0) {
+    throw new Error(result.stderr || `Failed to generate refinement prompt: exit code ${result.code}`);
+  }
+
+  // Extract prompt from output (between markers)
+  const startMarker = '---PROMPT_START---';
+  const endMarker = '---PROMPT_END---';
+  const startIndex = result.stdout.indexOf(startMarker);
+  const endIndex = result.stdout.indexOf(endMarker);
+
+  if (startIndex === -1 || endIndex === -1) {
+    throw new Error('Failed to parse refinement prompt from CLI output');
+  }
+
+  const prompt = result.stdout.substring(startIndex + startMarker.length, endIndex).trim();
+
+  // Copy to clipboard
+  await vscode.env.clipboard.writeText(prompt);
+
+  // Notify user with action
+  const action = await vscode.window.showInformationMessage(
+    `Refinement prompt copied to clipboard. Paste it to start a new agent session.`,
+    'Open New Chat',
+  );
+
+  if (action === 'Open New Chat') {
+    // Try to open chat if available
+    await vscode.commands.executeCommand('workbench.action.chat.open');
+  }
+
+  // Refresh views
+  await provider.refresh();
 }
 
 /**

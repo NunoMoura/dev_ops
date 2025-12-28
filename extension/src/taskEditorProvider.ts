@@ -163,7 +163,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
   }
 
   private getEditorHtml(task: Task, columnName: string, columns: Array<{ id: string; name: string }>): string {
-    const statusLabel = { todo: 'Todo', in_progress: 'In Progress', blocked: 'Blocked', pending: 'Pending', done: 'Done' }[task.status || 'todo'] || task.status;
+    const statusLabel = { ready: '▶ Ready', agent_active: '⚡ Active', needs_feedback: '💬 Feedback', blocked: '⛔ Blocked', done: '✓ Done' }[task.status || 'ready'] || task.status;
     const isNewTask = task.title === 'New Task';
     const upstreamList = (task.upstream || []).map((a: string) => `<span class="artifact-badge upstream">${a}</span>`).join('') || '<span class="empty-hint">None</span>';
     const downstreamList = (task.downstream || []).map((a: string) => `<span class="artifact-badge downstream">${a}</span>`).join('') || '<span class="empty-hint">None</span>';
@@ -189,11 +189,11 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     /* Design tokens - consistent across extension */
     :root {
       color-scheme: var(--vscode-colorScheme);
-      --status-todo: #6b7280;
-      --status-in-progress: #22c55e;
+      --status-ready: #3b82f6;
+      --status-agent-active: #22c55e;
+      --status-needs-feedback: #f97316;
       --status-blocked: #ef4444;
-      --status-pending: #f59e0b;
-      --status-done: #3b82f6;
+      --status-done: #6b7280;
       --priority-high: #ef4444;
       --priority-medium: #f59e0b;
       --priority-low: #22c55e;
@@ -254,10 +254,10 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       border-radius: 50%;
       flex-shrink: 0;
     }
-    .status-indicator[data-status="todo"] { background: var(--status-todo); }
-    .status-indicator[data-status="in_progress"] { background: var(--status-in-progress); }
+    .status-indicator[data-status="ready"] { background: var(--status-ready); }
+    .status-indicator[data-status="agent_active"] { background: var(--status-agent-active); }
+    .status-indicator[data-status="needs_feedback"] { background: var(--status-needs-feedback); }
     .status-indicator[data-status="blocked"] { background: var(--status-blocked); }
-    .status-indicator[data-status="pending"] { background: var(--status-pending); }
     .status-indicator[data-status="done"] { background: var(--status-done); }
     .status-text {
       font-weight: 500;
@@ -474,7 +474,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         <span class="task-id-chip">${task.id}</span>
       </div>
       <div class="title-right">
-        <span class="status-indicator" data-status="${task.status || 'todo'}"></span>
+        <span class="status-indicator" data-status="${task.status || 'ready'}"></span>
         <span class="status-text">${statusLabel}</span>
         <span class="meta-separator">|</span>
         <span class="phase-text">${columnName}</span>
@@ -498,13 +498,12 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
           </select>
         </div>
         <div>
-          <label for="status">Status</label>
           <select id="status">
-            <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>Todo</option>
-            <option value="in_progress" ${task.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
-            <option value="blocked" ${task.status === 'blocked' ? 'selected' : ''}>Blocked</option>
-            <option value="pending" ${task.status === 'pending' ? 'selected' : ''}>Pending Approval</option>
-            <option value="done" ${task.status === 'done' ? 'selected' : ''}>Done</option>
+            <option value="ready" ${task.status === 'ready' || !task.status ? 'selected' : ''}>▶ Ready</option>
+            <option value="agent_active" ${task.status === 'agent_active' ? 'selected' : ''}>⚡ Agent Active</option>
+            <option value="needs_feedback" ${task.status === 'needs_feedback' ? 'selected' : ''}>💬 Needs Feedback</option>
+            <option value="blocked" ${task.status === 'blocked' ? 'selected' : ''}>⛔ Blocked</option>
+            <option value="done" ${task.status === 'done' ? 'selected' : ''}>✓ Done</option>
           </select>
         </div>
         <div>

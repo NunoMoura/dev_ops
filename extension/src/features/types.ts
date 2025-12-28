@@ -17,7 +17,7 @@ export type Column = {
   position: number;
 };
 
-export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'pending' | 'done';
+export type TaskStatus = 'ready' | 'agent_active' | 'needs_feedback' | 'blocked' | 'done';
 
 export type Task = {
   id: string;                    // TASK-XXX format
@@ -27,7 +27,7 @@ export type Task = {
   priority?: string;             // high | medium | low
   tags?: string[];
   updatedAt?: string;
-  status?: TaskStatus;           // Autonomy state (default: todo)
+  status?: TaskStatus;           // Autonomy state (default: ready)
   assignee?: string;             // Agent or human assigned to task
   blockedBy?: string;            // Task ID blocking this one
 

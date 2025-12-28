@@ -10,7 +10,7 @@ export type TaskDetailsPayload = {
   tags?: string;
   priority?: string;
   columnId?: string;              // Column determines workflow phase
-  status?: string;                // Autonomy state: todo, in_progress, blocked, pending, done
+  status?: string;                // Autonomy state: ready, agent_active, needs_feedback, blocked, done
   column?: string;                // Column display name
   workflow?: string;              // DevOps workflow (e.g., /create_plan)
   upstream?: string[];            // Artifact dependencies
@@ -202,7 +202,7 @@ function getCardHtml(): string {
       }
       .feature-section {
         margin-top: 16px;
-        padding-top: 0;
+        padding-top: 12px;
       }
       .feature-section h3 {
         font-size: 12px;
@@ -362,10 +362,11 @@ function getCardHtml(): string {
         margin-bottom: 12px;
         border-left: 4px solid #6b7280;
       }
-      .status-header[data-status="in_progress"] { border-left-color: #22c55e; background: rgba(34, 197, 94, 0.1); }
+      .status-header[data-status="ready"] { border-left-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+      .status-header[data-status="agent_active"] { border-left-color: #22c55e; background: rgba(34, 197, 94, 0.1); }
+      .status-header[data-status="needs_feedback"] { border-left-color: #f97316; background: rgba(249, 115, 22, 0.1); }
       .status-header[data-status="blocked"] { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
-      .status-header[data-status="pending"] { border-left-color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
-      .status-header[data-status="done"] { border-left-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+      .status-header[data-status="done"] { border-left-color: #6b7280; background: rgba(107, 114, 128, 0.1); }
       .status-header .task-id {
         font-weight: 600;
         color: var(--vscode-foreground);
@@ -750,11 +751,11 @@ function getCardHtml(): string {
         <div>
             <label for="status">Status</label>
             <select id="status">
-              <option value="todo">Todo</option>
-              <option value="in_progress">In Progress</option>
-              <option value="blocked">Blocked</option>
-              <option value="pending">Pending Approval</option>
-              <option value="done">Done</option>
+              <option value="ready">▶ Ready</option>
+              <option value="agent_active">⚡ Agent Active</option>
+              <option value="needs_feedback">💬 Needs Feedback</option>
+              <option value="blocked">⛔ Blocked</option>
+              <option value="done">✓ Done</option>
             </select>
           </div>
         </div>

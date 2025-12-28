@@ -211,6 +211,10 @@ sequenceDiagram
 | `/create_task` | Add a new task to the backlog |
 | `/spawn_agent` | Pick the next available task |
 | `/report_bug` | Report a new bug |
+| `/next_phase` | Move task to next phase |
+| `/retry_phase` | Re-attempt current phase |
+| `/refine_phase` | Refine current phase work |
+| `/triage_comment` | Process PR comments |
 
 ### Agent-Guided Procedures (Phase Rules)
 

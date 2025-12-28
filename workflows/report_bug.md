@@ -1,56 +1,28 @@
 ---
-description: Process for reporting a new bug.
-produces: BUG-XXX
+description: Report a new bug
+category: guided
 ---
 
-# Report Bug Workflow
+# Report Bug
 
-## Prerequisites
-
-- [ ] Bug behavior is reproducible (if applicable).
-- [ ] Checked for duplicates via `python3 dev_ops/scripts/artifact_ops.py list bug`.
-
-## Relations
-
-- **Upstream**:
-  - **Triage**: (Discovery source)
-- **Downstream**:
-  - **Plan**: `PLAN-XXX` (Plan fixing this bug)
-
-## Template
-
-Use `templates/artifacts/bug.md`.
-
-**Example fill-in**:
-
-- **Priority**: "High"
-- **Status**: "Open"
-- **Description**: "Login fails silently when session expires"
-- **Context**: "Discovered in PR-089 review; affects production"
-- **Steps to Reproduce**:
-  1. Login and wait 30 minutes
-  2. Click any protected route
-  3. Observe blank page (no error shown)
-- **Expected Behavior**: "Redirect to login with message"
-- **Actual Behavior**: "Blank page, no feedback"
-- **Related**: "PR-089"
+Create BUG-XXX artifact to track a bug.
 
 ## Steps
 
-1. **Create the file**:
-   - Run `python3 dev_ops/scripts/artifact_ops.py create bug --title "Brief failure description"`.
-   - This generates `dev_ops/artifacts/bugs/BUG-XXX-title.md`.
+1. **Check for duplicates**:
 
-2. **Fill in the details**:
-   - **Status**: Set to `open`.
-   - **Symptoms**: Describe what is happening.
-   - **Reproduction**: Steps to make it happen.
-   - **Context**: If discovered during coding, note the file/line.
+   ```bash
+   python3 scripts/artifact_ops.py list bug
+   ```
 
-3. **Link related items**:
-   - If related to a recent change/commit, mention it.
+2. **Create bug**:
 
-## Exit Criteria
+   ```bash
+   python3 scripts/artifact_ops.py create bug --title "{{user_input}}"
+   ```
 
-- [ ] Bug file created.
-- [ ] Status is `open`.
+3. **Fill sections**: Status (open), Symptoms, Steps to Reproduce, Expected vs Actual
+
+## Outputs
+
+- `dev_ops/artifacts/bugs/BUG-XXX.md`

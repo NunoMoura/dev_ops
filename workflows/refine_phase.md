@@ -1,46 +1,26 @@
 ---
-description: Re-run phase with PM feedback and session summary
+description: Generate refinement prompt with PM feedback
+category: automated
 ---
 
 # Refine Phase
 
-Spawn new agent with same context + explicit PM feedback.
-
-## When to Use
-
-- PM has specific direction for improvement
-- Need to focus on particular aspects
-- Previous output needs targeted refinement
+Generate structured prompt with context + PM feedback for agent refinement.
 
 ## Steps
 
-1. **Review previous session**
+1. **Enter feedback** when prompted (or after command):
 
-   Read the walkthrough/artifacts from previous attempt.
+   ```bash
+   python3 scripts/kanban_ops.py refine TASK-XXX --feedback "{{user_input}}"
+   ```
 
-2. **PM provides feedback**
+   Or use VS Code: Click "Refine Phase" in Agent sidebar
 
-   Examples:
-   - "Focus more on X"
-   - "Missing consideration of Y"
-   - "Expand the test coverage for Z"
+2. **Paste prompt** into new agent session
 
-3. **Append to context**
+## Outputs
 
-   The feedback becomes part of the new agent's prompt.
-
-4. **Spawn NEW agent** with augmented prompt
-
-5. **Agent works with feedback context**
-
-## Inputs
-
-- Previous session summary (`walkthrough.md` or `implementation_plan.md`)
-- PM feedback (free-form text)
-- Original phase rules
-
-## Notes
-
-- Task stays in current column
-- Directed iteration (vs `/retry_phase` which is undirected)
-- PM guides the improvement direction
+- Structured prompt (copied to clipboard)
+- Task `refinementCount` incremented
+- Feedback stored in `refinementHistory`

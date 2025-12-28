@@ -13,7 +13,7 @@ export type BoardViewTask = {
   summary?: string;
   columnName?: string;           // Column display name
   priority?: string;
-  status?: string;               // Autonomy state: todo, in_progress, blocked, pending, done
+  status?: string;               // Autonomy state: ready, agent_active, needs_feedback, blocked, done
   tags?: string[];
   updatedAt?: string;
   // Artifact linking
@@ -296,13 +296,14 @@ function getBoardHtml(panelMode = false): string {
         gap: 6px;
         transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
         position: relative;
-        border-left: 4px solid #6b7280; /* Default: todo gray */
+        border-left: 4px solid #6b7280; /* Default: ready/done gray */
       }
-      /* Status-based left border colors */
-      .task-card[data-status="in_progress"] { border-left-color: #22c55e; }
-      .task-card[data-status="blocked"] { border-left-color: #ef4444; }
-      .task-card[data-status="pending"] { border-left-color: #f59e0b; }
-      .task-card[data-status="done"] { border-left-color: #3b82f6; }
+      /* Status-based left border colors for agent-human handoff */
+      .task-card[data-status="ready"] { border-left-color: #3b82f6; } /* Blue: spawn agent */
+      .task-card[data-status="agent_active"] { border-left-color: #22c55e; } /* Green: agent working */
+      .task-card[data-status="needs_feedback"] { border-left-color: #f97316; } /* Orange: user action needed */
+      .task-card[data-status="blocked"] { border-left-color: #ef4444; } /* Red: blocked */
+      .task-card[data-status="done"] { border-left-color: #6b7280; } /* Gray: complete */
       .task-card.selected {
         border-color: var(--vscode-focusBorder);
         border-left-width: 4px;
@@ -423,10 +424,11 @@ function getBoardHtml(panelMode = false): string {
       .card-footer-right {
         text-transform: capitalize;
       }
-      .card-footer-right.status-in_progress { color: #22c55e; }
+      .card-footer-right.status-ready { color: #3b82f6; }
+      .card-footer-right.status-agent_active { color: #22c55e; }
+      .card-footer-right.status-needs_feedback { color: #f97316; }
       .card-footer-right.status-blocked { color: #ef4444; }
-      .card-footer-right.status-pending { color: #f59e0b; }
-      .card-footer-right.status-done { color: #3b82f6; }
+      .card-footer-right.status-done { color: #6b7280; }
       .card-actions {
         display: flex;
         justify-content: flex-end;
@@ -644,7 +646,7 @@ function getBoardHtml(panelMode = false): string {
           card.className = 'task-card';
           card.draggable = true;
           card.dataset.taskId = task.id;
-          card.dataset.status = task.status || 'todo';
+          card.dataset.status = task.status || 'ready';
           if (state.selection.has(task.id)) {
             card.classList.add('selected');
           }
@@ -723,8 +725,8 @@ function getBoardHtml(panelMode = false): string {
           }
 
           // Footer: priority/date on left, status on right
-          const status = task.status || 'todo';
-          const hasStatus = status !== 'todo';
+          const status = task.status || 'ready';
+          const hasStatus = status !== 'ready';
           const hasPriority = !!task.priority;
           const hasDate = !!task.updatedAt;
           
@@ -765,10 +767,11 @@ function getBoardHtml(panelMode = false): string {
               const statusSpan = document.createElement('span');
               statusSpan.className = 'card-footer-right status-' + status;
               const statusLabels = {
-                'in_progress': 'Active',
-                'blocked': 'Blocked',
-                'pending': 'Pending',
-                'done': 'Done'
+                'ready': '▶ Ready',
+                'agent_active': '⚡ Active',
+                'needs_feedback': '💬 Feedback',
+                'blocked': '⛔ Blocked',
+                'done': '✓ Done'
               };
               statusSpan.textContent = statusLabels[status] || status;
               footer.appendChild(statusSpan);
