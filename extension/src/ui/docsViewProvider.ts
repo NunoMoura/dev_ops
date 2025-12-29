@@ -42,11 +42,10 @@ export type DocsNode = DocsCategoryNode | DocsFolderNode | DocsFileNode | DocsAc
 /**
  * Document categories - aligned with Framework v2 design.
  * Architecture: Backend specs, API docs, data models
- * UX: Users, stories, mockups, style
+ * UX is now in its own separate view.
  */
 const DOC_CATEGORIES: DocsCategoryNode[] = [
     { kind: 'category', id: 'architecture', label: 'Architecture', directory: 'architecture', icon: 'folder-library' },
-    { kind: 'category', id: 'ux', label: 'UX', directory: 'ux', icon: 'folder-library' },
 ];
 
 /**
@@ -56,11 +55,6 @@ const DOC_CATEGORIES: DocsCategoryNode[] = [
 const CATEGORY_ACTIONS: Record<string, DocsActionNode[]> = {
     architecture: [
         { kind: 'action', id: 'new-arch-doc', label: 'New Doc', icon: 'add', command: 'devops.newArchDoc' },
-    ],
-    ux: [
-        { kind: 'action', id: 'new-user-persona', label: 'New Persona', icon: 'add', command: 'devops.newUserPersona' },
-        { kind: 'action', id: 'new-user-story', label: 'New Story', icon: 'add', command: 'devops.newUserStory' },
-        { kind: 'action', id: 'new-mockup', label: 'New Mockup', icon: 'add', command: 'devops.newMockup' },
     ],
 };
 

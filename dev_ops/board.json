@@ -35,9 +35,9 @@
   "items": [
     {
       "id": "TASK-001",
-      "columnId": "col-understand",
+      "columnId": "col-plan",
       "title": "New Task",
-      "updatedAt": "2025-12-27T21:47:24.367Z"
+      "updatedAt": "2025-12-28T22:00:09.984Z"
     }
   ]
 }

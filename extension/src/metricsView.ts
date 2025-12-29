@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
-import { Board, Task, Column } from './features/types';
+import { Board } from './features/types';
 
 /**
- * Metrics dashboard view provider for the Kanban sidebar.
- * Shows development cycle metrics, WIP limits, and quick actions.
+ * Status view provider for the DevOps sidebar.
+ * Shows task status overview with colored indicators.
  */
 export class MetricsViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'devopsMetricsView';
@@ -47,27 +47,14 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
       padding: 12px;
       margin: 0;
     }
-    h3 { 
-      font-size: 12px; 
-      margin: 0 0 10px; 
-      font-weight: 600; 
-      color: var(--vscode-descriptionForeground); 
-      text-transform: uppercase; 
-      letter-spacing: 0.5px; 
-    }
-    h3:not(:first-child) {
-      margin-top: 20px;
-    }
     
     .metric-card {
       background: var(--vscode-editor-background);
       border: 1px solid var(--vscode-panel-border, rgba(255,255,255,0.1));
       border-radius: 8px;
       padding: 16px;
-      margin-bottom: 12px;
     }
     
-    /* Stat rows with more breathing room */
     .stat-row {
       display: flex;
       justify-content: space-between;
@@ -77,16 +64,12 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
       font-size: 13px;
     }
     .stat-row:last-child { border-bottom: none; padding-bottom: 0; }
-    .stat-label { flex: 1; }
     .stat-value {
       min-width: 30px;
       text-align: right;
       font-weight: 600;
     }
-    .stat-value.highlight { color: var(--vscode-charts-blue, #3b82f6); }
-    .stat-value.success { color: #22c55e; }
     .stat-value.warning { color: #ef4444; }
-    .stat-value.pending { color: #f97316; }
     
     .status-dot {
       display: inline-block;
@@ -99,27 +82,9 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
     .status-agent_active { background: #22c55e; }
     .status-needs_feedback { background: #f97316; }
     .status-blocked { background: #ef4444; }
-    .status-done { background: #6b7280; }
-    
-    .empty-state {
-      text-align: center;
-      padding: 24px;
-      color: var(--vscode-descriptionForeground);
-    }
   </style>
 </head>
 <body>
-  <h3>Column Distribution</h3>
-  <div class="metric-card">
-    ${metrics.columnStats.map(col => `
-      <div class="stat-row">
-        <span class="stat-label">${col.name}</span>
-        <span class="stat-value ${col.overLimit ? 'warning' : ''}">${col.count}</span>
-      </div>
-    `).join('')}
-  </div>
-  
-  <h3>Status Overview</h3>
   <div class="metric-card">
     <div class="stat-row">
       <span><span class="status-dot status-ready"></span>Ready</span>
@@ -139,22 +104,6 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
     </div>
   </div>
   
-  <h3>Priority Breakdown</h3>
-  <div class="metric-card">
-    <div class="stat-row">
-      <span class="stat-label">High</span>
-      <span class="stat-value">${metrics.priorityCounts.high}</span>
-    </div>
-    <div class="stat-row">
-      <span class="stat-label">Medium</span>
-      <span class="stat-value">${metrics.priorityCounts.medium}</span>
-    </div>
-    <div class="stat-row">
-      <span class="stat-label">Low</span>
-      <span class="stat-value">${metrics.priorityCounts.low}</span>
-    </div>
-  </div>
-  
   <script>
     const vscode = acquireVsCodeApi();
   </script>
@@ -162,22 +111,14 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
 </html>`;
   }
 
-  private calculateMetrics(): BoardMetrics {
+  private calculateMetrics(): StatusMetrics {
     if (!this.board) {
       return {
-        totalTasks: 0,
-        completedToday: 0,
-        inProgress: 0,
-        blocked: 0,
-        columnStats: [],
         statusCounts: { ready: 0, agent_active: 0, needs_feedback: 0, blocked: 0, done: 0 },
-        priorityCounts: { high: 0, medium: 0, low: 0 },
       };
     }
 
     const items = this.board.items || [];
-    const columns = this.board.columns || [];
-    const today = new Date().toISOString().split('T')[0];
 
     // Count tasks by status
     const statusCounts = { ready: 0, agent_active: 0, needs_feedback: 0, blocked: 0, done: 0 };
@@ -188,58 +129,12 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
       }
     });
 
-    // Count tasks by column with WIP limits
-    const WIP_LIMIT = 3; // Max tasks in active columns
-    const activeColumns = ['col-understand', 'col-plan', 'col-build', 'col-verify'];
-    const columnStats = columns.map(col => {
-      const count = items.filter(t => t.columnId === col.id).length;
-      const hasLimit = activeColumns.includes(col.id);
-      return {
-        id: col.id,
-        name: col.name,
-        count,
-        overLimit: hasLimit && count > WIP_LIMIT,
-      };
-    });
-
-    // Count tasks by priority
-    const priorityCounts = { high: 0, medium: 0, low: 0 };
-    items.forEach(task => {
-      const priority = task.priority || 'medium';
-      if (priority in priorityCounts) {
-        priorityCounts[priority as keyof typeof priorityCounts]++;
-      }
-    });
-
-    // Count completed today
-    const completedToday = items.filter(task => {
-      if (task.columnId !== 'col-done') {
-        return false;
-      }
-      const updated = task.updatedAt?.split('T')[0];
-      return updated === today;
-    }).length;
-
-    return {
-      totalTasks: items.length,
-      completedToday,
-      inProgress: statusCounts.agent_active,
-      blocked: statusCounts.blocked,
-      columnStats,
-      statusCounts,
-      priorityCounts,
-    };
+    return { statusCounts };
   }
 }
 
-interface BoardMetrics {
-  totalTasks: number;
-  completedToday: number;
-  inProgress: number;
-  blocked: number;
-  columnStats: Array<{ id: string; name: string; count: number; overLimit: boolean }>;
+interface StatusMetrics {
   statusCounts: { ready: number; agent_active: number; needs_feedback: number; blocked: number; done: number };
-  priorityCounts: { high: number; medium: number; low: number };
 }
 
 export function registerMetricsView(context: vscode.ExtensionContext): MetricsViewProvider {

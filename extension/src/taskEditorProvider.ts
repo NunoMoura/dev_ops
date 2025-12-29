@@ -498,12 +498,13 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
           </select>
         </div>
         <div>
+          <label for="status">Status</label>
           <select id="status">
-            <option value="ready" ${task.status === 'ready' || !task.status ? 'selected' : ''}>▶ Ready</option>
-            <option value="agent_active" ${task.status === 'agent_active' ? 'selected' : ''}>⚡ Agent Active</option>
-            <option value="needs_feedback" ${task.status === 'needs_feedback' ? 'selected' : ''}>💬 Needs Feedback</option>
-            <option value="blocked" ${task.status === 'blocked' ? 'selected' : ''}>⛔ Blocked</option>
-            <option value="done" ${task.status === 'done' ? 'selected' : ''}>✓ Done</option>
+            <option value="ready" ${task.status === 'ready' || !task.status ? 'selected' : ''}>Ready</option>
+            <option value="agent_active" ${task.status === 'agent_active' ? 'selected' : ''}>Agent Active</option>
+            <option value="needs_feedback" ${task.status === 'needs_feedback' ? 'selected' : ''}>Needs Feedback</option>
+            <option value="blocked" ${task.status === 'blocked' ? 'selected' : ''}>Blocked</option>
+            <option value="done" ${task.status === 'done' ? 'selected' : ''}>Done</option>
           </select>
         </div>
         <div>

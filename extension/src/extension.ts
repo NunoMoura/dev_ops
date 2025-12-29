@@ -15,7 +15,7 @@ import { createStatusBar, StatusBarManager } from './statusBar';
 import { TaskEditorProvider } from './taskEditorProvider';
 import { MetricsViewProvider, registerMetricsView } from './metricsView';
 import { registerDocsView } from './ui/docsViewProvider';
-import { registerAgentView } from './ui/agentViewProvider';
+import { registerUXView } from './ui/uxViewProvider';
 
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -52,7 +52,6 @@ export function deactivate() { }
 type DevOpsExtensionServices = KanbanCommandServices & {
   boardPanelManager: KanbanBoardPanelManager;
   statusBar: StatusBarManager;
-  agentView: vscode.TreeView<unknown>;
   syncFilterUI: () => void;
 };
 
@@ -60,16 +59,11 @@ async function initializeDevOpsServices(context: vscode.ExtensionContext): Promi
   // Internal board state provider (not displayed as a tree anymore)
   const provider = new KanbanTreeProvider(readKanban);
 
-  // Register Agent view for sidebar
-  const agentProvider = registerAgentView(context);
-  const agentView = vscode.window.createTreeView('devopsAgentView', {
-    treeDataProvider: agentProvider,
-  });
-  context.subscriptions.push(agentView);
-
-  // Register metrics view, docs view, and board panel
+  // Register sidebar views
   const metricsProvider = registerMetricsView(context);
   registerDocsView(context);
+  registerUXView(context);
+
   const boardPanelManager = createBoardPanelManager(context);
 
   // Create status bar
@@ -84,11 +78,10 @@ async function initializeDevOpsServices(context: vscode.ExtensionContext): Promi
 
   return {
     provider,
-    kanbanView: agentView as unknown as vscode.TreeView<import('./ui/providers').KanbanNode>,
+    kanbanView: undefined as unknown as vscode.TreeView<import('./ui/providers').KanbanNode>,
     metricsProvider,
     boardPanelManager,
     statusBar,
-    agentView,
     syncFilterUI,
   };
 }
@@ -99,16 +92,6 @@ function bindDevOpsViews(
 ): void {
   registerBoardSnapshotSync(context, services);
   registerBoardViewRequests(context, services);
-
-  // Auto-open board when clicking on Agent section
-  const { agentView, boardPanelManager } = services;
-  context.subscriptions.push(
-    agentView.onDidChangeVisibility((e) => {
-      if (e.visible) {
-        boardPanelManager.openBoard();
-      }
-    })
-  );
 }
 
 function registerBoardSnapshotSync(context: vscode.ExtensionContext, services: DevOpsExtensionServices): void {

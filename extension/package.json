@@ -200,17 +200,20 @@
     "views": {
       "devops": [
         {
-          "id": "devopsAgentView",
-          "name": "Agent"
+          "id": "devopsMetricsView",
+          "name": "Status",
+          "type": "webview",
+          "icon": "$(dashboard)"
         },
         {
           "id": "devopsDocsView",
-          "name": "Docs"
+          "name": "Docs",
+          "icon": "$(book)"
         },
         {
-          "id": "devopsMetricsView",
-          "name": "Metrics",
-          "type": "webview"
+          "id": "devopsUXView",
+          "name": "UX",
+          "icon": "$(person)"
         }
       ]
     },
@@ -227,24 +230,7 @@
       }
     ],
     "menus": {
-      "viewContainer/title": [
-        {
-          "command": "kanban.openSettings",
-          "when": "viewContainer == devops",
-          "group": "navigation"
-        }
-      ],
       "view/title": [
-        {
-          "command": "kanban.createTask",
-          "when": "view == devopsAgentView",
-          "group": "navigation"
-        },
-        {
-          "command": "devops.refreshAgent",
-          "when": "view == devopsAgentView",
-          "group": "navigation"
-        },
         {
           "command": "devops.refreshDocs",
           "when": "view == devopsDocsView",
