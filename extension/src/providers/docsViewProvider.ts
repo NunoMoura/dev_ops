@@ -89,33 +89,26 @@ export class DocsViewProvider implements vscode.TreeDataProvider<DocsNode> {
             return [];
         }
 
-        // Root level: show categories only (actions are inside categories)
+        // Root level: show flattened structure (Action + Architecture docs)
+        // We used to show categories, but now we show the 'Architecture' docs directly
         if (!element) {
-            return [...DOC_CATEGORIES];
+            const architecturePath = path.join(this.docsPath, 'architecture');
+            const actions = CATEGORY_ACTIONS['architecture'] || [];
+
+            // Get architecture docs directly
+            const children = this.getHierarchicalChildren(architecturePath, 'architecture');
+            return [...actions, ...children];
         }
 
-        // Category level
-        if (element.kind === 'category') {
-            const catPath = path.join(this.docsPath, element.directory);
-            const actions = CATEGORY_ACTIONS[element.id] || [];
-
-            // Architecture and UX: show actions first, then hierarchical folders
-            if (element.id === 'architecture' || element.id === 'ux') {
-                const children = this.getHierarchicalChildren(catPath, element.id);
-                return [...actions, ...children];
-            }
-
-            // Other categories: flat list of files
-            return this.getFlatFiles(catPath, element.id);
-        }
-
-        // Folder level: show subfolders and files
+        // Subfolders (recursive)
         if (element.kind === 'folder') {
             return this.getHierarchicalChildren(element.folderPath, element.id);
         }
 
         return [];
     }
+
+
 
     /**
      * Get hierarchical children (folders + files) for architecture.

@@ -8,7 +8,7 @@
     "type": "git",
     "url": "https://github.com/NunoMoura/dev_ops"
   },
-  "version": "0.1.0-dev",
+  "version": "0.1.1",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -247,15 +247,15 @@
     "views": {
       "devops": [
         {
-          "id": "devopsAgentView",
-          "name": "Active Agents",
-          "icon": "$(robot)"
-        },
-        {
           "id": "devopsMetricsView",
           "name": "Status",
           "type": "webview",
           "icon": "$(dashboard)"
+        },
+        {
+          "id": "devopsAgentView",
+          "name": "Active Agents",
+          "icon": "$(robot)"
         },
         {
           "id": "devopsDocsView",

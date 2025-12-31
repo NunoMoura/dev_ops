@@ -33,7 +33,7 @@ export class AgentDashboardProvider implements vscode.TreeDataProvider<AgentNode
             if (agents.length === 0) {
                 // Return a placeholder node
                 return [new AgentNode(
-                    'No active agents',
+                    'No active agent at the moment',
                     vscode.TreeItemCollapsibleState.None,
                     { type: 'info', icon: new vscode.ThemeIcon('info') }
                 )];
