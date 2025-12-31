@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import { Board, Column, Task, COLUMN_FALLBACK_NAME } from './types';
 import { readBoard, writeBoard, getWorkspaceRoot } from './boardStore';
-import { compareNumbers, compareTasks, isDefined } from './kanbanData';
+import { compareNumbers, compareTasks, isDefined } from './boardData';
 import { formatError } from './errors';
 import { buildTaskDescription } from './taskPresentation';
 
@@ -13,7 +13,7 @@ type TaskQuickPickItem = vscode.QuickPickItem & { item: Task };
 
 export async function promptForTask(board: Board): Promise<Task | undefined> {
   if (!board.items.length) {
-    vscode.window.showInformationMessage('No Kanban tasks available.');
+    vscode.window.showInformationMessage('No Board tasks available.');
     return undefined;
   }
   const quickPickItems: TaskQuickPickItem[] = board.items.sort(compareTasks).map((item) => ({
@@ -32,7 +32,7 @@ export async function promptForColumn(
   preselectId?: string,
 ): Promise<Column | undefined> {
   if (!board.columns.length) {
-    vscode.window.showInformationMessage('Create a Kanban column first.');
+    vscode.window.showInformationMessage('Create a Board column first.');
     return undefined;
   }
   type ColumnQuickPick = vscode.QuickPickItem & { column: Column };
@@ -53,7 +53,7 @@ export async function appendTaskHistory(task: Task, message: string): Promise<vo
   if (!root) {
     return;
   }
-  const historyDir = path.join(root, 'dev_ops', 'kanban', 'tasks');
+  const historyDir = path.join(root, 'dev_ops', 'board', 'tasks');
   await fs.mkdir(historyDir, { recursive: true });
   const entry = `- [${new Date().toISOString()}] ${message}\n`;
   await fs.appendFile(path.join(historyDir, `${task.id}.md`), entry, 'utf8');

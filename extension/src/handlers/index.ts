@@ -21,7 +21,7 @@ import {
   parseTags,
   sortColumnsForManager,
   isDefined,
-} from '../features/kanbanData';
+} from '../features/boardData';
 import {
   ensurePlanDirectory,
   listPlanFiles,
@@ -48,35 +48,35 @@ import {
 import { formatError } from '../features/errors';
 import { MoveTasksRequest } from './types';
 
-export type KanbanCommandServices = {
+export type DevOpsCommandServices = {
   provider: BoardTreeProvider;
-  kanbanView: vscode.TreeView<BoardNode>;
+  boardView: vscode.TreeView<BoardNode>;
   dashboardProvider: DashboardViewProvider;
 };
 
 export function registerBoardCommands(
   context: vscode.ExtensionContext,
-  services: KanbanCommandServices,
+  services: DevOpsCommandServices,
   syncFilterUI: () => void,
 ): void {
-  const { provider, kanbanView } = services;
+  const { provider, boardView } = services;
 
-  // Note: kanban.openBoard is registered in boardView.ts (opens the webview panel)
+  // Note: devops.openBoard is registered in boardView.ts (opens the webview panel)
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.pickNextTask',
+    'devops.pickNextTask',
     async () => {
-      await handlePickNextTask(provider, kanbanView);
+      await handlePickNextTask(provider, boardView);
     },
     'Unable to pick next task',
   );
 
-  // Note: kanban.showTaskDetails is registered below (opens card details panel)
+  // Note: board.showTaskDetails is registered below (opens card details panel)
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.getTasks',
+    'devops.getTasks',
     async () => {
       const board = await readBoard();
       const doc = await vscode.workspace.openTextDocument({
@@ -85,57 +85,57 @@ export function registerBoardCommands(
       });
       await vscode.window.showTextDocument(doc, { preview: true });
     },
-    'Unable to load Kanban tasks',
+    'Unable to load Board tasks',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.createColumn',
+    'devops.createColumn',
     async () => {
       await handleCreateColumn(provider);
     },
     'Unable to create column',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.renameColumn',
+    'devops.renameColumn',
     async (node?: BoardNode | BoardManagerNode) => {
       await handleRenameColumn(provider, node);
     },
     'Unable to rename column',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.deleteColumn',
+    'devops.deleteColumn',
     async (node?: BoardNode | BoardManagerNode) => {
       await handleDeleteColumn(provider, node);
     },
     'Unable to delete column',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.createTask',
+    'devops.createTask',
     async (node?: BoardNode) => {
       await handleCreateTask(provider, node);
     },
     'Unable to create task',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.moveTask',
+    'devops.moveTask',
     async (node?: BoardNode) => {
-      await handleMoveTask(provider, kanbanView, node);
+      await handleMoveTask(provider, boardView, node);
     },
     'Unable to move task',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.filterTasks',
+    'devops.filterTasks',
     async () => {
       await handleFilterTasks(provider);
       syncFilterUI();
@@ -143,9 +143,9 @@ export function registerBoardCommands(
     'Unable to apply filter',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.clearTaskFilter',
+    'devops.clearTaskFilter',
     async () => {
       await provider.clearFilters();
       syncFilterUI();
@@ -154,9 +154,9 @@ export function registerBoardCommands(
   );
 
   // toggleAgentReadyFilter command removed - using status filter instead
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.toggleAgentReadyFilter',
+    'devops.toggleAgentReadyFilter',
     async () => {
       await provider.toggleStatusFilter('blocked');
       syncFilterUI();
@@ -164,9 +164,9 @@ export function registerBoardCommands(
     'Unable to toggle filter',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.toggleBlockedFilter',
+    'devops.toggleBlockedFilter',
     async () => {
       await provider.toggleBlockedFilter();
       syncFilterUI();
@@ -174,72 +174,72 @@ export function registerBoardCommands(
     'Unable to toggle blocked filter',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.importPlan',
+    'devops.importPlan',
     async () => {
-      await handleImportPlan(provider, kanbanView);
+      await handleImportPlan(provider, boardView);
     },
     'Unable to import plan',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.generateCodexPrompt',
+    'devops.generateCodexPrompt',
     async (node?: BoardNode) => {
       await handleGenerateCodexPrompt(provider, node);
     },
     'Unable to build Codex prompt',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.openEntryPoints',
+    'devops.openEntryPoints',
     async (node?: BoardNode) => {
       await handleOpenEntryPoints(node);
     },
     'Unable to open entry points',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.openTaskContext',
+    'devops.openTaskContext',
     async (node?: BoardNode) => {
       await handleOpenTaskContext(node);
     },
     'Unable to open task context',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.showTaskDetails',
+    'devops.showTaskDetails',
     async (taskId?: string) => {
       await handleFocusTaskDetails(taskId);
     },
     'Unable to open card details',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.markTaskInProgress',
+    'devops.markTaskInProgress',
     async (node?: BoardNode) => {
       await handleSetStatusViaPython('agent_active', 'Marked Agent Active', provider, node);
     },
     'Unable to update status',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.markTaskBlocked',
+    'devops.markTaskBlocked',
     async (node?: BoardNode) => {
       await handleSetStatusViaPython('blocked', 'Marked Blocked', provider, node);
     },
     'Unable to update status',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.setStatus',
+    'devops.setStatus',
     async (node?: BoardNode) => {
       const statuses = ['ready', 'agent_active', 'needs_feedback', 'blocked', 'done'];
       const picked = await vscode.window.showQuickPick(statuses, { placeHolder: 'Select new status' });
@@ -250,16 +250,16 @@ export function registerBoardCommands(
     'Unable to set status',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.claimTask',
+    'devops.claimTask',
     async (node?: BoardNode) => {
       await handleClaimTaskViaPython(provider, node);
     },
     'Unable to claim task',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
     'devops.spawnAgent',
     async () => {
@@ -268,7 +268,7 @@ export function registerBoardCommands(
     'Unable to spawn agent',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
     'devops.nextPhase',
     async (node?: BoardNode) => {
@@ -277,7 +277,7 @@ export function registerBoardCommands(
     'Unable to move to next phase',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
     'devops.retryPhase',
     async () => {
@@ -286,7 +286,7 @@ export function registerBoardCommands(
     'Unable to open retry workflow',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
     'devops.refinePhase',
     async () => {
@@ -295,36 +295,36 @@ export function registerBoardCommands(
     'Unable to refine phase',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.markTaskDone',
+    'devops.markTaskDone',
     async (node?: BoardNode) => {
       await handleMarkDoneViaPython(provider, node);
     },
     'Unable to update status',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.deleteTask',
+    'devops.deleteTask',
     async (node?: BoardNode) => {
       await handleDeleteTask(provider, syncFilterUI, node);
     },
     'Unable to delete task',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.viewTaskHistory',
+    'devops.viewTaskHistory',
     async (node?: BoardNode) => {
       await handleViewTaskHistory(node);
     },
     'Unable to view task history',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
-    'kanban.openSettings',
+    'devops.openSettings',
     async () => {
       // Open extension settings filtered to DevOps
       await vscode.commands.executeCommand('workbench.action.openSettings', '@ext:NunoMoura.dev-ops');
@@ -332,7 +332,16 @@ export function registerBoardCommands(
     'Unable to open settings',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
+    context,
+    'devops.refreshBoard',
+    async () => {
+      await provider.refresh();
+    },
+    'Unable to refresh board',
+  );
+
+  registerDevOpsCommand(
     context,
     'devops.createUser',
     async () => {
@@ -341,7 +350,7 @@ export function registerBoardCommands(
     'Unable to create user persona',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
     'devops.createStory',
     async () => {
@@ -351,7 +360,7 @@ export function registerBoardCommands(
   );
 
   // Doc creation commands for Docs view buttons
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
     'devops.newArchDoc',
     async () => {
@@ -360,16 +369,7 @@ export function registerBoardCommands(
     'Unable to create architecture doc',
   );
 
-  registerKanbanCommand(
-    context,
-    'devops.newUserPersona',
-    async () => {
-      await handleCreateUser();
-    },
-    'Unable to create user persona',
-  );
-
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
     'devops.newUserStory',
     async () => {
@@ -378,7 +378,7 @@ export function registerBoardCommands(
     'Unable to create user story',
   );
 
-  registerKanbanCommand(
+  registerDevOpsCommand(
     context,
     'devops.newMockup',
     async () => {
@@ -414,13 +414,13 @@ export async function handleBoardOpenTask(taskId: string): Promise<void> {
     const board = await readBoard();
     const task = board.items.find((item) => item.id === taskId);
     if (!task) {
-      vscode.window.showWarningMessage('Task not found on the current Kanban board.');
+      vscode.window.showWarningMessage('Task not found on the current Board board.');
       return;
     }
 
     // Open task in a new editor tab
-    const uri = vscode.Uri.parse(`kanban-task:/task/${taskId}.kanban-task`);
-    await vscode.commands.executeCommand('vscode.openWith', uri, 'kanban.taskEditor');
+    const uri = vscode.Uri.parse(`devops-task:/task/${taskId}.devops-task`);
+    await vscode.commands.executeCommand('vscode.openWith', uri, 'devops.taskEditor');
   } catch (error) {
     vscode.window.showErrorMessage(`Unable to open task: ${formatError(error)}`);
   }
@@ -514,7 +514,7 @@ async function handleDeleteTask(
   await handleCardDeleteMessage(task.id, provider, syncFilterUI);
 }
 
-function registerKanbanCommand(
+function registerDevOpsCommand(
   context: vscode.ExtensionContext,
   commandId: string,
   handler: (...args: any[]) => unknown,
@@ -601,8 +601,8 @@ async function handleFocusTaskDetails(taskId: string | undefined): Promise<void>
     }
   }
   // Open task in editor tab
-  const uri = vscode.Uri.parse(`kanban-task:/task/${task.id}.kanban-task`);
-  await vscode.commands.executeCommand('vscode.openWith', uri, 'kanban.taskEditor');
+  const uri = vscode.Uri.parse(`devops-task:/task/${task.id}.devops-task`);
+  await vscode.commands.executeCommand('vscode.openWith', uri, 'devops.taskEditor');
 }
 
 async function handleCreateColumn(provider: BoardTreeProvider): Promise<void> {
@@ -740,8 +740,8 @@ async function handleCreateTask(
 
     // Open task in editor tab for immediate editing
     // Note: "task created" notification will show when user saves via Save & Close button
-    const uri = vscode.Uri.parse(`kanban-task:/task/${taskId}.kanban-task`);
-    await vscode.commands.executeCommand('vscode.openWith', uri, 'kanban.taskEditor');
+    const uri = vscode.Uri.parse(`devops-task:/task/${taskId}.devops-task`);
+    await vscode.commands.executeCommand('vscode.openWith', uri, 'devops.taskEditor');
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to create task: ${formatError(error)}`);
   }
@@ -793,7 +793,7 @@ async function handleStatusUpdate(
 }
 
 /**
- * Set task status using Python CLI (kanban_ops.py status).
+ * Set task status using Python CLI (board_ops.py status).
  * This is the correct approach - status is a field, not a column.
  */
 async function handleSetStatusViaPython(
@@ -822,7 +822,7 @@ async function handleSetStatusViaPython(
 }
 
 /**
- * Claim a task using Python CLI (kanban_ops.py claim).
+ * Claim a task using Python CLI (board_ops.py claim).
  * Sets status to in_progress and updates .current_task file.
  */
 async function handleClaimTaskViaPython(
@@ -850,7 +850,7 @@ async function handleClaimTaskViaPython(
 
 /**
  * Spawn a new agent by picking and claiming the highest priority task.
- * Wraps: kanban_ops.py pick --claim
+ * Wraps: board_ops.py pick --claim
  */
 async function handleSpawnAgent(provider: BoardTreeProvider): Promise<void> {
   const cwd = getWorkspaceRoot();
@@ -999,7 +999,7 @@ async function handleOpenWorkflow(workflowName: string): Promise<void> {
 
 /**
  * Mark a task as done using Python CLI.
- * Wraps: kanban_ops.py done TASK_ID
+ * Wraps: board_ops.py done TASK_ID
  */
 async function handleMarkDoneViaPython(
   provider: BoardTreeProvider,
@@ -1171,7 +1171,7 @@ async function handleViewTaskHistory(node?: BoardNode): Promise<void> {
     vscode.window.showWarningMessage('No workspace folder open.');
     return;
   }
-  const historyPath = path.join(root, 'dev_ops', 'kanban', 'tasks', `${task.id}.md`);
+  const historyPath = path.join(root, 'dev_ops', 'board', 'tasks', `${task.id}.md`);
   try {
     const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(historyPath));
     await vscode.window.showTextDocument(doc, { preview: true });
@@ -1316,7 +1316,7 @@ async function handleNewArchDoc(): Promise<void> {
 async function handleNewMockup(): Promise<void> {
   const title = await vscode.window.showInputBox({
     prompt: 'Enter mockup name',
-    placeHolder: 'e.g., Task Filter Dialog, Kanban Board View',
+    placeHolder: 'e.g., Task Filter Dialog, Board Board View',
   });
 
   if (!title) {

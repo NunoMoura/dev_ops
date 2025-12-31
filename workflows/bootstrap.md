@@ -21,6 +21,6 @@ Initialize a project with the DevOps framework.
 
 ## Outputs
 
-- `dev_ops/board.json` — Kanban board
+- `dev_ops/board.json` — Board board
 - `dev_ops/constitution.md` — Project principles
 - `.agent/rules/` — Phase rules and dynamic rules

@@ -4,7 +4,7 @@ title: "{{title}}"     # Short descriptive title
 type: task
 lifecycle: ephemeral   # TASK is ephemeral, archived on Done
 date: "{{date}}"       # Creation date (YYYY-MM-DD)
-column: col-backlog    # Current Kanban column
+column: col-backlog    # Current Board column
 status: ready          # ready | agent_active | needs_feedback | blocked | done
 priority: medium       # high | medium | low
 trigger: ""            # What spawned this task (PRD-XXX, FEAT-XXX, BUG-XXX)

@@ -96,7 +96,7 @@ export class CurrentTaskViewProvider implements vscode.TreeDataProvider<CurrentT
         item.description = `${element.phase} • ${element.status}`;
         item.tooltip = `Task: ${element.taskId}\nTitle: ${element.title}\nPhase: ${element.phase}\nStatus: ${element.status}`;
         item.command = {
-            command: 'kanban.showTaskDetails',
+            command: 'board.showTaskDetails',
             title: 'Show Task Details',
             arguments: [element.taskId],
         };

@@ -85,7 +85,7 @@ Move back to a previous phase when:
 
 ```bash
 # Example: discovered research gap during Build
-python3 dev_ops/scripts/kanban_ops.py move TASK-XXX col-understand
+python3 dev_ops/scripts/board_ops.py move TASK-XXX col-understand
 ```
 
 ### Always

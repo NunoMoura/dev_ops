@@ -19,7 +19,7 @@ triggers: [task_created, agent_spawned]
 1. **Claim task**
 
    ```bash
-   python3 dev_ops/scripts/kanban_ops.py pick --claim
+   python3 dev_ops/scripts/board_ops.py pick --claim
    ```
 
 2. **Read trigger doc thoroughly** — Understand the "why" before the "what"
@@ -29,7 +29,7 @@ triggers: [task_created, agent_spawned]
 4. **Move to Understand**
 
    ```bash
-   python3 dev_ops/scripts/kanban_ops.py move TASK-XXX col-understand
+   python3 dev_ops/scripts/board_ops.py move TASK-XXX col-understand
    ```
 
 ## EXIT_CRITERIA

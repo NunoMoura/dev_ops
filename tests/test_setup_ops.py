@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
 from unittest.mock import MagicMock, patch
 
-from setup_ops import get_all_rules, get_core_rules, init_kanban_board, install_kanban_extension
+from setup_ops import get_all_rules, get_core_rules, init_board, install_extension
 
 
 class TestGetCoreRules:
@@ -49,15 +49,15 @@ class TestGetCoreRules:
             assert rule["category"] == "Core"
 
 
-class TestInitKanbanBoard:
-    """Test init_kanban_board function."""
+class TestInitBoard:
+    """Test init_board function."""
 
     def test_creates_board_json(self):
         """Test that a valid board.json is created."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            init_kanban_board(tmpdir)
+            init_board(tmpdir)
 
-            board_path = os.path.join(tmpdir, "dev_ops", "board.json")
+            board_path = os.path.join(tmpdir, "dev_ops", "board", "board.json")
             assert os.path.exists(board_path)
 
             with open(board_path) as f:
@@ -70,7 +70,7 @@ class TestInitKanbanBoard:
     def test_does_not_overwrite_existing(self):
         """Test that existing board is not overwritten."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            dev_ops_dir = os.path.join(tmpdir, "dev_ops")
+            dev_ops_dir = os.path.join(tmpdir, "dev_ops", "board")
             os.makedirs(dev_ops_dir)
             board_path = os.path.join(dev_ops_dir, "board.json")
 
@@ -80,7 +80,7 @@ class TestInitKanbanBoard:
                 json.dump(existing, f)
 
             # Try to init
-            init_kanban_board(tmpdir)
+            init_board(tmpdir)
 
             # Should be unchanged
             with open(board_path) as f:
@@ -107,8 +107,8 @@ class TestGetAllRules:
             assert "Core" in categories
 
 
-class TestKanbanExtension:
-    """Test kanban extension installation."""
+class TestExtension:
+    """Test extension installation."""
 
     @patch("setup_ops.subprocess.run")
     @patch("setup_ops.glob.glob")
@@ -129,7 +129,7 @@ class TestKanbanExtension:
         ]
 
         # Call function
-        install_kanban_extension("/path/to")
+        install_extension("/path/to")
 
         # Verify glob called with correct pattern
         mock_glob.assert_called_with("/path/to/extension/dev-ops-*.vsix")

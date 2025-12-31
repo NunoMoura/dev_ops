@@ -136,7 +136,7 @@ The VS Code extension is structured as:
 ```text
 extension/src/
 ├── extension.ts       # Entry point, command registration
-├── boardView.ts       # Kanban board webview panel
+├── boardView.ts       # Board board webview panel
 ├── taskDetailsView.ts # Task details webview
 ├── ui/providers.ts    # Tree view providers
 ├── commands/          # Command implementations
@@ -198,7 +198,7 @@ This creates the expected folder structure in the test project:
 │   ├── ux/
 │   └── tests/
 └── dev_ops/
-    └── kanban/
+    └── board/
         └── board.json
 ```
 
@@ -206,7 +206,7 @@ This creates the expected folder structure in the test project:
 
 1. Define command in `package.json` under `contributes.commands`
 2. Implement handler in `src/commands/` directory
-3. Register in `extension.ts` via `registerKanbanCommands`
+3. Register in `extension.ts` via `registerBoardCommands`
 4. Add menu entries in `package.json` under `contributes.menus`
 
 ### TypeScript Style

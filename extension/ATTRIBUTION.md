@@ -2,7 +2,7 @@
 
 This VS Code extension is derived from **Titan Kanban** by **MissTitanK3**.
 
-- **Original Project**: [titan-kanban](https://github.com/MissTitanK3/titan-kanban)
+- **Original Project**: [titan-board](https://github.com/MissTitanK3/titan-board)
 - **Original Author**: MissTitanK3 (Titan Combat)
 - **License**: MIT
 

@@ -60,6 +60,11 @@
         "title": "DevOps: Pick Next Task"
       },
       {
+        "command": "devops.refreshBoard",
+        "title": "DevOps: Refresh Board",
+        "icon": "$(refresh)"
+      },
+      {
         "command": "devops.showTaskDetails",
         "title": "DevOps: Show Task Details"
       },
@@ -249,7 +254,6 @@
         {
           "id": "devopsDashboardView",
           "name": "Dashboard",
-          "type": "webview",
           "icon": "$(dashboard)"
         },
         {

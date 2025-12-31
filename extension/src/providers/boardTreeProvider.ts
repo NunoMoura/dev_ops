@@ -3,14 +3,14 @@ import { BoardViewSnapshot } from '../boardView';
 import { Board, Column, Task, COLUMN_FALLBACK_NAME, FilterState } from '../features/types';
 import { readBoard, writeBoard } from '../features/boardStore';
 import { applyFilters, columnMatchesFilters, parseTaskFilter } from '../features/filters';
-import { compareNumbers, compareTasks, sortColumnsForManager } from '../features/kanbanData';
+import { compareNumbers, compareTasks, sortColumnsForManager } from '../features/boardData';
 import { buildTaskDescription, buildTaskTooltip } from '../features/taskPresentation';
 import { formatError } from '../features/errors';
 
-export type KanbanColumnNode = { kind: 'column'; column: Column };
-export type KanbanItemNode = { kind: 'item'; item: Task; column: Column };
-export type BoardNode = KanbanColumnNode | KanbanItemNode;
-export type KanbanManagerActionNode = {
+export type BoardColumnNode = { kind: 'column'; column: Column };
+export type BoardItemNode = { kind: 'item'; item: Task; column: Column };
+export type BoardNode = BoardColumnNode | BoardItemNode;
+export type BoardManagerActionNode = {
   kind: 'action';
   id: string;
   label: string;
@@ -18,18 +18,18 @@ export type KanbanManagerActionNode = {
   command: string;
   args?: unknown[];
 };
-export type KanbanManagerColumnNode = {
+export type BoardManagerColumnNode = {
   kind: 'column';
   column: Column;
   taskCount: number;
 };
-export type BoardManagerNode = KanbanManagerActionNode | KanbanManagerColumnNode;
+export type BoardManagerNode = BoardManagerActionNode | BoardManagerColumnNode;
 
 export class BoardTreeProvider implements vscode.TreeDataProvider<BoardNode> {
   private board: Board | undefined;
-  private columnNodes: KanbanColumnNode[] = [];
-  private itemsByColumn = new Map<string, KanbanItemNode[]>();
-  private itemsById = new Map<string, KanbanItemNode>();
+  private columnNodes: BoardColumnNode[] = [];
+  private itemsByColumn = new Map<string, BoardItemNode[]>();
+  private itemsById = new Map<string, BoardItemNode>();
   private filter: FilterState = {};
   private readonly onDidChangeEmitter = new vscode.EventEmitter<BoardNode | undefined>();
   private readonly onDidUpdateBoardEmitter = new vscode.EventEmitter<BoardViewSnapshot | undefined>();
@@ -116,7 +116,7 @@ export class BoardTreeProvider implements vscode.TreeDataProvider<BoardNode> {
         vscode.TreeItemCollapsibleState.Collapsed,
       );
       item.id = element.column.id;
-      item.contextValue = 'kanbanColumn';
+      item.contextValue = 'devopsColumn';
       return item;
     }
 
@@ -125,7 +125,7 @@ export class BoardTreeProvider implements vscode.TreeDataProvider<BoardNode> {
     treeItem.id = task.id;
     treeItem.description = buildTaskDescription(task);
     treeItem.tooltip = new vscode.MarkdownString(buildTaskTooltip(task, element.column.name));
-    treeItem.contextValue = 'kanbanTask';
+    treeItem.contextValue = 'devopsTask';
     return treeItem;
   }
 
@@ -136,7 +136,7 @@ export class BoardTreeProvider implements vscode.TreeDataProvider<BoardNode> {
     return undefined;
   }
 
-  getColumnNode(columnId: string): KanbanColumnNode | undefined {
+  getColumnNode(columnId: string): BoardColumnNode | undefined {
     return this.columnNodes.find((node) => node.column.id === columnId);
   }
 
@@ -151,7 +151,7 @@ export class BoardTreeProvider implements vscode.TreeDataProvider<BoardNode> {
       node = this.itemsById.get(taskId);
     }
     if (!node && this.hasFilter()) {
-      vscode.window.showWarningMessage('Task is hidden by the active Kanban filter. Clear the filter to reveal it.');
+      vscode.window.showWarningMessage('Task is hidden by the active Board filter. Clear the filter to reveal it.');
       return;
     }
     if (!node) {
@@ -180,16 +180,16 @@ export class BoardTreeProvider implements vscode.TreeDataProvider<BoardNode> {
       const bName = b.name || COLUMN_FALLBACK_NAME;
       return aName.localeCompare(bName);
     });
-    const nextColumns: KanbanColumnNode[] = [];
+    const nextColumns: BoardColumnNode[] = [];
     for (const column of sortedColumns) {
       const columnTasks = this.board.items.filter((item) => item.columnId === column.id).sort(compareTasks);
       const visibleTasks = applyFilters(columnTasks, column, this.filter);
       if (this.hasFilter() && !visibleTasks.length && !columnMatchesFilters(column, this.filter)) {
         continue;
       }
-      const columnNode: KanbanColumnNode = { kind: 'column', column };
+      const columnNode: BoardColumnNode = { kind: 'column', column };
       nextColumns.push(columnNode);
-      const nodes = visibleTasks.map((item) => ({ kind: 'item', item, column } as KanbanItemNode));
+      const nodes = visibleTasks.map((item) => ({ kind: 'item', item, column } as BoardItemNode));
       this.itemsByColumn.set(column.id, nodes);
       nodes.forEach((node) => this.itemsById.set(node.item.id, node));
     }
@@ -239,26 +239,26 @@ export class BoardTreeProvider implements vscode.TreeDataProvider<BoardNode> {
   }
 }
 
-export class KanbanManagerProvider implements vscode.TreeDataProvider<BoardManagerNode> {
+export class BoardManagerProvider implements vscode.TreeDataProvider<BoardManagerNode> {
   private board: Board | undefined;
   private readonly onDidChangeEmitter = new vscode.EventEmitter<BoardManagerNode | undefined>();
   readonly onDidChangeTreeData = this.onDidChangeEmitter.event;
-  private readonly dragAndDrop: KanbanManagerDragAndDropController;
-  private readonly actions: KanbanManagerActionNode[] = [
+  private readonly dragAndDrop: BoardManagerDragAndDropController;
+  private readonly actions: BoardManagerActionNode[] = [
     {
       kind: 'action',
-      id: 'kanban-manager-new-column',
+      id: 'devops-manager-new-column',
       label: 'New Column',
       description: 'Add a column to the board',
-      command: 'kanban.createColumn',
+      command: 'devops.createColumn',
     },
   ];
 
   constructor(private readonly treeProvider: BoardTreeProvider) {
-    this.dragAndDrop = new KanbanManagerDragAndDropController(this);
+    this.dragAndDrop = new BoardManagerDragAndDropController(this);
   }
 
-  getDragAndDropController(): KanbanManagerDragAndDropController {
+  getDragAndDropController(): BoardManagerDragAndDropController {
     return this.dragAndDrop;
   }
 
@@ -282,7 +282,7 @@ export class KanbanManagerProvider implements vscode.TreeDataProvider<BoardManag
       const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.None);
       item.id = element.id;
       item.description = element.description;
-      item.contextValue = 'kanbanManagerAction';
+      item.contextValue = 'devopsManagerAction';
       item.command = { command: element.command, title: element.label, arguments: element.args };
       return item;
     }
@@ -290,7 +290,7 @@ export class KanbanManagerProvider implements vscode.TreeDataProvider<BoardManag
     const treeItem = new vscode.TreeItem(columnName, vscode.TreeItemCollapsibleState.None);
     treeItem.id = element.column.id;
     treeItem.description = element.taskCount ? `${element.taskCount} cards` : 'No cards';
-    treeItem.contextValue = 'kanbanManagerColumn';
+    treeItem.contextValue = 'devopsManagerColumn';
     treeItem.tooltip = new vscode.MarkdownString(
       `**${columnName}**\n\nPosition: ${element.column.position ?? 'not set'}\nCards: ${element.taskCount}`,
     );
@@ -338,12 +338,12 @@ export class KanbanManagerProvider implements vscode.TreeDataProvider<BoardManag
     try {
       this.board = await readBoard();
     } catch (error) {
-      console.error('Unable to read Kanban board for manager view', error);
+      console.error('Unable to read DevOps board for manager view', error);
       this.board = undefined;
     }
   }
 
-  private buildColumnNodes(): KanbanManagerColumnNode[] {
+  private buildColumnNodes(): BoardManagerColumnNode[] {
     if (!this.board) {
       return [];
     }
@@ -359,17 +359,17 @@ export class KanbanManagerProvider implements vscode.TreeDataProvider<BoardManag
   }
 }
 
-const COLUMN_DRAG_MIME = 'application/vnd.titan-kanban.column';
+const COLUMN_DRAG_MIME = 'application/vnd.devops-board.column';
 
-class KanbanManagerDragAndDropController implements vscode.TreeDragAndDropController<BoardManagerNode> {
+class BoardManagerDragAndDropController implements vscode.TreeDragAndDropController<BoardManagerNode> {
   readonly dragMimeTypes = [COLUMN_DRAG_MIME];
   readonly dropMimeTypes = [COLUMN_DRAG_MIME];
 
-  constructor(private readonly provider: KanbanManagerProvider) { }
+  constructor(private readonly provider: BoardManagerProvider) { }
 
   async handleDrag(source: readonly BoardManagerNode[], dataTransfer: vscode.DataTransfer): Promise<void> {
     const columnIds = source
-      .filter((node): node is KanbanManagerColumnNode => node.kind === 'column')
+      .filter((node): node is BoardManagerColumnNode => node.kind === 'column')
       .map((node) => node.column.id);
     if (!columnIds.length) {
       return;

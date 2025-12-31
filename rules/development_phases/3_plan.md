@@ -51,7 +51,7 @@ The plan is not a todo list — it's a blueprint that anticipates problems and d
 If you discover you don't understand the problem well enough, **move backward**:
 
 ```bash
-python3 dev_ops/scripts/kanban_ops.py move TASK-XXX col-understand
+python3 dev_ops/scripts/board_ops.py move TASK-XXX col-understand
 ```
 
 ### When Ready
@@ -59,8 +59,8 @@ python3 dev_ops/scripts/kanban_ops.py move TASK-XXX col-understand
 1. **Link and move**
 
    ```bash
-   python3 dev_ops/scripts/kanban_ops.py upstream TASK-XXX PLN-XXX
-   python3 dev_ops/scripts/kanban_ops.py move TASK-XXX col-build
+   python3 dev_ops/scripts/board_ops.py upstream TASK-XXX PLN-XXX
+   python3 dev_ops/scripts/board_ops.py move TASK-XXX col-build
    ```
 
 ## EXIT_CRITERIA

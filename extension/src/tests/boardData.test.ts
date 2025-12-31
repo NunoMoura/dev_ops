@@ -15,10 +15,10 @@ import {
     slugify,
     isDefined,
     createTaskId,
-} from '../features/kanbanData';
+} from '../features/boardData';
 import { Board, Column, Task } from '../features/types';
 
-suite('kanbanData - getColumnRank', () => {
+suite('boardData - getColumnRank', () => {
     test('returns 0 for col-build (active work)', () => {
         assert.strictEqual(getColumnRank('col-build'), 0);
     });
@@ -44,7 +44,7 @@ suite('kanbanData - getColumnRank', () => {
     });
 });
 
-suite('kanbanData - getPriorityRank', () => {
+suite('boardData - getPriorityRank', () => {
     test('returns 0 for high priority', () => {
         assert.strictEqual(getPriorityRank('high'), 0);
     });
@@ -80,7 +80,7 @@ suite('kanbanData - getPriorityRank', () => {
     });
 });
 
-suite('kanbanData - getUpdatedAtRank', () => {
+suite('boardData - getUpdatedAtRank', () => {
     test('returns MAX_SAFE_INTEGER for undefined', () => {
         assert.strictEqual(getUpdatedAtRank(undefined), Number.MAX_SAFE_INTEGER);
     });
@@ -96,7 +96,7 @@ suite('kanbanData - getUpdatedAtRank', () => {
     });
 });
 
-suite('kanbanData - compareNumbers', () => {
+suite('boardData - compareNumbers', () => {
     test('compares two numbers correctly', () => {
         assert.strictEqual(compareNumbers(1, 2), -1);
         assert.strictEqual(compareNumbers(5, 3), 2);
@@ -116,7 +116,7 @@ suite('kanbanData - compareNumbers', () => {
     });
 });
 
-suite('kanbanData - sortColumnsForManager', () => {
+suite('boardData - sortColumnsForManager', () => {
     test('sorts by position ascending', () => {
         const columns: Column[] = [
             { id: 'c3', name: 'Third', position: 3 },
@@ -149,7 +149,7 @@ suite('kanbanData - sortColumnsForManager', () => {
     });
 });
 
-suite('kanbanData - getNextColumnPosition', () => {
+suite('boardData - getNextColumnPosition', () => {
     test('returns 1 for empty array', () => {
         assert.strictEqual(getNextColumnPosition([]), 1);
     });
@@ -164,7 +164,7 @@ suite('kanbanData - getNextColumnPosition', () => {
     });
 });
 
-suite('kanbanData - parseTags', () => {
+suite('boardData - parseTags', () => {
     test('returns undefined for empty input', () => {
         assert.strictEqual(parseTags(''), undefined);
         assert.strictEqual(parseTags(undefined), undefined);
@@ -187,7 +187,7 @@ suite('kanbanData - parseTags', () => {
     });
 });
 
-suite('kanbanData - splitListValues', () => {
+suite('boardData - splitListValues', () => {
     test('returns undefined for empty input', () => {
         assert.strictEqual(splitListValues(''), undefined);
         assert.strictEqual(splitListValues(undefined), undefined);
@@ -206,7 +206,7 @@ suite('kanbanData - splitListValues', () => {
     });
 });
 
-suite('kanbanData - appendParagraph', () => {
+suite('boardData - appendParagraph', () => {
     test('returns addition when current is undefined', () => {
         assert.strictEqual(appendParagraph(undefined, 'new text'), 'new text');
     });
@@ -216,7 +216,7 @@ suite('kanbanData - appendParagraph', () => {
     });
 });
 
-suite('kanbanData - parseBooleanFromString', () => {
+suite('boardData - parseBooleanFromString', () => {
     test('returns true for truthy strings', () => {
         assert.strictEqual(parseBooleanFromString('true'), true);
         assert.strictEqual(parseBooleanFromString('yes'), true);
@@ -237,7 +237,7 @@ suite('kanbanData - parseBooleanFromString', () => {
     });
 });
 
-suite('kanbanData - slugify', () => {
+suite('boardData - slugify', () => {
     test('converts to lowercase', () => {
         assert.strictEqual(slugify('Hello World'), 'hello-world');
     });
@@ -260,7 +260,7 @@ suite('kanbanData - slugify', () => {
     });
 });
 
-suite('kanbanData - isDefined', () => {
+suite('boardData - isDefined', () => {
     test('returns true for defined values', () => {
         assert.strictEqual(isDefined('hello'), true);
         assert.strictEqual(isDefined(0), true);
@@ -277,7 +277,7 @@ suite('kanbanData - isDefined', () => {
     });
 });
 
-suite('kanbanData - createId', () => {
+suite('boardData - createId', () => {
     test('creates id with prefix', () => {
         const id = createId('col');
         assert.ok(id.startsWith('col-'));
@@ -295,7 +295,7 @@ suite('kanbanData - createId', () => {
     });
 });
 
-suite('kanbanData - createTaskId', () => {
+suite('boardData - createTaskId', () => {
     test('creates TASK-001 for empty board', () => {
         const board: Board = { version: 1, columns: [], items: [] };
         assert.strictEqual(createTaskId(board), 'TASK-001');
@@ -326,7 +326,7 @@ suite('kanbanData - createTaskId', () => {
     });
 });
 
-suite('kanbanData - compareTasks', () => {
+suite('boardData - compareTasks', () => {
     test('sorts by column rank first', () => {
         const taskA: Task = { id: '1', columnId: 'col-backlog', title: 'A' };
         const taskB: Task = { id: '2', columnId: 'col-build', title: 'B' };

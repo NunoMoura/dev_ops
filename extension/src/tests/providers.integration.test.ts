@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as sinon from 'sinon';
-import { BoardTreeProvider, KanbanColumnNode, KanbanItemNode } from '../providers/boardTreeProvider';
+import { BoardTreeProvider, BoardColumnNode, BoardItemNode } from '../providers/boardTreeProvider';
 import { Board, Column, Task, DEFAULT_COLUMN_BLUEPRINTS } from '../features/types';
 
 /**
@@ -53,55 +53,55 @@ suite('BoardTreeProvider Integration Tests', () => {
         const columns = await provider.getChildren();
         const backlogColumn = columns.find(
             (c) => c.kind === 'column' && c.column.id === 'col-backlog'
-        ) as KanbanColumnNode;
+        ) as BoardColumnNode;
 
         assert.ok(backlogColumn, 'Backlog column should exist');
 
         const tasks = await provider.getChildren(backlogColumn);
         assert.strictEqual(tasks.length, 1);
         assert.ok(tasks[0].kind === 'item');
-        assert.strictEqual((tasks[0] as KanbanItemNode).item.id, 'TASK-001');
+        assert.strictEqual((tasks[0] as BoardItemNode).item.id, 'TASK-001');
     });
 
     test('getTreeItem returns correct label for column', async () => {
         const columns = await provider.getChildren();
-        const column = columns[0] as KanbanColumnNode;
+        const column = columns[0] as BoardColumnNode;
 
         const treeItem = provider.getTreeItem(column);
         assert.strictEqual(treeItem.label, column.column.name);
-        assert.strictEqual(treeItem.contextValue, 'kanbanColumn');
+        assert.strictEqual(treeItem.contextValue, 'boardColumn');
     });
 
     test('getTreeItem returns correct label for task', async () => {
         const columns = await provider.getChildren();
         const backlogColumn = columns.find(
             (c) => c.kind === 'column' && c.column.id === 'col-backlog'
-        ) as KanbanColumnNode;
+        ) as BoardColumnNode;
         const tasks = await provider.getChildren(backlogColumn);
-        const task = tasks[0] as KanbanItemNode;
+        const task = tasks[0] as BoardItemNode;
 
         const treeItem = provider.getTreeItem(task);
         assert.strictEqual(treeItem.label, 'First task');
-        assert.strictEqual(treeItem.contextValue, 'kanbanTask');
+        assert.strictEqual(treeItem.contextValue, 'boardTask');
     });
 
     test('getParent returns column for task', async () => {
         const columns = await provider.getChildren();
         const backlogColumn = columns.find(
             (c) => c.kind === 'column' && c.column.id === 'col-backlog'
-        ) as KanbanColumnNode;
+        ) as BoardColumnNode;
         const tasks = await provider.getChildren(backlogColumn);
-        const task = tasks[0] as KanbanItemNode;
+        const task = tasks[0] as BoardItemNode;
 
         const parent = provider.getParent(task);
         assert.ok(parent);
         assert.strictEqual(parent?.kind, 'column');
-        assert.strictEqual((parent as KanbanColumnNode).column.id, 'col-backlog');
+        assert.strictEqual((parent as BoardColumnNode).column.id, 'col-backlog');
     });
 
     test('getParent returns undefined for column', async () => {
         const columns = await provider.getChildren();
-        const column = columns[0] as KanbanColumnNode;
+        const column = columns[0] as BoardColumnNode;
 
         const parent = provider.getParent(column);
         assert.strictEqual(parent, undefined);
@@ -201,8 +201,8 @@ suite('BoardTreeProvider - Column Sorting', () => {
 
         const children = await provider.getChildren();
         assert.strictEqual(children.length, 3);
-        assert.strictEqual((children[0] as KanbanColumnNode).column.name, 'First');
-        assert.strictEqual((children[1] as KanbanColumnNode).column.name, 'Second');
-        assert.strictEqual((children[2] as KanbanColumnNode).column.name, 'Third');
+        assert.strictEqual((children[0] as BoardColumnNode).column.name, 'First');
+        assert.strictEqual((children[1] as BoardColumnNode).column.name, 'Second');
+        assert.strictEqual((children[2] as BoardColumnNode).column.name, 'Third');
     });
 });

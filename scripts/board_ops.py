@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Kanban Operations - Task management for DevOps Framework.
+Board Operations - Task management for DevOps Framework.
 
-Provides Python functions to interact with the Kanban board stored at
-dev_ops/kanban/board.json. Supports task prerequisites, completion criteria,
+Provides Python functions to interact with the DevOps board stored at
+dev_ops/board/board.json. Supports task prerequisites, completion criteria,
 and artifact linking with identifiers.
 
 Column = Workflow phase (6 phases), Status = Prediction-ready autonomy state:
@@ -54,20 +54,20 @@ DEFAULT_COLUMNS = _load_default_columns()
 
 
 def get_board_path(project_root: Optional[str] = None) -> str:
-    """Get the path to the Kanban board JSON file."""
+    """Get the path to the DevOps board JSON file."""
     if project_root is None:
-        # Assume script is in [project]/dev_ops/scripts/
+        # Assume script is in [project]/scripts/
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(os.path.dirname(script_dir))
-    return os.path.join(project_root, "dev_ops", "board.json")
+        project_root = os.path.dirname(script_dir)
+    return os.path.join(project_root, "dev_ops", "board", "board.json")
 
 
 def get_current_task_path(project_root: Optional[str] = None) -> str:
     """Get the path to the .current_task file."""
     if project_root is None:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(os.path.dirname(script_dir))
-    return os.path.join(project_root, "dev_ops", ".current_task")
+        project_root = os.path.dirname(script_dir)
+    return os.path.join(project_root, "dev_ops", "board", ".current_task")
 
 
 def get_current_task(project_root: Optional[str] = None) -> Optional[str]:
@@ -91,7 +91,7 @@ def set_current_task(task_id: Optional[str], project_root: Optional[str] = None)
 
 
 def load_board(project_root: Optional[str] = None) -> dict:
-    """Load the Kanban board from JSON file."""
+    """Load the DevOps board from JSON file."""
     board_path = get_board_path(project_root)
     if not os.path.exists(board_path):
         return {"version": 1, "columns": DEFAULT_COLUMNS.copy(), "items": []}
@@ -104,7 +104,7 @@ def load_board(project_root: Optional[str] = None) -> dict:
 
 
 def save_board(board: dict, project_root: Optional[str] = None) -> None:
-    """Save the Kanban board to JSON file."""
+    """Save the DevOps board to JSON file."""
     board_path = get_board_path(project_root)
     os.makedirs(os.path.dirname(board_path), exist_ok=True)
     with open(board_path, "w") as f:
@@ -149,7 +149,7 @@ def create_task(
     spawn_from: Optional[str] = None,
     project_root: Optional[str] = None,
 ) -> str:
-    """Create a new task on the Kanban board. Returns the task ID.
+    """Create a new task on the DevOps board. Returns the task ID.
 
     Args:
         spawn_from: Optional parent task ID if this task was spawned from a blocker/conflict.
@@ -1114,7 +1114,7 @@ def refine_phase(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Kanban board operations.")
+    parser = argparse.ArgumentParser(description="DevOps board operations.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # List tasks

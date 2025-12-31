@@ -8,7 +8,7 @@ import { log, warn, error as logError } from './logger';
  * 
  * - Detects session start (implementation_plan.md creation)
  * - Detects session completion (walkthrough.md creation) 
- * - Updates task status and agent registry via kanban_ops.py
+ * - Updates task status and agent registry via board_ops.py
  */
 export class SessionBridge {
     private watcher: vscode.FileSystemWatcher | undefined;

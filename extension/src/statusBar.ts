@@ -7,7 +7,7 @@ export interface StatusBarManager {
 }
 
 /**
- * Creates a status bar item showing Kanban task counts.
+ * Creates a status bar item showing Board task counts.
  * Clicking opens the board.
  */
 export function createStatusBar(context: vscode.ExtensionContext): StatusBarManager {
@@ -15,9 +15,9 @@ export function createStatusBar(context: vscode.ExtensionContext): StatusBarMana
         vscode.StatusBarAlignment.Left,
         100
     );
-    item.command = 'kanban.openBoard';
-    item.tooltip = 'Open Kanban Board';
-    item.text = '$(project) Kanban';
+    item.command = 'devops.openBoard';
+    item.tooltip = 'Open Board Board';
+    item.text = '$(project) Board';
     item.show();
     context.subscriptions.push(item);
 
@@ -32,7 +32,7 @@ export function createStatusBar(context: vscode.ExtensionContext): StatusBarMana
             ).length;
 
             if (total === 0) {
-                item.text = '$(project) Kanban: No tasks';
+                item.text = '$(project) Board: No tasks';
             } else if (blocked > 0) {
                 item.text = `$(project) ${total} tasks • ${inProgress} active • ${blocked} blocked`;
             } else {

@@ -38,9 +38,9 @@ suite('DevOps Extension E2E Tests', () => {
 
         // Check core commands are registered (using actual command names)
         const expectedCommands = [
-            'kanban.openBoard',
-            'kanban.createTask',
-            'kanban.showTaskDetails',
+            'devops.openBoard',
+            'devops.createTask',
+            'devops.showTaskDetails',
         ];
 
         for (const cmd of expectedCommands) {
@@ -51,20 +51,20 @@ suite('DevOps Extension E2E Tests', () => {
         }
     });
 
-    test('Kanban commands are registered', async () => {
+    test('Board commands are registered', async () => {
         const commands = await vscode.commands.getCommands(true);
 
-        const kanbanCommands = [
-            'kanban.createColumn',
-            'kanban.moveTask',
-            'kanban.filterTasks',
-            'kanban.clearTaskFilter',
+        const boardCommands = [
+            'devops.createColumn',
+            'devops.moveTask',
+            'devops.filterTasks',
+            'devops.clearTaskFilter',
         ];
 
-        for (const cmd of kanbanCommands) {
+        for (const cmd of boardCommands) {
             assert.ok(
                 commands.includes(cmd),
-                `Kanban command ${cmd} should be registered`
+                `Board command ${cmd} should be registered`
             );
         }
     });
@@ -115,7 +115,7 @@ suite('DevOps Extension - Command Execution', () => {
         this.timeout(5000);
         try {
             // This should open VS Code settings filtered to DevOps
-            await vscode.commands.executeCommand('kanban.openSettings');
+            await vscode.commands.executeCommand('devops.openSettings');
             // If no error is thrown, the command executed
             assert.ok(true);
         } catch (error: any) {

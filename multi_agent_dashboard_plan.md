@@ -17,7 +17,7 @@ VS Code-first orchestration platform where multiple agents and developers collab
 │                             │  │ > Working on TASK-001...        │  │
 │                             │  └─────────────────────────────────┘  │
 ├─────────────────────────────┴───────────────────────────────────────┤
-│  Embedded Kanban Dashboard (Webview)                                │
+│  Embedded Board Dashboard (Webview)                                │
 │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐       │
 │  │ Backlog │ │Planning │ │Implement│ │ Review  │ │  Done   │       │
 │  │ TASK-04 │ │ TASK-02 │ │TASK-01 ●│ │         │ │ TASK-00 │       │
@@ -61,7 +61,7 @@ extension/src/
 ├── services/
 │   ├── agentRegistry.ts      # Track active agents
 │   └── boardStore.ts         # Read/write board.json
-├── boardView.ts              # Embedded Kanban Webview
+├── boardView.ts              # Embedded Board Webview
 ├── statusBar.ts              # Current task indicator
 └── extension.ts              # Entry point
 ```
@@ -72,17 +72,17 @@ Any agent participates via CLI:
 
 ```bash
 # 1. Claim task
-python scripts/kanban_ops.py claim TASK-001 --assignee=gemini --type=agent
+python scripts/board_ops.py claim TASK-001 --assignee=gemini --type=agent
 
 # 2. Update status
-python scripts/kanban_ops.py update TASK-001 --status-message="Writing tests..."
+python scripts/board_ops.py update TASK-001 --status-message="Writing tests..."
 
 # 3. Do the work
 gemini -p "$(cat rules/development_phases/implementing.md)"
 
 # 4. Mark ready + release
-python scripts/kanban_ops.py update TASK-001 --column=reviewing
-python scripts/kanban_ops.py release TASK-001
+python scripts/board_ops.py update TASK-001 --column=reviewing
+python scripts/board_ops.py release TASK-001
 ```
 
 ### Layer 4: Browser Dashboard (Optional - Phase 5)
@@ -103,7 +103,7 @@ Same React components as Webview, served via FastAPI for:
 - [ ] Connect terminal sessions to VS Code lifecycle
 - [ ] Register configuration for custom agent CLIs
 
-### Phase 2: Kanban Webview Enhancements (~8h)
+### Phase 2: Board Webview Enhancements (~8h)
 
 - [ ] Add agent badges on assigned task cards
 - [ ] Real-time status indicators (🟢🟡🔵🔴)
@@ -113,7 +113,7 @@ Same React components as Webview, served via FastAPI for:
 ### Phase 3: Single Agent Integration (~10h)
 
 - [ ] Create `phase_worker.sh` wrapper script
-- [ ] Add `claim`, `release`, `update` commands to `kanban_ops.py`
+- [ ] Add `claim`, `release`, `update` commands to `board_ops.py`
 - [ ] Test complete cycle: claim → work → update → release
 - [ ] Validate Gemini CLI integration
 
@@ -145,17 +145,17 @@ PHASE=$2
 AGENT=${3:-gemini}
 
 # Claim
-python3 scripts/kanban_ops.py claim "$TASK_ID" --assignee="$AGENT" --type=agent
+python3 scripts/board_ops.py claim "$TASK_ID" --assignee="$AGENT" --type=agent
 
 # Update status
-python3 scripts/kanban_ops.py update "$TASK_ID" --status-message="Starting $PHASE phase..."
+python3 scripts/board_ops.py update "$TASK_ID" --status-message="Starting $PHASE phase..."
 
 # Run agent with phase-specific prompt
 $AGENT -p "$(cat rules/development_phases/${PHASE}.md | sed "s/{{TASK_ID}}/$TASK_ID/g")"
 
 # Mark ready for next phase
-python3 scripts/kanban_ops.py update "$TASK_ID" --status-message="Ready for review"
-python3 scripts/kanban_ops.py release "$TASK_ID"
+python3 scripts/board_ops.py update "$TASK_ID" --status-message="Ready for review"
+python3 scripts/board_ops.py release "$TASK_ID"
 ```
 
 ---
@@ -180,7 +180,7 @@ python3 scripts/kanban_ops.py release "$TASK_ID"
 |---------|--------|
 | agentViewProvider.ts | Refactor → add terminal selector |
 | boardView.ts | Enhance → agent badges, status indicators |
-| kanban_ops.py | Extend → claim/release/update commands |
+| board_ops.py | Extend → claim/release/update commands |
 | Phase rules | Keep → used as prompts by agents |
 | board.json | Extend → new optional fields |
 

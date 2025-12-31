@@ -24,7 +24,7 @@ type WebviewMessage =
   | { type: 'task'; task: TaskDetailsPayload }
   | { type: 'empty' };
 
-export class KanbanTaskDetailsViewProvider implements vscode.WebviewViewProvider {
+export class BoardTaskDetailsViewProvider implements vscode.WebviewViewProvider {
   private view: vscode.WebviewView | undefined;
   private pendingTask: TaskDetailsPayload | undefined;
   private readonly onUpdateEmitter = new vscode.EventEmitter<TaskDetailsPayload>();
@@ -75,10 +75,10 @@ export class KanbanTaskDetailsViewProvider implements vscode.WebviewViewProvider
   }
 }
 
-export function registerTaskDetailsView(context: vscode.ExtensionContext): KanbanTaskDetailsViewProvider {
-  const provider = new KanbanTaskDetailsViewProvider(context.extensionUri);
+export function registerTaskDetailsView(context: vscode.ExtensionContext): BoardTaskDetailsViewProvider {
+  const provider = new BoardTaskDetailsViewProvider(context.extensionUri);
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider('kanbanTaskDetailsView', provider, {
+    vscode.window.registerWebviewViewProvider('boardTaskDetailsView', provider, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
   );

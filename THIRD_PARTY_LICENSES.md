@@ -5,9 +5,9 @@ This project includes third-party software under the following licenses.
 ## Titan Kanban
 
 - **Original Author**: MissTitanK3 (Titan Combat)
-- **Source**: <https://github.com/MissTitanK3/titan-kanban>
+- **Source**: <https://github.com/MissTitanK3/titan-board>
 - **License**: MIT
-- **Usage**: VS Code Kanban board extension (forked and rebranded as DevOps)
+- **Usage**: VS Code Board board extension (forked and rebranded as DevOps)
 
 The Titan Kanban source code has been incorporated into this project and
 rebranded as "DevOps Framework". The original MIT license permits this use.

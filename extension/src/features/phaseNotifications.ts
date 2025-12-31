@@ -113,7 +113,7 @@ export async function showPhaseNotification(
         const uri = vscode.Uri.file(workflowPath);
         await vscode.commands.executeCommand('vscode.open', uri);
     } else if (selection === 'View Task') {
-        await vscode.commands.executeCommand('kanban.openTask', taskId);
+        await vscode.commands.executeCommand('board.openTask', taskId);
     } else if (selection === 'Start Agent') {
         const agent = await vscode.window.showQuickPick(['Antigravity', 'Cursor'], { placeHolder: 'Select Agent to Launch' });
         if (agent === 'Antigravity') {

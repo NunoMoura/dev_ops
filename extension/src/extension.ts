@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
-import { KanbanBoardPanelManager, createBoardPanelManager } from './boardView';
+import { BoardPanelManager, createBoardPanelManager } from './boardView';
 import { BoardTreeProvider } from './providers/boardTreeProvider';
 import {
   registerBoardCommands,
   handleBoardMoveTasks,
   handleBoardOpenTask,
-  KanbanCommandServices,
+  DevOpsCommandServices,
 } from './handlers';
 import { registerInitializeCommand } from './handlers/initializeCommand';
 import { readBoard, writeBoard, registerBoardWatchers } from './features/boardStore';
@@ -28,8 +28,8 @@ import { registerTestController } from './testExplorer/testController';
 import { log, warn, error as logError } from './features/logger';
 
 export async function activate(context: vscode.ExtensionContext) {
-  log('DevOps extension v0.0.1 (Debug) activating...');
-  vscode.window.showInformationMessage('DevOps v0.0.1 (Debug) Activated 🚀');
+  log('DevOps extension v0.0.1 activating...');
+  vscode.window.showInformationMessage('DevOps v0.0.1 Activated 🚀');
   try {
     // Register DevOps: Initialize command first (always works)
     log('[Activation] Step 1: Registering initialize command');
@@ -52,7 +52,7 @@ export async function activate(context: vscode.ExtensionContext) {
     try {
       await services.provider.refresh();
     } catch (error) {
-      warn(`Kanban board not loaded on activation: ${error}`);
+      warn(`Board not loaded on activation: ${error}`);
     }
 
     await registerBoardWatchers(services.provider, context);
@@ -104,8 +104,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() { }
 
-type DevOpsExtensionServices = KanbanCommandServices & {
-  boardPanelManager: KanbanBoardPanelManager;
+type DevOpsExtensionServices = DevOpsCommandServices & {
+  boardPanelManager: BoardPanelManager;
   statusBar: StatusBarManager;
   syncFilterUI: () => void;
   dashboardProvider: DashboardViewProvider;
@@ -129,13 +129,13 @@ async function initializeDevOpsServices(context: vscode.ExtensionContext): Promi
   // Create filter synchronizer
   const syncFilterUI = () => {
     const active = provider.hasFilter();
-    void vscode.commands.executeCommand('setContext', 'kanbanFilterActive', active);
+    void vscode.commands.executeCommand('setContext', 'devopsFilterActive', active);
   };
   syncFilterUI();
 
   return {
     provider,
-    kanbanView: undefined as unknown as vscode.TreeView<import('./providers/boardTreeProvider').BoardNode>,
+    boardView: undefined as unknown as vscode.TreeView<import('./providers/boardTreeProvider').BoardNode>,
     dashboardProvider,
     boardPanelManager,
     statusBar,
@@ -187,7 +187,7 @@ function registerBoardViewRequests(context: vscode.ExtensionContext, services: D
       void handleBoardOpenTask(taskId);
     }),
     boardPanelManager.onDidRequestCreateTask(() => {
-      void Promise.resolve(vscode.commands.executeCommand('kanban.createTask')).catch((error: unknown) => {
+      void Promise.resolve(vscode.commands.executeCommand('devops.createTask')).catch((error: unknown) => {
         vscode.window.showErrorMessage(`Unable to create task: ${formatError(error)}`);
       });
     }),
@@ -204,7 +204,7 @@ function registerBoardViewRequests(context: vscode.ExtensionContext, services: D
           board.items = board.items.filter(t => !taskIds.includes(t.id));
           await writeBoard(board);
           vscode.window.showInformationMessage(`Deleted ${count} task${count > 1 ? 's' : ''}`);
-          vscode.commands.executeCommand('kanban.refresh');
+          vscode.commands.executeCommand('devops.refreshBoard');
         } catch (error: unknown) {
           vscode.window.showErrorMessage(`Unable to delete tasks: ${formatError(error)}`);
         }

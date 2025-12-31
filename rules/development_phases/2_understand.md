@@ -56,8 +56,8 @@ You should exit this phase knowing more about the problem than the person who wr
 7. **Link and move**
 
    ```bash
-   python3 dev_ops/scripts/kanban_ops.py upstream TASK-XXX RES-XXX
-   python3 dev_ops/scripts/kanban_ops.py move TASK-XXX col-plan
+   python3 dev_ops/scripts/board_ops.py upstream TASK-XXX RES-XXX
+   python3 dev_ops/scripts/board_ops.py move TASK-XXX col-plan
    ```
 
 ## EXIT_CRITERIA

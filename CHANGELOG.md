@@ -20,8 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Metrics Dashboard sidebar (replaces Task Details)
   - Auto-save for task edits (no Save button)
   - Clickable cards (removed Open button)
-  - Agent Checklist CLI (`kanban_ops.py checklist add/complete/list`)
-  - Task Replace CLI (`kanban_ops.py replace --with`)
+  - Agent Checklist CLI (`board_ops.py checklist add/complete/list`)
+  - Task Replace CLI (`board_ops.py replace --with`)
 - **Code Quality**:
   - `pyproject.toml` for modern Python packaging with ruff and pytest config
   - `.pre-commit-config.yaml` for automated code quality checks
@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Refactored `pr_ops.py` with proper exceptions (`GitHubCLIError`,
     `GitHubCLINotFoundError`) instead of `sys.exit`
   - Added `test` to `doc_ops.py` list command choices
-  - Removed duplicate `argparse` import in `kanban_ops.py`
+  - Removed duplicate `argparse` import in `board_ops.py`
 - **Audit Improvements (2025-12-19)**:
   - New `sync_version.py` script for version consistency checks
   - New `test_integration.py` with end-to-end workflow tests
@@ -53,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Phase rules enriched with full procedure guidance
   - Agent now guided by phase rules, not command invocation
 - **Product Polish**:
-  - Synchronized Kanban model (7 columns) across all scripts and extension
+  - Synchronized Board model (7 columns) across all scripts and extension
   - Restored dynamic rule templates for Languages, Linters, and Libraries
   - Normalized artifact directory structure (no more `dev_ops/docs/` prefix)
   - Improved `health_check.py` to validate new architecture
@@ -69,7 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved error handling in `utils.py` (exceptions instead of sys.exit)
   - Added `quiet` parameter to `write_file()` and `run_command()`
   - Fixed extension README column name (Testing, not Review)
-  - Added `kanban_ops` to scripts module exports
+  - Added `board_ops` to scripts module exports
 
 ### Removed
 

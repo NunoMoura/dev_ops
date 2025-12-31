@@ -1,6 +1,6 @@
 # DevOps Framework Extension
 
-A VS Code extension providing a Kanban board for AI-assisted development workflows.
+A VS Code extension providing a Board board for AI-assisted development workflows.
 Part of the DevOps Framework for structured task management and artifact tracking.
 
 ## Features
@@ -18,19 +18,19 @@ Part of the DevOps Framework for structured task management and artifact trackin
 | Command | Description |
 | --- | --- |
 | `devops.initialize` | Initialize DevOps framework in workspace |
-| `kanban.openBoard` | Open board JSON for editing |
-| `kanban.getTasks` | Export board JSON for agents to parse |
-| `kanban.pickNextTask` | Suggest next task by priority/recency |
-| `kanban.showTaskDetails` | Show task summary with entry points |
-| `kanban.createTask` | Create a new task |
-| `kanban.moveTask` | Move task to another column |
-| `kanban.markTaskInProgress` | Move to In Progress column |
-| `kanban.markTaskBlocked` | Move to Blocked column |
-| `kanban.markTaskDone` | Move to Done column |
-| `kanban.filterTasks` | Apply text/tag filter |
-| `kanban.toggleAgentReadyFilter` | Filter to agent-ready tasks |
-| `kanban.importPlan` | Import plan file as tasks |
-| `kanban.viewTaskHistory` | View task history file |
+| `board.openBoard` | Open board JSON for editing |
+| `board.getTasks` | Export board JSON for agents to parse |
+| `board.pickNextTask` | Suggest next task by priority/recency |
+| `board.showTaskDetails` | Show task summary with entry points |
+| `board.createTask` | Create a new task |
+| `board.moveTask` | Move task to another column |
+| `board.markTaskInProgress` | Move to In Progress column |
+| `board.markTaskBlocked` | Move to Blocked column |
+| `board.markTaskDone` | Move to Done column |
+| `board.filterTasks` | Apply text/tag filter |
+| `board.toggleAgentReadyFilter` | Filter to agent-ready tasks |
+| `board.importPlan` | Import plan file as tasks |
+| `board.viewTaskHistory` | View task history file |
 
 ## Board Schema
 
@@ -95,24 +95,24 @@ Tasks don't have a separate `status` field. The column determines status:
 
 ## Integration with Python CLI
 
-The extension works with `dev_ops/scripts/kanban_ops.py`:
+The extension works with `dev_ops/scripts/board_ops.py`:
 
 ```bash
 # List tasks
-python3 dev_ops/scripts/kanban_ops.py list --column col-backlog
+python3 dev_ops/scripts/board_ops.py list --column col-backlog
 
 # Create task
-python3 dev_ops/scripts/kanban_ops.py create --title "Task name"
+python3 dev_ops/scripts/board_ops.py create --title "Task name"
 
 # Claim task
-python3 dev_ops/scripts/kanban_ops.py claim TASK-001
+python3 dev_ops/scripts/board_ops.py claim TASK-001
 
 # Complete task
-python3 dev_ops/scripts/kanban_ops.py done TASK-001 --outputs "PLN-001"
+python3 dev_ops/scripts/board_ops.py done TASK-001 --outputs "PLN-001"
 
 # Add dependencies
-python3 dev_ops/scripts/kanban_ops.py upstream TASK-001 "RES-001"
-python3 dev_ops/scripts/kanban_ops.py downstream TASK-001 "PLN-001"
+python3 dev_ops/scripts/board_ops.py upstream TASK-001 "RES-001"
+python3 dev_ops/scripts/board_ops.py downstream TASK-001 "PLN-001"
 ```
 
 ## Development

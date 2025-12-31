@@ -22,7 +22,7 @@ import {
   parseTags,
   slugify,
   splitListValues,
-} from './kanbanData';
+} from './boardData';
 
 export async function ensurePlanDirectory(): Promise<string | undefined> {
   const root = getWorkspaceRoot();

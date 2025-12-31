@@ -63,7 +63,7 @@ export class DevOpsCodeLensProvider implements vscode.CodeLensProvider {
                         codeLenses.push(new vscode.CodeLens(range, {
                             title: this.formatTaskTitle(task),
                             tooltip: this.formatTaskTooltip(task),
-                            command: 'kanban.showTaskDetails',
+                            command: 'board.showTaskDetails',
                             arguments: [taskId],
                         }));
                     }

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { TaskDetailsPayload } from '../taskDetailsView';
 import { Task, COLUMN_FALLBACK_NAME } from './types';
-import { isDefined } from './kanbanData';
+import { isDefined } from './boardData';
 
 export function buildTaskDescription(task: Task): string | undefined {
   const parts = [

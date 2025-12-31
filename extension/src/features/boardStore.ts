@@ -4,12 +4,12 @@ import * as path from 'path';
 import { Board, Column, DEFAULT_COLUMN_BLUEPRINTS } from './types';
 
 export async function ensureBoardUri(): Promise<vscode.Uri> {
-  const kanbanPath = await getKanbanPath();
-  if (!kanbanPath) {
-    throw new Error('Open a workspace folder to load dev_ops/board.json.');
+  const boardPath = await getBoardPath();
+  if (!boardPath) {
+    throw new Error('Open a workspace folder to load dev_ops/board/board.json.');
   }
   try {
-    await fs.stat(kanbanPath);
+    await fs.stat(boardPath);
   } catch (error: any) {
     if (error?.code === 'ENOENT') {
       await writeBoard(createEmptyBoard());
@@ -17,25 +17,25 @@ export async function ensureBoardUri(): Promise<vscode.Uri> {
       throw error;
     }
   }
-  return vscode.Uri.file(kanbanPath);
+  return vscode.Uri.file(boardPath);
 }
 
 export function getWorkspaceRoot(): string | undefined {
   return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 }
 
-export async function getKanbanPath(): Promise<string | undefined> {
+export async function getBoardPath(): Promise<string | undefined> {
   const root = getWorkspaceRoot();
   if (!root) {
     return undefined;
   }
-  return path.join(root, 'dev_ops', 'board.json');
+  return path.join(root, 'dev_ops', 'board', 'board.json');
 }
 
 export async function readBoard(): Promise<Board> {
-  const p = await getKanbanPath();
+  const p = await getBoardPath();
   if (!p) {
-    throw new Error('Open a workspace folder to use DevOps Kanban.');
+    throw new Error('Open a workspace folder to use DevOps Board.');
   }
   let raw: string | undefined;
   try {
@@ -46,16 +46,16 @@ export async function readBoard(): Promise<Board> {
       return createEmptyBoard();
     }
     if (raw !== undefined && error instanceof SyntaxError) {
-      return handleCorruptKanbanFile(p, raw);
+      return handleCorruptBoardFile(p, raw);
     }
     throw error;
   }
 }
 
 export async function writeBoard(board: Board): Promise<void> {
-  const p = await getKanbanPath();
+  const p = await getBoardPath();
   if (!p) {
-    throw new Error('Open a workspace folder to use DevOps Kanban.');
+    throw new Error('Open a workspace folder to use DevOps Board.');
   }
   await fs.mkdir(path.dirname(p), { recursive: true });
   await fs.writeFile(p, JSON.stringify(board, null, 2), 'utf8');
@@ -84,11 +84,11 @@ export async function registerBoardWatchers(
     }
     refreshHandle = setTimeout(() => {
       refreshHandle = undefined;
-      provider.refresh().catch((error) => console.error('Kanban refresh failed', error));
+      provider.refresh().catch((error) => console.error('Board refresh failed', error));
     }, 200);
   };
   const patterns = [
-    'dev_ops/board.json',
+    'dev_ops/board/board.json',
     'dev_ops/artifacts/plans/*.md',
     'dev_ops/docs/research/*.md',
     'dev_ops/docs/tests/*.md',
@@ -111,34 +111,34 @@ export async function registerBoardWatchers(
   );
 }
 
-export async function handleCorruptKanbanFile(filePath: string, contents: string): Promise<Board> {
-  const repairOption = 'Repair Kanban board';
+export async function handleCorruptBoardFile(filePath: string, contents: string): Promise<Board> {
+  const repairOption = 'Repair DevOps board';
   const openOption = 'Open file';
   const selection = await vscode.window.showErrorMessage(
-    'DevOps Kanban cannot read dev_ops/board.json because it is not valid JSON.',
+    'DevOps Board cannot read dev_ops/board/board.json because it is not valid JSON.',
     repairOption,
     openOption,
   );
   if (selection === repairOption) {
-    const backupPath = await backupCorruptKanbanFile(filePath, contents);
+    const backupPath = await backupCorruptBoardFile(filePath, contents);
     const repairedBoard = createEmptyBoard();
     await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, JSON.stringify(repairedBoard, null, 2), 'utf8');
-    void vscode.window.showInformationMessage(`Kanban board repaired. Backup stored at ${path.basename(backupPath)}.`);
+    void vscode.window.showInformationMessage(`Board file repaired. Backup stored at ${path.basename(backupPath)}.`);
     return repairedBoard;
   }
   if (selection === openOption) {
     const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
     await vscode.window.showTextDocument(doc, { preview: false });
   }
-  throw new Error('dev_ops/board.json is invalid. Repair or fix it, then refresh DevOps Kanban.');
+  throw new Error('dev_ops/board/board.json is invalid. Repair or fix it, then refresh DevOps Board.');
 }
 
-export async function backupCorruptKanbanFile(filePath: string, contents: string): Promise<string> {
+export async function backupCorruptBoardFile(filePath: string, contents: string): Promise<string> {
   const dir = path.dirname(filePath);
   await fs.mkdir(dir, { recursive: true });
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const backupPath = path.join(dir, `kanban.json.corrupt-${timestamp}.bak`);
+  const backupPath = path.join(dir, `board.json.corrupt-${timestamp}.bak`);
   await fs.writeFile(backupPath, contents, 'utf8');
   return backupPath;
 }

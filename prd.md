@@ -13,7 +13,7 @@ downstream: [FEAT-001, FEAT-002, FEAT-003, FEAT-004, FEAT-005]
 ## Vision
 
 A document-first development framework that enables AI agents to produce
-high-quality, consistent code through a structured 6-phase Kanban workflow.
+high-quality, consistent code through a structured 6-phase Board workflow.
 Each agent spawn receives curated context and produces standardized artifacts,
 ensuring perfect handoffs between agents and humans.
 
@@ -65,7 +65,7 @@ ensuring perfect handoffs between agents and humans.
 | Feature | Priority | Status | FEAT ID |
 |---------|----------|--------|---------|
 
-| 6-Phase Kanban Workflow | High | Complete | FEAT-001 |
+| 6-Phase Board Workflow | High | Complete | FEAT-001 |
 | Artifact Templates (RES, PLN, REV) | High | Complete | FEAT-002 |
 | 7 User Workflows (Slash Commands) | High | Complete | FEAT-003 |
 | Phase Rules (Backlog→Done) | High | Complete | FEAT-004 |

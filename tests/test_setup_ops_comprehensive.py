@@ -19,8 +19,8 @@ from scripts.setup_ops import (
     get_all_rules,
     get_core_rules,
     get_ide_paths,
-    init_kanban_board,
-    install_kanban_extension,
+    init_board,
+    install_extension,
     install_rules,
     main,
 )
@@ -32,8 +32,8 @@ def temp_project(tmp_path):
     return str(tmp_path)
 
 
-class TestKanbanExtension:
-    """Test install_kanban_extension."""
+class TestExtension:
+    """Test install_extension."""
 
     def test_install_success(self, temp_project):
         """Test successful installation."""
@@ -46,13 +46,13 @@ class TestKanbanExtension:
         with patch("glob.glob", return_value=[vsix_path]):
             with patch("subprocess.run") as mock_run:
                 mock_run.return_value = MagicMock(returncode=0, stdout="")
-                install_kanban_extension(temp_project)
+                install_extension(temp_project)
                 assert mock_run.called
 
     def test_install_no_vsix(self, temp_project):
         """Test when no vsix is found."""
         with patch("glob.glob", return_value=[]):
-            install_kanban_extension(temp_project)
+            install_extension(temp_project)
             # Should just print warning
 
 
@@ -122,19 +122,19 @@ class TestDetectIDEComprehensive:
                     assert detect_ide() == "antigravity"
 
 
-class TestInitKanbanBoard:
-    """Test init_kanban_board function."""
+class TestInitBoard:
+    """Test init_board function."""
 
     def test_init_creates_board(self, temp_project):
         """Test that init creates board file."""
-        init_kanban_board(temp_project)
-        board_file = os.path.join(temp_project, "dev_ops", "board.json")
+        init_board(temp_project)
+        board_file = os.path.join(temp_project, "dev_ops", "board", "board.json")
         assert os.path.exists(board_file)
 
     def test_init_board_structure(self, temp_project):
         """Test initialized board has correct structure."""
-        init_kanban_board(temp_project)
-        board_file = os.path.join(temp_project, "dev_ops", "board.json")
+        init_board(temp_project)
+        board_file = os.path.join(temp_project, "dev_ops", "board", "board.json")
         with open(board_file) as f:
             board = json.load(f)
         assert "columns" in board
@@ -142,8 +142,8 @@ class TestInitKanbanBoard:
 
     def test_init_has_default_columns(self, temp_project):
         """Test that default columns are created."""
-        init_kanban_board(temp_project)
-        board_file = os.path.join(temp_project, "dev_ops", "board.json")
+        init_board(temp_project)
+        board_file = os.path.join(temp_project, "dev_ops", "board", "board.json")
         with open(board_file) as f:
             board = json.load(f)
         column_names = [c["name"] for c in board["columns"]]
@@ -153,8 +153,8 @@ class TestInitKanbanBoard:
 
     def test_init_empty_items(self, temp_project):
         """Test that items list is initially empty."""
-        init_kanban_board(temp_project)
-        board_file = os.path.join(temp_project, "dev_ops", "board.json")
+        init_board(temp_project)
+        board_file = os.path.join(temp_project, "dev_ops", "board", "board.json")
         with open(board_file) as f:
             board = json.load(f)
         assert isinstance(board["items"], list)
@@ -250,9 +250,9 @@ class TestSetupIntegration:
 
     def test_complete_init_flow(self, temp_project):
         """Test full initialization sequence."""
-        with patch("scripts.setup_ops.install_kanban_extension"):
-            init_kanban_board(temp_project)
-            assert os.path.exists(os.path.join(temp_project, "dev_ops", "board.json"))
+        with patch("scripts.setup_ops.install_extension"):
+            init_board(temp_project)
+            assert os.path.exists(os.path.join(temp_project, "dev_ops", "board", "board.json"))
 
 
 class TestBootstrap:
@@ -286,7 +286,7 @@ class TestBootstrap:
             )
 
             with (
-                patch("scripts.setup_ops.install_kanban_extension"),
+                patch("scripts.setup_ops.install_extension"),
                 patch("scripts.setup_ops.prompt_user", return_value="y"),
                 patch("scripts.setup_ops.install_rules"),
             ):
@@ -296,7 +296,7 @@ class TestBootstrap:
                     with patch("subprocess.run"):
                         bootstrap(temp_project)
 
-                assert os.path.exists(os.path.join(temp_project, "dev_ops", "board.json"))
+                assert os.path.exists(os.path.join(temp_project, "dev_ops", "board", "board.json"))
 
     def test_main_cli(self, temp_project):
         """Test main CLI entry point."""
@@ -310,18 +310,18 @@ class TestBootstrap:
 class TestSetupOpsEdgeCases:
     """Extra tests for uncovered lines in setup_ops.py."""
 
-    def test_install_kanban_extension_already_installed(self, temp_project):
+    def test_install_extension_already_installed(self, temp_project):
         """Line 32-33: Extension already installed."""
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0, stdout="dev-ops")
-            install_kanban_extension(temp_project)
+            install_extension(temp_project)
             assert mock_run.called
 
-    def test_install_kanban_extension_fail(self, temp_project):
+    def test_install_extension_fail(self, temp_project):
         """Line 53-54: Subprocess failure."""
         ext_dir = os.path.join(temp_project, "extension")
         os.makedirs(ext_dir)
-        vsix_path = os.path.join(ext_dir, "dev-ops-kanban-1.0.0.vsix")
+        vsix_path = os.path.join(ext_dir, "dev-ops-1.0.0.vsix")
         open(vsix_path, "w").close()
 
         with patch("glob.glob", return_value=[vsix_path]):
@@ -336,7 +336,7 @@ class TestSetupOpsEdgeCases:
                 with patch(
                     "scripts.setup_ops.subprocess.CalledProcessError", sp.CalledProcessError
                 ):
-                    install_kanban_extension(temp_project)
+                    install_extension(temp_project)
 
     def test_detect_ide_cursor_fail(self):
         """Line 123-124: Cursor version check failure."""

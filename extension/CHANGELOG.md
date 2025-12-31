@@ -47,7 +47,7 @@
 
 ### Added
 
-- **DevOps Sidebar Redesign** - Activity bar renamed from "Kanban" to "DevOps"
+- **DevOps Sidebar Redesign** - Activity bar renamed from "Board" to "DevOps"
 - **Tasks Section** - Action-oriented task management
 - **Boards Section** - Board-level operations (New Board, Import, Export)
 
@@ -70,7 +70,7 @@
 ### Changed
 
 - **Phase Rule Alignment** - `phase_inprogress.md` renamed to `phase_implementing.md`
-- **Sidebar Simplified** - Removed "Board Tools" separator, now just Kanban + Metrics
+- **Sidebar Simplified** - Removed "Board Tools" separator, now just Board + Metrics
 - **Onboard Agent** - Renamed "Spawn Agent" → "Onboard Agent" with improved prompt
 
 ## [0.0.5] - 2025-12-20
@@ -88,7 +88,7 @@
 
 ### Fixed
 
-- Duplicate `board.json` file - Consolidated to `dev_ops/kanban/board.json`
+- Duplicate `board.json` file - Consolidated to `dev_ops/board/board.json`
 
 ## [0.0.1] - 2025-12-18
 
@@ -96,9 +96,9 @@
 
 - **Column-specific task creation** - Prompts for target column when creating tasks
 - **TASK-XXX ID format** - Sequential task IDs matching Python CLI
-- **View Task History** command - Opens `dev_ops/kanban/tasks/{id}.md`
+- **View Task History** command - Opens `dev_ops/board/tasks/{id}.md`
 
 ### Changed
 
-- Board storage path: `local/kanban.json` → `dev_ops/kanban/board.json`
+- Board storage path: `local/board.json` → `dev_ops/board/board.json`
 - Initialize command now creates 7-column board (Backlog → Done)

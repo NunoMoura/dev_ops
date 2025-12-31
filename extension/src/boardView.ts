@@ -38,7 +38,7 @@ type WebviewMessage =
 
 type WebviewEvent = { type: 'board'; data: BoardViewSnapshot };
 
-export class KanbanBoardPanelManager {
+export class BoardPanelManager {
   private panel: vscode.WebviewPanel | undefined;
   private webviewReady = false;
   private latestBoard: BoardViewSnapshot = { columns: [], tasks: [] };
@@ -55,7 +55,7 @@ export class KanbanBoardPanelManager {
   constructor(private readonly extensionUri: vscode.Uri) { }
 
   /**
-   * Opens the Kanban board in an editor panel (draggable to second monitor).
+   * Opens the Board board in an editor panel (draggable to second monitor).
    * If already open, reveals the existing panel.
    */
   openBoard(): void {
@@ -65,8 +65,8 @@ export class KanbanBoardPanelManager {
     }
 
     this.panel = vscode.window.createWebviewPanel(
-      'kanbanBoard',
-      'Kanban Board',
+      'boardBoard',
+      'Board Board',
       vscode.ViewColumn.One,
       {
         enableScripts: true,
@@ -125,12 +125,12 @@ export class KanbanBoardPanelManager {
   }
 }
 
-export function createBoardPanelManager(context: vscode.ExtensionContext): KanbanBoardPanelManager {
-  const manager = new KanbanBoardPanelManager(context.extensionUri);
+export function createBoardPanelManager(context: vscode.ExtensionContext): BoardPanelManager {
+  const manager = new BoardPanelManager(context.extensionUri);
 
   // Register command to open board in editor panel
   context.subscriptions.push(
-    vscode.commands.registerCommand('kanban.openBoard', () => {
+    vscode.commands.registerCommand('devops.openBoard', () => {
       manager.openBoard();
     }),
   );
@@ -533,7 +533,7 @@ function getBoardHtml(panelMode = false): string {
     <body>
       <div class="board-wrapper">
         <div class="board-header">
-          <h2 class="board-title">Kanban Board</h2>
+          <h2 class="board-title">Board Board</h2>
           <button id="addTaskBtn" class="add-task-button" type="button" title="Create Task">New Task</button>
         </div>
         <div id="selectionBanner" class="selection-banner hidden">

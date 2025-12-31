@@ -5,7 +5,7 @@ category: automated
 
 # Create Task
 
-Add a new task to the Kanban board.
+Add a new task to the Board board.
 
 ## Steps
 
@@ -15,7 +15,7 @@ Add a new task to the Kanban board.
    python3 scripts/board_ops.py create --title "{{user_input}}" --priority medium
    ```
 
-   Or use VS Code: `Kanban: Create Task` or `+` button in board
+   Or use VS Code: `Board: Create Task` or `+` button in board
 
 2. **Set priority**: `high` | `medium` | `low`
 

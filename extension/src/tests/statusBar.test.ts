@@ -71,7 +71,7 @@ suite('StatusBar - Board Statistics', () => {
 suite('StatusBar - Text Formatting', () => {
     function formatStatusText(total: number, inProgress: number, blocked: number): string {
         if (total === 0) {
-            return '$(project) Kanban: No tasks';
+            return '$(project) Board: No tasks';
         } else if (blocked > 0) {
             return `$(project) ${total} tasks • ${inProgress} active • ${blocked} blocked`;
         } else {
@@ -80,7 +80,7 @@ suite('StatusBar - Text Formatting', () => {
     }
 
     test('shows "No tasks" for empty board', () => {
-        assert.strictEqual(formatStatusText(0, 0, 0), '$(project) Kanban: No tasks');
+        assert.strictEqual(formatStatusText(0, 0, 0), '$(project) Board: No tasks');
     });
 
     test('shows task count and active', () => {

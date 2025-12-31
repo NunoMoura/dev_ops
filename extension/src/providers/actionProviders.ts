@@ -40,7 +40,7 @@ export class TasksActionProvider implements vscode.TreeDataProvider<TasksNode> {
             id: 'tasks-search',
             label: 'Search',
             icon: 'search',
-            command: 'kanban.filterTasks',
+            command: 'board.filterTasks',
         },
     ];
 
@@ -76,7 +76,7 @@ export class TasksActionProvider implements vscode.TreeDataProvider<TasksNode> {
             item.description = '(click to clear)';
             item.iconPath = new vscode.ThemeIcon('close');
             item.command = {
-                command: 'kanban.clearTaskFilter',
+                command: 'board.clearTaskFilter',
                 title: 'Clear Filter',
             };
             item.contextValue = 'devopsFilter';

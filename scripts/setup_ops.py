@@ -15,13 +15,13 @@ from project_ops import detect_stack, get_file_content
 from utils import prompt_user, write_file
 
 # ==========================================
-# Kanban Extension Installation
+# Extension Installation
 # ==========================================
 
 
-def install_kanban_extension(dev_ops_root: str):
-    """Install the DevOps Kanban VS Code extension if not already installed."""
-    print("\n🔧 Checking Kanban extension...")
+def install_extension(dev_ops_root: str):
+    """Install the DevOps extension if not already installed."""
+    print("\n🔧 Checking DevOps extension...")
 
     # Check if already installed
     try:
@@ -29,7 +29,7 @@ def install_kanban_extension(dev_ops_root: str):
             ["code", "--list-extensions"], capture_output=True, text=True, timeout=30
         )
         if "dev-ops" in result.stdout.lower():
-            print("   ✅ DevOps Kanban extension already installed")
+            print("   ✅ DevOps extension already installed")
             return
     except Exception as e:
         print(f"   ⚠️ Could not check extensions: {e}")
@@ -46,26 +46,26 @@ def install_kanban_extension(dev_ops_root: str):
     vsix_path = vsix_files[0] if vsix_files else None
 
     if vsix_path and os.path.exists(vsix_path):
-        print(f"   📦 Installing DevOps Kanban extension ({os.path.basename(vsix_path)})...")
+        print(f"   📦 Installing DevOps extension ({os.path.basename(vsix_path)})...")
         try:
             subprocess.run(["code", "--install-extension", vsix_path], check=True, timeout=60)
-            print("   ✅ DevOps Kanban extension installed")
+            print("   ✅ DevOps extension installed")
         except subprocess.CalledProcessError as e:
             print(f"   ⚠️ Failed to install extension: {e}")
     else:
         print(f"   ⚠️ No extension VSIX found matching {vsix_pattern}")
 
 
-def init_kanban_board(project_root: str):
-    """Initialize the Kanban board if not exists."""
-    dev_ops_dir = os.path.join(project_root, "dev_ops")
+def init_board(project_root: str):
+    """Initialize the DevOps board if not exists."""
+    dev_ops_dir = os.path.join(project_root, "dev_ops", "board")
     board_path = os.path.join(dev_ops_dir, "board.json")
 
     if os.path.exists(board_path):
-        print("   ✅ Kanban board already exists")
+        print("   ✅ DevOps board already exists")
         return
 
-    print("   📋 Initializing Kanban board...")
+    print("   📋 Initializing DevOps board...")
     os.makedirs(dev_ops_dir, exist_ok=True)
 
     # Load columns from shared schema via board_ops
@@ -80,7 +80,7 @@ def init_kanban_board(project_root: str):
     with open(board_path, "w") as f:
         json.dump(initial_board, f, indent=2)
 
-    print("   ✅ Kanban board initialized at dev_ops/board.json")
+    print("   ✅ DevOps board initialized at dev_ops/board/board.json")
 
 
 # ==========================================
@@ -533,11 +533,11 @@ def bootstrap(target_dir: str):
             shutil.copy2(pr_triage_src, pr_triage_dest)
             print("   - Installed .github/workflows/pr_triage.yml")
 
-    # Initialize Kanban Board (replaces old backlog.md)
-    init_kanban_board(PROJECT_ROOT)
+    # Initialize DevOps Board (replaces old backlog.md)
+    init_board(PROJECT_ROOT)
 
-    # Install Kanban Extension (if VS Code available)
-    install_kanban_extension(DEV_OPS_CORE_ROOT)
+    # Install Extension (if VS Code available)
+    install_extension(DEV_OPS_CORE_ROOT)
 
     print("\n✨ Setup Complete! dev_ops installed locally.")
 

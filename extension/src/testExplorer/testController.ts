@@ -243,7 +243,7 @@ export function registerTestController(context: vscode.ExtensionContext): void {
                 if (choice === 'Yes') {
                     // Create bug task via Python
                     const terminal = vscode.window.createTerminal('DevOps');
-                    terminal.sendText(`python scripts/kanban_ops.py create --title "${bugTitle}" --priority high --column col-backlog`);
+                    terminal.sendText(`python scripts/board_ops.py create --title "${bugTitle}" --priority high --column col-backlog`);
                     terminal.show();
                 }
             });

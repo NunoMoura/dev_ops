@@ -1,5 +1,5 @@
 import { Column, Task, FilterState, TaskFilter, FilterToken, COLUMN_FALLBACK_NAME, TaskStatus } from './types';
-import { isDefined } from './kanbanData';
+import { isDefined } from './boardData';
 
 export function parseTaskFilter(raw?: string): TaskFilter | undefined {
   if (!raw || !raw.trim()) {

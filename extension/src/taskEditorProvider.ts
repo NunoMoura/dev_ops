@@ -3,15 +3,15 @@ import { readBoard, writeBoard } from './features/boardStore';
 import { Task, ChecklistItem, COLUMN_FALLBACK_NAME } from './features/types';
 
 /**
- * Content provider for kanban-task:// URIs.
+ * Content provider for devops-task:// URIs.
  * Required for CustomTextEditorProvider to work with virtual documents.
  */
 class TaskDocumentContentProvider implements vscode.TextDocumentContentProvider {
-  public static readonly scheme = 'kanban-task';
+  public static readonly scheme = 'devops-task';
 
   async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
-    // Extract task ID from URI path (e.g., /task/TASK-001.kanban-task -> TASK-001)
-    const taskId = uri.path.replace('/task/', '').replace('.kanban-task', '');
+    // Extract task ID from URI path (e.g., /task/TASK-001.devops-task -> TASK-001)
+    const taskId = uri.path.replace('/task/', '').replace('.devops-task', '');
 
     try {
       const board = await readBoard();
@@ -27,11 +27,11 @@ class TaskDocumentContentProvider implements vscode.TextDocumentContentProvider 
 }
 
 /**
- * Custom editor provider for Kanban tasks.
+ * Custom editor provider for Board tasks.
  * Opens tasks in a new editor tab with a webview-based form.
  */
 export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
-  public static readonly viewType = 'kanban.taskEditor';
+  public static readonly viewType = 'devops.taskEditor';
 
   private static instance: TaskEditorProvider | undefined;
 
@@ -39,7 +39,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     const provider = new TaskEditorProvider(context);
     TaskEditorProvider.instance = provider;
 
-    // Register the content provider for the kanban-task scheme
+    // Register the content provider for the devops-task scheme
     const contentProvider = new TaskDocumentContentProvider();
     const contentDisposable = vscode.workspace.registerTextDocumentContentProvider(
       TaskDocumentContentProvider.scheme,
@@ -105,7 +105,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
           vscode.window.showInformationMessage(`✅ Saved task ${taskId}`);
           webviewPanel.dispose();
           // Trigger board refresh
-          vscode.commands.executeCommand('kanban.refresh');
+          vscode.commands.executeCommand('devops.refreshBoard');
           break;
         case 'delete':
           // Show confirmation dialog from extension host (confirm() doesn't work in webviews)
@@ -124,8 +124,8 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
   }
 
   private getTaskIdFromUri(uri: vscode.Uri): string {
-    // URI format: kanban-task:/task/TASK-001.kanban-task
-    return uri.path.replace('/task/', '').replace('.kanban-task', '');
+    // URI format: devops-task:/task/TASK-001.devops-task
+    return uri.path.replace('/task/', '').replace('.devops-task', '');
   }
 
   private async loadTask(taskId: string): Promise<Task | undefined> {
@@ -151,7 +151,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     await writeBoard(board);
     vscode.window.showInformationMessage(`Deleted task ${taskId}`);
     // Trigger board refresh
-    vscode.commands.executeCommand('kanban.refresh');
+    vscode.commands.executeCommand('devops.refreshBoard');
   }
 
   private getErrorHtml(message: string): string {
@@ -618,6 +618,6 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
  * Open a task in a new editor tab.
  */
 export async function openTaskInEditor(taskId: string): Promise<void> {
-  const uri = vscode.Uri.parse(`kanban-task:/task/${taskId}`);
+  const uri = vscode.Uri.parse(`devops-task:/task/${taskId}`);
   await vscode.commands.executeCommand('vscode.openWith', uri, TaskEditorProvider.viewType);
 }

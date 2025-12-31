@@ -65,7 +65,7 @@ Before moving on from each item:
 If implementation reveals the plan is missing critical details, **move backward**:
 
 ```bash
-python3 dev_ops/scripts/kanban_ops.py move TASK-XXX col-plan
+python3 dev_ops/scripts/board_ops.py move TASK-XXX col-plan
 ```
 
 ### If Blocked by Unrelated Issue
@@ -73,7 +73,7 @@ python3 dev_ops/scripts/kanban_ops.py move TASK-XXX col-plan
 Spawn a new task, don't delay current work:
 
 ```bash
-python3 dev_ops/scripts/kanban_ops.py create --title "Blocker: reason" --spawn-from TASK-XXX
+python3 dev_ops/scripts/board_ops.py create --title "Blocker: reason" --spawn-from TASK-XXX
 ```
 
 ### When All Items Complete
@@ -81,7 +81,7 @@ python3 dev_ops/scripts/kanban_ops.py create --title "Blocker: reason" --spawn-f
 ```bash
 ruff check .
 pytest tests/ -v
-python3 dev_ops/scripts/kanban_ops.py move TASK-XXX col-verify
+python3 dev_ops/scripts/board_ops.py move TASK-XXX col-verify
 ```
 
 ## EXIT_CRITERIA

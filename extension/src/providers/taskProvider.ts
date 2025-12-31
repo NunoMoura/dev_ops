@@ -142,7 +142,7 @@ class DevOpsTaskExecution implements vscode.Pseudoterminal {
                 this.writeEmitter.fire(`\r\n`);
 
                 // Execute command to show task details in UI
-                await vscode.commands.executeCommand('kanban.showTaskDetails', this.taskId);
+                await vscode.commands.executeCommand('board.showTaskDetails', this.taskId);
             } else {
                 this.writeEmitter.fire(`\r\nTask ${this.taskId} not found.\r\n`);
             }

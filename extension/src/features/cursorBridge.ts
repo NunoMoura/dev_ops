@@ -44,7 +44,7 @@ export class CursorBridge {
 
         try {
             // 1. Get task details
-            // We'll use kanban_ops to get the task state if needed, but for now just basic "Start work"
+            // We'll use board_ops to get the task state if needed, but for now just basic "Start work"
             // In a real scenario, we'd fetch full context.
 
             // 2. Create task file content
@@ -53,7 +53,7 @@ export class CursorBridge {
             const taskContent = {
                 id: taskId,
                 phase: phase,
-                command: `python3 scripts/kanban_ops.py claim ${taskId} --type agent --name cursor`,
+                command: `python3 scripts/board_ops.py claim ${taskId} --type agent --name cursor`,
                 context: `Please work on task ${taskId} in phase ${phase}. Check board.json for details.`,
                 status: 'pending',
                 created: new Date().toISOString()

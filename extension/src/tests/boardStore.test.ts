@@ -55,12 +55,12 @@ suite('Board Store - Path Construction', () => {
     // These would require mocking vscode.workspace.workspaceFolders
     // Document the expected behavior for integration tests
 
-    test.skip('getKanbanPath returns dev_ops/board.json path', async () => {
+    test.skip('getBoardPath returns dev_ops/board.json path', async () => {
         // Would need to mock vscode.workspace.workspaceFolders
         // Expected: /workspace/root/dev_ops/board.json
     });
 
-    test.skip('getKanbanPath returns undefined without workspace', async () => {
+    test.skip('getBoardPath returns undefined without workspace', async () => {
         // Would need to mock vscode.workspace.workspaceFolders as undefined
     });
 });
@@ -79,7 +79,7 @@ suite('Board Store - File Operations', () => {
 
     test.skip('readBoard handles corrupt JSON', async () => {
         // Mock fs.readFile to return invalid JSON
-        // Should call handleCorruptKanbanFile
+        // Should call handleCorruptBoardFile
     });
 
     test.skip('writeBoard creates directory if needed', async () => {
@@ -89,7 +89,7 @@ suite('Board Store - File Operations', () => {
 
 suite('Board Store - Backup Logic', () => {
     test('backup filename includes timestamp pattern', () => {
-        // Test the timestamp formatting used in backupCorruptKanbanFile
+        // Test the timestamp formatting used in backupCorruptBoardFile
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         assert.ok(timestamp.includes('-'));
         assert.ok(!timestamp.includes(':'));
