@@ -13,10 +13,9 @@ import { formatError } from './features/errors';
 import { showPhaseNotification } from './features/phaseNotifications';
 import { createStatusBar, StatusBarManager } from './statusBar';
 import { TaskEditorProvider } from './taskEditorProvider';
-import { MetricsViewProvider, registerMetricsView } from './metricsView';
+import { DashboardViewProvider, registerDashboardView } from './dashboardView';
 import { registerDocsView } from './providers/docsViewProvider';
 import { registerUXView } from './providers/uxViewProvider';
-import { registerAgentDashboard } from './providers/agentDashboardProvider';
 import { SessionBridge } from './features/sessionBridge';
 import { CursorBridge } from './features/cursorBridge';
 import { AgentManager, registerAgentManager } from './agents/AgentManager';
@@ -100,6 +99,7 @@ type DevOpsExtensionServices = KanbanCommandServices & {
   boardPanelManager: KanbanBoardPanelManager;
   statusBar: StatusBarManager;
   syncFilterUI: () => void;
+  dashboardProvider: DashboardViewProvider;
 };
 
 async function initializeDevOpsServices(context: vscode.ExtensionContext): Promise<DevOpsExtensionServices> {
@@ -107,10 +107,10 @@ async function initializeDevOpsServices(context: vscode.ExtensionContext): Promi
   const provider = new BoardTreeProvider(readBoard);
 
   // Register sidebar views
-  const metricsProvider = registerMetricsView(context);
+  // Register sidebar views
+  const dashboardProvider = registerDashboardView(context);
   registerDocsView(context);
   registerUXView(context);
-  registerAgentDashboard(context);
 
   const boardPanelManager = createBoardPanelManager(context);
 
@@ -127,7 +127,7 @@ async function initializeDevOpsServices(context: vscode.ExtensionContext): Promi
   return {
     provider,
     kanbanView: undefined as unknown as vscode.TreeView<import('./providers/boardTreeProvider').BoardNode>,
-    metricsProvider,
+    dashboardProvider,
     boardPanelManager,
     statusBar,
     syncFilterUI,
@@ -143,22 +143,22 @@ function bindDevOpsViews(
 }
 
 function registerBoardSnapshotSync(context: vscode.ExtensionContext, services: DevOpsExtensionServices): void {
-  const { provider, boardPanelManager, statusBar, metricsProvider } = services;
+  const { provider, boardPanelManager, statusBar, dashboardProvider } = services;
   boardPanelManager.setBoard(provider.getBoardViewSnapshot());
 
-  // Update status bar and metrics with initial board state
+  // Update status bar and dashboard with initial board state
   readBoard().then((board) => {
     statusBar.update(board);
-    metricsProvider.updateBoard(board);
+    dashboardProvider.updateBoard(board);
   }).catch(() => { });
 
   context.subscriptions.push(
     provider.onDidUpdateBoardView((snapshot) => {
       boardPanelManager.setBoard(snapshot);
-      // Update status bar and metrics when board changes
+      // Update status bar and dashboard when board changes
       readBoard().then((board) => {
         statusBar.update(board);
-        metricsProvider.updateBoard(board);
+        dashboardProvider.updateBoard(board);
       }).catch(() => { });
     }),
   );

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { runBoardOps, runDocOps } from './pythonRunner';
 import { TaskDetailsPayload } from '../taskDetailsView';
-import { MetricsViewProvider } from '../metricsView';
+import { DashboardViewProvider } from '../dashboardView';
 import { BoardTreeProvider, BoardNode, BoardManagerNode } from '../providers/boardTreeProvider';
 import {
   Board,
@@ -51,7 +51,7 @@ import { MoveTasksRequest } from './types';
 export type KanbanCommandServices = {
   provider: BoardTreeProvider;
   kanbanView: vscode.TreeView<BoardNode>;
-  metricsProvider: MetricsViewProvider;
+  dashboardProvider: DashboardViewProvider;
 };
 
 export function registerBoardCommands(
