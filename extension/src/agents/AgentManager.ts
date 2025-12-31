@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { AgentAdapter, TaskContext } from './AgentAdapter';
+import { log } from '../features/logger';
 
 export class AgentManager {
     private adapters: Map<string, AgentAdapter> = new Map();
@@ -16,7 +17,7 @@ export class AgentManager {
 
     public registerAdapter(adapter: AgentAdapter) {
         this.adapters.set(adapter.id, adapter);
-        console.log(`AgentManager: Registered ${adapter.name}`);
+        log(`AgentManager: Registered ${adapter.name}`);
     }
 
     public getAdapter(id: string): AgentAdapter | undefined {

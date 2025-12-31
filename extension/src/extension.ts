@@ -26,9 +26,10 @@ import { registerTaskProvider } from './providers/taskProvider';
 import { registerCodeLensProvider } from './providers/codeLensProvider';
 import { registerSCMDecorations } from './scm/scmDecorator';
 import { registerTestController } from './testExplorer/testController';
+import { log, warn, error as logError } from './features/logger';
 
 export async function activate(context: vscode.ExtensionContext) {
-  console.log('DevOps extension activating...');
+  log('DevOps extension activating...');
   try {
     // Register DevOps: Initialize command first (always works)
     context.subscriptions.push(registerInitializeCommand(context));
@@ -43,7 +44,7 @@ export async function activate(context: vscode.ExtensionContext) {
     try {
       await services.provider.refresh();
     } catch (error) {
-      console.warn('Kanban board not loaded on activation:', error);
+      warn(`Kanban board not loaded on activation: ${error}`);
     }
 
     await registerBoardWatchers(services.provider, context);
@@ -77,9 +78,9 @@ export async function activate(context: vscode.ExtensionContext) {
     agentManager.registerAdapter(new CursorAdapter());
     registerAgentManager(context);
 
-    console.log('DevOps extension activated successfully');
+    log('DevOps extension activated successfully');
   } catch (error) {
-    console.error('DevOps extension activation failed:', error);
+    logError('DevOps extension activation failed', error);
     vscode.window.showErrorMessage(`DevOps extension failed to activate: ${formatError(error)}`);
   }
 }

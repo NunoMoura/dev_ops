@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { readBoard, writeBoard } from './features/boardStore';
-import { Task, COLUMN_FALLBACK_NAME } from './features/types';
+import { Task, ChecklistItem, COLUMN_FALLBACK_NAME } from './features/types';
 
 /**
  * Content provider for kanban-task:// URIs.
@@ -168,11 +168,11 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     const upstreamList = (task.upstream || []).map((a: string) => `<span class="artifact-badge upstream">${a}</span>`).join('') || '<span class="empty-hint">None</span>';
     const downstreamList = (task.downstream || []).map((a: string) => `<span class="artifact-badge downstream">${a}</span>`).join('') || '<span class="empty-hint">None</span>';
     const checklist = task.checklist || [];
-    const checklistDone = checklist.filter((c: any) => c.done).length;
+    const checklistDone = checklist.filter((c: ChecklistItem) => c.done).length;
     const checklistTotal = checklist.length;
     const progressPercent = checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
     const checklistHtml = checklistTotal > 0
-      ? checklist.map((item: any, i: number) => `
+      ? checklist.map((item: ChecklistItem, i: number) => `
         <div class="checklist-item">
           <input type="checkbox" ${item.done ? 'checked' : ''} data-index="${i}" class="checklist-check">
           <span class="${item.done ? 'done' : ''}">${item.text}</span>

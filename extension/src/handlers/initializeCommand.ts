@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import { spawn } from "child_process";
+import { log, error as logError } from "../features/logger";
 
 /**
  * DevOps: Initialize command
@@ -124,12 +125,12 @@ async function runSetupScript(
         let stderr = "";
 
         proc.stdout.on("data", (data) => {
-            console.log(`[setup_ops.py] ${data.toString()}`);
+            log(`[setup_ops.py] ${data.toString()}`);
         });
 
         proc.stderr.on("data", (data) => {
             stderr += data.toString();
-            console.error(`[setup_ops.py] ${data.toString()}`);
+            logError(`[setup_ops.py] ${data.toString()}`);
         });
 
         proc.on("close", (code) => {

@@ -30,6 +30,14 @@ class FileExistsError(DevOpsError):
 
 
 # ==========================================
+# Constants
+# ==========================================
+
+# Sentinel value returned when running in headless mode without a default
+HEADLESS_PLACEHOLDER = "TODO_FILL_ME"
+
+
+# ==========================================
 # Interaction
 # ==========================================
 
@@ -43,9 +51,10 @@ def prompt_user(question: str, default: Optional[str] = None) -> str:
 
     Returns:
         User's input, or default value if applicable.
+        In headless mode without a default, returns HEADLESS_PLACEHOLDER.
     """
     if os.environ.get("HEADLESS", "").lower() == "true":
-        return default or "TODO_FILL_ME"
+        return default or HEADLESS_PLACEHOLDER
 
     if default:
         prompt_text = f"{question} [{default}]: "
@@ -65,9 +74,9 @@ def prompt_user(question: str, default: Optional[str] = None) -> str:
                     tty_out.flush()
                     response = tty_in.readline().strip()
             except OSError:
-                return default or "TODO_FILL_ME"
+                return default or HEADLESS_PLACEHOLDER
     except (EOFError, KeyboardInterrupt, OSError):
-        return default or "TODO_FILL_ME"
+        return default or HEADLESS_PLACEHOLDER
 
     return response if response else (default or "")
 

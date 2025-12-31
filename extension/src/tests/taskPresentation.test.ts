@@ -101,7 +101,7 @@ suite('taskPresentation - buildTaskDetail', () => {
     });
 
     test('includes checklist when set', () => {
-        const task = createTask({ checklist: ['Write code', 'Add tests'] });
+        const task = createTask({ checklist: [{ text: 'Write code', done: false }, { text: 'Add tests', done: false }] });
         const detail = buildTaskDetail(task, 'Build');
         assert.ok(detail.includes('Checklist:'));
         assert.ok(detail.includes('- [ ] Write code'));

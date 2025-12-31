@@ -19,6 +19,14 @@ export type Column = {
 
 export type TaskStatus = 'ready' | 'agent_active' | 'needs_feedback' | 'blocked' | 'done';
 
+/**
+ * Checklist item stored on a task.
+ */
+export type ChecklistItem = {
+  text: string;
+  done: boolean;
+};
+
 export type Task = {
   id: string;                    // TASK-XXX format
   columnId: string;              // Current column (workflow phase)
@@ -55,7 +63,7 @@ export type Task = {
   // Context from plan import or manual entry
   acceptanceCriteria?: string[];
   risks?: string[];
-  checklist?: string[];          // Simple string checklist for sub-items
+  checklist?: ChecklistItem[];   // Checklist items with completion status
   context?: string;
   contextFile?: string;
   contextRange?: { startLine: number; endLine: number };

@@ -48,7 +48,7 @@ export function buildTaskDetail(task: Task, columnName: string): string {
   }
   if (task.checklist?.length) {
     detail.push('', 'Checklist:');
-    task.checklist.forEach((item) => detail.push(`- [ ] ${item}`));
+    task.checklist.forEach((item) => detail.push(`- [${item.done ? 'x' : ' '}] ${item.text}`));
   }
   if (task.upstream?.length) {
     detail.push('', `Upstream: ${task.upstream.join(', ')}`);
@@ -109,7 +109,7 @@ export function buildCodexPrompt(task: Task, columnName: string): string {
   }
   if (task.checklist?.length) {
     lines.push('', '## Checklist');
-    task.checklist.forEach((item) => lines.push(`- [ ] ${item}`));
+    task.checklist.forEach((item) => lines.push(`- [${item.done ? 'x' : ' '}] ${item.text}`));
   }
   if (task.entryPoints?.length) {
     lines.push('', '## Entry Points');

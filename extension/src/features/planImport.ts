@@ -8,6 +8,7 @@ import {
   ImportedTask,
   ParsedPlan,
   TaskListKey,
+  ChecklistItem,
   COLUMN_FALLBACK_NAME,
   PLAN_EXTENSIONS,
 } from './types';
@@ -383,7 +384,10 @@ export function applyPlanTask(
   item.acceptanceCriteria = planTask.acceptanceCriteria ?? item.acceptanceCriteria;
   item.upstream = planTask.upstream ?? planTask.dependencies ?? item.upstream;
   item.risks = risks ?? item.risks;
-  item.checklist = planTask.checklist ?? item.checklist;
+  // Convert string[] checklist to ChecklistItem[] format
+  if (planTask.checklist) {
+    item.checklist = planTask.checklist.map((text): ChecklistItem => ({ text, done: false }));
+  }
   item.context = planTask.context ?? item.context;
   item.contextFile = planPath;
   item.contextRange = planTask.contextRange ?? item.contextRange;

@@ -1,12 +1,6 @@
-# Keep .agent folder
-!.agent
-!.agent/**
-
-# Don't vendor these (development files)
-# tests/
-# .github/ (Tracked)
-
+# ========================================
 # Python
+# ========================================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -15,23 +9,52 @@ __pycache__/
 *.egg-info/
 .eggs/
 
-# IDE/Editor
+# ========================================
+# Node.js / TypeScript (extension/)
+# ========================================
+node_modules/
+extension/out/
+extension/dist/
+extension/.vscode-test/
+*.vsix
+*.tsbuildinfo
+
+# ========================================
+# Testing & Coverage
+# ========================================
+.pytest_cache/
+.coverage
+htmlcov/
+coverage/
+.c8/
+.nyc_output/
+
+# ========================================
+# IDE / Editor
+# ========================================
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
+# ========================================
 # OS
+# ========================================
 .DS_Store
 Thumbs.db
 
-# Testing artifacts
-.pytest_cache/
-.coverage
-htmlcov/
-
+# ========================================
 # Environment
+# ========================================
 .env
+.env.local
 .venv/
 venv/
+
+# ========================================
+# Keep tracked
+# ========================================
+!.agent
+!.agent/**
+!.github/

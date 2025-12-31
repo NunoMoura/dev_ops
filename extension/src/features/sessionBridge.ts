@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { runBoardOps } from '../handlers/pythonRunner';
+import { log, warn, error as logError } from './logger';
 
 /**
  * Bridge between Antigravity sessions and board state.
@@ -18,7 +19,7 @@ export class SessionBridge {
     constructor(private readonly context: vscode.ExtensionContext) { }
 
     public activate() {
-        console.log('SessionBridge: Activating watchers...');
+        log('SessionBridge: Activating watchers...');
 
         // We need to watch the global Antigravity brain directory
         // Since it's outside the workspace, we might need a specific pattern
@@ -43,7 +44,7 @@ export class SessionBridge {
 
         const homeDir = process.env.HOME || process.env.USERPROFILE;
         if (!homeDir) {
-            console.warn('SessionBridge: Could not determine home directory.');
+            warn('SessionBridge: Could not determine home directory.');
             return;
         }
 
@@ -65,11 +66,11 @@ export class SessionBridge {
         planWatcher.onDidCreate(uri => this.onPlanCreated(uri));
         this.context.subscriptions.push(planWatcher);
 
-        console.log(`SessionBridge: Watching ${brainDir}`);
+        log(`SessionBridge: Watching ${brainDir}`);
     }
 
     private async onPlanCreated(uri: vscode.Uri) {
-        console.log(`SessionBridge: Detected new plan at ${uri.fsPath}`);
+        log(`SessionBridge: Detected new plan at ${uri.fsPath}`);
         // Session Started
         // 1. Parse session ID from path (.../brain/{APP_ID}/{SESSION_ID}/implementation_plan.md)
         // Actually typically: .../brain/{SESSION_ID}/implementation_plan.md
@@ -102,12 +103,12 @@ export class SessionBridge {
                 vscode.window.showInformationMessage(`🤖 Antigravity session started for ${taskId}`);
             }
         } catch (e) {
-            console.error('SessionBridge: Failed to handle plan creation', e);
+            logError('SessionBridge: Failed to handle plan creation', e);
         }
     }
 
     private async onWalkthroughCreated(uri: vscode.Uri) {
-        console.log(`SessionBridge: Detected new walkthrough at ${uri.fsPath}`);
+        log(`SessionBridge: Detected new walkthrough at ${uri.fsPath}`);
         // Session Complete
 
         const sessionId = this.extractSessionId(uri);
@@ -140,7 +141,7 @@ export class SessionBridge {
                 vscode.window.showInformationMessage(`✅ Antigravity session completed for ${taskId}`);
             }
         } catch (e) {
-            console.error('SessionBridge: Failed to handle walkthrough creation', e);
+            logError('SessionBridge: Failed to handle walkthrough creation', e);
         }
     }
 

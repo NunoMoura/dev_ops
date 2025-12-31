@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { runBoardOps } from '../handlers/pythonRunner';
+import { log, error as logError } from './logger';
 
 /**
  * Integration with Cursor Background Tasks.
@@ -24,9 +25,9 @@ export class CursorBridge {
             if (!fs.existsSync(tasksDir)) {
                 try {
                     fs.mkdirSync(tasksDir, { recursive: true });
-                    console.log(`CursorBridge: Created ${tasksDir}`);
+                    log(`CursorBridge: Created ${tasksDir}`);
                 } catch (e) {
-                    console.error(`CursorBridge: Failed to create tasks dir`, e);
+                    logError(`CursorBridge: Failed to create tasks dir`, e);
                 }
             }
         }
@@ -72,7 +73,7 @@ export class CursorBridge {
             return filePath;
 
         } catch (error) {
-            console.error('CursorBridge: Failed to spawn task', error);
+            logError('CursorBridge: Failed to spawn task', error);
             vscode.window.showErrorMessage(`Failed to spawn Cursor task: ${String(error)}`);
             return null;
         }
