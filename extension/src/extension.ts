@@ -28,7 +28,8 @@ import { registerTestController } from './testExplorer/testController';
 import { log, warn, error as logError } from './features/logger';
 
 export async function activate(context: vscode.ExtensionContext) {
-  log('DevOps extension activating...');
+  log('DevOps extension v0.1.3 activating...');
+  vscode.window.showInformationMessage('DevOps v0.1.3 Activated 🚀');
   try {
     // Register DevOps: Initialize command first (always works)
     context.subscriptions.push(registerInitializeCommand(context));
