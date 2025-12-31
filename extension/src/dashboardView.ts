@@ -25,11 +25,9 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       localResourceRoots: [this.extensionUri],
     };
 
-    // Initial render (Immediate)
-    // Show status card (if available) and "Loading..." for agents
-    log('[Dashboard] Rendering initial HTML...');
-    const metrics = this.calculateMetrics();
-    this.view.webview.html = this.getHtml(metrics, null); // null agents = loading state
+    // Initial render - show loading state
+    log('[Dashboard] Rendering initial loading HTML...');
+    this.view.webview.html = this.getLoadingHtml();
     log('[Dashboard] Initial HTML set, starting async refresh...');
 
     // Fetch real data
@@ -47,6 +45,17 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
 
     try {
       log('[Dashboard] Starting refresh...');
+
+      // Load board if not already loaded
+      if (!this.board) {
+        try {
+          this.board = await readBoard();
+          log('[Dashboard] Board loaded successfully');
+        } catch (e) {
+          log(`[Dashboard] Failed to load board: ${formatError(e)}`);
+        }
+      }
+
       const metrics = this.calculateMetrics();
       log(`[Dashboard] Metrics calculated: ${JSON.stringify(metrics.statusCounts)}`);
 
@@ -92,6 +101,41 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
   <div class="error">
     <strong>Dashboard Error</strong><br>
     ${errorMessage}
+  </div>
+</body>
+</html>`;
+  }
+
+  private getLoadingHtml(): string {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
+  <style>
+    body {
+      font-family: var(--vscode-font-family), sans-serif;
+      padding: 16px;
+      color: var(--vscode-foreground);
+    }
+    .loading { 
+      color: var(--vscode-descriptionForeground); 
+      text-align: center; 
+      padding: 24px; 
+    }
+    .loading-spinner {
+      display: inline-block;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="loading">
+    <span class="loading-spinner">⟳</span> Loading dashboard...
   </div>
 </body>
 </html>`;
