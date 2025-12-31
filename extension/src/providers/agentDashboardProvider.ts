@@ -65,7 +65,12 @@ export class AgentDashboardProvider implements vscode.TreeDataProvider<AgentNode
 
         } catch (error) {
             vscode.window.showErrorMessage(`Failed to load agents: ${formatError(error)}`);
-            return [];
+            // Return placeholder instead of empty array so users always see a message
+            return [new AgentNode(
+                'No active agent at the moment',
+                vscode.TreeItemCollapsibleState.None,
+                { type: 'info', icon: new vscode.ThemeIcon('info') }
+            )];
         }
     }
 

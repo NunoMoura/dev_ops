@@ -78,6 +78,15 @@ export async function activate(context: vscode.ExtensionContext) {
     agentManager.registerAdapter(new CursorAdapter());
     registerAgentManager(context);
 
+    // Auto-open board tab when extension activates
+    try {
+      await vscode.commands.executeCommand('devops.openBoard');
+      log('Board automatically opened');
+    } catch (error) {
+      // Silently fail if board doesn't exist yet
+      warn(`Board auto-open skipped: ${formatError(error)}`);
+    }
+
     log('DevOps extension activated successfully');
   } catch (error) {
     logError('DevOps extension activation failed', error);
