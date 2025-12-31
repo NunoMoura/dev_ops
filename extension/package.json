@@ -249,6 +249,7 @@
         {
           "id": "devopsMetricsView",
           "name": "Status",
+          "type": "webview",
           "icon": "$(dashboard)"
         },
         {
