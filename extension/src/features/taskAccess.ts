@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { Board, Column, Task, COLUMN_FALLBACK_NAME } from './types';
-import { readKanban, writeKanban, getWorkspaceRoot } from './boardStore';
+import { readBoard, writeBoard, getWorkspaceRoot } from './boardStore';
 import { compareNumbers, compareTasks, isDefined } from './kanbanData';
 import { formatError } from './errors';
 import { buildTaskDescription } from './taskPresentation';
@@ -109,7 +109,7 @@ export async function openTaskContext(task: Task): Promise<void> {
 }
 
 export async function moveTasksToColumn(taskIds: string[], columnId: string): Promise<MoveTasksResult> {
-  const board = await readKanban();
+  const board = await readBoard();
   const column = board.columns.find((col) => col.id === columnId);
   if (!column) {
     throw new Error('Target column not found.');
@@ -128,6 +128,6 @@ export async function moveTasksToColumn(taskIds: string[], columnId: string): Pr
   if (!updatedIds.length) {
     return { movedTaskIds: [], columnName: column.name || COLUMN_FALLBACK_NAME };
   }
-  await writeKanban(board);
+  await writeBoard(board);
   return { movedTaskIds: updatedIds, columnName: column.name || COLUMN_FALLBACK_NAME };
 }

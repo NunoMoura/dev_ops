@@ -417,9 +417,13 @@ def validate_docs() -> bool:
             for f in os.listdir(target_dir):
                 if f.endswith(".md"):
                     path = os.path.join(target_dir, f)
-                    content = read_file(path)
-                    if not content.strip():
-                        print(f"⚠️  Empty file: {f}")
+                    try:
+                        content = read_file(path)
+                        if not content.strip():
+                            print(f"⚠️  Empty file: {f}")
+                            error_count += 1
+                    except (FileNotFoundError, OSError):
+                        print(f"❌ Could not read file: {f}")
                         error_count += 1
 
     if error_count == 0:
@@ -494,6 +498,11 @@ def main():
     mockup_parser = subparsers.add_parser("create-mockup", help="Create a new mockup")
     mockup_parser.add_argument("--title", required=True, help="Mockup title")
     mockup_parser.add_argument("--component", default="", help="Component/feature this represents")
+
+    # CREATE-PRD
+    prd_parser = subparsers.add_parser("create-prd", help="Create a new PRD")
+    prd_parser.add_argument("--title", required=True, help="PRD title")
+    prd_parser.add_argument("--owner", default="", help="PRD owner")
 
     args = parser.parse_args()
 

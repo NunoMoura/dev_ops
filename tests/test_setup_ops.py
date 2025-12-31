@@ -28,13 +28,11 @@ class TestGetCoreRules:
 
         expected = [
             "dev_ops_guide.md",
-            "phase_backlog.md",
-            "phase_research.md",
-            "phase_planning.md",
-            "phase_inprogress.md",
-            "phase_testing.md",
-            "phase_done.md",
-            "phase_blocked.md",
+            "1_backlog.md",
+            "2_understand.md",
+            "3_plan.md",
+            "4_build.md",
+            "5_verify.md",
         ]
 
         for name in expected:
@@ -66,7 +64,7 @@ class TestInitKanbanBoard:
                 board = json.load(f)
 
             assert board["version"] == 1
-            assert len(board["columns"]) == 7
+            assert len(board["columns"]) == 6  # 6 columns: Backlog to Done
             assert board["items"] == []
 
     def test_does_not_overwrite_existing(self):
@@ -98,10 +96,11 @@ class TestGetAllRules:
     def test_combines_core_and_dynamic(self):
         """Test that core rules are included."""
         with tempfile.TemporaryDirectory() as tmpdir:
+            # Get rules source path
             script_dir = os.path.dirname(os.path.dirname(__file__))
             rules_src = os.path.join(script_dir, "rules")
 
-            rules = get_all_rules(rules_src, tmpdir)
+            rules = get_all_rules(rules_src, tmpdir, tmpdir)
 
             # Should have at least the core rules
             categories = {r["category"] for r in rules}
@@ -113,7 +112,8 @@ class TestKanbanExtension:
 
     @patch("setup_ops.subprocess.run")
     @patch("setup_ops.glob.glob")
-    def test_installs_latest_vsix(self, mock_glob, mock_run):
+    @patch("setup_ops.os.path.exists", return_value=True)
+    def test_installs_latest_vsix(self, mock_exists, mock_glob, mock_run):
         """Test that the latest VSIX version is installed."""
         # Mock VSIX files with different versions
         mock_glob.return_value = [
@@ -122,33 +122,25 @@ class TestKanbanExtension:
             "/path/to/extension/dev-ops-0.0.1.vsix",
         ]
 
-        # Mock successful installation
-        mock_run.return_value.stdout = "dev-ops"  # Simulate check that it's already installed?
-        # Wait, if already installed, it returns early.
-        # We want to test the case where it's NOT installed.
-
-        # 1. First call checks list-extensions
-        # 2. Second call (if needed) does install-extension
-
-        # Let's mock the first call to return empty string (not installed)
+        # Mock subprocess calls: first list-extensions (not installed), then install
         mock_run.side_effect = [
-            MagicMock(stdout="other-extension"),  # list-extensions
-            MagicMock(returncode=0),  # install-extension
+            MagicMock(stdout="other-extension"),  # list-extensions - not installed
+            MagicMock(returncode=0),  # install-extension - success
         ]
 
-        with tempfile.TemporaryDirectory():
-            # We need the dev_ops_root path. The function takes dev_ops_root.
-            install_kanban_extension("/path/to")
+        # Call function
+        install_kanban_extension("/path/to")
 
         # Verify glob called with correct pattern
         mock_glob.assert_called_with("/path/to/extension/dev-ops-*.vsix")
 
-        # Verify install command called with the LATEST version (0.1.0)
-        # 0.1.0 > 0.0.9 > 0.0.1
-        # It should pick dev-ops-0.1.0.vsix
+        # After sorting, highest version (0.1.0) should be selected
+        # Sorted in reverse: [0.0.9, 0.1.0, 0.0.1] → picks first = 0.0.9
+        # Actually sorted() does string sort, so "0.1.0" > "0.0.9" > "0.0.1"
         expected_vsix = "/path/to/extension/dev-ops-0.1.0.vsix"
 
-        # Check call args of the second call
-        args, _ = mock_run.call_args
-        # mock_run("code", "--install-extension", vsix_path)
-        assert args[0] == ["code", "--install-extension", expected_vsix]
+        # Check that install command was called
+        assert mock_run.call_count == 2
+        install_call = mock_run.call_args_list[1]
+        args = install_call[0][0]  # Get first positional arg (the command list)
+        assert args == ["code", "--install-extension", expected_vsix]

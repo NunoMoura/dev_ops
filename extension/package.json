@@ -2,7 +2,7 @@
   "name": "dev-ops",
   "displayName": "DevOps Framework",
   "icon": "resources/devops-logo.png",
-  "description": "Kanban board + DevOps workflows for AI-assisted development",
+  "description": "Board-based DevOps workflows for AI-assisted development",
   "publisher": "NunoMoura",
   "repository": {
     "type": "git",
@@ -20,96 +20,118 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "taskDefinitions": [
+      {
+        "type": "devops",
+        "required": [
+          "taskId"
+        ],
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "description": "DevOps task ID (e.g., TASK-001)"
+          },
+          "title": {
+            "type": "string",
+            "description": "Task title"
+          },
+          "columnId": {
+            "type": "string",
+            "description": "Board column ID"
+          }
+        }
+      }
+    ],
     "commands": [
       {
         "command": "devops.initialize",
         "title": "DevOps: Initialize"
       },
       {
-        "command": "kanban.importPlan",
+        "command": "devops.importPlan",
         "title": "DevOps: Import Plan"
       },
       {
-        "command": "kanban.openBoard",
+        "command": "devops.openBoard",
         "title": "DevOps: Open Board"
       },
       {
-        "command": "kanban.pickNextTask",
+        "command": "devops.pickNextTask",
         "title": "DevOps: Pick Next Task"
       },
       {
-        "command": "kanban.showTaskDetails",
+        "command": "devops.showTaskDetails",
         "title": "DevOps: Show Task Details"
       },
       {
-        "command": "kanban.getTasks",
+        "command": "devops.getTasks",
         "title": "DevOps: Export Board"
       },
       {
-        "command": "kanban.createColumn",
+        "command": "devops.createColumn",
         "title": "DevOps: Create Column"
       },
       {
-        "command": "kanban.renameColumn",
+        "command": "devops.renameColumn",
         "title": "DevOps: Rename Column"
       },
       {
-        "command": "kanban.deleteColumn",
+        "command": "devops.deleteColumn",
         "title": "DevOps: Delete Column"
       },
       {
-        "command": "kanban.createTask",
+        "command": "devops.createTask",
         "title": "DevOps: Create Task",
         "icon": "$(add)"
       },
       {
-        "command": "kanban.moveTask",
+        "command": "devops.moveTask",
         "title": "DevOps: Move Task"
       },
       {
-        "command": "kanban.filterTasks",
+        "command": "devops.filterTasks",
         "title": "DevOps: Search Tasks",
         "icon": "$(search)"
       },
       {
-        "command": "kanban.clearTaskFilter",
+        "command": "devops.clearTaskFilter",
         "title": "DevOps: Clear Filters"
       },
       {
-        "command": "kanban.markTaskInProgress",
+        "command": "devops.markTaskInProgress",
         "title": "DevOps: Mark In Progress"
       },
       {
-        "command": "kanban.markTaskBlocked",
+        "command": "devops.markTaskBlocked",
         "title": "DevOps: Mark Blocked"
       },
       {
-        "command": "kanban.markTaskDone",
+        "command": "devops.markTaskDone",
         "title": "DevOps: Mark Done"
       },
       {
-        "command": "kanban.viewTaskHistory",
+        "command": "devops.viewTaskHistory",
         "title": "DevOps: View Task History"
       },
       {
-        "command": "kanban.openEntryPoints",
+        "command": "devops.openEntryPoints",
         "title": "DevOps: Open Entry Points"
       },
       {
-        "command": "kanban.openTaskContext",
+        "command": "devops.openTaskContext",
         "title": "DevOps: Open Task Context"
       },
       {
-        "command": "kanban.openSettings",
+        "command": "devops.openSettings",
         "title": "DevOps: Preferences",
         "icon": "$(gear)"
       },
       {
-        "command": "kanban.setStatus",
+        "command": "devops.setStatus",
         "title": "DevOps: Set Task Status"
       },
       {
-        "command": "kanban.claimTask",
+        "command": "devops.claimTask",
         "title": "DevOps: Claim Task"
       },
       {
@@ -153,7 +175,7 @@
         "icon": "$(note)"
       },
       {
-        "command": "kanban.deleteTask",
+        "command": "devops.deleteTask",
         "title": "DevOps: Delete Task",
         "icon": "$(trash)"
       },
@@ -171,6 +193,26 @@
         "command": "devops.newMockup",
         "title": "DevOps: New Mockup",
         "icon": "$(file-media)"
+      },
+      {
+        "command": "devops.launchAntigravitySession",
+        "title": "Start Session",
+        "icon": "$(robot)"
+      },
+      {
+        "command": "devops.launchCursorSession",
+        "title": "Start Session",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "devops.insertTaskInCommit",
+        "title": "DevOps: Insert Task ID in Commit Message",
+        "icon": "$(git-commit)"
+      },
+      {
+        "command": "devops.startAgentSession",
+        "title": "Start Agent Session",
+        "icon": "$(play)"
       }
     ],
     "configuration": {
@@ -184,7 +226,12 @@
         "devops.autoOpenBoard": {
           "type": "boolean",
           "default": false,
-          "description": "Automatically open Kanban board when workspace opens"
+          "description": "Automatically open board when workspace opens"
+        },
+        "devops.enableCodeLens": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show CodeLens annotations for task references (TASK-XXX) in files"
         }
       }
     },
@@ -193,12 +240,17 @@
         {
           "id": "devops",
           "title": "DevOps",
-          "icon": "resources/kanban-icon.svg"
+          "icon": "resources/board-icon.svg"
         }
       ]
     },
     "views": {
       "devops": [
+        {
+          "id": "devopsAgentView",
+          "name": "Active Agents",
+          "icon": "$(robot)"
+        },
         {
           "id": "devopsMetricsView",
           "name": "Status",
@@ -219,11 +271,11 @@
     },
     "customEditors": [
       {
-        "viewType": "kanban.taskEditor",
-        "displayName": "Kanban Task Editor",
+        "viewType": "devops.taskEditor",
+        "displayName": "Board Task Editor",
         "selector": [
           {
-            "filenamePattern": "*.kanban-task"
+            "filenamePattern": "*.board-task"
           }
         ],
         "priority": "default"
@@ -235,9 +287,25 @@
           "command": "devops.refreshDocs",
           "when": "view == devopsDocsView",
           "group": "navigation"
+        },
+        {
+          "command": "devops.refreshAgents",
+          "when": "view == devopsAgentView",
+          "group": "navigation"
         }
       ],
-      "view/item/context": []
+      "view/item/context": [
+        {
+          "command": "devops.launchAntigravitySession",
+          "when": "view == devopsAgentView && viewItem == antigravityAgent",
+          "group": "inline"
+        },
+        {
+          "command": "devops.launchCursorSession",
+          "when": "view == devopsAgentView && viewItem == agent",
+          "group": "inline"
+        }
+      ]
     }
   },
   "scripts": {
@@ -252,18 +320,22 @@
     "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
     "check-types": "tsc --noEmit",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "coverage": "c8 --check-coverage --lines 50 pnpm run test"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
+    "@types/sinon": "^17.0.3",
     "@types/vscode": "^1.85.0",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
+    "c8": "^9.1.0",
     "esbuild": "^0.27.0",
     "eslint": "^9.39.1",
     "npm-run-all": "^4.1.5",
     "sharp": "^0.34.5",
+    "sinon": "^17.0.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.3"
   }

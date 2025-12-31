@@ -67,6 +67,8 @@ function getWorkspaceRoot(): string | undefined {
     return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 }
 
+import { AgentManager } from '../agents/AgentManager';
+
 /**
  * Show a notification when a task is moved to a new phase.
  */
@@ -103,6 +105,7 @@ export async function showPhaseNotification(
     const selection = await vscode.window.showInformationMessage(
         message,
         `Open /${workflow}`,
+        'Start Agent',
         'View Task'
     );
 
@@ -111,5 +114,32 @@ export async function showPhaseNotification(
         await vscode.commands.executeCommand('vscode.open', uri);
     } else if (selection === 'View Task') {
         await vscode.commands.executeCommand('kanban.openTask', taskId);
+    } else if (selection === 'Start Agent') {
+        const agent = await vscode.window.showQuickPick(['Antigravity', 'Cursor'], { placeHolder: 'Select Agent to Launch' });
+        if (agent === 'Antigravity') {
+            try {
+                await vscode.commands.executeCommand('antigravity.startNewConversation');
+                await vscode.commands.executeCommand('antigravity.focusAgentInput');
+                const prompt = `I am starting work on ${taskId} in phase ${phaseName}. Please read the board and help me.`;
+                await vscode.env.clipboard.writeText(prompt);
+                vscode.window.showInformationMessage(`📋 Copied to clipboard: "${prompt}". Paste it in the agent!`);
+            } catch (e) {
+                vscode.window.showErrorMessage('Failed to trigger Antigravity. Is it installed?');
+            }
+        } else if (agent === 'Cursor') {
+            try {
+                // Try Composer first (multi-file), then Chat
+                try {
+                    await vscode.commands.executeCommand('cursor.openComposer');
+                } catch {
+                    await vscode.commands.executeCommand('cursor.openChat');
+                }
+                const prompt = `I am starting work on ${taskId} in phase ${phaseName}. Please read the board and help me.`;
+                await vscode.env.clipboard.writeText(prompt);
+                vscode.window.showInformationMessage(`📋 Copied to clipboard: "${prompt}". Paste it in the agent!`);
+            } catch (e) {
+                vscode.window.showErrorMessage('Failed to trigger Cursor. Is it installed?');
+            }
+        }
     }
 }

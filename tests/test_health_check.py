@@ -4,16 +4,13 @@
 import os
 import sys
 import tempfile
-import json
-
-import pytest
 
 # Add scripts to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
 from health_check import (
-    check_path_exists,
     check_directory_not_empty,
+    check_path_exists,
     run_health_check,
 )
 

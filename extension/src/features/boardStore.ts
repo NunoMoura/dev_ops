@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Board, Column, DEFAULT_COLUMN_BLUEPRINTS } from './types';
 
-export async function ensureKanbanUri(): Promise<vscode.Uri> {
+export async function ensureBoardUri(): Promise<vscode.Uri> {
   const kanbanPath = await getKanbanPath();
   if (!kanbanPath) {
     throw new Error('Open a workspace folder to load dev_ops/board.json.');
@@ -12,7 +12,7 @@ export async function ensureKanbanUri(): Promise<vscode.Uri> {
     await fs.stat(kanbanPath);
   } catch (error: any) {
     if (error?.code === 'ENOENT') {
-      await writeKanban(createEmptyBoard());
+      await writeBoard(createEmptyBoard());
     } else {
       throw error;
     }
@@ -32,7 +32,7 @@ export async function getKanbanPath(): Promise<string | undefined> {
   return path.join(root, 'dev_ops', 'board.json');
 }
 
-export async function readKanban(): Promise<Board> {
+export async function readBoard(): Promise<Board> {
   const p = await getKanbanPath();
   if (!p) {
     throw new Error('Open a workspace folder to use DevOps Kanban.');
@@ -52,7 +52,7 @@ export async function readKanban(): Promise<Board> {
   }
 }
 
-export async function writeKanban(board: Board): Promise<void> {
+export async function writeBoard(board: Board): Promise<void> {
   const p = await getKanbanPath();
   if (!p) {
     throw new Error('Open a workspace folder to use DevOps Kanban.');
@@ -69,7 +69,7 @@ export function createDefaultColumns(): Column[] {
   return DEFAULT_COLUMN_BLUEPRINTS.map((column) => ({ ...column }));
 }
 
-export async function registerKanbanWatchers(
+export async function registerBoardWatchers(
   provider: { refresh(): Promise<void> },
   context: vscode.ExtensionContext,
 ): Promise<void> {

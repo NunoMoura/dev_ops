@@ -25,7 +25,7 @@ Analyze PR comment and take appropriate action.
 4. **For Bug/Feature**:
 
    ```bash
-   python3 scripts/kanban_ops.py create --title "PR#XXX: <summary>"
+   python3 scripts/board_ops.py create --title "PR#XXX: <summary>"
    ```
 
 5. **Respond in PR** with action taken

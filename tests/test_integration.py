@@ -8,12 +8,10 @@ import json
 import sys
 from pathlib import Path
 
-import pytest
-
 # Add scripts to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from kanban_ops import (
+from board_ops import (
     claim_task,
     create_task,
     get_tasks,
@@ -46,7 +44,6 @@ class TestFullWorkflow:
             title="Integration Test Task",
             summary="Test the full workflow",
             priority="high",
-            agent_ready=True,
             project_root=str(tmp_path),
         )
 
@@ -59,14 +56,13 @@ class TestFullWorkflow:
         # Act 2: Claim task
         claim_task(task_id, project_root=str(tmp_path))
 
-        # Assert 2: Task moved to In Progress
+        # Assert 2: Task still in Backlog (claim doesn't move columns, just sets status)
         backlog_tasks = get_tasks(project_root=str(tmp_path), column_id="col-backlog")
-        inprogress_tasks = get_tasks(project_root=str(tmp_path), column_id="col-inprogress")
-        assert len(backlog_tasks) == 0
-        assert len(inprogress_tasks) == 1
+        assert len(backlog_tasks) == 1
+        assert backlog_tasks[0]["status"] == "agent_active"
 
         # Act 3: Complete task
-        mark_done(task_id, project_root=str(tmp_path))
+        mark_done(task_id, project_root=str(tmp_path), archive=False)  # Don't archive for test
 
         # Assert 3: Task moved to Done
         done_tasks = get_tasks(project_root=str(tmp_path), column_id="col-done")
@@ -78,7 +74,7 @@ class TestMultiTaskCoordination:
     """Test multi-agent coordination scenarios."""
 
     def test_agent_ready_filtering(self, tmp_path: Path):
-        """Test that agent-ready filter returns correct tasks."""
+        """Test basic task filtering (agent_ready field removed during refactoring)."""
         kanban_dir = tmp_path / "dev_ops" / "kanban"
         kanban_dir.mkdir(parents=True)
 
@@ -88,18 +84,13 @@ class TestMultiTaskCoordination:
         }
         (kanban_dir / "board.json").write_text(json.dumps(board))
 
-        # Create tasks with different agentReady states
-        create_task("Human Task", agent_ready=False, project_root=str(tmp_path))
-        create_task("Agent Task", agent_ready=True, project_root=str(tmp_path))
+        # Create tasks
+        create_task("Task 1", project_root=str(tmp_path))
+        create_task("Task 2", project_root=str(tmp_path))
 
-        # Filter by agent_ready
-        agent_tasks = get_tasks(project_root=str(tmp_path), agent_ready=True)
-        human_tasks = get_tasks(project_root=str(tmp_path), agent_ready=False)
-
-        assert len(agent_tasks) == 1
-        assert agent_tasks[0]["title"] == "Agent Task"
-        assert len(human_tasks) == 1
-        assert human_tasks[0]["title"] == "Human Task"
+        # Get all tasks
+        all_tasks = get_tasks(project_root=str(tmp_path))
+        assert len(all_tasks) == 2
 
     def test_priority_ordering(self, tmp_path: Path):
         """Test that tasks are ordered by priority."""

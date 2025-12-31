@@ -13,7 +13,7 @@ Validate exit criteria and move task to next column.
 
    ```bash
    cat dev_ops/.current_task
-   python3 scripts/kanban_ops.py list --status agent_active
+   python3 scripts/board_ops.py list --status agent_active
    ```
 
 2. **Verify exit criteria** from current phase rule
@@ -21,8 +21,8 @@ Validate exit criteria and move task to next column.
 3. **If met**, record session and move:
 
    ```bash
-   python3 scripts/kanban_ops.py record-phase TASK-XXX <phase> <session_id>
-   python3 scripts/kanban_ops.py move TASK-XXX <next_column>
+   python3 scripts/board_ops.py record-phase TASK-XXX <phase> <session_id>
+   python3 scripts/board_ops.py move TASK-XXX <next_column>
    ```
 
 4. **If not met**, list unmet criteria and resume work

@@ -10,7 +10,7 @@ def run_tests():
             "-m",
             "pytest",
             "tests/test_setup_ops.py",
-            "tests/test_kanban_ops.py",
+            "tests/test_board_ops.py",
             "tests/test_git_ops.py",
             "-v",
         ],

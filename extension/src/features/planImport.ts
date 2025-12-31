@@ -257,8 +257,8 @@ export function parsePlanMarkdown(raw: string, filePath: string): ParsedPlan {
           // Legacy field - ignored, use status instead
           break;
         case 'risks':
-          currentTask.risks = value ? splitListValues(value) : undefined;
-          currentList = undefined;
+          currentTask.risks = value ? [value] : [];
+          currentList = 'risks';
           break;
         default:
           currentTask.context = appendParagraph(currentTask.context, trimmed);

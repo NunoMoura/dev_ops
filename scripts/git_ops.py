@@ -177,7 +177,7 @@ def pr_triage(pr_number: int | str) -> None:
         print(f"Content: {body}")
         print("-" * 40)
 
-        choice = input("Action? (b)ug / (s)tory / (k)ip / (q)uit: ").lower().strip()
+        choice = prompt_user("Action? (b)ug / (s)tory / (k)ip / (q)uit").lower().strip()
 
         if choice == "q":
             break
@@ -186,11 +186,11 @@ def pr_triage(pr_number: int | str) -> None:
         elif choice == "b":
             import artifact_ops
 
-            title = input("Bug Title: ")
+            title = prompt_user("Bug Title")
             desc = f"Reported by {author} in PR #{pr_number}\nSource: {url}\n\n{body}"
             artifact_ops.create_artifact("bug", title, "high", desc)
         elif choice == "s":
-            title = input("Story Title: ")
+            title = prompt_user("Story Title")
             doc_ops.create_story(title)
 
 

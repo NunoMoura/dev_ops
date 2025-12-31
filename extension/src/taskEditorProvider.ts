@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { readKanban, writeKanban } from './features/boardStore';
+import { readBoard, writeBoard } from './features/boardStore';
 import { Task, COLUMN_FALLBACK_NAME } from './features/types';
 
 /**
@@ -14,7 +14,7 @@ class TaskDocumentContentProvider implements vscode.TextDocumentContentProvider 
     const taskId = uri.path.replace('/task/', '').replace('.kanban-task', '');
 
     try {
-      const board = await readKanban();
+      const board = await readBoard();
       const task = board.items.find(t => t.id === taskId);
       if (task) {
         return JSON.stringify(task, null, 2);
@@ -86,7 +86,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     }
 
     // Get column name
-    const board = await readKanban();
+    const board = await readBoard();
     const column = board.columns.find(c => c.id === task.columnId);
     const columnName = column?.name || COLUMN_FALLBACK_NAME;
 
@@ -129,12 +129,12 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
   }
 
   private async loadTask(taskId: string): Promise<Task | undefined> {
-    const board = await readKanban();
+    const board = await readBoard();
     return board.items.find(t => t.id === taskId);
   }
 
   private async updateTask(taskId: string, data: Partial<Task>): Promise<void> {
-    const board = await readKanban();
+    const board = await readBoard();
     const task = board.items.find(t => t.id === taskId);
     if (!task) {
       return;
@@ -142,13 +142,13 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
     Object.assign(task, data);
     task.updatedAt = new Date().toISOString();
-    await writeKanban(board);
+    await writeBoard(board);
   }
 
   private async deleteTask(taskId: string): Promise<void> {
-    const board = await readKanban();
+    const board = await readBoard();
     board.items = board.items.filter(t => t.id !== taskId);
-    await writeKanban(board);
+    await writeBoard(board);
     vscode.window.showInformationMessage(`Deleted task ${taskId}`);
     // Trigger board refresh
     vscode.commands.executeCommand('kanban.refresh');

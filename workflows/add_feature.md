@@ -20,7 +20,7 @@ Create FEAT-XXX and decompose into backlog tasks.
 3. **Decompose to tasks** (one per acceptance criterion):
 
    ```bash
-   python3 scripts/kanban_ops.py create --title "Implement X" --trigger FEAT-XXX
+   python3 scripts/board_ops.py create --title "Implement X" --trigger FEAT-XXX
    ```
 
 ## Outputs

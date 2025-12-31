@@ -5,9 +5,9 @@ Health check script for DevOps framework installations.
 Validates that the framework is properly installed and configured.
 """
 
+import argparse
 import os
 import sys
-import argparse
 
 
 def check_path_exists(path: str, description: str) -> bool:
@@ -87,7 +87,7 @@ def run_health_check(project_root: str = None, verbose: bool = False) -> int:
         "doc_ops.py",
         "setup_ops.py",
         "utils.py",
-        "kanban_ops.py",
+        "board_ops.py",
         "project_ops.py",
     ]
     if os.path.isdir(scripts_dir):
@@ -135,7 +135,7 @@ def run_health_check(project_root: str = None, verbose: bool = False) -> int:
     # Check 5: Kanban Board (6-Column Model)
     print("📋 Kanban Board:")
     try:
-        from scripts.kanban_ops import load_board
+        from scripts.board_ops import load_board
 
         board = load_board(project_root)
         columns = board.get("columns", [])
@@ -156,7 +156,7 @@ def run_health_check(project_root: str = None, verbose: bool = False) -> int:
     check_import("scripts.utils")
     check_import("scripts.doc_ops")
     check_import("scripts.artifact_ops")
-    check_import("scripts.kanban_ops")
+    check_import("scripts.board_ops")
     print()
 
     # Check 7: Target Project (if different from framework)

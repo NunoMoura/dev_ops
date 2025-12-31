@@ -11,12 +11,14 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
 from utils import (
-    get_next_id,
-    sanitize_slug,
-    read_file,
-    write_file,
-    run_command,
     CommandError,
+    get_next_id,
+    read_file,
+    run_command,
+    sanitize_slug,
+    write_file,
+)
+from utils import (
     FileExistsError as DevOpsFileExistsError,
 )
 

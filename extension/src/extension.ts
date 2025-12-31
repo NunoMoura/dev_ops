@@ -1,22 +1,31 @@
 import * as vscode from 'vscode';
 import { KanbanBoardPanelManager, createBoardPanelManager } from './boardView';
-import { KanbanTreeProvider } from './ui/providers';
+import { BoardTreeProvider } from './providers/boardTreeProvider';
 import {
-  registerKanbanCommands,
+  registerBoardCommands,
   handleBoardMoveTasks,
   handleBoardOpenTask,
   KanbanCommandServices,
-} from './commands';
-import { registerInitializeCommand } from './commands/initializeCommand';
-import { readKanban, writeKanban, registerKanbanWatchers } from './features/boardStore';
+} from './handlers';
+import { registerInitializeCommand } from './handlers/initializeCommand';
+import { readBoard, writeBoard, registerBoardWatchers } from './features/boardStore';
 import { formatError } from './features/errors';
 import { showPhaseNotification } from './features/phaseNotifications';
 import { createStatusBar, StatusBarManager } from './statusBar';
 import { TaskEditorProvider } from './taskEditorProvider';
 import { MetricsViewProvider, registerMetricsView } from './metricsView';
-import { registerDocsView } from './ui/docsViewProvider';
-import { registerUXView } from './ui/uxViewProvider';
-
+import { registerDocsView } from './providers/docsViewProvider';
+import { registerUXView } from './providers/uxViewProvider';
+import { registerAgentDashboard } from './providers/agentDashboardProvider';
+import { SessionBridge } from './features/sessionBridge';
+import { CursorBridge } from './features/cursorBridge';
+import { AgentManager, registerAgentManager } from './agents/AgentManager';
+import { AntigravityAdapter } from './agents/AntigravityAdapter';
+import { CursorAdapter } from './agents/CursorAdapter';
+import { registerTaskProvider } from './providers/taskProvider';
+import { registerCodeLensProvider } from './providers/codeLensProvider';
+import { registerSCMDecorations } from './scm/scmDecorator';
+import { registerTestController } from './testExplorer/testController';
 
 export async function activate(context: vscode.ExtensionContext) {
   console.log('DevOps extension activating...');
@@ -37,8 +46,36 @@ export async function activate(context: vscode.ExtensionContext) {
       console.warn('Kanban board not loaded on activation:', error);
     }
 
-    await registerKanbanWatchers(services.provider, context);
-    registerKanbanCommands(context, services, services.syncFilterUI);
+    await registerBoardWatchers(services.provider, context);
+    registerBoardCommands(context, services, services.syncFilterUI);
+
+    // Initialize Session Bridge
+    const sessionBridge = new SessionBridge(context);
+    sessionBridge.activate();
+
+    // Initialize Cursor Bridge
+    // Note: We don't have a command to trigger it yet, but it ensures the dir exists.
+    // In future, we can add a context menu "Send to Cursor"
+    const cursorBridge = new CursorBridge(context);
+    cursorBridge.activate();
+
+    // Register task provider
+    registerTaskProvider(context);
+
+    // Register CodeLens provider
+    registerCodeLensProvider(context);
+
+    // Register SCM decorations
+    registerSCMDecorations(context);
+
+    // Register test controller
+    registerTestController(context);
+
+    // Initialize Agent Manager
+    const agentManager = AgentManager.getInstance();
+    agentManager.registerAdapter(new AntigravityAdapter());
+    agentManager.registerAdapter(new CursorAdapter());
+    registerAgentManager(context);
 
     console.log('DevOps extension activated successfully');
   } catch (error) {
@@ -57,12 +94,13 @@ type DevOpsExtensionServices = KanbanCommandServices & {
 
 async function initializeDevOpsServices(context: vscode.ExtensionContext): Promise<DevOpsExtensionServices> {
   // Internal board state provider (not displayed as a tree anymore)
-  const provider = new KanbanTreeProvider(readKanban);
+  const provider = new BoardTreeProvider(readBoard);
 
   // Register sidebar views
   const metricsProvider = registerMetricsView(context);
   registerDocsView(context);
   registerUXView(context);
+  registerAgentDashboard(context);
 
   const boardPanelManager = createBoardPanelManager(context);
 
@@ -78,7 +116,7 @@ async function initializeDevOpsServices(context: vscode.ExtensionContext): Promi
 
   return {
     provider,
-    kanbanView: undefined as unknown as vscode.TreeView<import('./ui/providers').KanbanNode>,
+    kanbanView: undefined as unknown as vscode.TreeView<import('./providers/boardTreeProvider').BoardNode>,
     metricsProvider,
     boardPanelManager,
     statusBar,
@@ -99,7 +137,7 @@ function registerBoardSnapshotSync(context: vscode.ExtensionContext, services: D
   boardPanelManager.setBoard(provider.getBoardViewSnapshot());
 
   // Update status bar and metrics with initial board state
-  readKanban().then((board) => {
+  readBoard().then((board) => {
     statusBar.update(board);
     metricsProvider.updateBoard(board);
   }).catch(() => { });
@@ -108,7 +146,7 @@ function registerBoardSnapshotSync(context: vscode.ExtensionContext, services: D
     provider.onDidUpdateBoardView((snapshot) => {
       boardPanelManager.setBoard(snapshot);
       // Update status bar and metrics when board changes
-      readKanban().then((board) => {
+      readBoard().then((board) => {
         statusBar.update(board);
         metricsProvider.updateBoard(board);
       }).catch(() => { });
@@ -143,9 +181,9 @@ function registerBoardViewRequests(context: vscode.ExtensionContext, services: D
       );
       if (confirmed === 'Delete') {
         try {
-          const board = await readKanban();
+          const board = await readBoard();
           board.items = board.items.filter(t => !taskIds.includes(t.id));
-          await writeKanban(board);
+          await writeBoard(board);
           vscode.window.showInformationMessage(`Deleted ${count} task${count > 1 ? 's' : ''}`);
           vscode.commands.executeCommand('kanban.refresh');
         } catch (error: unknown) {

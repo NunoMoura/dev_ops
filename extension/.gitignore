@@ -1,5 +1,37 @@
-out
-dist
-node_modules
+# Build outputs
+out/
+dist/
+
+# Dependencies
+node_modules/
+
+# VS Code test runner
 .vscode-test/
+
+# Packaged extension
 *.vsix
+
+# Coverage reports
+coverage/
+.c8/
+.nyc_output/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Lock files (use pnpm-lock.yaml)
+package-lock.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local

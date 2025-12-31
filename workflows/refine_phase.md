@@ -12,7 +12,7 @@ Generate structured prompt with context + PM feedback for agent refinement.
 1. **Enter feedback** when prompted (or after command):
 
    ```bash
-   python3 scripts/kanban_ops.py refine TASK-XXX --feedback "{{user_input}}"
+   python3 scripts/board_ops.py refine TASK-XXX --feedback "{{user_input}}"
    ```
 
    Or use VS Code: Click "Refine Phase" in Agent sidebar

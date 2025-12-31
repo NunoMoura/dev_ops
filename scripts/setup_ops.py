@@ -10,7 +10,7 @@ import sys
 # Add current directory to sys.path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from kanban_ops import DEFAULT_COLUMNS  # Import shared column definitions
+from board_ops import DEFAULT_COLUMNS  # Import shared column definitions
 from project_ops import detect_stack, get_file_content
 from utils import prompt_user, write_file
 
@@ -68,7 +68,7 @@ def init_kanban_board(project_root: str):
     print("   📋 Initializing Kanban board...")
     os.makedirs(dev_ops_dir, exist_ok=True)
 
-    # Load columns from shared schema via kanban_ops
+    # Load columns from shared schema via board_ops
     columns = DEFAULT_COLUMNS
 
     initial_board = {
@@ -485,7 +485,7 @@ def bootstrap(target_dir: str):
         "utils.py",
         "artifact_ops.py",
         "project_ops.py",
-        "kanban_ops.py",
+        "board_ops.py",
         "health_check.py",
     ]
     for script in scripts_to_copy:

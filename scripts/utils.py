@@ -1,11 +1,10 @@
 """Utility functions for the DevOps framework scripts."""
 
 import os
-import sys
 import re
 import subprocess
+import sys
 from typing import Optional
-
 
 # ==========================================
 # Exceptions
@@ -14,16 +13,19 @@ from typing import Optional
 
 class DevOpsError(Exception):
     """Base exception for DevOps framework errors."""
+
     pass
 
 
 class CommandError(DevOpsError):
     """Raised when a shell command fails."""
+
     pass
 
 
 class FileExistsError(DevOpsError):
     """Raised when attempting to write to an existing file without overwrite."""
+
     pass
 
 
@@ -58,13 +60,13 @@ def prompt_user(question: str, default: Optional[str] = None) -> str:
             response = input(prompt_text).strip()
         else:
             try:
-                with open("/dev/tty", "r") as tty_in, open("/dev/tty", "w") as tty_out:
+                with open("/dev/tty") as tty_in, open("/dev/tty", "w") as tty_out:
                     tty_out.write(prompt_text)
                     tty_out.flush()
                     response = tty_in.readline().strip()
-            except (IOError, OSError):
+            except OSError:
                 return default or "TODO_FILL_ME"
-    except (EOFError, KeyboardInterrupt):
+    except (EOFError, KeyboardInterrupt, OSError):
         return default or "TODO_FILL_ME"
 
     return response if response else (default or "")
@@ -75,12 +77,7 @@ def prompt_user(question: str, default: Optional[str] = None) -> str:
 # ==========================================
 
 
-def write_file(
-    path: str,
-    content: str,
-    overwrite: bool = False,
-    quiet: bool = False
-) -> None:
+def write_file(path: str, content: str, overwrite: bool = False, quiet: bool = False) -> None:
     """Write content to a file.
 
     Args:
@@ -99,7 +96,7 @@ def write_file(
 
     with open(path, "w") as f:
         f.write(content)
-    
+
     if not quiet:
         print(f"Created: {path}")
 
@@ -113,7 +110,7 @@ def read_file(path: str) -> str:
     Returns:
         File contents as a string.
     """
-    with open(path, "r") as f:
+    with open(path) as f:
         return f.read()
 
 
@@ -175,11 +172,7 @@ def sanitize_slug(text: str) -> str:
 # ==========================================
 
 
-def run_command(
-    command: str,
-    raise_on_error: bool = True,
-    quiet: bool = False
-) -> str:
+def run_command(command: str, raise_on_error: bool = True, quiet: bool = False) -> str:
     """Execute a shell command and return its output.
 
     Args:
@@ -195,12 +188,18 @@ def run_command(
         CommandError: If command fails and raise_on_error is True.
     """
     try:
-        result = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
-        return result.decode("utf-8").strip()
+        result = subprocess.run(
+            command,
+            shell=True,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return result.stdout.strip()
     except subprocess.CalledProcessError as e:
-        error_output = e.output.decode("utf-8") if e.output else ""
+        error_output = e.stderr or e.stdout or ""
         if raise_on_error:
-            raise CommandError(f"Command failed: {command}\n{error_output}")
+            raise CommandError(f"Command failed: {command}\n{error_output}") from e
         if not quiet:
             print(f"Error running command: {command}")
             print(error_output)
