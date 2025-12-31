@@ -1342,7 +1342,7 @@ def main():
     elif args.command == "active-agents":
         agents = get_active_agents()
         if not agents:
-            print("No active agents found.")
+            print("[]")
         else:
             print(json.dumps(agents, indent=2))
     elif args.command == "checklist":

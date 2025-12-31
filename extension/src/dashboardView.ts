@@ -3,93 +3,156 @@ import { Board } from './features/types';
 import { readBoard } from './features/boardStore';
 import { runBoardOps } from './handlers/pythonRunner';
 import { formatError } from './features/errors';
+import { log } from './features/logger';
 
 /**
  * Unified Dashboard View Provider
  * Combines Status Overview and Active Agents into a single webview.
  */
 export class DashboardViewProvider implements vscode.WebviewViewProvider {
-    public static readonly viewType = 'devopsDashboardView';
+  public static readonly viewType = 'devopsDashboardView';
 
-    private view: vscode.WebviewView | undefined;
-    private board: Board | undefined;
+  private view: vscode.WebviewView | undefined;
+  private board: Board | undefined;
 
-    constructor(private readonly extensionUri: vscode.Uri) { }
+  constructor(private readonly extensionUri: vscode.Uri) { }
 
-    public resolveWebviewView(webviewView: vscode.WebviewView): void {
-        this.view = webviewView;
-        webviewView.webview.options = {
-            enableScripts: true,
-            localResourceRoots: [this.extensionUri],
-        };
+  public resolveWebviewView(webviewView: vscode.WebviewView): void {
+    log('[Dashboard] resolveWebviewView called');
+    this.view = webviewView;
+    webviewView.webview.options = {
+      enableScripts: true,
+      localResourceRoots: [this.extensionUri],
+    };
 
-        // Initial render
-        this.refresh();
+    // Initial render (Immediate)
+    // Show status card (if available) and "Loading..." for agents
+    log('[Dashboard] Rendering initial HTML...');
+    const metrics = this.calculateMetrics();
+    this.view.webview.html = this.getHtml(metrics, null); // null agents = loading state
+    log('[Dashboard] Initial HTML set, starting async refresh...');
+
+    // Fetch real data
+    this.refresh();
+  }
+
+  public updateBoard(board: Board): void {
+    this.board = board;
+    // When board updates, we re-render immediately with existing agents (or fetch new ones)
+    this.refresh();
+  }
+
+  public async refresh(): Promise<void> {
+    if (!this.view) { return; }
+
+    try {
+      log('[Dashboard] Starting refresh...');
+      const metrics = this.calculateMetrics();
+      log(`[Dashboard] Metrics calculated: ${JSON.stringify(metrics.statusCounts)}`);
+
+      // Timeout for agent fetching (2 seconds)
+      const agentsPromise = this.getAgents();
+      const timeoutPromise = new Promise<any[]>((resolve) => setTimeout(() => {
+        log('[Dashboard] Agent fetch timed out');
+        resolve([]);
+      }, 2000));
+
+      // Race fetching vs timeout
+      const agents = await Promise.race([agentsPromise, timeoutPromise]);
+      log(`[Dashboard] Got ${agents?.length ?? 0} agents`);
+
+      // Final render with data (or empty array if timed out)
+      this.view.webview.html = this.getHtml(metrics, agents);
+      log('[Dashboard] HTML rendered successfully');
+    } catch (error) {
+      log(`[Dashboard] Refresh error: ${formatError(error)}`);
+      // Render error state
+      if (this.view) {
+        this.view.webview.html = this.getErrorHtml(formatError(error));
+      }
     }
+  }
 
-    public updateBoard(board: Board): void {
-        this.board = board;
-        this.refresh();
-    }
-
-    public async refresh(): Promise<void> {
-        if (!this.view) { return; }
-
-        const metrics = this.calculateMetrics();
-        const agents = await this.getAgents();
-
-        this.view.webview.html = this.getHtml(metrics, agents);
-    }
-
-    private calculateMetrics(): StatusMetrics {
-        if (!this.board) {
-            return {
-                statusCounts: { ready: 0, agent_active: 0, needs_feedback: 0, blocked: 0, done: 0 },
-            };
-        }
-
-        const items = this.board.items || [];
-        const statusCounts = { ready: 0, agent_active: 0, needs_feedback: 0, blocked: 0, done: 0 };
-        items.forEach(task => {
-            const status = task.status || 'ready';
-            if (status in statusCounts) {
-                statusCounts[status as keyof typeof statusCounts]++;
-            }
-        });
-
-        return { statusCounts };
-    }
-
-    private async getAgents(): Promise<any[]> {
-        try {
-            const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-            if (!workspaceRoot) { return []; }
-
-            const result = await runBoardOps(['active-agents'], workspaceRoot);
-            if (result.code !== 0) {
-                console.error('Failed to fetch agents:', result.stderr);
-                return [];
-            }
-            return JSON.parse(result.stdout || '[]');
-        } catch (error) {
-            console.error('Error fetching agents:', error);
-            return [];
-        }
-    }
-
-    private getHtml(metrics: StatusMetrics, agents: any[]): string {
-        const agentsHtml = this.renderAgentsList(agents);
-
-        return `<!DOCTYPE html>
+  private getErrorHtml(errorMessage: string): string {
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; font-src https://fonts.gstatic.com; style-src 'unsafe-inline' https://fonts.googleapis.com; script-src 'unsafe-inline';">
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
+  <style>
+    body {
+      font-family: var(--vscode-font-family), sans-serif;
+      padding: 16px;
+      color: var(--vscode-foreground);
+    }
+    .error { color: var(--vscode-errorForeground); padding: 12px; border-radius: 4px; background: var(--vscode-inputValidation-errorBackground); }
+  </style>
+</head>
+<body>
+  <div class="error">
+    <strong>Dashboard Error</strong><br>
+    ${errorMessage}
+  </div>
+</body>
+</html>`;
+  }
+
+  private calculateMetrics(): StatusMetrics {
+    if (!this.board) {
+      return {
+        statusCounts: { ready: 0, agent_active: 0, needs_feedback: 0, blocked: 0, done: 0 },
+      };
+    }
+
+    const items = this.board.items || [];
+    const statusCounts = { ready: 0, agent_active: 0, needs_feedback: 0, blocked: 0, done: 0 };
+    items.forEach(task => {
+      const status = task.status || 'ready';
+      if (status in statusCounts) {
+        statusCounts[status as keyof typeof statusCounts]++;
+      }
+    });
+
+    return { statusCounts };
+  }
+
+  private async getAgents(): Promise<any[]> {
+    try {
+      const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+      if (!workspaceRoot) {
+        log('[Dashboard] No workspace root for agent fetch');
+        return [];
+      }
+
+      log(`[Dashboard] Fetching agents from workspace: ${workspaceRoot}`);
+      const result = await runBoardOps(['active-agents'], workspaceRoot);
+      if (result.code !== 0) {
+        log(`[Dashboard] Agent fetch failed: ${result.stderr}`);
+        return [];
+      }
+      const agents = JSON.parse(result.stdout || '[]');
+      log(`[Dashboard] Parsed ${agents.length} agents`);
+      return agents;
+    } catch (error) {
+      log(`[Dashboard] Error fetching agents: ${formatError(error)}`);
+      return [];
+    }
+  }
+
+  private getHtml(metrics: StatusMetrics, agents: any[] | null): string {
+    const agentsHtml = agents === null
+      ? '<div class="empty-state">Loading active agents...</div>'
+      : this.renderAgentsList(agents);
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';">
   <style>
     :root { color-scheme: var(--vscode-colorScheme); }
     body {
-      font-family: 'IBM Plex Sans', var(--vscode-font-family), sans-serif;
+      font-family: var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       font-size: var(--vscode-font-size);
       color: var(--vscode-foreground);
       padding: 12px;
@@ -228,22 +291,22 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
   </script>
 </body>
 </html>`;
+  }
+
+  private renderAgentsList(agents: any[] | null): string {
+    if (!agents || agents.length === 0) {
+      return `<div class="empty-state">No active agent at the moment</div>`;
     }
 
-    private renderAgentsList(agents: any[]): string {
-        if (agents.length === 0) {
-            return `<div class="empty-state">No active agent at the moment</div>`;
-        }
+    return agents.map(agent => {
+      const type = agent.owner?.type || 'agent';
+      const name = agent.owner?.name || 'Unknown';
+      const taskTitle = agent.task_title || 'No task';
+      const taskId = agent.task_id || '';
+      const phase = agent.phase || 'Idle';
+      const icon = type === 'antigravity' ? '🤖' : '👤'; // Simple icons for now
 
-        return agents.map(agent => {
-            const type = agent.owner?.type || 'agent';
-            const name = agent.owner?.name || 'Unknown';
-            const taskTitle = agent.task_title || 'No task';
-            const taskId = agent.task_id || '';
-            const phase = agent.phase || 'Idle';
-            const icon = type === 'antigravity' ? '🤖' : '👤'; // Simple icons for now
-
-            return `
+      return `
         <div class="agent-item">
           <div class="agent-icon">${icon}</div>
           <div class="agent-details">
@@ -253,18 +316,20 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
           </div>
         </div>
       `;
-        }).join('');
-    }
+    }).join('');
+  }
 }
 
 interface StatusMetrics {
-    statusCounts: { ready: number; agent_active: number; needs_feedback: number; blocked: number; done: number };
+  statusCounts: { ready: number; agent_active: number; needs_feedback: number; blocked: number; done: number };
 }
 
 export function registerDashboardView(context: vscode.ExtensionContext): DashboardViewProvider {
-    const provider = new DashboardViewProvider(context.extensionUri);
-    context.subscriptions.push(
-        vscode.window.registerWebviewViewProvider(DashboardViewProvider.viewType, provider)
-    );
-    return provider;
+  log('[Dashboard] Registering DashboardViewProvider...');
+  const provider = new DashboardViewProvider(context.extensionUri);
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(DashboardViewProvider.viewType, provider)
+  );
+  log(`[Dashboard] Registered for viewType: ${DashboardViewProvider.viewType}`);
+  return provider;
 }

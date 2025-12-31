@@ -8,7 +8,7 @@
     "type": "git",
     "url": "https://github.com/NunoMoura/dev_ops"
   },
-  "version": "0.1.3",
+  "version": "0.0.1",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -282,25 +282,9 @@
           "command": "devops.refreshDocs",
           "when": "view == devopsDocsView",
           "group": "navigation"
-        },
-        {
-          "command": "devops.refreshAgents",
-          "when": "view == devopsAgentView",
-          "group": "navigation"
         }
       ],
-      "view/item/context": [
-        {
-          "command": "devops.launchAntigravitySession",
-          "when": "view == devopsAgentView && viewItem == antigravityAgent",
-          "group": "inline"
-        },
-        {
-          "command": "devops.launchCursorSession",
-          "when": "view == devopsAgentView && viewItem == agent",
-          "group": "inline"
-        }
-      ]
+      "view/item/context": []
     }
   },
   "scripts": {

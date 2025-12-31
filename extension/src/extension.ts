@@ -28,18 +28,26 @@ import { registerTestController } from './testExplorer/testController';
 import { log, warn, error as logError } from './features/logger';
 
 export async function activate(context: vscode.ExtensionContext) {
-  log('DevOps extension v0.1.3 activating...');
-  vscode.window.showInformationMessage('DevOps v0.1.3 Activated 🚀');
+  log('DevOps extension v0.0.1 (Debug) activating...');
+  vscode.window.showInformationMessage('DevOps v0.0.1 (Debug) Activated 🚀');
   try {
     // Register DevOps: Initialize command first (always works)
+    log('[Activation] Step 1: Registering initialize command');
     context.subscriptions.push(registerInitializeCommand(context));
+    log('[Activation] Step 1 complete');
 
     // Register task editor for opening tasks in tabs
+    log('[Activation] Step 2: Registering task editor');
     context.subscriptions.push(TaskEditorProvider.register(context));
+    log('[Activation] Step 2 complete');
 
+    log('[Activation] Step 3: Initializing DevOps services...');
     const services = await initializeDevOpsServices(context);
+    log('[Activation] Step 3 complete');
 
+    log('[Activation] Step 4: Binding views');
     bindDevOpsViews(context, services);
+    log('[Activation] Step 4 complete');
 
     try {
       await services.provider.refresh();
