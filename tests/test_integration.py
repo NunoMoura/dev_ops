@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 # Add scripts to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "dev_ops" / "scripts"))
 
 from board_ops import (
     claim_task,
@@ -24,9 +24,9 @@ class TestFullWorkflow:
 
     def test_task_lifecycle(self, tmp_path: Path):
         """Test creating, claiming, and completing a task."""
-        # Setup: Create dev_ops/kanban directory
-        kanban_dir = tmp_path / "dev_ops" / "kanban"
-        kanban_dir.mkdir(parents=True)
+        # Setup: Create dev_ops/board directory
+        board_dir = tmp_path / "dev_ops" / "board"
+        board_dir.mkdir(parents=True)
 
         # Initialize board with minimal columns
         board = {
@@ -35,9 +35,9 @@ class TestFullWorkflow:
                 {"id": "col-inprogress", "name": "In Progress"},
                 {"id": "col-done", "name": "Done"},
             ],
-            "tasks": [],
+            "items": [],
         }
-        (kanban_dir / "board.json").write_text(json.dumps(board))
+        (board_dir / "board.json").write_text(json.dumps(board))
 
         # Act 1: Create task
         task_id = create_task(
@@ -62,7 +62,7 @@ class TestFullWorkflow:
         assert backlog_tasks[0]["status"] == "agent_active"
 
         # Act 3: Complete task
-        mark_done(task_id, project_root=str(tmp_path), archive=False)  # Don't archive for test
+        mark_done(task_id, project_root=str(tmp_path), create_pr_flag=False, archive=False)
 
         # Assert 3: Task moved to Done
         done_tasks = get_tasks(project_root=str(tmp_path), column_id="col-done")
@@ -75,14 +75,14 @@ class TestMultiTaskCoordination:
 
     def test_agent_ready_filtering(self, tmp_path: Path):
         """Test basic task filtering (agent_ready field removed during refactoring)."""
-        kanban_dir = tmp_path / "dev_ops" / "kanban"
-        kanban_dir.mkdir(parents=True)
+        board_dir = tmp_path / "dev_ops" / "board"
+        board_dir.mkdir(parents=True)
 
         board = {
             "columns": [{"id": "col-backlog", "name": "Backlog"}],
-            "tasks": [],
+            "items": [],
         }
-        (kanban_dir / "board.json").write_text(json.dumps(board))
+        (board_dir / "board.json").write_text(json.dumps(board))
 
         # Create tasks
         create_task("Task 1", project_root=str(tmp_path))
@@ -94,14 +94,14 @@ class TestMultiTaskCoordination:
 
     def test_priority_ordering(self, tmp_path: Path):
         """Test that tasks are ordered by priority."""
-        kanban_dir = tmp_path / "dev_ops" / "kanban"
-        kanban_dir.mkdir(parents=True)
+        board_dir = tmp_path / "dev_ops" / "board"
+        board_dir.mkdir(parents=True)
 
         board = {
             "columns": [{"id": "col-backlog", "name": "Backlog"}],
-            "tasks": [],
+            "items": [],
         }
-        (kanban_dir / "board.json").write_text(json.dumps(board))
+        (board_dir / "board.json").write_text(json.dumps(board))
 
         # Create tasks with different priorities
         create_task("Low Priority", priority="low", project_root=str(tmp_path))

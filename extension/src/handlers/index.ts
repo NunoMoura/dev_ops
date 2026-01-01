@@ -380,9 +380,9 @@ export function registerBoardCommands(
 
   registerDevOpsCommand(
     context,
-    'devops.newMockup',
+    'devops.createMockup',
     async () => {
-      await handleNewMockup();
+      await handleCreateMockup();
     },
     'Unable to create mockup',
   );
@@ -534,7 +534,7 @@ function registerDevOpsCommand(
 async function handlePickNextTask(provider: BoardTreeProvider, view: vscode.TreeView<BoardNode>) {
   const board = await readBoard();
   if (!board.items.length) {
-    vscode.window.showInformationMessage('No tasks found in dev_ops/board.json.');
+    vscode.window.showInformationMessage('No tasks found in .dev_ops/board.json.');
     return;
   }
   const ranked = [...board.items].sort(compareTasks);
@@ -1189,7 +1189,7 @@ async function handleViewTaskHistory(node?: BoardNode): Promise<void> {
  */
 async function handleCreateUser(): Promise<void> {
   const title = await vscode.window.showInputBox({
-    prompt: 'Enter user persona name',
+    prompt: 'User name',
     placeHolder: 'e.g., Project Manager, Developer',
   });
 
@@ -1253,6 +1253,43 @@ async function handleCreateStory(): Promise<void> {
 }
 
 /**
+ * Create a new mockup via doc_ops.py
+ */
+async function handleCreateMockup(): Promise<void> {
+  const title = await vscode.window.showInputBox({
+    prompt: 'Mockup title',
+    placeHolder: 'Login Screen',
+  });
+  if (!title) {
+    return;
+  }
+
+  const component = await vscode.window.showInputBox({
+    prompt: 'Component/feature (optional)',
+    placeHolder: 'Authentication',
+  });
+
+  const root = getWorkspaceRoot();
+  if (!root) {
+    vscode.window.showWarningMessage('No workspace folder open.');
+    return;
+  }
+
+  const args = ['create-mockup', '--title', title];
+  if (component) {
+    args.push('--component', component);
+  }
+
+  const result = await runDocOps(args, root);
+  if (result.code === 0) {
+    vscode.window.showInformationMessage(`✅ Created mockup: ${title}`);
+    await vscode.commands.executeCommand('devops.refreshUX');
+  } else {
+    vscode.window.showErrorMessage(`Failed to create mockup: ${result.stderr || result.stdout}`);
+  }
+}
+
+/**
  * Create a new architecture doc via doc_ops.py, then create a linked task in Backlog.
  */
 async function handleNewArchDoc(): Promise<void> {
@@ -1308,42 +1345,4 @@ async function handleNewArchDoc(): Promise<void> {
   }
 
   await vscode.commands.executeCommand('devops.refreshDocs');
-}
-
-/**
- * Create a new mockup via doc_ops.py
- */
-async function handleNewMockup(): Promise<void> {
-  const title = await vscode.window.showInputBox({
-    prompt: 'Enter mockup name',
-    placeHolder: 'e.g., Task Filter Dialog, Board Board View',
-  });
-
-  if (!title) {
-    return;
-  }
-
-  const component = await vscode.window.showInputBox({
-    prompt: 'Enter component/feature this mockup represents (optional)',
-    placeHolder: 'e.g., TaskFilter, BoardView',
-  });
-
-  const root = getWorkspaceRoot();
-  if (!root) {
-    vscode.window.showWarningMessage('No workspace folder open.');
-    return;
-  }
-
-  const args = ['create-mockup', '--title', title];
-  if (component) {
-    args.push('--component', component);
-  }
-
-  const result = await runDocOps(args, root);
-  if (result.code === 0) {
-    vscode.window.showInformationMessage(`✅ Created mockup: ${title}`);
-    await vscode.commands.executeCommand('devops.refreshDocs');
-  } else {
-    vscode.window.showErrorMessage(`Failed to create mockup: ${result.stderr || result.stdout}`);
-  }
 }

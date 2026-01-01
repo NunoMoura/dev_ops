@@ -53,8 +53,9 @@ export class UXViewProvider implements vscode.TreeDataProvider<UXNode> {
         // Root level: show quick actions first, then files
         if (!element) {
             const actions: UXActionNode[] = [
-                { kind: 'action', id: 'new-persona', label: 'New Persona', icon: 'add', command: 'devops.createUser' },
+                { kind: 'action', id: 'new-user', label: 'New User', icon: 'add', command: 'devops.createUser' },
                 { kind: 'action', id: 'new-story', label: 'New Story', icon: 'add', command: 'devops.createStory' },
+                { kind: 'action', id: 'new-mockup', label: 'New Mockup', icon: 'add', command: 'devops.createMockup' },
             ];
             const files = this.getUXFiles();
             return [...actions, ...files];
@@ -68,26 +69,34 @@ export class UXViewProvider implements vscode.TreeDataProvider<UXNode> {
             return [];
         }
 
-        try {
-            const entries = fs.readdirSync(this.uxPath, { withFileTypes: true });
-            const files: UXFileNode[] = [];
+        const files: UXFileNode[] = [];
+        const subdirs = ['users', 'stories', 'mockups'];
 
-            for (const entry of entries) {
-                if (entry.isFile() && entry.name.endsWith('.md')) {
-                    files.push({
-                        kind: 'file',
-                        id: `ux-${entry.name}`,
-                        label: entry.name.replace('.md', ''),
-                        filePath: path.join(this.uxPath, entry.name),
-                    });
-                }
+        for (const subdir of subdirs) {
+            const subdirPath = path.join(this.uxPath, subdir);
+            if (!fs.existsSync(subdirPath)) {
+                continue;
             }
 
-            files.sort((a, b) => a.label.localeCompare(b.label));
-            return files;
-        } catch {
-            return [];
+            try {
+                const entries = fs.readdirSync(subdirPath, { withFileTypes: true });
+                for (const entry of entries) {
+                    if (entry.isFile() && entry.name.endsWith('.md')) {
+                        files.push({
+                            kind: 'file',
+                            id: `ux-${subdir}-${entry.name}`,
+                            label: `${subdir}/${entry.name.replace('.md', '')}`,
+                            filePath: path.join(subdirPath, entry.name),
+                        });
+                    }
+                }
+            } catch {
+                // Skip subdirectory if error
+            }
         }
+
+        files.sort((a, b) => a.label.localeCompare(b.label));
+        return files;
     }
 
     getTreeItem(element: UXNode): vscode.TreeItem {

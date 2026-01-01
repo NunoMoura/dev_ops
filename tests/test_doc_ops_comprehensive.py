@@ -8,9 +8,9 @@ from unittest.mock import patch
 import pytest
 
 # Add scripts to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dev_ops", "scripts"))
 
-from scripts.doc_ops import (
+from doc_ops import (
     create_doc,
     create_mockup,
     create_prd,

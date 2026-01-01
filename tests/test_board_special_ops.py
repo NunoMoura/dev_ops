@@ -6,7 +6,7 @@ import sys
 import tarfile
 
 # Add scripts to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dev_ops", "scripts"))
 
 from unittest.mock import MagicMock, patch
 

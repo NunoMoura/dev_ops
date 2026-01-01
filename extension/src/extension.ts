@@ -8,7 +8,7 @@ import {
   DevOpsCommandServices,
 } from './handlers';
 import { registerInitializeCommand } from './handlers/initializeCommand';
-import { readBoard, writeBoard, registerBoardWatchers } from './features/boardStore';
+import { readBoard, writeBoard, registerBoardWatchers, isProjectInitialized } from './features/boardStore';
 import { formatError } from './features/errors';
 import { showPhaseNotification } from './features/phaseNotifications';
 import { createStatusBar, StatusBarManager } from './statusBar';
@@ -44,6 +44,13 @@ export async function activate(context: vscode.ExtensionContext) {
     log('[Activation] Step 3: Initializing DevOps services...');
     const services = await initializeDevOpsServices(context);
     log('[Activation] Step 3 complete');
+
+    // Check for initialization
+    const initialized = await isProjectInitialized();
+    if (!initialized) {
+      log('[Activation] Project not initialized');
+      services.statusBar.showUninitialized();
+    }
 
     log('[Activation] Step 4: Binding views');
     bindDevOpsViews(context, services);

@@ -8,7 +8,7 @@ import tempfile
 from unittest.mock import patch
 
 # Add scripts to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "installer"))
 
 from project_ops import _check_triggers, detect_stack, get_file_content
 

@@ -201,7 +201,7 @@ Automatically:
 /spawn_agent
 
 # Review agent's work
-# Artifacts appear in dev_ops/artifacts/
+# Artifacts appear in .dev_ops/.tmp/artifacts/
 
 # Provide feedback
 /refine_phase "Also add password reset flow"
@@ -313,9 +313,9 @@ def authenticate(username, password):
                ▼
 ┌─────────────────────────────────┐
 │  Data Files                     │
-│  - dev_ops/board.json           │
-│  - artifacts/ (RES, PLN, VAL)   │
-│  - docs/ (architecture)         │
+│  - .dev_ops/board.json          │
+│  - .dev_ops/.tmp/artifacts/     │
+│  - .dev_ops/docs/               │
 └─────────────────────────────────┘
 ```
 
@@ -325,7 +325,7 @@ See [`docs/architecture/typescript-python-boundary.md`](./docs/architecture/type
 
 ### File Structure
 
-```markdown
+```
 your-project/
 ├── .agent/
 │   ├── rules/
@@ -340,16 +340,26 @@ your-project/
 │       ├── create_task.md
 │       ├── spawn_agent.md
 │       └── ...
-└── dev_ops/
-    ├── board.json                  # Task board state
-    ├── artifacts/                  # Ephemeral (archived when done)
-    │   ├── plans/PLN-XXX.md
-    │   ├── bugs/BUG-XXX.md
-    │   └── archive/TASK-XXX.tar.gz
+└── .dev_ops/                       # Hidden DevOps directory
+    ├── board.json                  # Task board state (flat location)
+    ├── .current_task               # Active task pointer
+    ├── .tmp/                       # Temporary working directory
+    │   └── artifacts/              # Active artifacts (flat - no subdirs)
+    │       ├── PLN-001-feature.md
+    │       ├── VAL-002-tests.md
+    │       ├── BUG-003-fix.md
+    │       └── RES-004-research.md
+    ├── archive/                    # Completed tasks
+    │   ├── index.json              # Quick search metadata
+    │   ├── TASK-001.tar.gz
+    │   └── TASK-002.tar.gz
     └── docs/                       # Persistent documentation
+        ├── prd.md
         ├── architecture/
-        ├── features/
-        └── tests/
+        └── ux/
+            ├── personas/
+            ├── stories/
+            └── mockups/
 ```
 
 ---
@@ -428,10 +438,10 @@ Agents see your custom rules when in Build phase.
 
 # Verify files created
 ls -la .agent/
-ls -la dev_ops/
+ls -la .dev_ops/
 
-# Check board
-cat dev_ops/board.json
+# Check board state
+cat .dev_ops/board.json
 ```
 
 ### Python script fails
@@ -477,7 +487,7 @@ A: Copilot is code completion, not task management. Use both together.
 A: No, tasks are claimed by one agent to prevent conflicts.
 
 **Q: What if I want Scrum instead of 6 phases?**  
-A: Edit `dev_ops/board.json` columns. The framework is board-agnostic.
+A: Edit `.dev_ops/board.json` columns. The framework is board-agnostic.
 
 **Q: Can I use for non-AI development?**  
 A: Yes, but it's optimized for AI workflows. Consider GitHub Projects for pure manual work.

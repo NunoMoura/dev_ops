@@ -9,9 +9,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 # Add scripts to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dev_ops", "scripts"))
 
-from scripts.git_ops import (
+from git_ops import (
     GitHubCLIError,
     GitHubCLINotFoundError,
     add_git_note,
@@ -59,8 +59,8 @@ class TestGitOpsComprehensive:
             mock_run.side_effect = Exception("git error")
             assert add_git_note("abc", "note") is False
 
-    @patch("scripts.git_ops.prompt_user")
-    @patch("scripts.git_ops.run_command")
+    @patch("git_ops.prompt_user")
+    @patch("git_ops.run_command")
     def test_git_commit_interactive(self, mock_run_cmd, mock_prompt):
         """Test git_commit with user prompts."""
         mock_prompt.side_effect = ["My Context", "My Decision"]
@@ -93,7 +93,7 @@ class TestGitOpsComprehensive:
             mock_run.return_value = MagicMock(returncode=0, stdout="success\n")
             assert run_gh_command(["pr", "list"]) == "success"
 
-    @patch("scripts.git_ops.run_gh_command")
+    @patch("git_ops.run_gh_command")
     def test_pr_extract_comments(self, mock_gh):
         """Test pr_extract_comments."""
         mock_gh.return_value = json.dumps(
@@ -106,15 +106,15 @@ class TestGitOpsComprehensive:
         pr_extract_comments(123)
         assert mock_gh.called
 
-    @patch("scripts.git_ops.run_gh_command")
+    @patch("git_ops.run_gh_command")
     def test_pr_create(self, mock_gh):
         """Test pr_create."""
         mock_gh.return_value = "https://github.com/PR/1"
         url = pr_create("Title", "Body")
         assert url == "https://github.com/PR/1"
 
-    @patch("scripts.git_ops.get_pr_details")
-    @patch("scripts.git_ops.prompt_user")
+    @patch("git_ops.get_pr_details")
+    @patch("git_ops.prompt_user")
     def test_pr_triage_full(self, mock_prompt, mock_get_details):
         """Test pr_triage with various choices."""
         mock_get_details.return_value = {
@@ -137,8 +137,8 @@ class TestGitOpsComprehensive:
             assert artifact_ops.create_artifact.called
             assert doc_ops.create_story.called
 
-    @patch("scripts.git_ops.get_pr_details")
-    @patch("scripts.git_ops.prompt_user")
+    @patch("git_ops.get_pr_details")
+    @patch("git_ops.prompt_user")
     def test_pr_triage_no_items(self, mock_prompt, mock_get_details):
         """Test pr_triage with no items."""
         mock_get_details.return_value = {"comments": [], "reviews": []}
@@ -159,34 +159,34 @@ class TestGitOpsComprehensive:
     def test_main_cli_dispatch(self):
         """Test main CLI entries."""
         with patch("sys.argv", ["git_ops.py", "commit", "--context", "C", "--decision", "D"]):
-            with patch("scripts.git_ops.git_commit") as mock_commit:
+            with patch("git_ops.git_commit") as mock_commit:
                 main()
                 mock_commit.assert_called_once_with("C", "D", "None", "Tests passed")
 
         with patch("sys.argv", ["git_ops.py", "pr-create", "--title", "T", "--body", "B"]):
-            with patch("scripts.git_ops.pr_create") as mock_pr:
+            with patch("git_ops.pr_create") as mock_pr:
                 main()
                 mock_pr.assert_called_once_with("T", "B", "main")
 
         with patch("sys.argv", ["git_ops.py", "pr-extract", "--pr", "123"]):
-            with patch("scripts.git_ops.pr_extract_comments") as mock_ext:
+            with patch("git_ops.pr_extract_comments") as mock_ext:
                 main()
                 mock_ext.assert_called_once_with("123")
 
         with patch("sys.argv", ["git_ops.py", "pr-triage", "--pr", "123"]):
-            with patch("scripts.git_ops.pr_triage") as mock_tri:
+            with patch("git_ops.pr_triage") as mock_tri:
                 main()
                 mock_tri.assert_called_once_with("123")
 
     def test_main_cli_errors(self):
         """Test main handle errors."""
         with patch("sys.argv", ["git_ops.py", "pr-create", "--title", "T", "--body", "B"]):
-            with patch("scripts.git_ops.pr_create", side_effect=GitHubCLINotFoundError("missing")):
+            with patch("git_ops.pr_create", side_effect=GitHubCLINotFoundError("missing")):
                 with pytest.raises(SystemExit) as exc:
                     main()
                 assert exc.value.code == 1
 
-            with patch("scripts.git_ops.pr_create", side_effect=GitHubCLIError("failed")):
+            with patch("git_ops.pr_create", side_effect=GitHubCLIError("failed")):
                 with pytest.raises(SystemExit) as exc:
                     main()
                 assert exc.value.code == 1

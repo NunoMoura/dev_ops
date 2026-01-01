@@ -8,9 +8,9 @@ from unittest.mock import patch
 import pytest
 
 # Add scripts to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dev_ops", "scripts"))
 
-from scripts.artifact_ops import (
+from artifact_ops import (
     create_artifact,
     get_template,
     list_artifacts,
@@ -33,7 +33,7 @@ class TestArtifactOpsComprehensive:
 
     def test_get_template_fallback(self):
         """Test get_template fallback."""
-        with patch("scripts.artifact_ops.TEMPLATES_DIR", "/nonexistent"):
+        with patch("artifact_ops.TEMPLATES_DIR", "/nonexistent"):
             assert "plan" in get_template("plan")
             assert "bug" in get_template("bug")
             assert "# {{title}}" in get_template("unknown")
@@ -47,7 +47,7 @@ class TestArtifactOpsComprehensive:
     def test_create_artifact_success(self, temp_project):
         """Test successful artifact creation."""
         artifacts_dir = os.path.join(temp_project, "dev_ops", "artifacts")
-        with patch("scripts.artifact_ops.ARTIFACTS_DIR", artifacts_dir):
+        with patch("artifact_ops.ARTIFACTS_DIR", artifacts_dir):
             art_id = create_artifact("bug", "My Bug", priority="high", description="it broke")
             assert art_id == "BUG-001"
 
@@ -61,7 +61,7 @@ class TestArtifactOpsComprehensive:
     def test_list_artifacts(self, temp_project):
         """Test listing artifacts."""
         artifacts_dir = os.path.join(temp_project, "dev_ops", "artifacts")
-        with patch("scripts.artifact_ops.ARTIFACTS_DIR", artifacts_dir):
+        with patch("artifact_ops.ARTIFACTS_DIR", artifacts_dir):
             # Unknown
             list_artifacts("unknown")
 
@@ -76,7 +76,7 @@ class TestArtifactOpsComprehensive:
     def test_main_cli_dispatch(self, temp_project):
         """Test CLI dispatch."""
         artifacts_dir = os.path.join(temp_project, "dev_ops", "artifacts")
-        with patch("scripts.artifact_ops.ARTIFACTS_DIR", artifacts_dir):
+        with patch("artifact_ops.ARTIFACTS_DIR", artifacts_dir):
             # create
             with patch("sys.argv", ["artifact_ops.py", "create", "bug", "--title", "CLI Bug"]):
                 main()

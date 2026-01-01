@@ -6,9 +6,7 @@ import tempfile
 import unittest
 
 # Add scripts directory to path
-sys.path.append(
-    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts")
-)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dev_ops", "scripts"))
 
 from board_ops import (
     claim_task,
@@ -25,7 +23,11 @@ class TestOwnerModel(unittest.TestCase):
         self.test_dir = tempfile.mkdtemp()
         self.dev_ops_dir = os.path.join(self.test_dir, "dev_ops")
         os.makedirs(self.dev_ops_dir)
-        self.board_path = os.path.join(self.dev_ops_dir, "board.json")
+
+        # New board location: dev_ops/board/board.json
+        self.board_dir = os.path.join(self.dev_ops_dir, "board")
+        os.makedirs(self.board_dir)
+        self.board_path = os.path.join(self.board_dir, "board.json")
 
         # Initialize empty board
         self.board = {

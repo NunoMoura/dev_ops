@@ -3,6 +3,7 @@ import { Board } from './features/types';
 
 export interface StatusBarManager {
     update(board: Board): void;
+    showUninitialized(): void;
     dispose(): void;
 }
 
@@ -24,20 +25,30 @@ export function createStatusBar(context: vscode.ExtensionContext): StatusBarMana
     return {
         update(board: Board) {
             const total = board.items.length;
-            const inProgress = board.items.filter(
-                (t) => t.columnId === 'col-inprogress'
+            const activeStatuses = ['ready', 'agent_active', 'needs_feedback'];
+            const active = board.items.filter(
+                (t) => activeStatuses.includes(t.status || '') && t.columnId !== 'col-done'
             ).length;
             const blocked = board.items.filter(
-                (t) => t.columnId === 'col-blocked'
+                (t) => t.status === 'blocked'
             ).length;
 
             if (total === 0) {
                 item.text = '$(project) Board: No tasks';
             } else if (blocked > 0) {
-                item.text = `$(project) ${total} tasks • ${inProgress} active • ${blocked} blocked`;
+                item.text = `$(project) ${total} tasks • ${active} active • ${blocked} blocked`;
             } else {
-                item.text = `$(project) ${total} tasks • ${inProgress} active`;
+                item.text = `$(project) ${total} tasks • ${active} active`;
             }
+            item.command = 'devops.openBoard';
+            item.backgroundColor = undefined;
+        },
+        showUninitialized() {
+            item.text = '$(warning) Initialize DevOps';
+            item.command = 'devops.initialize';
+            item.tooltip = 'Click to initialize DevOps framework in this workspace';
+            item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+            item.show();
         },
         dispose() {
             item.dispose();

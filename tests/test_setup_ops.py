@@ -7,7 +7,7 @@ import sys
 import tempfile
 
 # Add scripts to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "installer"))
 
 from unittest.mock import MagicMock, patch
 

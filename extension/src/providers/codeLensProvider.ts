@@ -20,7 +20,7 @@ export class DevOpsCodeLensProvider implements vscode.CodeLensProvider {
         }
 
         // Refresh CodeLens when board changes
-        const boardWatcher = vscode.workspace.createFileSystemWatcher('**/dev_ops/board.json');
+        const boardWatcher = vscode.workspace.createFileSystemWatcher('**/.dev_ops/board.json');
         boardWatcher.onDidChange(() => this.refresh());
         boardWatcher.onDidCreate(() => this.refresh());
         boardWatcher.onDidDelete(() => this.refresh());

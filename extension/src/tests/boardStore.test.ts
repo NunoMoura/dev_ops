@@ -55,9 +55,9 @@ suite('Board Store - Path Construction', () => {
     // These would require mocking vscode.workspace.workspaceFolders
     // Document the expected behavior for integration tests
 
-    test.skip('getBoardPath returns dev_ops/board.json path', async () => {
-        // Would need to mock vscode.workspace.workspaceFolders
-        // Expected: /workspace/root/dev_ops/board.json
+    test.skip('getBoardPath returns .dev_ops/board.json path', async () => {
+        // Test that path is correctly formed
+        // Expected: /workspace/root/.dev_ops/board.json
     });
 
     test.skip('getBoardPath returns undefined without workspace', async () => {

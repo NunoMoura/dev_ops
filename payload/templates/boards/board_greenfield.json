@@ -1,0 +1,46 @@
+{
+    "name": "Greenfield Project",
+    "description": "New project starting from scratch",
+    "items": [
+        {
+            "title": "Define project vision and objectives",
+            "summary": "Establish the 'why' behind the project, strategic importance, and what success looks like",
+            "priority": "high"
+        },
+        {
+            "title": "Define scope and deliverables",
+            "summary": "Set project boundaries - what is included and excluded, expected outputs",
+            "priority": "high"
+        },
+        {
+            "title": "Research architecture patterns",
+            "summary": "Investigate suitable architecture patterns for the project requirements",
+            "priority": "medium"
+        },
+        {
+            "title": "Evaluate and select tech stack",
+            "summary": "Research and choose technologies, frameworks, and tools for the project",
+            "priority": "high"
+        },
+        {
+            "title": "Create initial architecture plan",
+            "summary": "Design the system architecture, component structure, and key interfaces",
+            "priority": "medium"
+        },
+        {
+            "title": "Set up project scaffolding",
+            "summary": "Create initial project structure, folder layout, and configuration files",
+            "priority": "medium"
+        },
+        {
+            "title": "Configure CI/CD pipeline",
+            "summary": "Set up automated build, test, and deployment workflows",
+            "priority": "low"
+        },
+        {
+            "title": "Set up test framework",
+            "summary": "Configure testing tools and create initial test structure",
+            "priority": "low"
+        }
+    ]
+}

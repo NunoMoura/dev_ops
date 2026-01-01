@@ -9,10 +9,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-# Add scripts to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+# Add installer to path (setup_ops is here)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "installer"))
 
-from scripts.setup_ops import (
+from setup_ops import (
     bootstrap,
     convert_frontmatter_for_cursor,
     detect_ide,
@@ -195,7 +195,7 @@ class TestGetAllRules:
 
         # Mock detect_stack to return a list of dicts as expected by the loop
         with patch(
-            "scripts.setup_ops.detect_stack",
+            "setup_ops.detect_stack",
             return_value=[
                 {"name": "python", "template": "templates/rules/python.md", "category": "Language"}
             ],
@@ -237,7 +237,7 @@ class TestInstallRules:
         with open(rules[0]["src"], "w") as f:
             f.write("Rule content")
 
-        with patch("scripts.setup_ops.get_file_content", return_value="Rule content"):
+        with patch("setup_ops.get_file_content", return_value="Rule content"):
             install_rules(rules, dest, ide="antigravity")
 
         expected_path = os.path.join(dest, "rule1.md")
@@ -250,7 +250,7 @@ class TestSetupIntegration:
 
     def test_complete_init_flow(self, temp_project):
         """Test full initialization sequence."""
-        with patch("scripts.setup_ops.install_extension"):
+        with patch("setup_ops.install_extension"):
             init_board(temp_project)
             assert os.path.exists(os.path.join(temp_project, "dev_ops", "board", "board.json"))
 
@@ -260,12 +260,19 @@ class TestBootstrap:
 
     def test_bootstrap_full(self, temp_project):
         """Test bootstrap function which ties everything together."""
-        # Setup source directories
+        # Setup source directories (NEW STRUCTURE)
         repo_root = temp_project
-        scripts_src = os.path.join(repo_root, "scripts")
-        rules_src = os.path.join(repo_root, "rules")
-        templates_rules_src = os.path.join(repo_root, "templates", "rules")
-        workflows_src = os.path.join(repo_root, "workflows")
+
+        # New structure: dev_ops/scripts, dev_ops/rules, dev_ops/templates, dev_ops/workflows
+        dev_ops_dir = os.path.join(repo_root, "dev_ops")
+
+        scripts_src = os.path.join(dev_ops_dir, "scripts")
+        rules_src = os.path.join(dev_ops_dir, "rules")
+        templates_rules_src = os.path.join(dev_ops_dir, "templates", "rules")
+        workflows_src = os.path.join(dev_ops_dir, "workflows")
+
+        installer_dir = os.path.join(repo_root, "installer")
+        os.makedirs(installer_dir)
 
         os.makedirs(scripts_src)
         os.makedirs(os.path.join(rules_src, "development_phases"))
@@ -277,7 +284,11 @@ class TestBootstrap:
         for i in range(1, 6):
             open(os.path.join(rules_src, "development_phases", f"{i}_test.md"), "w").close()
 
-        with patch("scripts.setup_ops.get_ide_paths") as mock_paths:
+        # Create dummy setup_ops.py in installer
+        with open(os.path.join(installer_dir, "setup_ops.py"), "w") as f:
+            f.write("# dummy")
+
+        with patch("setup_ops.get_ide_paths") as mock_paths:
             mock_paths.return_value = (
                 os.path.join(temp_project, ".agent"),
                 os.path.join(temp_project, ".agent", "rules"),
@@ -286,13 +297,11 @@ class TestBootstrap:
             )
 
             with (
-                patch("scripts.setup_ops.install_extension"),
-                patch("scripts.setup_ops.prompt_user", return_value="y"),
-                patch("scripts.setup_ops.install_rules"),
+                patch("setup_ops.install_extension"),
+                patch("setup_ops.prompt_user", return_value="y"),
+                patch("setup_ops.install_rules"),
             ):
-                # Use patch on __file__ to control relative path detection
-                with patch("scripts.setup_ops.__file__", os.path.join(scripts_src, "setup_ops.py")):
-                    # Avoid real subprocess calls during bootstrap
+                with patch("setup_ops.__file__", os.path.join(installer_dir, "setup_ops.py")):
                     with patch("subprocess.run"):
                         bootstrap(temp_project)
 
@@ -302,7 +311,7 @@ class TestBootstrap:
         """Test main CLI entry point."""
         # Main uses --target
         with patch("sys.argv", ["setup_ops.py", "--target", temp_project]):
-            with patch("scripts.setup_ops.bootstrap") as mock_bootstrap:
+            with patch("setup_ops.bootstrap") as mock_bootstrap:
                 main()
                 mock_bootstrap.assert_called_once_with(temp_project)
 
@@ -333,9 +342,7 @@ class TestSetupOpsEdgeCases:
                 ]
                 import subprocess as sp
 
-                with patch(
-                    "scripts.setup_ops.subprocess.CalledProcessError", sp.CalledProcessError
-                ):
+                with patch("setup_ops.subprocess.CalledProcessError", sp.CalledProcessError):
                     install_extension(temp_project)
 
     def test_detect_ide_cursor_fail(self):
@@ -406,15 +413,18 @@ class TestSetupOpsEdgeCases:
             f.write("data")
 
         repo = os.path.join(temp_project, "repo_docs")
-        os.makedirs(os.path.join(repo, "scripts"))
-        os.makedirs(os.path.join(repo, "rules", "development_phases"))
-        os.makedirs(os.path.join(repo, "templates", "rules"))
-        os.makedirs(os.path.join(repo, "workflows"))
+        dev_ops_dir = os.path.join(repo, "dev_ops")
+        installer_dir = os.path.join(repo, "installer")
 
-        with patch("scripts.setup_ops.__file__", os.path.join(repo, "scripts", "setup_ops.py")):
-            with patch("scripts.setup_ops.prompt_user", return_value="y"):
+        os.makedirs(os.path.join(dev_ops_dir, "scripts"))
+        os.makedirs(os.path.join(dev_ops_dir, "rules", "development_phases"))
+        os.makedirs(os.path.join(dev_ops_dir, "templates", "rules"))
+        os.makedirs(os.path.join(dev_ops_dir, "workflows"))
+        os.makedirs(installer_dir)
+
+        with patch("setup_ops.__file__", os.path.join(installer_dir, "setup_ops.py")):
+            with patch("setup_ops.prompt_user", return_value="y"):
                 with patch("subprocess.run"):
-                    # Ensure found_docs is correctly detected and moved
                     bootstrap(target)
                     assert os.path.exists(os.path.join(target, "dev_ops", "docs", "doc1.md"))
 
@@ -427,15 +437,18 @@ class TestSetupOpsEdgeCases:
 
         # Setup source mocks
         repo = os.path.join(temp_project, "repo")
-        os.makedirs(os.path.join(repo, "scripts"))
-        os.makedirs(os.path.join(repo, "rules", "development_phases"))
-        os.makedirs(os.path.join(repo, "templates", "rules"))
-        os.makedirs(os.path.join(repo, "workflows"))
+        dev_ops_dir = os.path.join(repo, "dev_ops")
+        installer_dir = os.path.join(repo, "installer")
 
-        with patch("scripts.setup_ops.__file__", os.path.join(repo, "scripts", "setup_ops.py")):
-            with patch("scripts.setup_ops.prompt_user", side_effect=["y", "y", "y", "y"]):
+        os.makedirs(os.path.join(dev_ops_dir, "scripts"))
+        os.makedirs(os.path.join(dev_ops_dir, "rules", "development_phases"))
+        os.makedirs(os.path.join(dev_ops_dir, "templates", "rules"))
+        os.makedirs(os.path.join(dev_ops_dir, "workflows"))
+        os.makedirs(installer_dir)
+
+        with patch("setup_ops.__file__", os.path.join(installer_dir, "setup_ops.py")):
+            with patch("setup_ops.prompt_user", side_effect=["y", "y", "y", "y"]):
                 with patch("subprocess.run"):
-                    # Create existing dev_ops/docs to trigger MERGE logic (435-441)
                     os.makedirs(os.path.join(target, "dev_ops", "docs"), exist_ok=True)
                     bootstrap(target)
                     assert os.path.exists(os.path.join(target, "dev_ops", "docs", "old.md"))
@@ -448,16 +461,19 @@ class TestSetupOpsEdgeCases:
             f.write("exists")
 
         repo = os.path.join(temp_project, "repo")
-        os.makedirs(os.path.join(repo, "scripts"))
-        os.makedirs(os.path.join(repo, "rules", "development_phases"))
-        os.makedirs(os.path.join(repo, "templates", "rules"))
-        os.makedirs(os.path.join(repo, "workflows"))
+        dev_ops_dir = os.path.join(repo, "dev_ops")
+        installer_dir = os.path.join(repo, "installer")
 
-        with patch("scripts.setup_ops.__file__", os.path.join(repo, "scripts", "setup_ops.py")):
-            with patch("scripts.setup_ops.prompt_user", return_value="y"):
+        os.makedirs(os.path.join(dev_ops_dir, "scripts"))
+        os.makedirs(os.path.join(dev_ops_dir, "rules", "development_phases"))
+        os.makedirs(os.path.join(dev_ops_dir, "templates", "rules"))
+        os.makedirs(os.path.join(dev_ops_dir, "workflows"))
+        os.makedirs(installer_dir)
+
+        with patch("setup_ops.__file__", os.path.join(installer_dir, "setup_ops.py")):
+            with patch("setup_ops.prompt_user", return_value="y"):
                 with patch("subprocess.run"):
                     bootstrap(target)
-                    # Verify prd.md was not overwritten with template (it keeps its content)
                     assert open(os.path.join(target, "prd.md")).read() == "exists"
 
     def test_bootstrap_pr_triage_overwrite(self, temp_project):
@@ -468,33 +484,36 @@ class TestSetupOpsEdgeCases:
         with open(triage_src, "w") as f:
             f.write("triage")
 
-        os.makedirs(os.path.join(repo, "scripts"), exist_ok=True)
-        os.makedirs(os.path.join(repo, "rules", "development_phases"), exist_ok=True)
-        os.makedirs(os.path.join(repo, "templates", "rules"), exist_ok=True)
-        os.makedirs(os.path.join(repo, "workflows"), exist_ok=True)
+        dev_ops_dir = os.path.join(repo, "dev_ops")
+        installer_dir = os.path.join(repo, "installer")
+        os.makedirs(os.path.join(dev_ops_dir, "scripts"), exist_ok=True)
+        os.makedirs(os.path.join(dev_ops_dir, "rules", "development_phases"), exist_ok=True)
+        os.makedirs(os.path.join(dev_ops_dir, "templates", "rules"), exist_ok=True)
+        os.makedirs(os.path.join(dev_ops_dir, "workflows"), exist_ok=True)
+        os.makedirs(installer_dir)
 
-        # Case 1: Don't overwrite (527-528)
+        # Case 1: Don't overwrite
         target1 = os.path.join(temp_project, "target_pr1")
         triage_dest1 = os.path.join(target1, ".github", "workflows", "pr_triage.yml")
         os.makedirs(os.path.dirname(triage_dest1), exist_ok=True)
         with open(triage_dest1, "w") as f:
             f.write("old-triage")
 
-        with patch("scripts.setup_ops.__file__", os.path.join(repo, "scripts", "setup_ops.py")):
-            with patch("scripts.setup_ops.prompt_user", side_effect=["y", "n"]):
+        with patch("setup_ops.__file__", os.path.join(installer_dir, "setup_ops.py")):
+            with patch("setup_ops.prompt_user", side_effect=["y", "n"]):
                 with patch("subprocess.run"):
                     bootstrap(target1)
                     assert open(triage_dest1).read() == "old-triage"
 
-        # Case 2: Overwrite (529-531)
+        # Case 2: Overwrite
         target2 = os.path.join(temp_project, "target_pr2")
         triage_dest2 = os.path.join(target2, ".github", "workflows", "pr_triage.yml")
         os.makedirs(os.path.dirname(triage_dest2), exist_ok=True)
         with open(triage_dest2, "w") as f:
             f.write("old-triage")
 
-        with patch("scripts.setup_ops.__file__", os.path.join(repo, "scripts", "setup_ops.py")):
-            with patch("scripts.setup_ops.prompt_user", side_effect=["y", "y"]):
+        with patch("setup_ops.__file__", os.path.join(installer_dir, "setup_ops.py")):
+            with patch("setup_ops.prompt_user", side_effect=["y", "y"]):
                 with patch("subprocess.run"):
                     bootstrap(target2)
                     assert open(triage_dest2).read() == "triage"
@@ -507,16 +526,18 @@ class TestSetupOpsEdgeCases:
         with open(triage_src, "w") as f:
             f.write("new-triage")
 
-        os.makedirs(os.path.join(repo, "scripts"), exist_ok=True)
-        os.makedirs(os.path.join(repo, "rules", "development_phases"), exist_ok=True)
-        os.makedirs(os.path.join(repo, "templates", "rules"), exist_ok=True)
-        os.makedirs(os.path.join(repo, "workflows"), exist_ok=True)
+        dev_ops_dir = os.path.join(repo, "dev_ops")
+        installer_dir = os.path.join(repo, "installer")
+        os.makedirs(os.path.join(dev_ops_dir, "scripts"), exist_ok=True)
+        os.makedirs(os.path.join(dev_ops_dir, "rules", "development_phases"), exist_ok=True)
+        os.makedirs(os.path.join(dev_ops_dir, "templates", "rules"), exist_ok=True)
+        os.makedirs(os.path.join(dev_ops_dir, "workflows"), exist_ok=True)
+        os.makedirs(installer_dir)
 
         target = os.path.join(temp_project, "target_triage_new")
-        # No .github/workflows yet
 
-        with patch("scripts.setup_ops.__file__", os.path.join(repo, "scripts", "setup_ops.py")):
-            with patch("scripts.setup_ops.prompt_user", return_value="y"):
+        with patch("setup_ops.__file__", os.path.join(installer_dir, "setup_ops.py")):
+            with patch("setup_ops.prompt_user", return_value="y"):
                 with patch("subprocess.run"):
                     bootstrap(target)
                     triage_dest = os.path.join(target, ".github", "workflows", "pr_triage.yml")

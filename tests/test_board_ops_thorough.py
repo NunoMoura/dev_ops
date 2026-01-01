@@ -8,9 +8,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 # Add scripts to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dev_ops", "scripts"))
 
-from scripts.board_ops import (
+from board_ops import (
     archive_task,
     calculate_metrics,
     create_pr,
@@ -186,15 +186,15 @@ class TestBoardOpsThorough:
         # Mock sys.argv
         with patch("sys.argv", ["board_ops.py", "create", "--title", "CLI Task"]):
             with patch(
-                "scripts.board_ops.get_board_path",
+                "board_ops.get_board_path",
                 return_value=os.path.join(temp_project, "dev_ops", "board.json"),
             ):
                 with patch(
-                    "scripts.board_ops.load_board",
+                    "board_ops.load_board",
                     side_effect=lambda project_root=None: load_board(temp_project),
                 ):
                     with patch(
-                        "scripts.board_ops.save_board",
+                        "board_ops.save_board",
                         side_effect=lambda board, project_root=None: save_board(
                             board, temp_project
                         ),
@@ -272,15 +272,15 @@ class TestBoardOpsThorough:
         for cmd in commands:
             with patch("sys.argv", ["board_ops.py"] + cmd):
                 with patch(
-                    "scripts.board_ops.get_board_path",
+                    "board_ops.get_board_path",
                     return_value=os.path.join(temp_project, "dev_ops", "board.json"),
                 ):
                     with patch(
-                        "scripts.board_ops.load_board",
+                        "board_ops.load_board",
                         side_effect=lambda project_root=None: load_board(temp_project),
                     ):
                         with patch(
-                            "scripts.board_ops.save_board",
+                            "board_ops.save_board",
                             side_effect=lambda board, project_root=None: save_board(
                                 board, temp_project
                             ),

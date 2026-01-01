@@ -6,9 +6,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 # Add scripts to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dev_ops", "scripts"))
 
-import scripts.board_ops as board_ops
+import board_ops
 
 
 @pytest.fixture
@@ -25,7 +25,7 @@ class TestBoardOpsReady:
         columns_json = os.path.join(temp_project, "columns.json")
         with open(columns_json, "w") as f:
             f.write("invalid")
-        with patch("scripts.board_ops.os.path.dirname", return_value=temp_project):
+        with patch("board_ops.os.path.dirname", return_value=temp_project):
             cols = board_ops._load_default_columns()
             assert len(cols) == 6
 
@@ -90,12 +90,12 @@ class TestBoardOpsReady:
         mock_run.side_effect = Exception()
         assert board_ops.revert_task(tid, project_root=temp_project) is False
 
-    @patch("scripts.board_ops.os.path.abspath")
-    @patch("scripts.board_ops.os.path.dirname")
+    @patch("board_ops.os.path.abspath")
+    @patch("board_ops.os.path.dirname")
     def test_archive_root_none(self, mock_d, mock_a):
         mock_a.return_value = "/a/b/c/scripts/o.py"
         mock_d.side_effect = ["/a/b/c/scripts", "/a/b/c", "/a/b"]
-        with patch("scripts.board_ops.load_board", return_value={"items": []}):
+        with patch("board_ops.load_board", return_value={"items": []}):
             assert board_ops.archive_task("T", None) is False
 
     @patch("subprocess.run")
@@ -113,22 +113,22 @@ class TestBoardOpsReady:
         assert board_ops.refine_phase("9", "f", project_root=temp_project) is None
 
     def test_main_subcommands_minimal_final(self):
-        with patch("scripts.board_ops.load_board", return_value={"items": [{"id": "T1"}]}):
+        with patch("board_ops.load_board", return_value={"items": [{"id": "T1"}]}):
             with (
                 patch("sys.argv", ["ops", "current-task"]),
-                patch("scripts.board_ops.get_current_task", return_value="T1"),
+                patch("board_ops.get_current_task", return_value="T1"),
             ):
                 board_ops.main()
             with (
                 patch("sys.argv", ["ops", "active-agents"]),
-                patch("scripts.board_ops.get_active_agents", return_value=[{"id": "A1"}]),
+                patch("board_ops.get_active_agents", return_value=[{"id": "A1"}]),
             ):
                 board_ops.main()
-            with patch("sys.argv", ["ops", "revert", "T1"]), patch("scripts.board_ops.revert_task"):
+            with patch("sys.argv", ["ops", "revert", "T1"]), patch("board_ops.revert_task"):
                 board_ops.main()
             with (
                 patch("sys.argv", ["ops", "create", "--title", "T"]),
-                patch("scripts.board_ops.create_task"),
+                patch("board_ops.create_task"),
             ):
                 board_ops.main()
 

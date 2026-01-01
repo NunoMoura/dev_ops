@@ -46,17 +46,17 @@ export async function findPython(): Promise<string | null> {
  * Checks dev_ops/scripts/ first (installed), then scripts/ (development).
  */
 function findScriptPath(cwd: string, scriptName: string): string {
-    // Installed project: scripts are in dev_ops/scripts/
-    const installedPath = path.join(cwd, "dev_ops", "scripts", scriptName);
-    // Development: scripts are in scripts/ (framework repo)
-    const devPath = path.join(cwd, "scripts", scriptName);
+    // Framework repo: scripts are in payload/scripts/
+    const frameworkPath = path.join(cwd, "payload", "scripts", scriptName);
+    // Legacy: old dev_ops/scripts/ (backward compat)
+    const legacyPath = path.join(cwd, "dev_ops", "scripts", scriptName);
 
-    if (fs.existsSync(installedPath)) {
-        return installedPath;
-    } else if (fs.existsSync(devPath)) {
-        return devPath;
+    if (fs.existsSync(frameworkPath)) {
+        return frameworkPath;
+    } else if (fs.existsSync(legacyPath)) {
+        return legacyPath;
     }
-    throw new Error(`Script not found: ${scriptName}. Checked:\n  - ${installedPath}\n  - ${devPath}`);
+    throw new Error(`Script not found: ${scriptName}. Checked:\n  - ${frameworkPath}\n  - ${legacyPath}`);
 }
 
 /**
@@ -95,7 +95,7 @@ export async function runDocOps(
         throw new Error("Python 3 not found. Please install Python 3.");
     }
 
-    // Script path: uses smart resolution (dev_ops/scripts/ or scripts/)
+    // Script path: uses smart resolution (payload/scripts/ or dev_ops/scripts/)
     const scriptPath = findScriptPath(cwd, "doc_ops.py");
     return runCommand(python, [scriptPath, ...args], cwd);
 }

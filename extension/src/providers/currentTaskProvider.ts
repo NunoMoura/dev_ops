@@ -126,7 +126,7 @@ export function registerCurrentTaskView(context: vscode.ExtensionContext): Curre
     currentTaskWatcher.onDidChange(() => provider.refresh());
     context.subscriptions.push(currentTaskWatcher);
 
-    const boardWatcher = vscode.workspace.createFileSystemWatcher('**/dev_ops/board.json');
+    const boardWatcher = vscode.workspace.createFileSystemWatcher('**/.dev_ops/board.json');
     boardWatcher.onDidChange(() => provider.refresh());
     context.subscriptions.push(boardWatcher);
 

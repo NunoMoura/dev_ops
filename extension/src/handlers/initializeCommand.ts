@@ -23,8 +23,25 @@ export function registerInitializeCommand(
 
         const workspaceRoot = workspaceFolders[0].uri.fsPath;
         const extensionPath = context.extensionPath;
-        const scriptsPath = path.join(extensionPath, "dist", "assets", "scripts");
-        const setupScript = path.join(scriptsPath, "setup_ops.py");
+
+        // Try to find setup_ops.py in extension assets or dev environment
+        let setupScript = path.join(extensionPath, "dist", "assets", "scripts", "setup_ops.py");
+        if (!require('fs').existsSync(setupScript)) {
+            // Fallback for development: check workspace root installer or scripts
+            const installerPath = path.join(workspaceRoot, "installer", "setup_ops.py");
+            if (require('fs').existsSync(installerPath)) {
+                setupScript = installerPath;
+            } else {
+                setupScript = path.join(workspaceRoot, "scripts", "setup_ops.py");
+            }
+        }
+
+        if (!require('fs').existsSync(setupScript)) {
+            vscode.window.showErrorMessage(
+                `DevOps: setup_ops.py not found. Expected at ${setupScript}`
+            );
+            return;
+        }
 
         // Check for Python availability
         const pythonCommand = await findPython();

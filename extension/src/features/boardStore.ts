@@ -6,18 +6,31 @@ import { Board, Column, DEFAULT_COLUMN_BLUEPRINTS } from './types';
 export async function ensureBoardUri(): Promise<vscode.Uri> {
   const boardPath = await getBoardPath();
   if (!boardPath) {
-    throw new Error('Open a workspace folder to load dev_ops/board/board.json.');
+    throw new Error('Open a workspace folder to load .dev_ops/board.json.');
   }
   try {
     await fs.stat(boardPath);
   } catch (error: any) {
     if (error?.code === 'ENOENT') {
-      await writeBoard(createEmptyBoard());
+      // Do nothing, initialization will handle it
     } else {
       throw error;
     }
   }
   return vscode.Uri.file(boardPath);
+}
+
+export async function isProjectInitialized(): Promise<boolean> {
+  const boardPath = await getBoardPath();
+  if (!boardPath) {
+    return false;
+  }
+  try {
+    await fs.stat(boardPath);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function getWorkspaceRoot(): string | undefined {
@@ -29,7 +42,7 @@ export async function getBoardPath(): Promise<string | undefined> {
   if (!root) {
     return undefined;
   }
-  return path.join(root, 'dev_ops', 'board', 'board.json');
+  return path.join(root, '.dev_ops', 'board.json');
 }
 
 export async function readBoard(): Promise<Board> {
@@ -88,12 +101,10 @@ export async function registerBoardWatchers(
     }, 200);
   };
   const patterns = [
-    'dev_ops/board/board.json',
-    'dev_ops/artifacts/plans/*.md',
-    'dev_ops/docs/research/*.md',
-    'dev_ops/docs/tests/*.md',
-    'dev_ops/artifacts/bugs/*.md',
-    'dev_ops/docs/architecture/*.md',
+    '.dev_ops/board.json',
+    '.dev_ops/.tmp/artifacts/*.md',  // Active artifacts (flat structure)
+    '.dev_ops/docs/**/*.md',          // All documentation
+    '.dev_ops/archive/*.tar.gz',      // Archived tasks
   ];
   for (const glob of patterns) {
     const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, glob));
@@ -115,7 +126,7 @@ export async function handleCorruptBoardFile(filePath: string, contents: string)
   const repairOption = 'Repair DevOps board';
   const openOption = 'Open file';
   const selection = await vscode.window.showErrorMessage(
-    'DevOps Board cannot read dev_ops/board/board.json because it is not valid JSON.',
+    'DevOps Board cannot read .dev_ops/board.json because it is not valid JSON.',
     repairOption,
     openOption,
   );
@@ -131,7 +142,7 @@ export async function handleCorruptBoardFile(filePath: string, contents: string)
     const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
     await vscode.window.showTextDocument(doc, { preview: false });
   }
-  throw new Error('dev_ops/board/board.json is invalid. Repair or fix it, then refresh DevOps Board.');
+  throw new Error('.dev_ops/board.json is invalid. Repair or fix it, then refresh DevOps Board.');
 }
 
 export async function backupCorruptBoardFile(filePath: string, contents: string): Promise<string> {
