@@ -8,7 +8,7 @@ from unittest.mock import patch
 import pytest
 
 # Add scripts to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dev_ops", "scripts"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "payload", "scripts"))
 
 from health_check import (
     check_directory_not_empty,
@@ -24,6 +24,7 @@ def temp_project(tmp_path):
     """Create a temporary project directory."""
     project_dir = tmp_path / "project"
     project_dir.mkdir()
+    (project_dir / ".dev_ops").mkdir()
     return str(project_dir)
 
 
@@ -135,16 +136,24 @@ class TestHealthCheckComprehensive:
             # This triggers warnings but returns 0 if no errors
             assert run_health_check(project_root=temp_project) == 0
 
-    def test_run_health_check_target_project(self, temp_project):
+    @patch("health_check.check_path_exists", return_value=True)
+    @patch("health_check.check_directory_not_empty", return_value=True)
+    @patch("health_check.check_import", return_value=True)
+    @patch("os.path.isdir", return_value=True)
+    @patch("os.listdir", return_value=["r.md"])
+    @patch("health_check.load_board", return_value={"columns": [1, 2, 3, 4, 5, 6]})
+    @patch("os.path.exists", return_value=True)  # For .agent and .dev_ops dir
+    def test_run_health_check_target_project(
+        self,
+        mock_exists,
+        mock_load,
+        mock_listdir,
+        mock_isdir,
+        mock_import,
+        mock_empty,
+        mock_path,
+        temp_project,
+    ):
         """Line 169-170, 177-178: run_health_check target project details."""
         target = "/other_project"
-        with (
-            patch("health_check.check_path_exists", return_value=True),
-            patch("health_check.check_directory_not_empty", return_value=True),
-            patch("health_check.check_import", return_value=True),
-            patch("os.path.isdir", return_value=True),
-            patch("os.listdir", return_value=["r.md"]),
-            patch("health_check.load_board", return_value={"columns": [1, 2, 3, 4, 5, 6]}),
-            patch("os.path.exists", return_value=True),  # For .agent and dev_ops dir
-        ):
-            assert run_health_check(project_root=target) == 0
+        assert run_health_check(project_root=target) == 0

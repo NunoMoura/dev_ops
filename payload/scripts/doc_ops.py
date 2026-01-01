@@ -347,8 +347,8 @@ def create_mockup(title: str, component: str = "") -> str:
 
 def scaffold_docs(project_root: str) -> dict:
     """Scaffold documentation from source folder structure."""
-    docs_arch = os.path.join(project_root, "docs", "architecture")
-    docs_tests = os.path.join(project_root, "docs", "tests")
+    docs_arch = os.path.join(project_root, ".dev_ops", "docs", "architecture")
+    docs_tests = os.path.join(project_root, ".dev_ops", "docs", "tests")
 
     created = {"architecture": [], "tests": []}
     processed_folders = set()

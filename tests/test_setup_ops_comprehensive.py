@@ -128,13 +128,13 @@ class TestInitBoard:
     def test_init_creates_board(self, temp_project):
         """Test that init creates board file."""
         init_board(temp_project)
-        board_file = os.path.join(temp_project, "dev_ops", "board", "board.json")
+        board_file = os.path.join(temp_project, ".dev_ops", "board.json")
         assert os.path.exists(board_file)
 
     def test_init_board_structure(self, temp_project):
         """Test initialized board has correct structure."""
         init_board(temp_project)
-        board_file = os.path.join(temp_project, "dev_ops", "board", "board.json")
+        board_file = os.path.join(temp_project, ".dev_ops", "board.json")
         with open(board_file) as f:
             board = json.load(f)
         assert "columns" in board
@@ -143,7 +143,7 @@ class TestInitBoard:
     def test_init_has_default_columns(self, temp_project):
         """Test that default columns are created."""
         init_board(temp_project)
-        board_file = os.path.join(temp_project, "dev_ops", "board", "board.json")
+        board_file = os.path.join(temp_project, ".dev_ops", "board.json")
         with open(board_file) as f:
             board = json.load(f)
         column_names = [c["name"] for c in board["columns"]]
@@ -154,7 +154,7 @@ class TestInitBoard:
     def test_init_empty_items(self, temp_project):
         """Test that items list is initially empty."""
         init_board(temp_project)
-        board_file = os.path.join(temp_project, "dev_ops", "board", "board.json")
+        board_file = os.path.join(temp_project, ".dev_ops", "board.json")
         with open(board_file) as f:
             board = json.load(f)
         assert isinstance(board["items"], list)
@@ -166,7 +166,8 @@ class TestGetCoreRules:
 
     def test_get_core_rules_basic(self, temp_project):
         """Test retrieving core rules."""
-        rules_src = os.path.join(temp_project, "rules")
+        # rules_src is payload/rules
+        rules_src = os.path.join(temp_project, "payload", "rules")
         os.makedirs(os.path.join(rules_src, "development_phases"))
         open(os.path.join(rules_src, "dev_ops_guide.md"), "w").close()
         open(os.path.join(rules_src, "development_phases", "1_backlog.md"), "w").close()
@@ -184,8 +185,8 @@ class TestGetAllRules:
     def test_get_all_rules_combines(self, temp_project):
         """Test combining core and dynamic rules."""
         repo_root = temp_project
-        core_src = os.path.join(repo_root, "rules")
-        templates_rules_src = os.path.join(repo_root, "templates", "rules")
+        core_src = os.path.join(repo_root, "payload", "rules")
+        templates_rules_src = os.path.join(repo_root, "payload", "templates", "rules")
 
         os.makedirs(os.path.join(core_src, "development_phases"), exist_ok=True)
         open(os.path.join(core_src, "dev_ops_guide.md"), "w").close()
@@ -252,7 +253,7 @@ class TestSetupIntegration:
         """Test full initialization sequence."""
         with patch("setup_ops.install_extension"):
             init_board(temp_project)
-            assert os.path.exists(os.path.join(temp_project, "dev_ops", "board", "board.json"))
+            assert os.path.exists(os.path.join(temp_project, ".dev_ops", "board.json"))
 
 
 class TestBootstrap:
@@ -263,13 +264,13 @@ class TestBootstrap:
         # Setup source directories (NEW STRUCTURE)
         repo_root = temp_project
 
-        # New structure: dev_ops/scripts, dev_ops/rules, dev_ops/templates, dev_ops/workflows
-        dev_ops_dir = os.path.join(repo_root, "dev_ops")
+        # New structure: payload/scripts, payload/rules, payload/templates, payload/workflows
+        payload_dir = os.path.join(repo_root, "payload")
 
-        scripts_src = os.path.join(dev_ops_dir, "scripts")
-        rules_src = os.path.join(dev_ops_dir, "rules")
-        templates_rules_src = os.path.join(dev_ops_dir, "templates", "rules")
-        workflows_src = os.path.join(dev_ops_dir, "workflows")
+        scripts_src = os.path.join(payload_dir, "scripts")
+        rules_src = os.path.join(payload_dir, "rules")
+        templates_rules_src = os.path.join(payload_dir, "templates", "rules")
+        workflows_src = os.path.join(payload_dir, "workflows")
 
         installer_dir = os.path.join(repo_root, "installer")
         os.makedirs(installer_dir)
@@ -305,7 +306,7 @@ class TestBootstrap:
                     with patch("subprocess.run"):
                         bootstrap(temp_project)
 
-                assert os.path.exists(os.path.join(temp_project, "dev_ops", "board", "board.json"))
+                assert os.path.exists(os.path.join(temp_project, ".dev_ops", "board.json"))
 
     def test_main_cli(self, temp_project):
         """Test main CLI entry point."""
@@ -413,20 +414,20 @@ class TestSetupOpsEdgeCases:
             f.write("data")
 
         repo = os.path.join(temp_project, "repo_docs")
-        dev_ops_dir = os.path.join(repo, "dev_ops")
+        payload_dir = os.path.join(repo, "payload")
         installer_dir = os.path.join(repo, "installer")
 
-        os.makedirs(os.path.join(dev_ops_dir, "scripts"))
-        os.makedirs(os.path.join(dev_ops_dir, "rules", "development_phases"))
-        os.makedirs(os.path.join(dev_ops_dir, "templates", "rules"))
-        os.makedirs(os.path.join(dev_ops_dir, "workflows"))
+        os.makedirs(os.path.join(payload_dir, "scripts"))
+        os.makedirs(os.path.join(payload_dir, "rules", "development_phases"))
+        os.makedirs(os.path.join(payload_dir, "templates", "rules"))
+        os.makedirs(os.path.join(payload_dir, "workflows"))
         os.makedirs(installer_dir)
 
         with patch("setup_ops.__file__", os.path.join(installer_dir, "setup_ops.py")):
             with patch("setup_ops.prompt_user", return_value="y"):
                 with patch("subprocess.run"):
                     bootstrap(target)
-                    assert os.path.exists(os.path.join(target, "dev_ops", "docs", "doc1.md"))
+                    assert os.path.exists(os.path.join(target, ".dev_ops", "docs", "doc1.md"))
 
     def test_bootstrap_doc_move_merge(self, temp_project):
         """Line 425-426, 429-446: Doc move/merge."""
@@ -437,13 +438,13 @@ class TestSetupOpsEdgeCases:
 
         # Setup source mocks
         repo = os.path.join(temp_project, "repo")
-        dev_ops_dir = os.path.join(repo, "dev_ops")
+        payload_dir = os.path.join(repo, "payload")
         installer_dir = os.path.join(repo, "installer")
 
-        os.makedirs(os.path.join(dev_ops_dir, "scripts"))
-        os.makedirs(os.path.join(dev_ops_dir, "rules", "development_phases"))
-        os.makedirs(os.path.join(dev_ops_dir, "templates", "rules"))
-        os.makedirs(os.path.join(dev_ops_dir, "workflows"))
+        os.makedirs(os.path.join(payload_dir, "scripts"), exist_ok=True)
+        os.makedirs(os.path.join(payload_dir, "rules", "development_phases"), exist_ok=True)
+        os.makedirs(os.path.join(payload_dir, "templates", "rules"), exist_ok=True)
+        os.makedirs(os.path.join(payload_dir, "workflows"), exist_ok=True)
         os.makedirs(installer_dir)
 
         with patch("setup_ops.__file__", os.path.join(installer_dir, "setup_ops.py")):
@@ -451,7 +452,7 @@ class TestSetupOpsEdgeCases:
                 with patch("subprocess.run"):
                     os.makedirs(os.path.join(target, "dev_ops", "docs"), exist_ok=True)
                     bootstrap(target)
-                    assert os.path.exists(os.path.join(target, "dev_ops", "docs", "old.md"))
+                    assert os.path.exists(os.path.join(target, ".dev_ops", "docs", "old.md"))
 
     def test_bootstrap_prd_found(self, temp_project):
         """Line 461-462, 464, 474: PRD found logic."""
@@ -461,13 +462,13 @@ class TestSetupOpsEdgeCases:
             f.write("exists")
 
         repo = os.path.join(temp_project, "repo")
-        dev_ops_dir = os.path.join(repo, "dev_ops")
+        payload_dir = os.path.join(repo, "payload")
         installer_dir = os.path.join(repo, "installer")
 
-        os.makedirs(os.path.join(dev_ops_dir, "scripts"))
-        os.makedirs(os.path.join(dev_ops_dir, "rules", "development_phases"))
-        os.makedirs(os.path.join(dev_ops_dir, "templates", "rules"))
-        os.makedirs(os.path.join(dev_ops_dir, "workflows"))
+        os.makedirs(os.path.join(payload_dir, "scripts"), exist_ok=True)
+        os.makedirs(os.path.join(payload_dir, "rules", "development_phases"), exist_ok=True)
+        os.makedirs(os.path.join(payload_dir, "templates", "rules"), exist_ok=True)
+        os.makedirs(os.path.join(payload_dir, "workflows"), exist_ok=True)
         os.makedirs(installer_dir)
 
         with patch("setup_ops.__file__", os.path.join(installer_dir, "setup_ops.py")):
@@ -484,12 +485,12 @@ class TestSetupOpsEdgeCases:
         with open(triage_src, "w") as f:
             f.write("triage")
 
-        dev_ops_dir = os.path.join(repo, "dev_ops")
+        payload_dir = os.path.join(repo, "payload")
         installer_dir = os.path.join(repo, "installer")
-        os.makedirs(os.path.join(dev_ops_dir, "scripts"), exist_ok=True)
-        os.makedirs(os.path.join(dev_ops_dir, "rules", "development_phases"), exist_ok=True)
-        os.makedirs(os.path.join(dev_ops_dir, "templates", "rules"), exist_ok=True)
-        os.makedirs(os.path.join(dev_ops_dir, "workflows"), exist_ok=True)
+        os.makedirs(os.path.join(payload_dir, "scripts"), exist_ok=True)
+        os.makedirs(os.path.join(payload_dir, "rules", "development_phases"), exist_ok=True)
+        os.makedirs(os.path.join(payload_dir, "templates", "rules"), exist_ok=True)
+        os.makedirs(os.path.join(payload_dir, "workflows"), exist_ok=True)
         os.makedirs(installer_dir)
 
         # Case 1: Don't overwrite
@@ -526,12 +527,12 @@ class TestSetupOpsEdgeCases:
         with open(triage_src, "w") as f:
             f.write("new-triage")
 
-        dev_ops_dir = os.path.join(repo, "dev_ops")
+        payload_dir = os.path.join(repo, "payload")
         installer_dir = os.path.join(repo, "installer")
-        os.makedirs(os.path.join(dev_ops_dir, "scripts"), exist_ok=True)
-        os.makedirs(os.path.join(dev_ops_dir, "rules", "development_phases"), exist_ok=True)
-        os.makedirs(os.path.join(dev_ops_dir, "templates", "rules"), exist_ok=True)
-        os.makedirs(os.path.join(dev_ops_dir, "workflows"), exist_ok=True)
+        os.makedirs(os.path.join(payload_dir, "scripts"), exist_ok=True)
+        os.makedirs(os.path.join(payload_dir, "rules", "development_phases"), exist_ok=True)
+        os.makedirs(os.path.join(payload_dir, "templates", "rules"), exist_ok=True)
+        os.makedirs(os.path.join(payload_dir, "workflows"), exist_ok=True)
         os.makedirs(installer_dir)
 
         target = os.path.join(temp_project, "target_triage_new")

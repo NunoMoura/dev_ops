@@ -5,11 +5,12 @@ Tests end-to-end task lifecycle: create → claim → complete.
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 
 # Add scripts to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "dev_ops" / "scripts"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "payload", "scripts"))
 
 from board_ops import (
     claim_task,
@@ -24,15 +25,19 @@ class TestFullWorkflow:
 
     def test_task_lifecycle(self, tmp_path: Path):
         """Test creating, claiming, and completing a task."""
-        # Setup: Create dev_ops/board directory
-        board_dir = tmp_path / "dev_ops" / "board"
+        # Setup: Create .dev_ops directory
+        board_dir = tmp_path / ".dev_ops"
         board_dir.mkdir(parents=True)
 
-        # Initialize board with minimal columns
+        # Initialize board with standard columns
         board = {
+            "version": 1,
             "columns": [
                 {"id": "col-backlog", "name": "Backlog"},
-                {"id": "col-inprogress", "name": "In Progress"},
+                {"id": "col-understand", "name": "Understand"},
+                {"id": "col-plan", "name": "Plan"},
+                {"id": "col-build", "name": "Build"},
+                {"id": "col-verify", "name": "Verify"},
                 {"id": "col-done", "name": "Done"},
             ],
             "items": [],
@@ -75,10 +80,11 @@ class TestMultiTaskCoordination:
 
     def test_agent_ready_filtering(self, tmp_path: Path):
         """Test basic task filtering (agent_ready field removed during refactoring)."""
-        board_dir = tmp_path / "dev_ops" / "board"
+        board_dir = tmp_path / ".dev_ops"
         board_dir.mkdir(parents=True)
 
         board = {
+            "version": 1,
             "columns": [{"id": "col-backlog", "name": "Backlog"}],
             "items": [],
         }
@@ -94,10 +100,11 @@ class TestMultiTaskCoordination:
 
     def test_priority_ordering(self, tmp_path: Path):
         """Test that tasks are ordered by priority."""
-        board_dir = tmp_path / "dev_ops" / "board"
+        board_dir = tmp_path / ".dev_ops"
         board_dir.mkdir(parents=True)
 
         board = {
+            "version": 1,
             "columns": [{"id": "col-backlog", "name": "Backlog"}],
             "items": [],
         }

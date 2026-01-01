@@ -1,13 +1,4 @@
-#!/usr/bin/env python3
-"""Comprehensive tests for board_ops.py checklist operations."""
-
-import os
-import sys
-
-# Add scripts to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dev_ops", "scripts"))
-
-import pytest
+# sys.path handled by conftest.py
 from board_ops import (
     checklist_add,
     checklist_complete,
@@ -16,11 +7,7 @@ from board_ops import (
     load_board,
 )
 
-
-@pytest.fixture
-def temp_project(tmp_path):
-    """Create a temporary project directory."""
-    return str(tmp_path)
+# temp_project fixture handled by conftest.py
 
 
 class TestChecklistAdd:

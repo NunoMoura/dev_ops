@@ -1,43 +1,33 @@
+# sys.path handled by conftest.py
 import json
 import os
-import sys
 from unittest.mock import MagicMock, patch
-
-import pytest
-
-# Add scripts to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dev_ops", "scripts"))
 
 import board_ops
 
-
-@pytest.fixture
-def temp_project(tmp_path):
-    project_dir = tmp_path / "project"
-    project_dir.mkdir()
-    dev_ops_dir = project_dir / "dev_ops"
-    dev_ops_dir.mkdir()
-    return str(project_dir)
+# temp_project handled by conftest.py
 
 
 class TestBoardOpsReady:
     def test_load_default_columns_json_error(self, temp_project):
-        columns_json = os.path.join(temp_project, "columns.json")
+        columns_json = os.path.join(temp_project, ".dev_ops", "columns.json")
+        os.makedirs(os.path.dirname(columns_json), exist_ok=True)
         with open(columns_json, "w") as f:
             f.write("invalid")
-        with patch("board_ops.os.path.dirname", return_value=temp_project):
-            cols = board_ops._load_default_columns()
-            assert len(cols) == 6
+        # Discovery should find it if we chdir
+        os.chdir(temp_project)
+        cols = board_ops._load_default_columns()
+        assert len(cols) == 6
 
     def test_current_task_empty(self, temp_project):
-        p = os.path.join(temp_project, "dev_ops", ".current_task")
+        p = os.path.join(temp_project, ".dev_ops", ".current_task")
         os.makedirs(os.path.dirname(p), exist_ok=True)
         with open(p, "w") as f:
             f.write("")
         assert board_ops.get_current_task(temp_project) is None
 
     def test_create_task_empty_items(self, temp_project):
-        p = os.path.join(temp_project, "dev_ops", "board.json")
+        p = os.path.join(temp_project, ".dev_ops", "board.json")
         with open(p, "w") as f:
             json.dump({"items": []}, f)
         assert board_ops.create_task("T", project_root=temp_project) is not None
@@ -93,8 +83,8 @@ class TestBoardOpsReady:
     @patch("board_ops.os.path.abspath")
     @patch("board_ops.os.path.dirname")
     def test_archive_root_none(self, mock_d, mock_a):
-        mock_a.return_value = "/a/b/c/scripts/o.py"
-        mock_d.side_effect = ["/a/b/c/scripts", "/a/b/c", "/a/b"]
+        mock_a.return_value = "/a/b/c/payload/scripts/o.py"
+        mock_d.side_effect = ["/a/b/c/payload/scripts", "/a/b/c/payload", "/a/b/c"]
         with patch("board_ops.load_board", return_value={"items": []}):
             assert board_ops.archive_task("T", None) is False
 

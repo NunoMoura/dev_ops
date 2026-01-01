@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "columns": [
+    {
+      "id": "col-backlog",
+      "name": "Backlog",
+      "position": 1,
+      "contract": {
+        "input": [
+          "trigger (PRD/FEAT/BUG)"
+        ],
+        "output": [
+          "TASK-XXX claimed"
+        ],
+        "exit_conditions": [
+          "Task claimed",
+          "Trigger reviewed"
+        ]
+      }
+    },
+    {
+      "id": "col-understand",
+      "name": "Understand",
+      "position": 2,
+      "contract": {
+        "input": [
+          "TASK-XXX",
+          "Trigger doc"
+        ],
+        "output": [
+          "RES-XXX",
+          "Updated architecture docs"
+        ],
+        "exit_conditions": [
+          "Research complete",
+          "Docs created/updated",
+          "ADRs added if needed",
+          "Recommendation documented"
+        ]
+      }
+    },
+    {
+      "id": "col-plan",
+      "name": "Plan",
+      "position": 3,
+      "contract": {
+        "input": [
+          "RES-XXX",
+          "Architecture docs"
+        ],
+        "output": [
+          "PLN-XXX with test stubs"
+        ],
+        "exit_conditions": [
+          "Acceptance criteria defined",
+          "Test design complete",
+          "Checklist created"
+        ]
+      }
+    },
+    {
+      "id": "col-build",
+      "name": "Build",
+      "position": 4,
+      "contract": {
+        "input": [
+          "PLN-XXX"
+        ],
+        "output": [
+          "Tests (passing)",
+          "Code"
+        ],
+        "exit_conditions": [
+          "Tests written first",
+          "All tests pass",
+          "Lint passes",
+          "Checklist complete"
+        ]
+      }
+    },
+    {
+      "id": "col-verify",
+      "name": "Verify",
+      "position": 5,
+      "contract": {
+        "input": [
+          "Code",
+          "Tests"
+        ],
+        "output": [
+          "walkthrough.md",
+          "Pull Request"
+        ],
+        "exit_conditions": [
+          "Full test suite passes",
+          "Security reviewed",
+          "Docs coherent",
+          "PR opened",
+          "PR merged"
+        ]
+      }
+    },
+    {
+      "id": "col-done",
+      "name": "Done",
+      "position": 6,
+      "contract": {
+        "input": [
+          "Merged PR"
+        ],
+        "output": [
+          "Archived TASK"
+        ],
+        "exit_conditions": [
+          "Ephemeral artifacts archived"
+        ]
+      }
+    }
+  ],
+  "items": []
+}

@@ -1,13 +1,5 @@
-#!/usr/bin/env python3
-"""Comprehensive tests for board_ops.py agent management."""
+# sys.path handled by conftest.py
 
-import os
-import sys
-
-# Add scripts to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dev_ops", "scripts"))
-
-import pytest
 from board_ops import (
     claim_task,
     create_task,
@@ -18,11 +10,7 @@ from board_ops import (
     unregister_agent,
 )
 
-
-@pytest.fixture
-def temp_project(tmp_path):
-    """Create a temporary project directory."""
-    return str(tmp_path)
+# temp_project fixture handled by conftest.py
 
 
 class TestSetStatus:

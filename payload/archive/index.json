@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "archives": [
+    {
+      "taskId": "TASK-001",
+      "title": "Done Task",
+      "archivedAt": "2026-01-02T11:34:58.104652",
+      "artifactCount": 0,
+      "priority": "medium",
+      "completedAt": "2026-01-01T22:34:58.103706Z"
+    }
+  ]
+}

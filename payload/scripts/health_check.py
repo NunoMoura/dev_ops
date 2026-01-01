@@ -9,6 +9,11 @@ import argparse
 import os
 import sys
 
+# Add payload/scripts to sys.path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from board_ops import load_board
+
 
 def check_path_exists(path: str, description: str) -> bool:
     """Check if a path exists and report."""
@@ -57,7 +62,10 @@ def run_health_check(project_root: str = None, verbose: bool = False) -> int:
         project_root = os.getcwd()
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    framework_root = os.path.dirname(script_dir)
+    # script_dir is payload/scripts
+    # framework_root should be the root of the repo (parent of payload)
+    framework_root = os.path.dirname(os.path.dirname(script_dir))
+    payload_dir = os.path.join(framework_root, "payload")
 
     print("🔍 DevOps Framework Health Check")
     print("=" * 50)
@@ -72,7 +80,6 @@ def run_health_check(project_root: str = None, verbose: bool = False) -> int:
     print("📁 Core Framework Files:")
     core_files = [
         (os.path.join(framework_root, "README.md"), "README.md"),
-        (os.path.join(framework_root, "CHANGELOG.md"), "CHANGELOG.md"),
         (os.path.join(framework_root, "requirements.txt"), "requirements.txt"),
     ]
     for path, desc in core_files:
@@ -82,11 +89,13 @@ def run_health_check(project_root: str = None, verbose: bool = False) -> int:
 
     # Check 2: Scripts Directory
     print("📂 Scripts Directory:")
-    scripts_dir = os.path.join(framework_root, "scripts")
+    scripts_dir = os.path.join(payload_dir, "scripts")
     required_scripts = [
         "doc_ops.py",
         "utils.py",
         "board_ops.py",
+        "artifact_ops.py",
+        "archive_ops.py",
     ]
     if os.path.isdir(scripts_dir):
         for script in required_scripts:
@@ -99,15 +108,14 @@ def run_health_check(project_root: str = None, verbose: bool = False) -> int:
 
     # Check 3: Rules Directory (Flat Structure)
     print("📂 Rules Directory:")
-    rules_dir = os.path.join(framework_root, "rules")
-    phases_dir = os.path.join(rules_dir, "development_phases")
-    if os.path.isdir(phases_dir):
-        phase_rules = [f for f in os.listdir(phases_dir) if f.endswith(".md")]
+    rules_dir = os.path.join(payload_dir, "rules")
+    if os.path.isdir(rules_dir):
+        phase_rules = [f for f in os.listdir(rules_dir) if f.endswith(".md")]
         if not phase_rules:
-            print(f"  ⚠️  No phase rules found in {phases_dir}")
+            print(f"  ⚠️  No rules found in {rules_dir}")
             warnings += 1
         else:
-            print(f"  ✅ Phase rules: {len(phase_rules)} found")
+            print(f"  ✅ Rules: {len(phase_rules)} found")
     else:
         print(f"  ❌ Rules directory not found: {rules_dir}")
         errors += 1
@@ -115,7 +123,7 @@ def run_health_check(project_root: str = None, verbose: bool = False) -> int:
 
     # Check 4: Workflows Directory
     print("📂 Workflows Directory:")
-    workflows_dir = os.path.join(framework_root, "workflows")
+    workflows_dir = os.path.join(payload_dir, "workflows")
     if not check_directory_not_empty(workflows_dir, "Workflows"):
         errors += 1
     else:
@@ -133,8 +141,6 @@ def run_health_check(project_root: str = None, verbose: bool = False) -> int:
     # Check 5: Kanban Board (6-Column Model)
     print("📋 Kanban Board:")
     try:
-        from scripts.board_ops import load_board
-
         board = load_board(project_root)
         columns = board.get("columns", [])
         if len(columns) == 6:
@@ -150,32 +156,32 @@ def run_health_check(project_root: str = None, verbose: bool = False) -> int:
     # Check 6: Python Imports
     print("🐍 Python Imports:")
     # Add scripts to path for import checks
-    sys.path.insert(0, framework_root)
-    check_import("scripts.utils")
-    check_import("scripts.doc_ops")
-    check_import("scripts.artifact_ops")
-    check_import("scripts.board_ops")
+    sys.path.insert(0, scripts_dir)
+    check_import("utils")
+    check_import("doc_ops")
+    check_import("artifact_ops")
+    check_import("board_ops")
     print()
 
-    # Check 7: Target Project (if different from framework)
-    if project_root != framework_root:
+    # Check 7: Target Project (if different from payload)
+    if project_root != payload_dir:
         print("📂 Target Project Installation:")
         agent_dir = os.path.join(project_root, ".agent")
-        dev_ops_dir = os.path.join(project_root, "dev_ops")
+        dev_ops_dir = os.path.join(project_root, ".dev_ops")
 
         if os.path.exists(agent_dir):
             check_directory_not_empty(os.path.join(agent_dir, "rules"), ".agent/rules")
             check_directory_not_empty(os.path.join(agent_dir, "workflows"), ".agent/workflows")
         else:
-            print("  ⚠️  .agent directory not found - run /bootstrap first")
+            print("  ⚠️  .agent directory not found - run bootstrap first")
             warnings += 1
 
         if os.path.exists(dev_ops_dir):
-            # Check for direct artifact directories
-            for subdir in ["plans", "research", "bugs", "adrs", "tests"]:
-                check_path_exists(os.path.join(dev_ops_dir, subdir), f"dev_ops/{subdir}")
+            # Check for direct directories
+            check_path_exists(os.path.join(dev_ops_dir, "docs"), ".dev_ops/docs")
+            check_path_exists(os.path.join(dev_ops_dir, "archive"), ".dev_ops/archive")
         else:
-            print("  ⚠️  dev_ops directory not found - run /bootstrap first")
+            print("  ⚠️  .dev_ops directory not found - run bootstrap first")
             warnings += 1
         print()
 

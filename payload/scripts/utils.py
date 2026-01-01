@@ -59,17 +59,20 @@ def get_project_root() -> str:
     return os.getcwd()
 
 
-def get_dev_ops_root() -> str:
+def get_dev_ops_root(project_root: Optional[str] = None) -> str:
     """Get the dev_ops payload directory.
 
     Returns:
         - Framework repo: [root]/payload
         - User project: [root]/.dev_ops
 
+    Args:
+        project_root: Optional project root path. If not provided, it's discovered.
+
     Raises:
         RuntimeError: If neither payload nor .dev_ops directory exists
     """
-    root = get_project_root()
+    root = project_root or get_project_root()
 
     # Framework repo
     payload_dir = os.path.join(root, "payload")
@@ -83,7 +86,7 @@ def get_dev_ops_root() -> str:
 
     # Not in a valid environment
     raise RuntimeError(
-        "Not in a valid dev_ops environment. "
+        f"Not in a valid dev_ops environment in {root}. "
         "Expected 'payload/' (framework) or '.dev_ops/' (user project) directory."
     )
 
@@ -97,16 +100,16 @@ def get_workspace_root() -> str:
     return get_project_root()
 
 
-def get_artifact_working_dir() -> str:
+def get_artifact_working_dir(project_root: Optional[str] = None) -> str:
     """Get the working directory for active (non-archived) artifacts.
+
+    Args:
+        project_root: Optional project root path.
 
     Returns:
         Path to artifacts working directory (.tmp/artifacts/)
-
-    Note: Active artifacts are ephemeral and stored in temp.
-          They are archived to archive/ when tasks complete.
     """
-    dev_ops_root = get_dev_ops_root()
+    dev_ops_root = get_dev_ops_root(project_root)
     artifact_dir = os.path.join(dev_ops_root, ".tmp", "artifacts")
     os.makedirs(artifact_dir, exist_ok=True)
     return artifact_dir

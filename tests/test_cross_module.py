@@ -1,11 +1,5 @@
-#!/usr/bin/env python3
-"""Extended doc_ops, setup_ops, and git_ops tests."""
-
+# sys.path handled by conftest.py
 import os
-import sys
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dev_ops", "scripts"))
-
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -133,30 +127,25 @@ class TestSummarizeProject:
 class TestBootstrap:
     """Test bootstrap function."""
 
-    @patch("builtins.input")
-    def test_bootstrap_basic(self, mock_input, temp_project):
+    @patch("setup_ops.install_extension")
+    def test_bootstrap_basic(self, mock_install, temp_project):
         """Test basic bootstrap."""
-        mock_input.return_value = "n"  # Don't install extension
+        # bootstrap uses prompt_user which might be interactive.
+        with patch("setup_ops.prompt_user", return_value="y"):
+            bootstrap(temp_project)
 
-        # Should create basic structure
-        bootstrap(temp_project)
-
-        # Check for dev_ops directory
-        dev_ops = os.path.join(temp_project, "dev_ops")
-        assert os.path.exists(dev_ops) or True  # Gracefully handle
-
-
-# ===========================================
-# GIT_OPS Additional Tests
-# ===========================================
+        # Check for .dev_ops directory
+        dev_ops = os.path.join(temp_project, ".dev_ops")
+        assert os.path.exists(dev_ops)
+        mock_install.assert_called_once()
 
 
-@patch("subprocess.run")
-@patch("git_ops.prompt_user")
 class TestGitCommit:
     """Test git_commit function."""
 
-    def test_commit_with_all_args(self, mock_prompt, mock_run):
+    @patch("git_ops.prompt_user")
+    @patch("git_ops.run_command")
+    def test_commit_with_all_args(self, mock_run, mock_prompt, temp_project):
         """Test commit with all arguments."""
         mock_run.return_value = MagicMock(returncode=0)
         mock_prompt.return_value = "test"
@@ -171,7 +160,9 @@ class TestGitCommit:
         # Should create commit
         assert mock_run.called
 
-    def test_commit_interactive(self, mock_prompt, mock_run):
+    @patch("git_ops.prompt_user")
+    @patch("git_ops.run_command")
+    def test_commit_interactive(self, mock_run, mock_prompt, temp_project):
         """Test interactive commit."""
         mock_run.return_value = MagicMock(returncode=0)
         mock_prompt.side_effect = ["Added feature", "For user request"]
@@ -180,6 +171,9 @@ class TestGitCommit:
 
         # Should prompt and create commit
         assert mock_prompt.called
+
+
+# TestGitCommit handled above
 
 
 @patch("git_ops.get_pr_details")
@@ -221,11 +215,14 @@ class TestPRTriage:
 class TestCrossModuleIntegration:
     """Test integration across modules."""
 
-    def test_doc_to_board_workflow(self, temp_project):
+    @patch("setup_ops.install_extension")
+    def test_doc_to_board_workflow(self, mock_install, temp_project):
         """Test creating doc and linking to board."""
         from board_ops import create_task
 
         os.chdir(temp_project)
+        with patch("setup_ops.prompt_user", return_value="y"):
+            bootstrap(temp_project)
 
         # Create doc
         doc_path = create_doc("Architecture", category="architecture")
@@ -236,13 +233,18 @@ class TestCrossModuleIntegration:
         assert doc_path is not None
         assert task_id is not None
 
-    def test_artifact_to_task_workflow(self, temp_project):
+    @patch("setup_ops.install_extension")
+    def test_artifact_to_task_workflow(self, mock_install, temp_project):
         """Test creating artifact and task."""
         from artifact_ops import create_artifact
         from board_ops import create_task
 
+        os.chdir(temp_project)
+        with patch("setup_ops.prompt_user", return_value="y"):
+            bootstrap(temp_project)
+
         # Create plan
-        plan_id = create_artifact("plan", "Implementation plan")
+        plan_id = create_artifact("plan", "Implementation plan", project_root=temp_project)
 
         # Create task
         task_id = create_task("Implement", upstream=[plan_id], project_root=temp_project)

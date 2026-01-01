@@ -1,16 +1,7 @@
-#!/usr/bin/env python3
-"""Tests for board_ops.py."""
-
+# sys.path handled by conftest.py
 import os
 
-# Add scripts to path
-import sys
-import tempfile
-
 import pytest
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dev_ops", "scripts"))
-
 from board_ops import (
     add_downstream,
     add_upstream,
@@ -27,13 +18,9 @@ from board_ops import (
 
 
 @pytest.fixture
-def temp_project():
-    """Create a temporary project directory for testing."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        # Create the dev_ops directory
-        dev_ops_dir = os.path.join(tmpdir, "dev_ops")
-        os.makedirs(dev_ops_dir)
-        yield tmpdir
+def temp_project_legacy(temp_project):
+    """Legacy wrapper for temp_project if needed, or just use the one from conftest."""
+    return temp_project
 
 
 class TestBoardOperations:
@@ -41,8 +28,13 @@ class TestBoardOperations:
 
     def test_get_board_path(self, temp_project):
         """Test board path generation."""
+        # Create board.json to test flat path resolution
+        board_path = os.path.join(temp_project, ".dev_ops", "board.json")
+        with open(board_path, "w") as f:
+            f.write("{}")
+
         path = get_board_path(temp_project)
-        assert path.endswith("dev_ops/board.json")
+        assert path.endswith(".dev_ops/board.json")
         assert temp_project in path
 
     def test_load_empty_board(self, temp_project):

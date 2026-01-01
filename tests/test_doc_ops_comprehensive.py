@@ -8,7 +8,7 @@ from unittest.mock import patch
 import pytest
 
 # Add scripts to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dev_ops", "scripts"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "payload", "scripts"))
 
 from doc_ops import (
     create_doc,
@@ -33,8 +33,8 @@ def temp_project(tmp_path):
     """Create a temporary project directory."""
     project_dir = tmp_path / "project"
     project_dir.mkdir()
-    (project_dir / "dev_ops").mkdir()
-    (project_dir / "dev_ops" / "docs").mkdir()
+    (project_dir / ".dev_ops").mkdir()
+    (project_dir / ".dev_ops" / "docs").mkdir()
     (project_dir / "templates").mkdir()
     (project_dir / "templates" / "docs").mkdir()
     return str(project_dir)
@@ -45,7 +45,7 @@ class TestDocOpsComprehensive:
 
     def test_templates_fallback(self, temp_project):
         """Test templates use fallback when files missing."""
-        with patch("scripts.doc_ops.TEMPLATES_DIR", "/nonexistent"):
+        with patch("doc_ops.TEMPLATES_DIR", "/nonexistent"):
             assert "---" in get_doc_template()
             assert "---" in get_user_template()
             assert "---" in get_story_template()
@@ -58,12 +58,12 @@ class TestDocOpsComprehensive:
         with open(template_file, "w") as f:
             f.write("FILE TEMPLATE {{title}}")
 
-        with patch("scripts.doc_ops.TEMPLATES_DIR", os.path.join(temp_project, "templates")):
+        with patch("doc_ops.TEMPLATES_DIR", os.path.join(temp_project, "templates")):
             assert "FILE TEMPLATE" in get_doc_template()
 
     def test_create_doc(self, temp_project):
         """Test creating various document types."""
-        with patch("scripts.doc_ops.DOCS_DIR", os.path.join(temp_project, "dev_ops", "docs")):
+        with patch("doc_ops.DOCS_DIR", os.path.join(temp_project, "dev_ops", "docs")):
             # Architecture doc
             path = create_doc("Arch Doc", category="architecture")
             assert os.path.exists(path)
@@ -104,7 +104,7 @@ class TestDocOpsComprehensive:
         with open(os.path.join(test_dir, "test_app.py"), "w") as f:
             f.write("def test(): pass")
 
-        with patch("scripts.doc_ops.DOCS_DIR", os.path.join(temp_project, "dev_ops", "docs")):
+        with patch("doc_ops.DOCS_DIR", os.path.join(temp_project, "dev_ops", "docs")):
             # We need to ensure PROJECT_ROOT or similar is set to temp_project
             # Actually scaffold_docs takes project_root as arg
             created = scaffold_docs(temp_project)
@@ -112,17 +112,18 @@ class TestDocOpsComprehensive:
             assert "src" in created["architecture"]
             assert "tests" in created["tests"]
 
-            # Verify files created in dev_ops/docs/ (relative to project_root)
-            # Wait, scaffold_docs uses docs/architecture and docs/tests relative to project_root
-            # in its local variables docs_arch/docs_tests.
-            # Let's check:
-            assert os.path.exists(os.path.join(temp_project, "docs", "architecture", "src.md"))
-            assert os.path.exists(os.path.join(temp_project, "docs", "tests", "tests.md"))
+            # Verify files created in .dev_ops/docs/ (relative to project_root)
+            assert os.path.exists(
+                os.path.join(temp_project, ".dev_ops", "docs", "architecture", "src.md")
+            )
+            assert os.path.exists(
+                os.path.join(temp_project, ".dev_ops", "docs", "tests", "tests.md")
+            )
 
     def test_validate_docs(self, temp_project):
         """Test documentation validation."""
         docs_dir = os.path.join(temp_project, "dev_ops", "docs")
-        with patch("scripts.doc_ops.DOCS_DIR", docs_dir):
+        with patch("doc_ops.DOCS_DIR", docs_dir):
             # Missing dir
             with patch("os.path.exists", side_effect=lambda p: False if p == docs_dir else True):
                 assert validate_docs() is False
@@ -142,7 +143,7 @@ class TestDocOpsComprehensive:
     def test_list_docs(self, temp_project):
         """Test listing docs."""
         docs_dir = os.path.join(temp_project, "dev_ops", "docs")
-        with patch("scripts.doc_ops.DOCS_DIR", docs_dir):
+        with patch("doc_ops.DOCS_DIR", docs_dir):
             # Empty
             list_docs("architecture")
 
@@ -155,8 +156,8 @@ class TestDocOpsComprehensive:
     def test_main_cli_dispatch(self, temp_project):
         """Test CLI dispatch."""
         docs_dir = os.path.join(temp_project, "dev_ops", "docs")
-        with patch("scripts.doc_ops.DOCS_DIR", docs_dir):
-            with patch("scripts.doc_ops.PROJECT_ROOT", temp_project):
+        with patch("doc_ops.DOCS_DIR", docs_dir):
+            with patch("doc_ops.PROJECT_ROOT", temp_project):
                 # create
                 with patch("sys.argv", ["doc_ops.py", "create", "--title", "CLI Doc"]):
                     main()
@@ -215,8 +216,8 @@ class TestDocOpsComprehensive:
     def test_update_user_nonexistent(self, temp_project):
         """Line 216-217: update_user with nonexistent user."""
         docs_dir = os.path.join(temp_project, "dev_ops", "docs")
-        with patch("scripts.doc_ops.PROJECT_ROOT", temp_project):
-            with patch("scripts.doc_ops.DOCS_DIR", docs_dir):
+        with patch("doc_ops.PROJECT_ROOT", temp_project):
+            with patch("doc_ops.DOCS_DIR", docs_dir):
                 assert create_user("Missing User") is not None
 
     def test_validate_docs_missing_file(self, temp_project):
@@ -229,14 +230,14 @@ class TestDocOpsComprehensive:
         with open(path, "w") as f:
             f.write("content")
 
-        with patch("scripts.doc_ops.DOCS_DIR", docs_dir):
+        with patch("doc_ops.DOCS_DIR", docs_dir):
             # Patch read_file from utils to raise FileNotFoundError
-            with patch("scripts.doc_ops.read_file", side_effect=FileNotFoundError()):
+            with patch("doc_ops.read_file", side_effect=FileNotFoundError()):
                 assert validate_docs() is False
 
     def test_has_code_files_permission_error(self):
         """Line 216-217: _has_code_files permission error."""
-        from scripts.doc_ops import _has_code_files
+        from doc_ops import _has_code_files
 
         with patch("os.listdir", side_effect=PermissionError()):
             assert _has_code_files("/some/dir") is False
@@ -253,7 +254,7 @@ class TestDocOpsComprehensive:
         with open(os.path.join(docs_dir, "architecture", "src.md"), "w") as f:
             f.write("exists")
 
-        with patch("scripts.doc_ops.DOCS_DIR", docs_dir):
+        with patch("doc_ops.DOCS_DIR", docs_dir):
             # First pass
             scaffold_docs(temp_project)
             # Second pass - should hit 365 (already processed) and 379 (exists) logic

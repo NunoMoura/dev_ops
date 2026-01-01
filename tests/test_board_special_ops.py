@@ -1,13 +1,6 @@
-#!/usr/bin/env python3
-"""Comprehensive tests for board_ops.py archive, revert, and PR operations."""
-
+# sys.path handled by conftest.py
 import os
-import sys
 import tarfile
-
-# Add scripts to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dev_ops", "scripts"))
-
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -22,11 +15,7 @@ from board_ops import (
     revert_task,
 )
 
-
-@pytest.fixture
-def temp_project(tmp_path):
-    """Create a temporary project directory."""
-    return str(tmp_path)
+# temp_project fixture handled by conftest.py
 
 
 class TestMoveToColumn:
@@ -95,11 +84,12 @@ class TestArchiveTask:
         task_id = create_task(title="Task to archive", project_root=temp_project)
         mark_done(task_id, project_root=temp_project, archive=False)
 
+        os.chdir(temp_project)
         result = archive_task(task_id, temp_project)
         assert result is True
 
-        # Verify archive file exists (in dev_ops/artifacts/archive not dev_ops/archive)
-        archive_dir = os.path.join(temp_project, "dev_ops", "artifacts", "archive")
+        # Verify archive file exists
+        archive_dir = os.path.join(temp_project, ".dev_ops", "archive")
         assert os.path.exists(archive_dir)
 
         archive_file = os.path.join(archive_dir, f"{task_id}.tar.gz")
@@ -120,27 +110,24 @@ class TestArchiveTask:
         task_id = create_task(title="Task", project_root=temp_project)
 
         # Create mock artifact files
-        dev_ops_dir = os.path.join(temp_project, "dev_ops")
-        os.makedirs(dev_ops_dir, exist_ok=True)
+        os.chdir(temp_project)
+        from artifact_ops import create_artifact
 
-        plan_file = os.path.join(dev_ops_dir, "PLN-001.md")
-        with open(plan_file, "w") as f:
-            f.write("# Plan\nDetails here")
+        art_id = create_artifact("plan", "My Plan", project_root=temp_project)
 
         # Link artifact
-        add_downstream(task_id, "PLN-001.md", temp_project)
+        add_downstream(task_id, art_id, temp_project)
 
         mark_done(task_id, project_root=temp_project, archive=False)
         archive_task(task_id, temp_project)
 
         # Verify archive contains artifacts
-        archive_file = os.path.join(
-            temp_project, "dev_ops", "artifacts", "archive", f"{task_id}.tar.gz"
-        )
+        archive_file = os.path.join(temp_project, ".dev_ops", "archive", f"{task_id}.tar.gz")
         with tarfile.open(archive_file, "r:gz") as tar:
             members = tar.getnames()
             assert "task.json" in members
-            # PLN file may not be in archive depending on location logic
+            # Find the artifact filename in members
+            assert any(art_id in m for m in members)
 
     def test_archive_nonexistent_task(self, temp_project):
         """Test archiving nonexistent task."""

@@ -19,9 +19,9 @@ class TestGetCoreRules:
 
     def test_returns_all_phase_rules(self):
         """Test that all expected phase rules are returned."""
-        # Get the rules source directory
+        # Get the rules source directory (payload/rules)
         script_dir = os.path.dirname(os.path.dirname(__file__))
-        rules_src = os.path.join(script_dir, "rules")
+        rules_src = os.path.join(script_dir, "payload", "rules")
 
         rules = get_core_rules(rules_src)
         rule_names = [r["name"] for r in rules]
@@ -41,7 +41,7 @@ class TestGetCoreRules:
     def test_all_rules_have_category_core(self):
         """Test that all returned rules have category 'Core'."""
         script_dir = os.path.dirname(os.path.dirname(__file__))
-        rules_src = os.path.join(script_dir, "rules")
+        rules_src = os.path.join(script_dir, "payload", "rules")
 
         rules = get_core_rules(rules_src)
 
@@ -57,7 +57,7 @@ class TestInitBoard:
         with tempfile.TemporaryDirectory() as tmpdir:
             init_board(tmpdir)
 
-            board_path = os.path.join(tmpdir, "dev_ops", "board", "board.json")
+            board_path = os.path.join(tmpdir, ".dev_ops", "board.json")
             assert os.path.exists(board_path)
 
             with open(board_path) as f:
@@ -70,7 +70,7 @@ class TestInitBoard:
     def test_does_not_overwrite_existing(self):
         """Test that existing board is not overwritten."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            dev_ops_dir = os.path.join(tmpdir, "dev_ops", "board")
+            dev_ops_dir = os.path.join(tmpdir, ".dev_ops")
             os.makedirs(dev_ops_dir)
             board_path = os.path.join(dev_ops_dir, "board.json")
 
@@ -98,7 +98,7 @@ class TestGetAllRules:
         with tempfile.TemporaryDirectory() as tmpdir:
             # Get rules source path
             script_dir = os.path.dirname(os.path.dirname(__file__))
-            rules_src = os.path.join(script_dir, "rules")
+            rules_src = os.path.join(script_dir, "payload", "rules")
 
             rules = get_all_rules(rules_src, tmpdir, tmpdir)
 

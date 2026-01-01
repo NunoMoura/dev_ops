@@ -1,12 +1,6 @@
-#!/usr/bin/env python3
-"""Extended board_ops tests focusing on uncovered functions."""
-
+# sys.path handled by conftest.py
 import os
-import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dev_ops", "scripts"))
-
-import pytest
 from board_ops import (
     check_prerequisites,
     claim_task,
@@ -17,10 +11,7 @@ from board_ops import (
     pick_task,
 )
 
-
-@pytest.fixture
-def temp_project(tmp_path):
-    return str(tmp_path)
+# temp_project fixture handled by conftest.py
 
 
 class TestGetColumnName:
@@ -111,8 +102,8 @@ class TestCheckPrerequisites:
 
     def test_satisfied_prerequisites(self, temp_project):
         """Test task with satisfied prerequisites."""
-        # Create prerequisite files
-        plans_dir = os.path.join(temp_project, "dev_ops", "artifacts", "plans")
+        # Create prerequisite files in the correct artifact directory
+        plans_dir = os.path.join(temp_project, ".dev_ops", ".tmp", "artifacts")
         os.makedirs(plans_dir, exist_ok=True)
 
         with open(os.path.join(plans_dir, "PLN-001-plan.md"), "w") as f:

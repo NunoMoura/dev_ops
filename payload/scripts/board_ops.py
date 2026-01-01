@@ -535,6 +535,9 @@ def mark_done(
     """
     import subprocess
 
+    if not task_id:
+        return False
+
     board = load_board(project_root)
 
     for task in board.get("items", []):
@@ -857,7 +860,7 @@ def archive_task(task_id: str, project_root: Optional[str] = None) -> bool:
     try:
         import archive_ops
 
-        success = archive_ops.archive_task(task_id, task)
+        success = archive_ops.archive_task(task_id, task, project_root=project_root)
 
         if success:
             # Remove task from board after successful archival

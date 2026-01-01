@@ -26,17 +26,17 @@ from utils import get_artifact_working_dir, get_dev_ops_root
 # ==========================================
 
 
-def get_archive_dir() -> str:
+def get_archive_dir(project_root: Optional[str] = None) -> str:
     """Get the archive directory path."""
-    dev_ops_root = get_dev_ops_root()
+    dev_ops_root = get_dev_ops_root(project_root)
     archive_dir = os.path.join(dev_ops_root, "archive")
     os.makedirs(archive_dir, exist_ok=True)
     return archive_dir
 
 
-def get_index_path() -> str:
+def get_index_path(project_root: Optional[str] = None) -> str:
     """Get the archive index.json path."""
-    return os.path.join(get_archive_dir(), "index.json")
+    return os.path.join(get_archive_dir(project_root), "index.json")
 
 
 # ==========================================
@@ -44,9 +44,9 @@ def get_index_path() -> str:
 # ==========================================
 
 
-def load_index() -> dict:
+def load_index(project_root: Optional[str] = None) -> dict:
     """Load the archive index.json file."""
-    index_path = get_index_path()
+    index_path = get_index_path(project_root)
     if not os.path.exists(index_path):
         return {"version": 1, "archives": []}
 
@@ -58,16 +58,18 @@ def load_index() -> dict:
         return {"version": 1, "archives": []}
 
 
-def save_index(index: dict) -> None:
+def save_index(index: dict, project_root: Optional[str] = None) -> None:
     """Save the archive index.json file."""
-    index_path = get_index_path()
+    index_path = get_index_path(project_root)
     with open(index_path, "w") as f:
         json.dump(index, f, indent=2)
 
 
-def update_index(task_id: str, task_data: dict, artifact_count: int) -> None:
+def update_index(
+    task_id: str, task_data: dict, artifact_count: int, project_root: Optional[str] = None
+) -> None:
     """Add or update an entry in the archive index."""
-    index = load_index()
+    index = load_index(project_root)
 
     # Remove existing entry if present
     index["archives"] = [a for a in index.get("archives", []) if a.get("taskId") != task_id]
@@ -86,7 +88,7 @@ def update_index(task_id: str, task_data: dict, artifact_count: int) -> None:
     # Sort by archivedAt descending (newest first)
     index["archives"].sort(key=lambda x: x.get("archivedAt", ""), reverse=True)
 
-    save_index(index)
+    save_index(index, project_root)
 
 
 # ==========================================
@@ -94,7 +96,7 @@ def update_index(task_id: str, task_data: dict, artifact_count: int) -> None:
 # ==========================================
 
 
-def archive_task(task_id: str, task_data: dict) -> bool:
+def archive_task(task_id: str, task_data: dict, project_root: Optional[str] = None) -> bool:
     """Archive a completed task and its linked artifacts.
 
     Creates archive/TASK-XXX.tar.gz containing:
@@ -104,16 +106,17 @@ def archive_task(task_id: str, task_data: dict) -> bool:
     Args:
         task_id: Task ID to archive
         task_data: Task dictionary from board
+        project_root: Optional project root path
 
     Returns:
         True if successful, False otherwise
     """
-    archive_dir = get_archive_dir()
+    archive_dir = get_archive_dir(project_root)
     archive_path = os.path.join(archive_dir, f"{task_id}.tar.gz")
 
     # Collect artifacts to archive
     artifact_files = []
-    artifact_dir = get_artifact_working_dir()
+    artifact_dir = get_artifact_working_dir(project_root)
 
     # Look for artifacts linked to this task
     # Artifacts are named: PREFIX-NNN-slug.md
@@ -142,7 +145,7 @@ def archive_task(task_id: str, task_data: dict) -> bool:
                 tar.add(artifact_path, arcname=arcname)
 
         # Update index
-        update_index(task_id, task_data, len(artifact_files))
+        update_index(task_id, task_data, len(artifact_files), project_root)
 
         # Clean up archived artifacts from tmp
         for artifact_path in artifact_files:
@@ -159,13 +162,13 @@ def archive_task(task_id: str, task_data: dict) -> bool:
         return False
 
 
-def list_archives() -> list[dict]:
+def list_archives(project_root: Optional[str] = None) -> list[dict]:
     """List all archived tasks from index.
 
     Returns:
         List of archive entries sorted by archivedAt (newest first)
     """
-    index = load_index()
+    index = load_index(project_root)
     archives = index.get("archives", [])
 
     if not archives:
@@ -182,16 +185,14 @@ def list_archives() -> list[dict]:
     return archives
 
 
-def search_archive(query: str) -> list[dict]:
+def search_archive(query: str, project_root: Optional[str] = None) -> list[dict]:
     """Search archive index by task ID or title.
 
     Args:
         query: Search term (case-insensitive)
-
-    Returns:
-        List of matching archive entries
+        project_root: Optional project root path
     """
-    index = load_index()
+    index = load_index(project_root)
     archives = index.get("archives", [])
     query_lower = query.lower()
 
@@ -214,17 +215,17 @@ def search_archive(query: str) -> list[dict]:
     return matches
 
 
-def extract_archive(task_id: str, dest_dir: Optional[str] = None) -> Optional[str]:
+def extract_archive(
+    task_id: str, dest_dir: Optional[str] = None, project_root: Optional[str] = None
+) -> Optional[str]:
     """Extract an archived task to a directory.
 
     Args:
         task_id: Task ID to extract
         dest_dir: Optional destination directory (defaults to /tmp/TASK-XXX)
-
-    Returns:
-        Path to extracted directory if successful, None otherwise
+        project_root: Optional project root path
     """
-    archive_dir = get_archive_dir()
+    archive_dir = get_archive_dir(project_root)
     archive_path = os.path.join(archive_dir, f"{task_id}.tar.gz")
 
     if not os.path.exists(archive_path):
@@ -248,16 +249,9 @@ def extract_archive(task_id: str, dest_dir: Optional[str] = None) -> Optional[st
         return None
 
 
-def get_archive_info(task_id: str) -> Optional[dict]:
-    """Get information about an archived task from index.
-
-    Args:
-        task_id: Task ID to look up
-
-    Returns:
-        Archive entry dict if found, None otherwise
-    """
-    index = load_index()
+def get_archive_info(task_id: str, project_root: Optional[str] = None) -> Optional[dict]:
+    """Get information about an archived task from index."""
+    index = load_index(project_root)
     archives = index.get("archives", [])
 
     for entry in archives:

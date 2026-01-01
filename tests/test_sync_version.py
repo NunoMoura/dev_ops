@@ -7,7 +7,7 @@ import sys
 from unittest.mock import MagicMock, patch
 
 # Add scripts to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dev_ops", "scripts"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "payload", "scripts"))
 
 from sync_version import check_sync, get_versions
 
@@ -25,10 +25,8 @@ def test_get_versions_all_present(tmp_path):
         # Mock the instance returned by Path(__file__)
         mock_instance = MagicMock()
         mock_path_class.return_value = mock_instance
+        # Set parent.parent to be the real Path root
         mock_instance.parent.parent = root
-
-        # Mock / operator to return real Path objects
-        mock_instance.parent.parent.__truediv__.side_effect = lambda x: root / x
 
         # Since we can't easily make MagicMock behave like a Path fully for read_text,
         # we rely on the fact that the code does:

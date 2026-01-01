@@ -13,6 +13,7 @@ import argparse
 import datetime
 import os
 import sys
+from typing import Optional
 
 # Add current directory to sys.path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -44,10 +45,10 @@ ARTIFACT_TYPES = {
 # ==========================================
 
 
-def get_template(artifact_type: str) -> str:
+def get_template(artifact_type: str, project_root: Optional[str] = None) -> str:
     """Load template from templates/artifacts/ directory."""
     try:
-        dev_ops_root = get_dev_ops_root()
+        dev_ops_root = get_dev_ops_root(project_root)
         template_path = os.path.join(dev_ops_root, "templates", "artifacts", f"{artifact_type}.md")
         if os.path.exists(template_path):
             return read_file(template_path)
@@ -73,6 +74,7 @@ def create_artifact(
     title: str,
     priority: str = "medium",
     description: str = "",
+    project_root: Optional[str] = None,
 ) -> str:
     """Create a new artifact in the flat .tmp/artifacts/ directory.
 
@@ -84,7 +86,7 @@ def create_artifact(
         sys.exit(1)
 
     # Get flat artifact working directory
-    artifact_dir = get_artifact_working_dir()
+    artifact_dir = get_artifact_working_dir(project_root)
 
     # Generate ID (scan flat directory for prefix)
     prefix = ARTIFACT_TYPES[artifact_type]["prefix"]
@@ -94,7 +96,7 @@ def create_artifact(
     filepath = os.path.join(artifact_dir, filename)
 
     # Fill template
-    template = get_template(artifact_type)
+    template = get_template(artifact_type, project_root)
     content = template.replace("{{id}}", artifact_id)
     content = content.replace("{{title}}", title)
     content = content.replace("{{date}}", datetime.date.today().isoformat())
@@ -106,13 +108,13 @@ def create_artifact(
     return artifact_id
 
 
-def list_artifacts(artifact_type: str) -> None:
+def list_artifacts(artifact_type: str, project_root: Optional[str] = None) -> None:
     """List all artifacts of a given type from flat directory."""
     if artifact_type not in ARTIFACT_TYPES:
         print(f"❌ Unknown artifact type: {artifact_type}")
         return
 
-    artifact_dir = get_artifact_working_dir()
+    artifact_dir = get_artifact_working_dir(project_root)
     prefix = ARTIFACT_TYPES[artifact_type]["prefix"]
 
     if not os.path.exists(artifact_dir):

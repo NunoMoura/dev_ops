@@ -1,24 +1,10 @@
-#!/usr/bin/env python3
-"""Comprehensive tests for artifact_ops.py."""
-
+# sys.path handled by conftest.py
 import os
-import sys
 
-# Add scripts to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dev_ops", "scripts"))
-
-import pytest
 from artifact_ops import create_artifact, list_artifacts
 from board_ops import create_task
 
-
-@pytest.fixture
-def temp_project(tmp_path):
-    """Create a temporary project directory."""
-    # Set up proper directory structure
-    dev_ops_dir = os.path.join(tmp_path, "dev_ops", "artifacts")
-    os.makedirs(dev_ops_dir, exist_ok=True)
-    return str(tmp_path)
+# temp_project fixture handled by conftest.py
 
 
 class TestCreateArtifact:

@@ -1,15 +1,8 @@
-#!/usr/bin/env python3
-"""Comprehensive tests for artifact_ops.py."""
-
+# sys.path handled by conftest.py
 import os
-import sys
 from unittest.mock import patch
 
 import pytest
-
-# Add scripts to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dev_ops", "scripts"))
-
 from artifact_ops import (
     create_artifact,
     get_template,
@@ -17,26 +10,18 @@ from artifact_ops import (
     main,
 )
 
-
-@pytest.fixture
-def temp_project(tmp_path):
-    """Create a temporary project directory."""
-    project_dir = tmp_path / "project"
-    project_dir.mkdir()
-    (project_dir / "dev_ops").mkdir()
-    (project_dir / "dev_ops" / "artifacts").mkdir()
-    return str(project_dir)
+# temp_project fixture handled by conftest.py
 
 
 class TestArtifactOpsComprehensive:
     """Comprehensive tests for artifact_ops functions."""
 
-    def test_get_template_fallback(self):
+    def test_get_template_fallback(self, temp_project):
         """Test get_template fallback."""
-        with patch("artifact_ops.TEMPLATES_DIR", "/nonexistent"):
-            assert "plan" in get_template("plan")
-            assert "bug" in get_template("bug")
-            assert "# {{title}}" in get_template("unknown")
+        os.chdir(temp_project)
+        assert "plan" in get_template("plan")
+        assert "bug" in get_template("bug")
+        assert "# {{title}}" in get_template("unknown")
 
     def test_create_artifact_unknown(self):
         """Test create_artifact with unknown type."""
@@ -46,42 +31,42 @@ class TestArtifactOpsComprehensive:
 
     def test_create_artifact_success(self, temp_project):
         """Test successful artifact creation."""
-        artifacts_dir = os.path.join(temp_project, "dev_ops", "artifacts")
-        with patch("artifact_ops.ARTIFACTS_DIR", artifacts_dir):
-            art_id = create_artifact("bug", "My Bug", priority="high", description="it broke")
-            assert art_id == "BUG-001"
+        os.chdir(temp_project)
+        art_id = create_artifact("bug", "My Bug", priority="high", description="it broke")
+        assert art_id == "BUG-001"
 
-            bug_file = os.path.join(artifacts_dir, "bugs", "BUG-001-my-bug.md")
-            assert os.path.exists(bug_file)
-            content = open(bug_file).read()
-            assert "BUG-001" in content
-            assert "high" in content
-            assert "it broke" in content
+        artifacts_dir = os.path.join(temp_project, ".dev_ops", ".tmp", "artifacts")
+        bug_file = os.path.join(artifacts_dir, "BUG-001-my-bug.md")
+        assert os.path.exists(bug_file)
+        content = open(bug_file).read()
+        assert "BUG-001" in content
+        assert "high" in content
+        assert "it broke" in content
 
     def test_list_artifacts(self, temp_project):
         """Test listing artifacts."""
-        artifacts_dir = os.path.join(temp_project, "dev_ops", "artifacts")
-        with patch("artifact_ops.ARTIFACTS_DIR", artifacts_dir):
-            # Unknown
-            list_artifacts("unknown")
+        os.chdir(temp_project)
+        # Unknown
+        list_artifacts("unknown")
 
-            # Missing dir
-            list_artifacts("plan")
+        # Missing dir
+        list_artifacts("plan")
 
-            # With files
-            os.makedirs(os.path.join(artifacts_dir, "plans"))
-            open(os.path.join(artifacts_dir, "plans", "PLN-001-test.md"), "w").close()
-            list_artifacts("plan")
+        # With files
+        artifacts_dir = os.path.join(temp_project, ".dev_ops", ".tmp", "artifacts")
+        os.makedirs(artifacts_dir, exist_ok=True)
+        open(os.path.join(artifacts_dir, "PLN-001-test.md"), "w").close()
+        list_artifacts("plan")
 
     def test_main_cli_dispatch(self, temp_project):
         """Test CLI dispatch."""
-        artifacts_dir = os.path.join(temp_project, "dev_ops", "artifacts")
-        with patch("artifact_ops.ARTIFACTS_DIR", artifacts_dir):
-            # create
-            with patch("sys.argv", ["artifact_ops.py", "create", "bug", "--title", "CLI Bug"]):
-                main()
-                assert os.path.exists(os.path.join(artifacts_dir, "bugs", "BUG-001-cli-bug.md"))
+        os.chdir(temp_project)
+        # create
+        with patch("sys.argv", ["artifact_ops.py", "create", "bug", "--title", "CLI Bug"]):
+            main()
+            artifacts_dir = os.path.join(temp_project, ".dev_ops", ".tmp", "artifacts")
+            assert os.path.exists(os.path.join(artifacts_dir, "BUG-001-cli-bug.md"))
 
-            # list
-            with patch("sys.argv", ["artifact_ops.py", "list", "bug"]):
-                main()
+        # list
+        with patch("sys.argv", ["artifact_ops.py", "list", "bug"]):
+            main()
