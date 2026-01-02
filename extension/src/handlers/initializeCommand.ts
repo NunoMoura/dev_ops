@@ -12,7 +12,7 @@ import { log, error as logError } from "../features/logger";
 export function registerInitializeCommand(
     context: vscode.ExtensionContext
 ): vscode.Disposable {
-    return vscode.commands.registerCommand("devops.initialize", async () => {
+    return vscode.commands.registerCommand("devops.initialize", async (projectType?: 'greenfield' | 'brownfield') => {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders || workspaceFolders.length === 0) {
             vscode.window.showErrorMessage(
@@ -61,7 +61,7 @@ export function registerInitializeCommand(
             },
             async () => {
                 try {
-                    await runSetupScript(pythonCommand, setupScript, workspaceRoot);
+                    await runSetupScript(pythonCommand, setupScript, workspaceRoot, projectType);
                     vscode.window.showInformationMessage(
                         "✅ DevOps: Framework initialized successfully!"
                     );
@@ -131,10 +131,16 @@ function runCommand(command: string, args: string[]): Promise<string> {
 async function runSetupScript(
     pythonCommand: string,
     scriptPath: string,
-    targetDir: string
+    targetDir: string,
+    projectType?: string
 ): Promise<void> {
     return new Promise((resolve, reject) => {
-        const proc = spawn(pythonCommand, [scriptPath, "--target", targetDir], {
+        const args = [scriptPath, "--target", targetDir];
+        if (projectType) {
+            args.push("--project-type", projectType);
+        }
+
+        const proc = spawn(pythonCommand, args, {
             cwd: targetDir,
             env: { ...process.env, HEADLESS: "true" }, // Skip interactive prompts
         });

@@ -70,7 +70,68 @@ def install_extension(dev_ops_root: str):
         print(f"   ⚠️ No extension VSIX found matching {vsix_pattern}")
 
 
-def init_board(project_root: str):
+def detect_project_type(project_root: str) -> str:
+    """
+    Detect if project is greenfield or brownfield.
+    Returns: 'greenfield', 'brownfield', or 'unknown'
+    """
+    file_count = 0
+    has_manifest = False
+    has_src_dir = False
+
+    for root, dirs, files in os.walk(project_root):
+        # Skip hidden directories
+        relative_path = os.path.relpath(root, project_root)
+        if any(part.startswith(".") for part in relative_path.split(os.sep)):
+            continue
+
+        file_count += len(files)
+
+        # Check for dependency manifests
+        for f in files:
+            if f in [
+                "package.json",
+                "requirements.txt",
+                "Cargo.toml",
+                "go.mod",
+                "pom.xml",
+                "build.gradle",
+                "composer.json",
+            ]:
+                has_manifest = True
+
+        # Check for source directories
+        if any(d in ["src", "lib", "app", "cmd", "pkg"] for d in dirs):
+            has_src_dir = True
+
+    # Decision logic
+    if file_count < 5 and not has_manifest:
+        return "greenfield"
+    elif has_manifest or has_src_dir or file_count > 20:
+        return "brownfield"
+    else:
+        return "unknown"
+
+
+def load_board_template(project_type: str) -> list:
+    """Load the appropriate board template based on project type."""
+    template_file = f"board_{project_type}.json"
+    template_path = os.path.join(TEMPLATES_DIR, "boards", template_file)
+
+    if not os.path.exists(template_path):
+        print(f"   ⚠️  Template {template_file} not found, using empty board")
+        return []
+
+    try:
+        with open(template_path, "r") as f:
+            template_data = json.load(f)
+        return template_data.get("items", [])
+    except Exception as e:
+        print(f"   ⚠️  Error loading template: {e}")
+        return []
+
+
+def init_board(project_root: str, project_type: str = None):
     """Initialize the DevOps board in .dev_ops/ directory."""
     dev_ops_dir = os.path.join(project_root, ".dev_ops")
     board_path = os.path.join(dev_ops_dir, "board.json")  # Flat structure
@@ -85,10 +146,33 @@ def init_board(project_root: str):
     # Load columns from shared schema via board_ops
     columns = DEFAULT_COLUMNS
 
+    # Load starter tasks from template if project type specified
+    initial_items = []
+    if project_type and project_type in ["greenfield", "brownfield"]:
+        print(f"   📦 Loading {project_type} board template...")
+        template_items = load_board_template(project_type)
+
+        # Convert template items to full task format
+        for idx, item in enumerate(template_items):
+            task_id = f"TASK-{str(idx + 1).zfill(3)}"
+            initial_items.append(
+                {
+                    "id": task_id,
+                    "title": item.get("title", "Untitled Task"),
+                    "summary": item.get("summary", ""),
+                    "priority": item.get("priority", "medium"),
+                    "columnId": columns[0]["id"],  # Start in first column (Backlog)
+                    "status": "ready",
+                    "tags": [project_type, "starter"],
+                    "updatedAt": "",
+                }
+            )
+        print(f"   ✅ Loaded {len(initial_items)} starter tasks")
+
     initial_board = {
         "version": 1,
         "columns": columns,
-        "items": [],
+        "items": initial_items,
     }
 
     with open(board_path, "w") as f:
@@ -563,8 +647,28 @@ def bootstrap(target_dir: str):
             shutil.copy2(pr_triage_src, pr_triage_dest)
             print("   - Installed .github/workflows/pr_triage.yml")
 
-    # Initialize DevOps Board (replaces old backlog.md)
-    init_board(PROJECT_ROOT)
+    # Detect project type and prompt user
+    print("\n🔍 Analyzing project type...")
+    detected_type = detect_project_type(PROJECT_ROOT)
+
+    # In headless mode, use detected type or default to greenfield
+    if os.environ.get("HEADLESS") or os.environ.get("PROJECT_TYPE"):
+        project_type = os.environ.get(
+            "PROJECT_TYPE", detected_type if detected_type != "unknown" else "greenfield"
+        )
+        print(f"   Using project type: {project_type}")
+    else:
+        # Interactive mode - prompt user
+        print(f"   Detected: {detected_type}")
+        print("\n📋 Select project type:")
+        print("   1. 🌱 Greenfield - New project (loads 8 starter tasks)")
+        print("   2. 🏗️  Brownfield - Existing codebase (loads 10 audit tasks)")
+
+        choice = prompt_user("Enter choice (1/2)", "1" if detected_type == "greenfield" else "2")
+        project_type = "greenfield" if choice == "1" else "brownfield"
+
+    # Initialize DevOps Board with template
+    init_board(PROJECT_ROOT, project_type)
 
     # Install Extension (if VS Code available)
     install_extension(FRAMEWORK_ROOT)
@@ -582,7 +686,16 @@ def bootstrap(target_dir: str):
 def main():
     parser = argparse.ArgumentParser(description="Bootstrap/Setup dev_ops in a project.")
     parser.add_argument("--target", default=os.getcwd(), help="Target project directory")
+    parser.add_argument(
+        "--project-type",
+        choices=["greenfield", "brownfield"],
+        help="Project type (greenfield or brownfield)",
+    )
     args = parser.parse_args()
+
+    # Set environment variable if project type specified
+    if args.project_type:
+        os.environ["PROJECT_TYPE"] = args.project_type
 
     bootstrap(args.target)
 

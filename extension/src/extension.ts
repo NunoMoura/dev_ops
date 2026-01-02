@@ -60,14 +60,35 @@ export async function activate(context: vscode.ExtensionContext) {
       );
 
       if (choice === 'Initialize Now') {
-        await vscode.commands.executeCommand('devops.initialize');
-        // Refresh views after initialization
-        try {
-          await services.provider.refresh();
-          services.statusBoard.refresh();
-          services.metricsView.updateContent();
-        } catch (error) {
-          warn(`Board refresh after initialization failed: ${error}`);
+        // Prompt for project type
+        const typeChoice = await vscode.window.showQuickPick([
+          {
+            label: '🌱 Greenfield',
+            description: 'New project starting from scratch',
+            detail: 'Loads 8 starter tasks: vision, architecture, tech stack, scaffolding',
+            value: 'greenfield'
+          },
+          {
+            label: '🏗️ Brownfield',
+            description: 'Existing codebase',
+            detail: 'Loads 10 audit tasks: architecture review, dependencies, technical debt',
+            value: 'brownfield'
+          }
+        ], {
+          placeHolder: 'What type of project is this?',
+          title: 'DevOps Framework: Project Type'
+        });
+
+        if (typeChoice) {
+          await vscode.commands.executeCommand('devops.initialize', typeChoice.value);
+          // Refresh views after initialization
+          try {
+            await services.provider.refresh();
+            services.statusBoard.refresh();
+            services.metricsView.updateContent();
+          } catch (error) {
+            warn(`Board refresh after initialization failed: ${error}`);
+          }
         }
       }
     }
