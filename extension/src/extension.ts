@@ -120,9 +120,13 @@ export async function activate(context: vscode.ExtensionContext) {
     const sessionBridge = new SessionBridge(context);
     sessionBridge.activate();
 
-    // Initialize Cursor Bridge
-    const cursorBridge = new CursorBridge(context);
-    cursorBridge.activate();
+    // NOTE: CursorBridge should NOT auto-activate - it creates .cursor/tasks
+    // which is inappropriate before initialization and wrong for non-Cursor IDEs.
+    // Initialize Cursor Bridge only if needed and initialized
+    // const cursorBridge = new CursorBridge(context);
+    // if (initialized && isCursorIDE()) {
+    //   cursorBridge.activate();
+    // }
 
     // Register task provider
     registerTaskProvider(context);
