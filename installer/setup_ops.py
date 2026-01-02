@@ -123,7 +123,7 @@ def load_board_template(project_type: str) -> list:
         return []
 
     try:
-        with open(template_path, "r") as f:
+        with open(template_path) as f:
             template_data = json.load(f)
         return template_data.get("items", [])
     except Exception as e:
@@ -209,8 +209,13 @@ def detect_ide() -> str:
     Detect which IDE is being used based on environment and binaries.
     Returns: 'antigravity', 'cursor', or 'unknown'
     """
-    # Check for Antigravity via environment variable (most reliable)
+    # Check for Antigravity via environment variables (most reliable)
     if os.environ.get("ANTIGRAVITY_AGENT") == "1":
+        print("   🔍 Detected IDE: Antigravity")
+        return "antigravity"
+
+    # Check for Antigravity editor app root (primary indicator)
+    if os.environ.get("ANTIGRAVITY_EDITOR_APP_ROOT"):
         print("   🔍 Detected IDE: Antigravity")
         return "antigravity"
 
