@@ -457,13 +457,8 @@ def install_rules(proposed_rules: list, rules_dest: str, ide: str = "antigravity
             print(f"   ! Warning: Source for {rule['name']} not found at {rule['src']}")
             continue
 
-        # Read
+        # Read template content (no replacements - agent will generate rules via /bootstrap)
         content = get_file_content(rule["src"])
-
-        # Apply Rule-Specific Replacements
-        custom_repls = rule.get("replacements", {})
-        for key, value in custom_repls.items():
-            content = content.replace(key, str(value))
 
         # Convert frontmatter for Cursor
         if ide == "cursor":
@@ -639,7 +634,7 @@ def bootstrap(target_dir: str):
         constitution_dest = os.path.join(DEVOPS_DOCS_DIR, "constitution.md")
         if not os.path.exists(constitution_dest):
             shutil.copy2(constitution_src, constitution_dest)
-            print(f"   📜 Created constitution.md template in docs/")
+            print("   📜 Created constitution.md template in docs/")
 
     # Install GitHub Actions Workflows (only PR triage)
     GITHUB_SRC_DIR = os.path.join(FRAMEWORK_ROOT, ".github", "workflows")

@@ -63,7 +63,8 @@ export function registerInitializeCommand(
                 try {
                     await runSetupScript(pythonCommand, setupScript, workspaceRoot, projectType);
                     vscode.window.showInformationMessage(
-                        "✅ DevOps: Framework initialized successfully!"
+                        "✅ DevOps: Framework initialized successfully!\n\n📋 Next step: Run /bootstrap to generate project-specific rules",
+                        "OK"
                     );
                 } catch (error) {
                     vscode.window.showErrorMessage(
