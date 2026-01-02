@@ -13,10 +13,10 @@ import { formatError } from './features/errors';
 import { showPhaseNotification } from './features/phaseNotifications';
 import { createStatusBar, StatusBarManager } from './statusBar';
 import { TaskEditorProvider } from './taskEditorProvider';
-import { registerBoardOverview, BoardOverviewProvider } from './providers/boardOverviewProvider';
-import { registerTaskList, TaskListProvider } from './providers/taskListProvider';
-import { registerCurrentTask, CurrentTaskProvider } from './providers/currentTaskProvider';
-import { registerArchive, ArchiveProvider } from './providers/archiveProvider';
+// NEW Providers
+import { StatusBoardProvider } from './providers/statusBoardProvider';
+import { MetricsViewProvider } from './providers/metricsViewProvider';
+
 import { SessionBridge } from './features/sessionBridge';
 import { CursorBridge } from './features/cursorBridge';
 import { AgentManager, registerAgentManager } from './agents/AgentManager';
@@ -59,11 +59,21 @@ export async function activate(context: vscode.ExtensionContext) {
 
     try {
       await services.provider.refresh();
+      services.statusBoard.refresh();
+      services.metricsView.updateContent();
     } catch (error) {
       warn(`Board not loaded on activation: ${error}`);
     }
 
     await registerBoardWatchers(services.provider, context);
+    // Also watch for updates to refresh status board and metrics
+    context.subscriptions.push(
+      services.provider.onDidUpdateBoardView(() => {
+        services.statusBoard.refresh();
+        services.metricsView.updateContent();
+      })
+    );
+
     registerBoardCommands(context, services, services.syncFilterUI);
 
     // Initialize Session Bridge
@@ -71,8 +81,6 @@ export async function activate(context: vscode.ExtensionContext) {
     sessionBridge.activate();
 
     // Initialize Cursor Bridge
-    // Note: We don't have a command to trigger it yet, but it ensures the dir exists.
-    // In future, we can add a context menu "Send to Cursor"
     const cursorBridge = new CursorBridge(context);
     cursorBridge.activate();
 
@@ -96,10 +104,13 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Auto-open board tab when extension activates
     try {
-      await vscode.commands.executeCommand('devops.openBoard');
-      log('Board automatically opened');
+      if (initialized) {
+        // Maybe don't auto-open board anymore since we have the sidebar?
+        // Keeping it for now as per config check usually inside openBoard
+        await vscode.commands.executeCommand('devops.openBoard');
+        log('Board automatically opened');
+      }
     } catch (error) {
-      // Silently fail if board doesn't exist yet
       warn(`Board auto-open skipped: ${formatError(error)}`);
     }
 
@@ -116,21 +127,22 @@ type DevOpsExtensionServices = DevOpsCommandServices & {
   boardPanelManager: BoardPanelManager;
   statusBar: StatusBarManager;
   syncFilterUI: () => void;
-  boardOverview: BoardOverviewProvider;
-  taskList: TaskListProvider;
-  currentTask: CurrentTaskProvider;
-  archive: ArchiveProvider;
+  statusBoard: StatusBoardProvider;
+  metricsView: MetricsViewProvider;
 };
 
 async function initializeDevOpsServices(context: vscode.ExtensionContext): Promise<DevOpsExtensionServices> {
-  // Internal board state provider (not displayed as a tree anymore)
+  // Internal board state provider (data source)
   const provider = new BoardTreeProvider(readBoard);
 
-  // Register new sidebar views
-  const boardOverview = registerBoardOverview(context);
-  const taskList = registerTaskList(context);
-  const currentTask = registerCurrentTask(context);
-  const archive = registerArchive(context);
+  // NEW Sidebar Providers
+  const statusBoard = new StatusBoardProvider();
+  vscode.window.registerTreeDataProvider('devopsStatusBoard', statusBoard);
+
+  const metricsView = new MetricsViewProvider(context.extensionUri);
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider('devopsMetricsView', metricsView)
+  );
 
   const boardPanelManager = createBoardPanelManager(context);
 
@@ -147,10 +159,8 @@ async function initializeDevOpsServices(context: vscode.ExtensionContext): Promi
   return {
     provider,
     boardView: undefined as unknown as vscode.TreeView<import('./providers/boardTreeProvider').BoardNode>,
-    boardOverview,
-    taskList,
-    currentTask,
-    archive,
+    statusBoard,
+    metricsView,
     boardPanelManager,
     statusBar,
     syncFilterUI,
@@ -166,27 +176,24 @@ function bindDevOpsViews(
 }
 
 function registerBoardSnapshotSync(context: vscode.ExtensionContext, services: DevOpsExtensionServices): void {
-  const { provider, boardPanelManager, statusBar, boardOverview, taskList, currentTask } = services;
-  boardPanelManager.setBoard(provider.getBoardViewSnapshot());
+  const { provider, boardPanelManager, statusBar, statusBoard, metricsView } = services;
 
-  // Update status bar and all new providers with initial board state
-  readBoard().then((board) => {
-    statusBar.update(board);
-    boardOverview.updateBoard(board);
-    taskList.updateBoard(board);
-    currentTask.updateBoard(board);
-  }).catch(() => { });
+  const updateAll = async () => {
+    try {
+      const board = await readBoard();
+      statusBar.update(board);
+      statusBoard.refresh();
+      metricsView.updateContent();
+    } catch (e) { }
+  };
+
+  boardPanelManager.setBoard(provider.getBoardViewSnapshot());
+  updateAll();
 
   context.subscriptions.push(
     provider.onDidUpdateBoardView((snapshot) => {
       boardPanelManager.setBoard(snapshot);
-      // Update all views when board changes
-      readBoard().then((board) => {
-        statusBar.update(board);
-        boardOverview.updateBoard(board);
-        taskList.updateBoard(board);
-        currentTask.updateBoard(board);
-      }).catch(() => { });
+      updateAll();
     }),
   );
 }
@@ -196,7 +203,6 @@ function registerBoardViewRequests(context: vscode.ExtensionContext, services: D
   context.subscriptions.push(
     boardPanelManager.onDidRequestMoveTasks(async (request) => {
       await handleBoardMoveTasks(request, provider);
-      // Show phase notification for the first moved task
       if (request.taskIds?.length > 0) {
         await showPhaseNotification(request.taskIds[0], request.columnId);
       }
@@ -230,4 +236,5 @@ function registerBoardViewRequests(context: vscode.ExtensionContext, services: D
     }),
   );
 }
+
 

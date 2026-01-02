@@ -222,24 +222,14 @@
     "views": {
       "devops": [
         {
-          "id": "devopsBoardOverview",
-          "name": "Board Overview",
-          "icon": "$(dashboard)"
+          "id": "devopsStatusBoard",
+          "name": "Status Board",
+          "icon": "$(list-tree)"
         },
         {
-          "id": "devopsTaskList",
-          "name": "Tasks",
-          "icon": "$(checklist)"
-        },
-        {
-          "id": "devopsCurrentTask",
-          "name": "Current Task",
-          "icon": "$(target)"
-        },
-        {
-          "id": "devopsArchive",
-          "name": "Archive",
-          "icon": "$(archive)"
+          "id": "devopsMetricsView",
+          "name": "Metrics",
+          "icon": "$(graph)"
         }
       ]
     },

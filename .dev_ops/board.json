@@ -117,5 +117,16 @@
       }
     }
   ],
-  "items": []
+  "items": [
+    {
+      "id": "TASK-001",
+      "columnId": "col-backlog",
+      "title": "Test",
+      "updatedAt": "2026-01-02T01:25:59.329Z",
+      "summary": "",
+      "status": "ready",
+      "tags": [],
+      "priority": "medium"
+    }
+  ]
 }

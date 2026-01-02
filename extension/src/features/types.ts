@@ -17,7 +17,7 @@ export type Column = {
   position: number;
 };
 
-export type TaskStatus = 'ready' | 'agent_active' | 'needs_feedback' | 'blocked' | 'done';
+export type TaskStatus = 'ready' | 'agent_active' | 'in_progress' | 'needs_feedback' | 'blocked' | 'done';
 
 /**
  * Checklist item stored on a task.
@@ -68,6 +68,30 @@ export type Task = {
   contextFile?: string;
   contextRange?: { startLine: number; endLine: number };
   source?: TaskSource;
+
+  // Agentic Workflow
+  owner?: TaskOwner;             // Current active agent/human
+  agentHistory?: AgentActivity[]; // History of past sessions
+};
+
+export type TaskOwner = {
+  id: string;                    // Session ID or User ID
+  type: 'agent' | 'human';
+  name: string;
+  sessionId?: string;            // Antigravity session ID
+  phase: string;                 // Phase when ownership started
+  startedAt: string;             // ISO date
+};
+
+export type AgentActivity = {
+  agentId: string;
+  sessionId: string;
+  agentName: string;
+  phase: string;
+  startedAt: string;
+  endedAt: string;
+  summary?: string;              // Short summary of the session
+  traceFile?: string;            // Path to decision trace (e.g., .dev_ops/activity/TASK-001.md)
 };
 
 export type TaskSource = {

@@ -634,6 +634,57 @@ def check_prerequisites(task: dict, project_root: Optional[str] = None) -> tuple
     return all_ok, missing
 
 
+def _init_activity_file(task_id: str, project_root: Optional[str] = None) -> str:
+    """Initialize the activity trace file for a task."""
+    from utils import get_dev_ops_root
+
+    if project_root is None:
+        dev_ops_root = get_dev_ops_root()
+    else:
+        # Resolve project root logic duplicated from get_board_path
+        if os.path.isdir(os.path.join(project_root, "payload")):
+            dev_ops_root = os.path.join(project_root, "payload")
+        elif os.path.isdir(os.path.join(project_root, ".dev_ops")):
+            dev_ops_root = os.path.join(project_root, ".dev_ops")
+        else:
+            # Fallback
+            dev_ops_root = os.path.join(project_root, ".dev_ops")
+
+    activity_dir = os.path.join(dev_ops_root, "activity")
+    os.makedirs(activity_dir, exist_ok=True)
+
+    trace_path = os.path.join(activity_dir, f"{task_id}.md")
+    if not os.path.exists(trace_path):
+        with open(trace_path, "w") as f:
+            f.write(f"# Decision Trace for {task_id}\n\n")
+            f.write(f"> Created: {datetime.now(timezone.utc).isoformat()}\n\n")
+
+    return trace_path
+
+
+def _archive_current_owner(task: dict, project_root: Optional[str] = None) -> None:
+    """Move current owner to agentHistory."""
+    owner = task.get("owner")
+    if not owner:
+        return
+
+    if "agentHistory" not in task:
+        task["agentHistory"] = []
+
+    # Create history entry
+    history_item = {
+        "agentId": owner.get("id"),
+        "sessionId": owner.get("sessionId"),
+        "agentName": owner.get("name"),
+        "phase": owner.get("phase"),
+        "startedAt": owner.get("startedAt"),
+        "endedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "traceFile": _init_activity_file(task["id"], project_root),  # Link to the trace file used
+    }
+
+    task["agentHistory"].append(history_item)
+
+
 def register_agent(
     task_id: str,
     agent_type: str,
@@ -645,6 +696,12 @@ def register_agent(
     board = load_board(project_root)
     for task in board.get("items", []):
         if task.get("id") == task_id:
+            # Archive previous owner if exists
+            _archive_current_owner(task, project_root)
+
+            # Initialize trace file for NEW session
+            _init_activity_file(task_id, project_root)
+
             task["owner"] = {
                 "id": session_id or f"agent-{datetime.now(timezone.utc).timestamp()}",
                 "type": agent_type,  # "agent" or "human"
@@ -729,6 +786,12 @@ def claim_task(
                     return False
 
             # Use register_agent logic logic
+            # Archive previous owner if exists
+            _archive_current_owner(task, project_root)
+
+            # Initialize trace file for NEW session
+            _init_activity_file(task_id, project_root)
+
             task["owner"] = {
                 "id": session_id or f"{agent_type}-{datetime.now(timezone.utc).timestamp()}",
                 "type": agent_type,

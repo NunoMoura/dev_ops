@@ -1,67 +1,48 @@
 import * as vscode from 'vscode';
-import { readBoard, writeBoard } from './features/boardStore';
-import { Task, ChecklistItem, COLUMN_FALLBACK_NAME } from './features/types';
+import * as fs from 'fs';
+import * as path from 'path';
+import { readBoard, writeBoard, getBoardPath } from './features/boardStore';
+import { Task, ChecklistItem, COLUMN_FALLBACK_NAME, TaskStatus } from './features/types';
 
 /**
  * Content provider for devops-task:// URIs.
- * Required for CustomTextEditorProvider to work with virtual documents.
  */
 class TaskDocumentContentProvider implements vscode.TextDocumentContentProvider {
   public static readonly scheme = 'devops-task';
+  private _onDidChange = new vscode.EventEmitter<vscode.Uri>();
+  readonly onDidChange = this._onDidChange.event;
+
+  public update(uri: vscode.Uri) {
+    this._onDidChange.fire(uri);
+  }
 
   async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
-    // Extract task ID from URI path (e.g., /task/TASK-001.devops-task -> TASK-001)
     const taskId = uri.path.replace('/task/', '').replace('.devops-task', '');
-
     try {
       const board = await readBoard();
       const task = board.items.find(t => t.id === taskId);
-      if (task) {
-        return JSON.stringify(task, null, 2);
-      }
-    } catch {
-      // Fall through to return empty
-    }
+      if (task) { return JSON.stringify(task, null, 2); }
+    } catch { }
     return JSON.stringify({ id: taskId, error: 'Task not found' });
   }
 }
 
-/**
- * Custom editor provider for Board tasks.
- * Opens tasks in a new editor tab with a webview-based form.
- */
 export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
   public static readonly viewType = 'devops.taskEditor';
-
   private static instance: TaskEditorProvider | undefined;
 
   public static register(context: vscode.ExtensionContext): vscode.Disposable {
     const provider = new TaskEditorProvider(context);
     TaskEditorProvider.instance = provider;
-
-    // Register the content provider for the devops-task scheme
     const contentProvider = new TaskDocumentContentProvider();
-    const contentDisposable = vscode.workspace.registerTextDocumentContentProvider(
-      TaskDocumentContentProvider.scheme,
-      contentProvider
-    );
 
-    const editorDisposable = vscode.window.registerCustomEditorProvider(
-      TaskEditorProvider.viewType,
-      provider,
-      {
+    return vscode.Disposable.from(
+      vscode.workspace.registerTextDocumentContentProvider(TaskDocumentContentProvider.scheme, contentProvider),
+      vscode.window.registerCustomEditorProvider(TaskEditorProvider.viewType, provider, {
         webviewOptions: { retainContextWhenHidden: true },
         supportsMultipleEditorsPerDocument: false,
-      }
+      })
     );
-
-    // Return a combined disposable
-    return {
-      dispose: () => {
-        contentDisposable.dispose();
-        editorDisposable.dispose();
-      }
-    };
   }
 
   constructor(private readonly context: vscode.ExtensionContext) { }
@@ -71,49 +52,49 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     webviewPanel: vscode.WebviewPanel,
     _token: vscode.CancellationToken
   ): Promise<void> {
-    webviewPanel.webview.options = {
-      enableScripts: true,
-    };
-
-    // Parse task ID from document URI
+    webviewPanel.webview.options = { enableScripts: true };
     const taskId = this.getTaskIdFromUri(document.uri);
 
-    // Load task data
-    const task = await this.loadTask(taskId);
-    if (!task) {
-      webviewPanel.webview.html = this.getErrorHtml(`Task ${taskId} not found`);
-      return;
+    const updateWebview = async () => {
+      const task = await this.loadTask(taskId);
+      if (!task) {
+        webviewPanel.webview.html = this.getErrorHtml(`Task ${taskId} not found`);
+        return;
+      }
+      const board = await readBoard();
+      const traceContent = await this.readTraceFile(taskId);
+      webviewPanel.webview.html = this.getEditorHtml(task, board.columns, traceContent);
+    };
+
+    // Initial render
+    await updateWebview();
+
+    // Watch for trace file changes
+    const tracePath = await this.getTraceFilePath(taskId);
+    if (tracePath) {
+      const watcher = vscode.workspace.createFileSystemWatcher(tracePath);
+      const changeListener = watcher.onDidChange(() => updateWebview());
+      webviewPanel.onDidDispose(() => {
+        changeListener.dispose();
+        watcher.dispose();
+      });
     }
 
-    // Get column name
-    const board = await readBoard();
-    const column = board.columns.find(c => c.id === task.columnId);
-    const columnName = column?.name || COLUMN_FALLBACK_NAME;
-
-    // Render webview
-    webviewPanel.webview.html = this.getEditorHtml(task, columnName, board.columns);
-
-    // Handle messages from webview
+    // Handle messages
     webviewPanel.webview.onDidReceiveMessage(async (message) => {
       switch (message.type) {
         case 'update':
           await this.updateTask(taskId, message.data);
           break;
         case 'save':
-          // Explicit save - update, show message, and close
           await this.updateTask(taskId, message.data);
           vscode.window.showInformationMessage(`✅ Saved task ${taskId}`);
-          webviewPanel.dispose();
-          // Trigger board refresh
+          // trigger update to refresh view if needed
+          await updateWebview();
           vscode.commands.executeCommand('devops.refreshBoard');
           break;
         case 'delete':
-          // Show confirmation dialog from extension host (confirm() doesn't work in webviews)
-          const confirmed = await vscode.window.showWarningMessage(
-            `Delete task ${taskId}?`,
-            { modal: true },
-            'Delete'
-          );
+          const confirmed = await vscode.window.showWarningMessage(`Delete task ${taskId}?`, { modal: true }, 'Delete');
           if (confirmed === 'Delete') {
             await this.deleteTask(taskId);
             webviewPanel.dispose();
@@ -124,7 +105,6 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
   }
 
   private getTaskIdFromUri(uri: vscode.Uri): string {
-    // URI format: devops-task:/task/TASK-001.devops-task
     return uri.path.replace('/task/', '').replace('.devops-task', '');
   }
 
@@ -133,491 +113,267 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     return board.items.find(t => t.id === taskId);
   }
 
+  private async getTraceFilePath(taskId: string): Promise<string | undefined> {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders) return undefined;
+    // Assuming single root for now or first root containing .dev_ops
+    const root = workspaceFolders[0].uri.fsPath; // Simplification, robust logic is in boardStore
+    return path.join(root, '.dev_ops', 'activity', `${taskId}.md`);
+  }
+
+  private async readTraceFile(taskId: string): Promise<string> {
+    const tracePath = await this.getTraceFilePath(taskId);
+    if (tracePath && fs.existsSync(tracePath)) {
+      return fs.readFileSync(tracePath, 'utf8');
+    }
+    return '';
+  }
+
   private async updateTask(taskId: string, data: Partial<Task>): Promise<void> {
     const board = await readBoard();
     const task = board.items.find(t => t.id === taskId);
-    if (!task) {
-      return;
+    if (task) {
+      Object.assign(task, data);
+      task.updatedAt = new Date().toISOString();
+      await writeBoard(board);
     }
-
-    Object.assign(task, data);
-    task.updatedAt = new Date().toISOString();
-    await writeBoard(board);
   }
 
   private async deleteTask(taskId: string): Promise<void> {
     const board = await readBoard();
     board.items = board.items.filter(t => t.id !== taskId);
     await writeBoard(board);
-    vscode.window.showInformationMessage(`Deleted task ${taskId}`);
-    // Trigger board refresh
     vscode.commands.executeCommand('devops.refreshBoard');
   }
 
   private getErrorHtml(message: string): string {
-    return `<!DOCTYPE html>
-<html><body style="padding:20px;font-family:sans-serif;">
-<h2 style="color:#dc2626;">Error</h2>
-<p>${message}</p>
-</body></html>`;
+    return `<html><body><h2 style="color:red">${message}</h2></body></html>`;
   }
 
-  private getEditorHtml(task: Task, columnName: string, columns: Array<{ id: string; name: string }>): string {
-    const statusLabel = { ready: '▶ Ready', agent_active: '⚡ Active', needs_feedback: '💬 Feedback', blocked: '⛔ Blocked', done: '✓ Done' }[task.status || 'ready'] || task.status;
-    const isNewTask = task.title === 'New Task';
-    const upstreamList = (task.upstream || []).map((a: string) => `<span class="artifact-badge upstream">${a}</span>`).join('') || '<span class="empty-hint">None</span>';
-    const downstreamList = (task.downstream || []).map((a: string) => `<span class="artifact-badge downstream">${a}</span>`).join('') || '<span class="empty-hint">None</span>';
-    const checklist = task.checklist || [];
-    const checklistDone = checklist.filter((c: ChecklistItem) => c.done).length;
-    const checklistTotal = checklist.length;
-    const progressPercent = checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
-    const checklistHtml = checklistTotal > 0
-      ? checklist.map((item: ChecklistItem, i: number) => `
-        <div class="checklist-item">
-          <input type="checkbox" ${item.done ? 'checked' : ''} data-index="${i}" class="checklist-check">
-          <span class="${item.done ? 'done' : ''}">${item.text}</span>
-        </div>`).join('')
-      : '<p class="empty-hint">No checklist items</p>';
+  private getEditorHtml(task: Task, columns: Array<{ id: string; name: string }>, traceMarkdown: string): string {
+    const statusLabel = {
+      ready: 'Ready',
+      agent_active: 'Active',
+      in_progress: 'In Progress',
+      needs_feedback: 'Feedback',
+      blocked: 'Blocked',
+      done: 'Done'
+    }[task.status || 'ready'] || task.status;
+
+    const currentColumn = columns.find(c => c.id === task.columnId)?.name || COLUMN_FALLBACK_NAME;
+
+    // Simple Markdown parsing for Trace
+    const parsedTrace = this.parseTraceMarkdown(traceMarkdown);
 
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; font-src https://fonts.gstatic.com; style-src 'unsafe-inline' https://fonts.googleapis.com; script-src 'unsafe-inline';">
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${task.title}</title>
   <style>
-    /* Design tokens - consistent across extension */
     :root {
-      color-scheme: var(--vscode-colorScheme);
+      --vscode-editor-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       --status-ready: #3b82f6;
-      --status-agent-active: #22c55e;
-      --status-needs-feedback: #f97316;
+      --status-active: #22c55e;
+      --status-feedback: #f97316;
       --status-blocked: #ef4444;
       --status-done: #6b7280;
-      --priority-high: #ef4444;
-      --priority-medium: #f59e0b;
-      --priority-low: #22c55e;
-      --accent-gradient: linear-gradient(90deg, #667eea, #764ba2);
-      --artifact-bg: rgba(102, 126, 234, 0.15);
-      --artifact-border: rgba(102, 126, 234, 0.3);
-      --artifact-text: #a5b4fc;
-      --card-bg: var(--vscode-editor-background, rgba(0, 0, 0, 0.4));
-      --card-border: var(--vscode-input-border, rgba(255,255,255,0.1));
-      --section-bg: var(--vscode-sideBarSectionHeader-background, rgba(255, 255, 255, 0.03));
     }
     body {
-      font-family: 'IBM Plex Sans', var(--vscode-font-family), sans-serif;
-      font-size: var(--vscode-font-size);
-      color: var(--vscode-foreground);
+      padding: 0; margin: 0;
+      font-family: var(--vscode-editor-font-family);
+      color: var(--vscode-editor-foreground);
       background: var(--vscode-editor-background);
-      padding: 0;
-      margin: 0;
     }
-    .container { max-width: 800px; margin: 0 auto; padding: 24px; }
+    /* Sticky Header */
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--vscode-editor-background);
+      border-bottom: 1px solid var(--vscode-widget-border);
+      padding: 10px 20px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .header-row { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+    
+    /* Title Input */
+    input.title-input {
+      font-size: 1.2rem; font-weight: 600;
+      background: transparent; border: none; color: inherit; width: 100%;
+      outline: none; border-bottom: 2px solid transparent;
+    }
+    input.title-input:focus { border-bottom-color: var(--vscode-focusBorder); }
 
-    /* Title row - single line: Title | ID ... Status | Phase */
-    .title-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-    }
-    .title-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex: 1;
-      min-width: 0;
-    }
-    .title-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-      font-size: 12px;
-      color: var(--vscode-descriptionForeground);
-    }
-    .task-id-chip {
-      background: rgba(255,255,255,0.1);
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--vscode-descriptionForeground);
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    .status-indicator {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .status-indicator[data-status="ready"] { background: var(--status-ready); }
-    .status-indicator[data-status="agent_active"] { background: var(--status-agent-active); }
-    .status-indicator[data-status="needs_feedback"] { background: var(--status-needs-feedback); }
-    .status-indicator[data-status="blocked"] { background: var(--status-blocked); }
-    .status-indicator[data-status="done"] { background: var(--status-done); }
-    .status-text {
-      font-weight: 500;
-    }
-    .phase-text {
-      opacity: 0.8;
-    }
-    .meta-separator {
-      opacity: 0.4;
-    }
-
-    /* Title styling */
-    h1 { 
-      margin: 0; 
-      font-size: 20px; 
-      font-weight: 600;
-      outline: none;
-      flex: 1;
-      min-width: 0;
-      padding: 4px 0;
-      border-bottom: 2px solid transparent;
-      transition: border-color 0.15s ease;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    h1:focus { border-bottom-color: var(--vscode-focusBorder); }
-
-    /* Card sections */
-    .card-section {
-      background: var(--section-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 16px 20px;
-      margin-bottom: 16px;
-    }
-
-    /* Labels - lowercase styling */
-    label { 
-      display: block; 
-      font-weight: 500; 
-      margin-bottom: 6px; 
-      margin-top: 0; 
-      font-size: 12px; 
-      color: var(--vscode-descriptionForeground);
-    }
-    .card-section > label:first-child { margin-top: 0; }
-
-    /* Form inputs */
-    input[type="text"], textarea, select {
-      width: 100%; 
-      box-sizing: border-box; 
-      padding: 10px 12px;
-      border: 1px solid var(--card-border);
-      background: var(--card-bg);
-      color: var(--vscode-input-foreground);
-      border-radius: 6px;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
-      font-size: 13px;
-    }
-    input[type="text"]:hover, textarea:hover, select:hover {
-      border-color: rgba(255,255,255,0.2);
-    }
-    input[type="text"]:focus, textarea:focus, select:focus {
-      border-color: var(--vscode-focusBorder);
-      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.15);
-      outline: none;
-    }
-    textarea { min-height: 100px; resize: vertical; line-height: 1.5; }
+    /* Controls */
     select {
-      cursor: pointer;
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M3 4.5L6 8l3-3.5H3z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 12px center;
-      padding-right: 32px;
+      background: var(--vscode-dropdown-background);
+      color: var(--vscode-dropdown-foreground);
+      border: 1px solid var(--vscode-dropdown-border);
+      padding: 4px; border-radius: 4px;
     }
 
-    /* Row layout */
-    .row { display: flex; gap: 12px; }
-    .row > div { flex: 1; }
-    .row label { margin-top: 0; }
+    .badge {
+      padding: 2px 8px; border-radius: 99px; font-size: 0.8rem; font-weight: 500;
+      text-transform: uppercase;
+    }
+    .badge-id { background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); }
+    
+    /* Main Content */
+    .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+    
+    .section { margin-bottom: 30px; }
+    .section-title { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--vscode-descriptionForeground); margin-bottom: 10px; border-bottom: 1px solid var(--vscode-widget-border); padding-bottom: 5px; }
 
-    /* Section styling */
-    .section { 
-      margin-top: 24px; 
-      /* padding-top: 0; Removed to fix spacing */
-    }
-    .section-header { 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--card-border);
-    }
-    .section h2 { 
-      margin: 0; 
-      font-size: 13px; 
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .section h2::before {
-      font-size: 14px;
+    /* Summary */
+    textarea.summary-input {
+      width: 100%; min-height: 80px;
+      background: var(--vscode-input-background);
+      color: var(--vscode-input-foreground);
+      border: 1px solid var(--vscode-input-border);
+      padding: 8px; font-family: inherit; resize: vertical;
     }
 
-    /* Artifact badges - consistent with board cards */
-    .artifact-row { margin-bottom: 16px; }
-    .artifact-row:last-child { margin-bottom: 0; }
-    .artifact-row label { 
-      font-size: 11px; 
-      margin-bottom: 8px;
-      opacity: 0.8;
+    /* Timeline / Trace */
+    .timeline { position: relative; padding-left: 20px; }
+    .timeline::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+      background: var(--vscode-widget-border);
     }
-    .artifact-badges { display: flex; flex-wrap: wrap; gap: 8px; min-height: 32px; align-items: center; }
-    .artifact-badge {
-      background: var(--artifact-bg);
-      border: 1px solid var(--artifact-border);
-      border-radius: 6px;
-      padding: 6px 12px;
-      font-size: 11px;
-      color: var(--artifact-text);
-      font-weight: 500;
-      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    .trace-item { position: relative; margin-bottom: 20px; padding-left: 15px; }
+    .trace-item::before {
+      content: ''; position: absolute; left: -24px; top: 6px; width: 10px; height: 10px;
+      border-radius: 50%; background: var(--vscode-button-background);
+      border: 2px solid var(--vscode-editor-background);
     }
-    .artifact-badge:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
-    }
-    .artifact-badge.upstream::before { content: "↑ "; opacity: 0.7; }
-    .artifact-badge.downstream::before { content: "↓ "; opacity: 0.7; }
-
-    /* Progress bar - consistent with board cards */
-    .progress-container { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-    .progress-bar { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
-    .progress-fill { height: 100%; background: var(--accent-gradient); transition: width 0.3s ease; }
-    .progress-text { font-size: 12px; color: var(--vscode-descriptionForeground); font-weight: 500; }
-
-    /* Checklist */
-    .checklist-item { 
-      display: flex; 
-      align-items: center; 
-      gap: 12px; 
-      padding: 10px 0; 
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-      transition: background 0.1s ease;
-    }
-    .checklist-item:hover { background: rgba(255,255,255,0.02); margin: 0 -8px; padding: 10px 8px; border-radius: 4px; }
-    .checklist-item:last-child { border-bottom: none; }
-    .checklist-item .done { text-decoration: line-through; opacity: 0.5; }
-    .checklist-check { 
-      width: 18px; 
-      height: 18px; 
-      cursor: pointer;
-      accent-color: #667eea;
-    }
-    .empty-hint { color: var(--vscode-descriptionForeground); font-style: italic; font-size: 12px; }
-
-    /* Priority chips */
-    .priority-chip { padding: 2px 8px; border-radius: 999px; font-size: 10px; text-transform: uppercase; font-weight: 600; }
-    .priority-chip.high { background: rgba(239,68,68,0.15); color: var(--priority-high); }
-    .priority-chip.medium { background: rgba(245,158,11,0.15); color: var(--priority-medium); }
-    .priority-chip.low { background: rgba(34,197,94,0.15); color: var(--priority-low); }
-
+    .trace-date { font-size: 0.8rem; color: var(--vscode-descriptionForeground); margin-bottom: 4px; }
+    .trace-content { background: var(--vscode-textBlockQuote-background); padding: 10px; border-radius: 4px; }
+    .trace-content h3 { margin-top: 0; font-size: 1rem; }
+    
     /* Actions */
-    .actions { 
-      margin-top: 32px; 
-      padding-top: 24px;
-      border-top: 1px solid var(--card-border);
-      display: flex; 
-      gap: 12px; 
-      align-items: center; 
+    .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+    button {
+      padding: 6px 14px; border: none; border-radius: 4px; cursor: pointer;
+      background: var(--vscode-button-background); color: var(--vscode-button-foreground);
     }
-    .btn {
-      padding: 10px 20px; 
-      border: none; 
-      border-radius: 6px; 
-      font-weight: 600; 
-      cursor: pointer;
-      font-size: 13px;
-      transition: transform 0.1s ease, box-shadow 0.15s ease;
-    }
-    .btn:hover { transform: translateY(-1px); }
-    .btn:active { transform: translateY(0); }
-    .btn-save {
-      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-      color: white;
-    }
-    .btn-save:hover { box-shadow: 0 4px 12px rgba(34,197,94,0.4); }
-    .btn-delete { 
-      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
-      color: white;
-    }
-    .btn-delete:hover { box-shadow: 0 4px 12px rgba(239,68,68,0.4); }
-    .save-indicator { 
-      color: var(--status-in-progress); 
-      font-size: 12px; 
-      margin-left: auto; 
-      opacity: 0; 
-      transition: opacity 0.3s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .save-indicator.visible { opacity: 1; }
+    button:hover { background: var(--vscode-button-hoverBackground); }
+    button.delete { background: var(--status-blocked); }
   </style>
 </head>
 <body>
+  <div class="header">
+    <div class="header-top">
+      <input type="text" class="title-input" id="title" value="${task.title}" placeholder="Task Title">
+      <span class="badge badge-id">${task.id}</span>
+    </div>
+    <div class="header-row">
+      <select id="status">
+        ${this.renderStatusOptions(task.status)}
+      </select>
+      <select id="column">
+        ${columns.map(c => `<option value="${c.id}" ${c.id === task.columnId ? 'selected' : ''}>${c.name}</option>`).join('')}
+      </select>
+      <div style="flex:1"></div>
+      <div>Owner: <strong>${task.owner?.name || 'Unassigned'}</strong> (${task.owner?.type || '-'})</div>
+      <button id="saveBtn">Save</button>
+    </div>
+  </div>
+
   <div class="container">
-    <div class="title-row">
-      <div class="title-left">
-        <h1 contenteditable="true" id="title">${task.title}</h1>
-        <span class="task-id-chip">${task.id}</span>
-      </div>
-      <div class="title-right">
-        <span class="status-indicator" data-status="${task.status || 'ready'}"></span>
-        <span class="status-text">${statusLabel}</span>
-        <span class="meta-separator">|</span>
-        <span class="phase-text">${columnName}</span>
-      </div>
+    <div class="section">
+      <div class="section-title">Overview</div>
+      <textarea id="summary" class="summary-input" placeholder="Task summary...">${task.summary || ''}</textarea>
     </div>
 
-    <div class="card-section">
-      <label for="summary">Summary</label>
-      <textarea id="summary">${task.summary || ''}</textarea>
-    </div>
-
-    <div class="card-section">
-      <div class="row">
-        <div>
-          <label for="priority">Priority</label>
-          <select id="priority">
-            <option value="" ${!task.priority ? 'selected' : ''}>None</option>
-            <option value="high" ${task.priority === 'high' ? 'selected' : ''}>High</option>
-            <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>Medium</option>
-            <option value="low" ${task.priority === 'low' ? 'selected' : ''}>Low</option>
-          </select>
-        </div>
-        <div>
-          <label for="status">Status</label>
-          <select id="status">
-            <option value="ready" ${task.status === 'ready' || !task.status ? 'selected' : ''}>Ready</option>
-            <option value="agent_active" ${task.status === 'agent_active' ? 'selected' : ''}>Agent Active</option>
-            <option value="needs_feedback" ${task.status === 'needs_feedback' ? 'selected' : ''}>Needs Feedback</option>
-            <option value="blocked" ${task.status === 'blocked' ? 'selected' : ''}>Blocked</option>
-            <option value="done" ${task.status === 'done' ? 'selected' : ''}>Done</option>
-          </select>
-        </div>
-        <div>
-          <label for="column">Column</label>
-          <select id="column">
-            ${columns.map(c => `<option value="${c.id}" ${c.id === task.columnId ? 'selected' : ''}>${c.name}</option>`).join('')}
-          </select>
-        </div>
+    <div class="section">
+      <div class="section-title">Decision Trace (Live Activity)</div>
+      <div class="timeline">
+        ${parsedTrace || '<div style="padding:10px; color:var(--vscode-descriptionForeground)">No activity recorded yet.</div>'}
       </div>
     </div>
-
-    <div class="card-section">
-      <label for="tags">Tags (comma separated)</label>
-      <input type="text" id="tags" value="${(task.tags || []).join(', ')}">
-    </div>
-
-    <div class="card-section section">
-      <div class="section-header">
-        <h2>Linked Artifacts</h2>
-      </div>
-      <div class="artifact-row">
-        <label>Upstream (reads from)</label>
-        <div class="artifact-badges">${upstreamList}</div>
-      </div>
-      <div class="artifact-row">
-        <label>Downstream (produces)</label>
-        <div class="artifact-badges">${downstreamList}</div>
-      </div>
-    </div>
-
-    <div class="card-section section">
-      <div class="section-header">
-        <h2>Checklist</h2>
-        ${checklistTotal > 0 ? `<span class="progress-text">${checklistDone}/${checklistTotal}</span>` : ''}
-      </div>
-      ${checklistTotal > 0 ? `<div class="progress-container"><div class="progress-bar"><div class="progress-fill" style="width:${progressPercent}%"></div></div></div>` : ''}
-      <div id="checklist">${checklistHtml}</div>
-      <input type="text" id="newChecklistItem" placeholder="Add checklist item..." style="margin-top:12px;">
-    </div>
-
+    
     <div class="actions">
-      <button class="btn btn-save" id="saveBtn">Save</button>
-      <button class="btn btn-delete" id="deleteBtn">Delete</button>
-      <span class="save-indicator" id="saveIndicator">✓ Auto-saved</span>
+      <button class="delete" id="deleteBtn">Delete Task</button>
     </div>
   </div>
 
   <script>
     const vscode = acquireVsCodeApi();
-    let saveTimeout;
-    const saveIndicator = document.getElementById('saveIndicator');
-
-    function collectData() {
+    
+    function collect() {
       return {
-        title: document.getElementById('title').textContent.trim(),
-        summary: document.getElementById('summary').value,
-        priority: document.getElementById('priority').value || undefined,
+        title: document.getElementById('title').value,
         status: document.getElementById('status').value,
         columnId: document.getElementById('column').value,
-        tags: document.getElementById('tags').value.split(',').map(t => t.trim()).filter(Boolean),
+        summary: document.getElementById('summary').value
       };
     }
 
-    function triggerSave() {
-      clearTimeout(saveTimeout);
-      saveTimeout = setTimeout(() => {
-        vscode.postMessage({ type: 'update', data: collectData() });
-        saveIndicator.classList.add('visible');
-        setTimeout(() => saveIndicator.classList.remove('visible'), 2000);
-      }, 500);
-    }
-
-    // Auto-save on input changes
-    document.getElementById('title').addEventListener('input', triggerSave);
-    document.getElementById('summary').addEventListener('input', triggerSave);
-    document.getElementById('priority').addEventListener('change', triggerSave);
-    document.getElementById('status').addEventListener('change', triggerSave);
-    document.getElementById('column').addEventListener('change', triggerSave);
-    document.getElementById('tags').addEventListener('input', triggerSave);
-
-    // Save button - save without closing
     document.getElementById('saveBtn').addEventListener('click', () => {
-      vscode.postMessage({ type: 'update', data: collectData() });
-      saveIndicator.textContent = '✓ Saved';
-      saveIndicator.classList.add('visible');
-      setTimeout(() => saveIndicator.classList.remove('visible'), 2000);
+      vscode.postMessage({ type: 'save', data: collect() });
     });
 
-    // Delete button - confirmation handled in extension host
-    const deleteBtn = document.getElementById('deleteBtn');
-    if (deleteBtn) {
-      deleteBtn.addEventListener('click', () => {
-        vscode.postMessage({ type: 'delete' });
-      });
-    }
+    document.getElementById('deleteBtn').addEventListener('click', () => {
+      vscode.postMessage({ type: 'delete' });
+    });
 
-    // New checklist item
-    document.getElementById('newChecklistItem').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter' && e.target.value.trim()) {
-        // TODO: Add checklist item via postMessage
-        e.target.value = '';
-      }
+    // Auto-save debounced
+    let timeout;
+    const inputs = ['title', 'status', 'column', 'summary'];
+    inputs.forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          vscode.postMessage({ type: 'update', data: collect() });
+        }, 1000);
+      });
     });
   </script>
 </body>
 </html>`;
   }
-}
 
-/**
- * Open a task in a new editor tab.
- */
-export async function openTaskInEditor(taskId: string): Promise<void> {
-  const uri = vscode.Uri.parse(`devops-task:/task/${taskId}`);
-  await vscode.commands.executeCommand('vscode.openWith', uri, TaskEditorProvider.viewType);
+  private renderStatusOptions(current?: string): string {
+    const statuses = ['ready', 'agent_active', 'in_progress', 'needs_feedback', 'blocked', 'done'];
+    return statuses.map(s =>
+      `<option value="${s}" ${s === current ? 'selected' : ''}>${s.replace('_', ' ').toUpperCase()}</option>`
+    ).join('');
+  }
+
+  private parseTraceMarkdown(md: string): string {
+    if (!md) return '';
+
+    // Simple parser: Split by double newline or header
+    // Ideally we want to identify "blocks"
+    // Heuristic: ## Headers start new items. Bullet points in between.
+
+    const lines = md.split('\n');
+    let html = '';
+    let inItem = false;
+
+    lines.forEach(line => {
+      if (line.startsWith('# ')) {
+        // Main Header - ignore or special style
+      } else if (line.startsWith('> Created:')) {
+        html += `<div class="trace-date">${line.replace('> Created:', '').trim()}</div>`;
+      } else if (line.startsWith('## ') || line.startsWith('### ')) {
+        if (inItem) { html += '</div></div>'; }
+        html += `<div class="trace-item"><div class="trace-content"><h3>${line.replace(/#+\s/, '')}</h3>`;
+        inItem = true;
+      } else if (line.trim().startsWith('- ')) {
+        if (!inItem) {
+          // Orphan bullets
+          html += `<div class="trace-item"><div class="trace-content">`;
+          inItem = true;
+        }
+        html += `<li>${line.replace('- ', '')}</li>`;
+      } else {
+        if (inItem && line.trim()) { html += `<p>${line}</p>`; }
+      }
+    });
+
+    if (inItem) { html += '</div></div>'; }
+    return html;
+  }
 }
