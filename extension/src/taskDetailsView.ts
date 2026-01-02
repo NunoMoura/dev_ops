@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { getFontLink, getSharedStyles, getCSPMeta } from './ui/styles';
 
 /**
  * Payload type for passing task data to/from the Task Details webview.
@@ -86,101 +87,32 @@ export function registerTaskDetailsView(context: vscode.ExtensionContext): Board
 }
 
 function getCardHtml(): string {
+  // Use shared design system + task-details specific styles
   const styles = /* HTML */ `
-    <style>
-      :root {
-        color-scheme: var(--vscode-colorScheme);
-      }
-      body {
-        font-family: var(--vscode-font-family);
-        font-size: var(--vscode-font-size);
-        margin: 0;
-        padding: 12px;
-        color: var(--vscode-foreground);
-        background: var(--vscode-sideBar-background);
-      }
-      h2 {
-        font-size: 16px;
-        margin: 0 0 12px 0;
-      }
-      label {
-        display: block;
-        font-size: 12px;
-        font-weight: 600;
-        margin-bottom: 4px;
-      }
-      input[type='text'],
-      textarea,
-      select {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 6px;
-        border-radius: 4px;
-        border: 1px solid var(--vscode-input-border, transparent);
-        background: var(--vscode-input-background);
-        color: var(--vscode-input-foreground);
-        margin-bottom: 12px;
-      }
-      textarea {
-        min-height: 80px;
-        resize: vertical;
-      }
+    \u003cstyle\u003e
+      /* Task-Details Specific Styles */
       .row {
         display: flex;
-        gap: 8px;
+        gap: var(--space-md);
       }
-      .row > div {
+      .row \u003e div {
         flex: 1;
       }
       .actions {
         display: flex;
-        gap: 8px;
-        margin-top: 8px;
-      }
-      button {
-        border: none;
-        border-radius: 4px;
-        padding: 8px;
-        cursor: pointer;
-        font-weight: 600;
+        gap: var(--space-md);
+        margin-top: var(--space-md);
       }
       .actions button {
         flex: 1;
       }
-      .primary-btn {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        color: white;
-        border: none;
-        border-radius: 6px;
-        padding: 10px 16px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: opacity 0.15s ease, transform 0.1s ease;
-      }
-      .primary-btn:hover {
-        opacity: 0.9;
-        transform: translateY(-1px);
-      }
-      #deleteBtn {
-        background: transparent;
-        color: #ef4444;
-        border: 1px solid #ef4444;
-        border-radius: 6px;
-        padding: 10px 16px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: opacity 0.15s ease, background 0.15s ease;
-      }
-      #deleteBtn:hover {
-        background: rgba(239, 68, 68, 0.1);
-      }
       .save-indicator {
         text-align: center;
-        font-size: 11px;
+        font-size: var(--text-sm);
         color: var(--vscode-descriptionForeground);
-        padding: 4px;
+        padding: var(--space-xs);
         opacity: 0;
-        transition: opacity 0.3s ease;
+        transition: opacity var(--transition-slow) ease;
       }
       .save-indicator.visible {
         opacity: 1;
@@ -193,76 +125,72 @@ function getCardHtml(): string {
       .checkbox-row {
         display: flex;
         align-items: center;
-        gap: 6px;
-        margin-bottom: 12px;
+        gap: var(--space-sm);
+        margin-bottom: var(--space-lg);
       }
       .checkbox-row label {
         margin: 0;
-        font-weight: 400;
+        font-weight: var(--weight-normal);
       }
       .feature-section {
-        margin-top: 16px;
-        padding-top: 12px;
+        margin-top: var(--space-xl);
+        padding-top: var(--space-lg);
       }
       .feature-section h3 {
-        font-size: 12px;
-        font-weight: 600;
-        margin-bottom: 8px;
-        color: var(--vscode-foreground);
+        font-size: var(--text-lg);
+        font-weight: var(--weight-semibold);
+        margin-bottom: var(--space-md);
       }
       .section-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 6px;
+        margin-bottom: var(--space-sm);
       }
       .section-header h3 {
-        font-size: 14px;
         margin: 0;
-      }
-      .ghost-button {
-        border: 1px dashed var(--vscode-input-border, var(--vscode-descriptionForeground));
-        background: transparent;
-        color: var(--vscode-foreground);
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
       }
       .feature-task-list {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: var(--space-lg);
       }
       .feature-task-card {
-        border: 1px solid var(--vscode-input-border, rgba(255, 255, 255, 0.1));
-        border-radius: 6px;
-        padding: 10px;
-        background: var(--vscode-sideBarSectionHeader-background, rgba(255, 255, 255, 0.02));
+        border: 1px solid var(--border-normal);
+        border-radius: 8px;
+        padding: var(--space-lg);
+        background: var(--vscode-editor-background);
+        box-shadow: var(--shadow-sm);
+        transition: all var(--transition-normal) ease;
+      }
+      .feature-task-card:hover {
+        box-shadow: var(--shadow-md);
+        border-color: var(--border-strong);
       }
       .feature-task-header {
         display: flex;
-        gap: 8px;
+        gap: var(--space-md);
       }
       .feature-task-header input {
         flex: 1;
         margin-bottom: 0;
       }
       .feature-task-progress {
-        font-size: 12px;
+        font-size: var(--text-base);
         color: var(--vscode-descriptionForeground);
-        margin: 6px 0;
+        margin: var(--space-sm) 0;
       }
       .feature-task-summary textarea {
         min-height: 60px;
       }
       .feature-task-items {
-        margin-top: 8px;
+        margin-top: var(--space-md);
       }
       .item-row {
         display: flex;
-        gap: 6px;
+        gap: var(--space-sm);
         align-items: center;
-        margin-bottom: 6px;
+        margin-bottom: var(--space-sm);
       }
       .item-row input {
         flex: 1;
@@ -273,109 +201,136 @@ function getCardHtml(): string {
         margin-bottom: 0;
       }
       .icon-button {
-        border: 1px solid var(--vscode-input-border, transparent);
+        border: 1px solid var(--border-subtle);
         background: transparent;
         color: var(--vscode-descriptionForeground);
-        padding: 0 6px;
+        padding: 0 var(--space-sm);
         border-radius: 4px;
         flex: 0;
+        cursor: pointer;
+        transition: all var(--transition-fast) ease;
+      }
+      .icon-button:hover {
+        border-color: var(--border-normal);
+        background: rgba(255, 255, 255, 0.05);
       }
       .icon-button.danger {
-        color: var(--vscode-errorForeground);
+        color: var(--status-blocked);
+        border-color: var(--status-blocked);
+      }
+      .icon-button.danger:hover {
+        background: rgba(239, 68, 68, 0.1);
       }
       .feature-empty {
-        font-size: 12px;
+        font-size: var(--text-base);
         color: var(--vscode-descriptionForeground);
         text-align: center;
-        padding: 8px;
-        border: 1px dashed var(--vscode-input-border, rgba(255, 255, 255, 0.1));
+        padding: var(--space-md);
+        border: 1px dashed var(--border-subtle);
         border-radius: 4px;
       }
       .section-hint {
-        font-size: 12px;
+        font-size: var(--text-base);
         color: var(--vscode-descriptionForeground);
-        margin: 0 0 8px 0;
+        margin: 0 0 var(--space-md) 0;
+        opacity: 0.85;
       }
       .inline-actions {
         display: flex;
-        gap: 8px;
+        gap: var(--space-md);
         justify-content: flex-end;
-        margin-top: 8px;
+        margin-top: var(--space-md);
       }
       /* Artifact badges */
       .artifacts-section {
-        margin-top: 12px;
-        padding-top: 4px;
+        margin-top: var(--space-lg);
+        padding-top: var(--space-xs);
       }
       .artifacts-section label {
-        font-size: 11px;
-        margin-bottom: 4px;
+        font-size: var(--text-sm);
+        margin-bottom: var(--space-xs);
       }
       .artifact-list {
         display: flex;
         flex-wrap: wrap;
-        gap: 4px;
-        margin-bottom: 8px;
+        gap: var(--space-xs);
+        margin-bottom: var(--space-md);
         min-height: 24px;
       }
       .artifact-badge {
-        background: rgba(102, 126, 234, 0.15);
-        border: 1px solid rgba(102, 126, 234, 0.3);
+        background: rgba(102, 126, 234, 0.12);
+        border: 1px solid rgba(102, 126, 234, 0.25);
         border-radius: 4px;
-        padding: 2px 8px;
-        font-size: 11px;
+        padding: 2px var(--space-md);
+        font-size: var(--text-sm);
         color: #a5b4fc;
         display: inline-flex;
         align-items: center;
-        gap: 4px;
+        gap: var(--space-xs);
       }
       .artifact-badge.upstream::before { content: "↑"; opacity: 0.7; }
       .artifact-badge.downstream::before { content: "↓"; opacity: 0.7; }
       .artifact-badge .remove-btn {
         background: none;
         border: none;
-        color: #ef4444;
+        color: var(--status-blocked);
         cursor: pointer;
-        font-size: 14px;
+        font-size: var(--text-lg);
         padding: 0 2px;
         line-height: 1;
       }
       .add-artifact-btn {
         background: transparent;
-        border: 1px dashed rgba(102, 126, 234, 0.4);
+        border: 1px dashed rgba(102, 126, 234, 0.3);
         border-radius: 4px;
-        padding: 2px 8px;
-        font-size: 11px;
+        padding: 2px var(--space-md);
+        font-size: var(--text-sm);
         color: #a5b4fc;
         cursor: pointer;
+        transition: all var(--transition-fast) ease;
       }
       .add-artifact-btn:hover {
-        background: rgba(102, 126, 234, 0.1);
+        background: rgba(102, 126, 234, 0.08);
+        border-color: rgba(102, 126, 234, 0.4);
       }
-      /* Status header colors */
-      .status-header {
-        display: flex;
-        justify-content: space-between;
+      /* Status indicator at top */
+      .status-indicator {
+        display: inline-flex;
         align-items: center;
-        padding: 8px;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-lg);
         border-radius: 6px;
-        margin-bottom: 12px;
-        border-left: 4px solid #6b7280;
+        font-size: var(--text-sm);
+        font-weight: var(--weight-medium);
+        margin-bottom: var(--space-lg);
+        border-left: 4px solid var(--border-subtle);
       }
-      .status-header[data-status="ready"] { border-left-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
-      .status-header[data-status="agent_active"] { border-left-color: #22c55e; background: rgba(34, 197, 94, 0.1); }
-      .status-header[data-status="needs_feedback"] { border-left-color: #f97316; background: rgba(249, 115, 22, 0.1); }
-      .status-header[data-status="blocked"] { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
-      .status-header[data-status="done"] { border-left-color: #6b7280; background: rgba(107, 114, 128, 0.1); }
-      .status-header .task-id {
-        font-weight: 600;
-        color: var(--vscode-foreground);
+      .status-indicator[data-status="ready"] {
+        border-left-color: var(--status-ready);
+        background: rgba(59, 130, 246, 0.08);
+        color: var(--status-ready);
       }
-      .status-header .status-label {
-        font-size: 11px;
-        color: var(--vscode-descriptionForeground);
+      .status-indicator[data-status="agent_active"] {
+        border-left-color: var(--status-agent-active);
+        background: rgba(34, 197, 94, 0.08);
+        color: var(--status-agent-active);
       }
-    </style>
+      .status-indicator[data-status="needs_feedback"] {
+        border-left-color: var(--status-needs-feedback);
+        background: rgba(249, 115, 22, 0.08);
+        color: var(--status-needs-feedback);
+      }
+      .status-indicator[data-status="blocked"] {
+        border-left-color: var(--status-blocked);
+        background: rgba(239, 68, 68, 0.08);
+        color: var(--status-blocked);
+      }
+      .status-indicator[data-status="done"] {
+        border-left-color: var(--status-done);
+        background: rgba(107, 114, 128, 0.08);
+        color: var(--status-done);
+      }
+    \u003c/style\u003e
   `;
 
   const script = /* HTML */ `
@@ -775,30 +730,22 @@ function getCardHtml(): string {
         <div class="feature-section">
           <div class="section-header">
             <h3>Checklist</h3>
-            <button id="addFeatureTask" type="button" class="ghost-button">Add Checklist Task</button>
+            <button id="addFeatureTask" type="button" class="btn-ghost btn-small">Add Checklist Task</button>
           </div>
           <p class="section-hint">Use the checklist to track progress without confusing parent tasks.</p>
           <div id="featureTasksContainer" class="feature-task-list"></div>
         </div>
 
         <div class="actions">
-          <button id="saveBtn" type="button" class="primary-btn">Save</button>
-          <button id="deleteBtn" type="button">Delete Task</button>
+          <button id="saveBtn" type="button" class="btn-ghost">Save</button>
+          <button id="deleteBtn" type="button" class="btn-danger">Delete Task</button>
         </div>
         <div id="saveIndicator" class="save-indicator"></div>
       </form>
     </body>
   `;
 
-  const baseStyles = /* HTML */ `
-    <style>
-      .hidden {
-        display: none;
-      }
-    </style>
-  `;
 
-  const cspMeta =
-    "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; img-src vscode-resource: data:; script-src 'unsafe-inline'; style-src 'unsafe-inline';\" />";
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" />${cspMeta}${styles}${baseStyles}</head>${body}${script}</html>`;
+  // Assemble the final HTML with shared design system
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" />${getCSPMeta()}${getFontLink()}${getSharedStyles()}${styles}</head>${body}${script}</html>`;
 }

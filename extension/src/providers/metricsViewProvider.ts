@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { readBoard } from '../features/boardStore';
 import { Board } from '../features/types';
+import { getFontLink, getSharedStyles, getCSPMeta } from '../ui/styles';
 
 export class MetricsViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'devopsMetricsView';
@@ -45,7 +46,7 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
         }
     }
 
-    private _getHtmlForWebview(webview: vscode.Webview, board: Board) {
+    private _getHtmlForWebview(webview: vscode.Webview, board: Board): string {
         // Calculate Metrics
         const totals = {
             activeAgents: 0,
@@ -87,90 +88,137 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
             }
         }
 
-        const nonce = getNonce();
-
         return `<!DOCTYPE html>
             <html lang="en">
             <head>
                 <meta charset="UTF-8">
-                <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
+                ${getCSPMeta()}
+                ${getFontLink()}
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>Metrics</title>
+                ${getSharedStyles()}
                 <style>
-                    body { font-family: var(--vscode-font-family); padding: 10px; color: var(--vscode-foreground); }
-                    .metric-row { display: flex; justify-content: space-between; margin-bottom: 15px; }
-                    .card { 
-                        background: var(--vscode-editor-background); 
-                        border: 1px solid var(--vscode-widget-border); 
-                        border-radius: 4px; 
-                        padding: 10px; 
-                        flex: 1; 
-                        margin: 0 5px; 
-                        text-align: center;
+                    /* Metrics-specific styles */
+                    .metric-row { 
+                        display: flex; 
+                        justify-content: space-between; 
+                        gap: var(--space-md);
+                        margin-bottom: var(--space-lg); 
                     }
-                    .card:first-child { margin-left: 0; }
-                    .card:last-child { margin-right: 0; }
-                    .big-number { font-size: 2em; font-weight: bold; display: block; }
-                    .label { font-size: 0.8em; opacity: 0.8; text-transform: uppercase; }
-                    
-                    .active { color: var(--vscode-charts-yellow); }
-                    .attention { color: var(--vscode-charts-red); }
-                    .velocity { color: var(--vscode-charts-green); }
+                    .metric-card { 
+                        background: var(--vscode-editor-background); 
+                        border: 1px solid var(--border-normal); 
+                        border-radius: 8px; 
+                        padding: var(--space-xl); 
+                        flex: 1; 
+                        text-align: center;
+                        box-shadow: var(--shadow-md);
+                        transition: all var(--transition-normal) ease;
+                    }
+                    .metric-card:hover {
+                        box-shadow: var(--shadow-lg);
+                        transform: translateY(-2px);
+                        border-color: var(--border-strong);
+                    }
+                    .big-number { 
+                        font-size: 2.5em; 
+                        font-weight: var(--weight-bold); 
+                        display: block; 
+                        margin-bottom: var(--space-sm);
+                        color: var(--vscode-foreground);
+                    }
+                    .metric-label { 
+                        font-size: var(--text-xs); 
+                        font-weight: var(--weight-medium);
+                        opacity: 0.85; 
+                        text-transform: uppercase; 
+                        letter-spacing: 0.05em;
+                        color: var(--vscode-descriptionForeground);
+                    }
 
-                    .sparkline { margin-top: 20px; }
-                    .sparkline-row { display: flex; align-items: center; margin-bottom: 5px; font-size: 0.9em; }
-                    .bar-container { flex: 1; height: 8px; background: var(--vscode-widget-shadow); border-radius: 4px; margin-left: 10px; overflow: hidden; }
-                    .bar { height: 100%; background: var(--vscode-charts-blue); }
+                    .sparkline { 
+                        margin-top: var(--space-2xl);
+                        padding-top: var(--space-xl);
+                        border-top: 1px solid var(--border-subtle);
+                    }
+                    .sparkline-header {
+                        font-size: var(--text-xs);
+                        font-weight: var(--weight-medium);
+                        text-transform: uppercase;
+                        letter-spacing: 0.05em;
+                        margin-bottom: var(--space-lg);
+                        color: var(--vscode-descriptionForeground);
+                    }
+                    .sparkline-row { 
+                        display: flex; 
+                        align-items: center; 
+                        margin-bottom: var(--space-md); 
+                        font-size: var(--text-base); 
+                    }
+                    .sparkline-label {
+                        width: 40px;
+                        font-weight: var(--weight-medium);
+                    }
+                    .bar-container { 
+                        flex: 1; 
+                        height: 6px; 
+                        background: rgba(255, 255, 255, 0.06); 
+                        border-radius: 3px; 
+                        margin: 0 var(--space-lg);
+                        overflow: hidden; 
+                    }
+                    .bar { 
+                        height: 100%; 
+                        background: linear-gradient(90deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+                        transition: width var(--transition-slow) ease;
+                        border-radius: 3px;
+                    }
+                    .bar-value {
+                        width: 30px;
+                        text-align: right;
+                        font-weight: var(--weight-medium);
+                    }
                 </style>
             </head>
             <body>
                 <div class="metric-row">
-                    <div class="card">
-                        <span class="big-number active">${totals.activeAgents}</span>
-                        <span class="label">Agents</span>
+                    <div class="metric-card">
+                        <span class="big-number">${totals.activeAgents}</span>
+                        <span class="metric-label">Active Agents</span>
                     </div>
-                    <div class="card">
-                        <span class="big-number attention">${totals.needsAttention}</span>
-                        <span class="label">Attention</span>
+                    <div class="metric-card">
+                        <span class="big-number">${totals.needsAttention}</span>
+                        <span class="metric-label">Needs Attention</span>
                     </div>
                 </div>
 
                 <div class="metric-row">
-                    <div class="card">
-                        <span class="big-number velocity">${totals.doneLast24h}</span>
-                        <span class="label">Velocity (24h)</span>
+                    <div class="metric-card">
+                        <span class="big-number">${totals.doneLast24h}</span>
+                        <span class="metric-label">Velocity (24h)</span>
                     </div>
                 </div>
 
                 <div class="sparkline">
-                    <div class="label" style="margin-bottom: 10px;">Phase Distribution</div>
-                    ${this.renderBar('Und', totals.phases.Und, 10)}
-                    ${this.renderBar('Pln', totals.phases.Pln, 10)}
-                    ${this.renderBar('Bld', totals.phases.Bld, 10)}
-                    ${this.renderBar('Ver', totals.phases.Ver, 10)}
+                    <div class="sparkline-header">Phase Distribution</div>
+                    ${this.renderBar('Understand', totals.phases.Und, 10)}
+                    ${this.renderBar('Plan', totals.phases.Pln, 10)}
+                    ${this.renderBar('Build', totals.phases.Bld, 10)}
+                    ${this.renderBar('Verify', totals.phases.Ver, 10)}
                 </div>
             </body>
             </html>`;
     }
 
-    private renderBar(label: string, value: number, max: number) {
+    private renderBar(label: string, value: number, max: number): string {
         const pct = Math.min((value / max) * 100, 100);
         return `
         <div class="sparkline-row">
-            <span style="width: 30px">${label}</span>
+            <span class="sparkline-label">${label}</span>
             <div class="bar-container">
                 <div class="bar" style="width: ${pct}%"></div>
             </div>
-            <span style="width: 20px; text-align: right;">${value}</span>
+            <span class="bar-value">${value}</span>
         </div>`;
     }
-}
-
-function getNonce() {
-    let text = '';
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    for (let i = 0; i < 32; i++) {
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
-    }
-    return text;
 }

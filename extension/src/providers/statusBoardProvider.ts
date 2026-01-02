@@ -83,7 +83,7 @@ export class StatusBoardProvider implements vscode.TreeDataProvider<StatusBoardN
                     kind: 'group',
                     id: 'active',
                     label: 'Active Agents',
-                    icon: new vscode.ThemeIcon('zap', new vscode.ThemeColor('charts.yellow')), // Yellow/Green for active
+                    icon: new vscode.ThemeIcon('zap', new vscode.ThemeColor('charts.green')), // Green to match board cards
                     tasks: tasks.filter(t => t.status === 'agent_active')
                 },
                 {
@@ -122,10 +122,11 @@ export class StatusBoardProvider implements vscode.TreeDataProvider<StatusBoardN
             return new vscode.ThemeIcon('circle-outline');
         }
         switch (status) {
-            case 'blocked': return new vscode.ThemeIcon('stop', new vscode.ThemeColor('charts.red'));
-            case 'agent_active': return new vscode.ThemeIcon('zap', new vscode.ThemeColor('charts.yellow'));
+            case 'ready': return new vscode.ThemeIcon('play-circle', new vscode.ThemeColor('charts.blue'));
+            case 'agent_active': return new vscode.ThemeIcon('zap', new vscode.ThemeColor('charts.green'));
             case 'needs_feedback': return new vscode.ThemeIcon('bell', new vscode.ThemeColor('charts.orange'));
-            case 'done': return new vscode.ThemeIcon('check', new vscode.ThemeColor('charts.green'));
+            case 'blocked': return new vscode.ThemeIcon('stop', new vscode.ThemeColor('charts.red'));
+            case 'done': return new vscode.ThemeIcon('check'); // Gray/neutral - no color
             default: return new vscode.ThemeIcon('circle-outline');
         }
     }
