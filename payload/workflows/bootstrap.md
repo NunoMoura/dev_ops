@@ -11,7 +11,7 @@ Run this **ONCE** after initialization to generate project-specific rules.
 Run the detection script to analyze your project:
 
 ```bash
-python3 installer/project_ops.py detect --target .
+python3 scripts/project_ops.py detect --target .
 ```
 
 This will show detected languages, linters, and frameworks.
@@ -25,6 +25,7 @@ Using the detection output above, generate rules in `.agent/rules/`:
 3. For each detected **library**, read `payload/templates/rules/libraries.md`
 
 Create files following the template instructions:
+
 - Naming: `language_<name>.md`, `linter_<name>.md`, `library_<name>.md`
 - Include proper frontmatter (activation_mode, name, globs)
 - Customize based on actual project patterns
@@ -39,6 +40,7 @@ cat payload/templates/docs/constitution.md
 ```
 
 Create `.dev_ops/docs/constitution.md` customized for this project:
+
 - Project size and architecture
 - Observable technical decisions
 - Development workflow patterns
