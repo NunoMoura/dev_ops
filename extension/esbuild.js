@@ -43,6 +43,23 @@ function copyAssets() {
 	copyDir(path.join(projectRoot, 'payload', 'workflows'), path.join(assetsDir, 'workflows'));
 	copyDir(path.join(projectRoot, 'payload', 'templates'), path.join(assetsDir, 'templates'));
 	copyDir(path.join(projectRoot, 'payload', 'scripts'), path.join(assetsDir, 'scripts'));
+
+	// Copy setup_ops.py from installer to scripts directory
+	const setupOpsSource = path.join(projectRoot, 'installer', 'setup_ops.py');
+	const setupOpsDest = path.join(assetsDir, 'scripts', 'setup_ops.py');
+	if (fs.existsSync(setupOpsSource)) {
+		fs.copyFileSync(setupOpsSource, setupOpsDest);
+		console.log('[assets] Copied setup_ops.py from installer');
+	}
+
+	// Also copy project_ops.py dependency
+	const projectOpsSource = path.join(projectRoot, 'installer', 'project_ops.py');
+	const projectOpsDest = path.join(assetsDir, 'scripts', 'project_ops.py');
+	if (fs.existsSync(projectOpsSource)) {
+		fs.copyFileSync(projectOpsSource, projectOpsDest);
+		console.log('[assets] Copied project_ops.py from installer');
+	}
+
 	console.log('[assets] Assets copied successfully');
 }
 
