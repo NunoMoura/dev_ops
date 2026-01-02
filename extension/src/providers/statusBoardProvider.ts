@@ -77,7 +77,7 @@ export class StatusBoardProvider implements vscode.TreeDataProvider<StatusBoardN
                     id: 'attention',
                     label: 'Needs Attention',
                     icon: new vscode.ThemeIcon('alert', new vscode.ThemeColor('charts.red')),
-                    tasks: tasks.filter(t => ['blocked', 'needs_feedback'].includes(t.status))
+                    tasks: tasks.filter(t => t.status && ['blocked', 'needs_feedback'].includes(t.status))
                 },
                 {
                     kind: 'group',
@@ -118,7 +118,9 @@ export class StatusBoardProvider implements vscode.TreeDataProvider<StatusBoardN
     }
 
     private getTaskIcon(status: string | undefined): vscode.ThemeIcon {
-        if (!status) return new vscode.ThemeIcon('circle-outline');
+        if (!status) {
+            return new vscode.ThemeIcon('circle-outline');
+        }
         switch (status) {
             case 'blocked': return new vscode.ThemeIcon('stop', new vscode.ThemeColor('charts.red'));
             case 'agent_active': return new vscode.ThemeIcon('zap', new vscode.ThemeColor('charts.yellow'));

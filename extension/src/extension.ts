@@ -46,11 +46,30 @@ export async function activate(context: vscode.ExtensionContext) {
     const services = await initializeDevOpsServices(context);
     log('[Activation] Step 3 complete');
 
-    // Check for initialization
+    // Check for initialization and prompt if needed
     const initialized = await isProjectInitialized();
     if (!initialized) {
-      log('[Activation] Project not initialized');
+      log('[Activation] Project not initialized - prompting user');
       services.statusBar.showUninitialized();
+
+      // Prompt user to initialize
+      const choice = await vscode.window.showInformationMessage(
+        'DevOps Framework: This workspace is not initialized. Would you like to set it up now?',
+        'Initialize Now',
+        'Not Now'
+      );
+
+      if (choice === 'Initialize Now') {
+        await vscode.commands.executeCommand('devops.initialize');
+        // Refresh views after initialization
+        try {
+          await services.provider.refresh();
+          services.statusBoard.refresh();
+          services.metricsView.updateContent();
+        } catch (error) {
+          warn(`Board refresh after initialization failed: ${error}`);
+        }
+      }
     }
 
     log('[Activation] Step 4: Binding views');

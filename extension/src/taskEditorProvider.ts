@@ -115,7 +115,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
   private async getTraceFilePath(taskId: string): Promise<string | undefined> {
     const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (!workspaceFolders) return undefined;
+    if (!workspaceFolders) { return undefined; }
     // Assuming single root for now or first root containing .dev_ops
     const root = workspaceFolders[0].uri.fsPath; // Simplification, robust logic is in boardStore
     return path.join(root, '.dev_ops', 'activity', `${taskId}.md`);
@@ -342,7 +342,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
   }
 
   private parseTraceMarkdown(md: string): string {
-    if (!md) return '';
+    if (!md) { return ''; }
 
     // Simple parser: Split by double newline or header
     // Ideally we want to identify "blocks"
