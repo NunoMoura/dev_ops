@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { Board, Task } from '../api/boardApi';
+import { Board, Task } from '../features/types';
 
 /**
  * Current Task Provider - Shows active task context and phase guidance
@@ -80,7 +80,7 @@ export class CurrentTaskProvider implements vscode.WebviewViewProvider {
     // Find task claimed by current user/agent
     // For now, just find first task with an owner
     // TODO: Filter by actual current agent session
-    this._currentTask = this._board.items.find((t: Task) => t.owner !== undefined);
+    this._currentTask = this._board.items.find((t: any) => t.owner !== undefined);
   }
 
   private async _getPhaseGuidance(): Promise<string> {
@@ -134,7 +134,7 @@ export class CurrentTaskProvider implements vscode.WebviewViewProvider {
 
     const column = this._board?.columns.find((c: any) => c.id === task.columnId);
     const phaseName = column?.name || 'Unknown';
-    const ownerName = task.owner?.name || 'Unclaimed';
+    const ownerName = (task as any).owner?.name || 'Unclaimed';
 
     // Get linked artifacts - for now, empty until we add this to Task interface
     const artifacts: Array<{ id: string; path: string }> = [];

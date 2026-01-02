@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Board, Task } from '../api/boardApi';
+import { Board, Task } from '../features/types';
 
 /**
  * Task List Provider - Tree view of tasks grouped by phase
@@ -74,7 +74,7 @@ export class TaskListProvider implements vscode.TreeDataProvider<TaskListItem> {
 
         return tasks.map(task => {
             const icon = this._getTaskIcon(task);
-            const ownerInfo = task.owner ? ` 👤 ${task.owner.name}` : '';
+            const ownerInfo = (task as any).owner ? ` 👤 ${(task as any).owner.name}` : '';
             const label = `${icon} ${task.id}: ${task.title}${ownerInfo}`;
 
             const item = new TaskListItem(

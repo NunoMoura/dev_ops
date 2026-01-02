@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Board, Task } from '../api/boardApi';
+import { Board, Task } from '../features/types';
 
 /**
  * Board Overview Provider - Shows high-level metrics and active agents
@@ -251,7 +251,7 @@ export class BoardOverviewProvider implements vscode.WebviewViewProvider {
     const seenAgents = new Set<string>();
 
     // Find all tasks with active owners
-    board.items.forEach(task => {
+    board.items.forEach((task: any) => {
       if (task.owner && task.owner.type === 'agent') {
         const agentKey = `${task.owner.name}-${task.owner.sessionId || ''}`;
         if (!seenAgents.has(agentKey)) {
