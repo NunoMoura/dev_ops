@@ -631,18 +631,15 @@ def bootstrap(target_dir: str):
                 )
                 print(f"   - Installed {file}")
 
-    # Install constitution.md to .agent/ root
+    # Install constitution.md template to .dev_ops/docs/ (referenced by dev_ops_guide.md rule)
     constitution_src = os.path.join(
         FRAMEWORK_ROOT, "payload", "templates", "docs", "constitution.md"
     )
     if os.path.exists(constitution_src):
-        print("\n📜 Installing constitution.md...")
-        os.makedirs(AGENT_DIR, exist_ok=True)
-        constitution_dest = os.path.join(AGENT_DIR, "constitution.md")
-        shutil.copy2(constitution_src, constitution_dest)
-        print(
-            f"   - Installed constitution.md to {os.path.relpath(constitution_dest, PROJECT_ROOT)}"
-        )
+        constitution_dest = os.path.join(DEVOPS_DOCS_DIR, "constitution.md")
+        if not os.path.exists(constitution_dest):
+            shutil.copy2(constitution_src, constitution_dest)
+            print(f"   📜 Created constitution.md template in docs/")
 
     # Install GitHub Actions Workflows (only PR triage)
     GITHUB_SRC_DIR = os.path.join(FRAMEWORK_ROOT, ".github", "workflows")
