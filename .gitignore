@@ -58,3 +58,4 @@ venv/
 !.agent
 !.agent/**
 !.github/
+.dev_ops/
