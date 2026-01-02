@@ -145,11 +145,6 @@
         "icon": "$(refresh)"
       },
       {
-        "command": "devops.refreshDocs",
-        "title": "DevOps: Refresh Docs View",
-        "icon": "$(refresh)"
-      },
-      {
         "command": "devops.spawnAgent",
         "title": "DevOps: Spawn Agent",
         "icon": "$(play)"
@@ -170,34 +165,9 @@
         "icon": "$(edit)"
       },
       {
-        "command": "devops.createUser",
-        "title": "DevOps: Create User Persona",
-        "icon": "$(person)"
-      },
-      {
-        "command": "devops.createStory",
-        "title": "DevOps: Create User Story",
-        "icon": "$(note)"
-      },
-      {
         "command": "devops.deleteTask",
         "title": "DevOps: Delete Task",
         "icon": "$(trash)"
-      },
-      {
-        "command": "devops.newArchDoc",
-        "title": "DevOps: New Architecture Doc",
-        "icon": "$(file-add)"
-      },
-      {
-        "command": "devops.newUserStory",
-        "title": "DevOps: New User Story",
-        "icon": "$(note)"
-      },
-      {
-        "command": "devops.newMockup",
-        "title": "DevOps: New Mockup",
-        "icon": "$(file-media)"
       },
       {
         "command": "devops.launchAntigravitySession",
@@ -252,19 +222,24 @@
     "views": {
       "devops": [
         {
-          "id": "devopsDashboardView",
-          "name": "Dashboard",
+          "id": "devopsBoardOverview",
+          "name": "Board Overview",
           "icon": "$(dashboard)"
         },
         {
-          "id": "devopsDocsView",
-          "name": "Docs",
-          "icon": "$(book)"
+          "id": "devopsTaskList",
+          "name": "Tasks",
+          "icon": "$(checklist)"
         },
         {
-          "id": "devopsUXView",
-          "name": "UX",
-          "icon": "$(person)"
+          "id": "devopsCurrentTask",
+          "name": "Current Task",
+          "icon": "$(target)"
+        },
+        {
+          "id": "devopsArchive",
+          "name": "Archive",
+          "icon": "$(archive)"
         }
       ]
     },
@@ -281,13 +256,7 @@
       }
     ],
     "menus": {
-      "view/title": [
-        {
-          "command": "devops.refreshDocs",
-          "when": "view == devopsDocsView",
-          "group": "navigation"
-        }
-      ],
+      "view/title": [],
       "view/item/context": []
     }
   },

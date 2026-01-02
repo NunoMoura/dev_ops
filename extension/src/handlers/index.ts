@@ -51,7 +51,10 @@ import { MoveTasksRequest } from './types';
 export type DevOpsCommandServices = {
   provider: BoardTreeProvider;
   boardView: vscode.TreeView<BoardNode>;
-  dashboardProvider: DashboardViewProvider;
+  boardOverview: import('../providers/boardOverviewProvider').BoardOverviewProvider;
+  taskList: import('../providers/taskListProvider').TaskListProvider;
+  currentTask: import('../providers/currentTaskProvider').CurrentTaskProvider;
+  archive: import('../providers/archiveProvider').ArchiveProvider;
 };
 
 export function registerBoardCommands(

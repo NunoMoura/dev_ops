@@ -13,9 +13,10 @@ import { formatError } from './features/errors';
 import { showPhaseNotification } from './features/phaseNotifications';
 import { createStatusBar, StatusBarManager } from './statusBar';
 import { TaskEditorProvider } from './taskEditorProvider';
-import { DashboardViewProvider, registerDashboardView } from './dashboardView';
-import { registerDocsView } from './providers/docsViewProvider';
-import { registerUXView } from './providers/uxViewProvider';
+import { registerBoardOverview, BoardOverviewProvider } from './providers/boardOverviewProvider';
+import { registerTaskList, TaskListProvider } from './providers/taskListProvider';
+import { registerCurrentTask, CurrentTaskProvider } from './providers/currentTaskProvider';
+import { registerArchive, ArchiveProvider } from './providers/archiveProvider';
 import { SessionBridge } from './features/sessionBridge';
 import { CursorBridge } from './features/cursorBridge';
 import { AgentManager, registerAgentManager } from './agents/AgentManager';
@@ -115,18 +116,21 @@ type DevOpsExtensionServices = DevOpsCommandServices & {
   boardPanelManager: BoardPanelManager;
   statusBar: StatusBarManager;
   syncFilterUI: () => void;
-  dashboardProvider: DashboardViewProvider;
+  boardOverview: BoardOverviewProvider;
+  taskList: TaskListProvider;
+  currentTask: CurrentTaskProvider;
+  archive: ArchiveProvider;
 };
 
 async function initializeDevOpsServices(context: vscode.ExtensionContext): Promise<DevOpsExtensionServices> {
   // Internal board state provider (not displayed as a tree anymore)
   const provider = new BoardTreeProvider(readBoard);
 
-  // Register sidebar views
-  // Register sidebar views
-  const dashboardProvider = registerDashboardView(context);
-  registerDocsView(context);
-  registerUXView(context);
+  // Register new sidebar views
+  const boardOverview = registerBoardOverview(context);
+  const taskList = registerTaskList(context);
+  const currentTask = registerCurrentTask(context);
+  const archive = registerArchive(context);
 
   const boardPanelManager = createBoardPanelManager(context);
 
@@ -143,7 +147,10 @@ async function initializeDevOpsServices(context: vscode.ExtensionContext): Promi
   return {
     provider,
     boardView: undefined as unknown as vscode.TreeView<import('./providers/boardTreeProvider').BoardNode>,
-    dashboardProvider,
+    boardOverview,
+    taskList,
+    currentTask,
+    archive,
     boardPanelManager,
     statusBar,
     syncFilterUI,
@@ -159,22 +166,26 @@ function bindDevOpsViews(
 }
 
 function registerBoardSnapshotSync(context: vscode.ExtensionContext, services: DevOpsExtensionServices): void {
-  const { provider, boardPanelManager, statusBar, dashboardProvider } = services;
+  const { provider, boardPanelManager, statusBar, boardOverview, taskList, currentTask } = services;
   boardPanelManager.setBoard(provider.getBoardViewSnapshot());
 
-  // Update status bar and dashboard with initial board state
+  // Update status bar and all new providers with initial board state
   readBoard().then((board) => {
     statusBar.update(board);
-    dashboardProvider.updateBoard(board);
+    boardOverview.updateBoard(board);
+    taskList.updateBoard(board);
+    currentTask.updateBoard(board);
   }).catch(() => { });
 
   context.subscriptions.push(
     provider.onDidUpdateBoardView((snapshot) => {
       boardPanelManager.setBoard(snapshot);
-      // Update status bar and dashboard when board changes
+      // Update all views when board changes
       readBoard().then((board) => {
         statusBar.update(board);
-        dashboardProvider.updateBoard(board);
+        boardOverview.updateBoard(board);
+        taskList.updateBoard(board);
+        currentTask.updateBoard(board);
       }).catch(() => { });
     }),
   );

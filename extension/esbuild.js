@@ -39,10 +39,10 @@ function copyAssets() {
 	}
 
 	console.log('[assets] Copying framework assets to dist/assets...');
-	copyDir(path.join(projectRoot, 'rules'), path.join(assetsDir, 'rules'));
-	copyDir(path.join(projectRoot, 'workflows'), path.join(assetsDir, 'workflows'));
-	copyDir(path.join(projectRoot, 'templates'), path.join(assetsDir, 'templates'));
-	copyDir(path.join(projectRoot, 'scripts'), path.join(assetsDir, 'scripts'));
+	copyDir(path.join(projectRoot, 'payload', 'rules'), path.join(assetsDir, 'rules'));
+	copyDir(path.join(projectRoot, 'payload', 'workflows'), path.join(assetsDir, 'workflows'));
+	copyDir(path.join(projectRoot, 'payload', 'templates'), path.join(assetsDir, 'templates'));
+	copyDir(path.join(projectRoot, 'payload', 'scripts'), path.join(assetsDir, 'scripts'));
 	console.log('[assets] Assets copied successfully');
 }
 
