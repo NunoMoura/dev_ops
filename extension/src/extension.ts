@@ -30,7 +30,7 @@ import { log, warn, error as logError } from './features/logger';
 
 export async function activate(context: vscode.ExtensionContext) {
   log('DevOps extension v0.0.1 activating...');
-  vscode.window.showInformationMessage('DevOps v0.0.1 Activated 🚀');
+  // Don't show activation message here - too noisy. User will see initialization prompt if needed.
   try {
     // Register DevOps: Initialize command first (always works)
     log('[Activation] Step 1: Registering initialize command');
@@ -52,15 +52,16 @@ export async function activate(context: vscode.ExtensionContext) {
       log('[Activation] Project not initialized - prompting user');
       services.statusBar.showUninitialized();
 
-      // Prompt user to initialize
+      // Prompt user to initialize (modal - won't auto-dismiss)
       const choice = await vscode.window.showInformationMessage(
-        'DevOps Framework: This workspace is not initialized. Would you like to set it up now?',
+        '👋 Welcome to DevOps Framework! This workspace is not set up yet. Would you like to initialize it now?',
+        { modal: true },
         'Initialize Now',
         'Not Now'
       );
 
       if (choice === 'Initialize Now') {
-        // Prompt for project type
+        // Prompt for project type (also modal)
         const typeChoice = await vscode.window.showQuickPick([
           {
             label: '🌱 Greenfield',
@@ -76,7 +77,8 @@ export async function activate(context: vscode.ExtensionContext) {
           }
         ], {
           placeHolder: 'What type of project is this?',
-          title: 'DevOps Framework: Project Type'
+          title: 'DevOps Framework: Project Type',
+          ignoreFocusOut: true  // Don't dismiss when clicking elsewhere
         });
 
         if (typeChoice) {
