@@ -66,7 +66,7 @@ export class BoardPanelManager {
 
     this.panel = vscode.window.createWebviewPanel(
       'boardBoard',
-      'Board Board',
+      'DevOps Board',
       vscode.ViewColumn.One,
       {
         enableScripts: true,
@@ -533,7 +533,7 @@ function getBoardHtml(panelMode = false): string {
     <body>
       <div class="board-wrapper">
         <div class="board-header">
-          <h2 class="board-title">Board Board</h2>
+          <h2 class="board-title">DevOps Board</h2>
           <button id="addTaskBtn" class="add-task-button" type="button" title="Create Task">New Task</button>
         </div>
         <div id="selectionBanner" class="selection-banner hidden">

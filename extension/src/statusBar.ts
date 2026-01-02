@@ -17,7 +17,7 @@ export function createStatusBar(context: vscode.ExtensionContext): StatusBarMana
         100
     );
     item.command = 'devops.openBoard';
-    item.tooltip = 'Open Board Board';
+    item.tooltip = 'Open Board';
     item.text = '$(project) Board';
     item.show();
     context.subscriptions.push(item);
