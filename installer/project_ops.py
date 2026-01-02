@@ -1,7 +1,10 @@
 """Project operations for detecting technology stack and generating rules."""
 
+import argparse
 import glob
+import json
 import os
+import sys
 from typing import Any, Optional
 
 
@@ -175,3 +178,41 @@ def _check_triggers(root: str, triggers: list[str], content_search: Optional[str
                 else:
                     return True
     return False
+
+
+def main():
+    """CLI entry point for project operations."""
+    parser = argparse.ArgumentParser(description="DevOps project operations")
+    subparsers = parser.add_subparsers(dest="command", help="Command to run")
+
+    # Detect command
+    detect_parser = subparsers.add_parser("detect", help="Detect project stack")
+    detect_parser.add_argument("--target", default=os.getcwd(), help="Target project directory")
+    detect_parser.add_argument(
+        "--format", choices=["json", "summary"], default="summary", help="Output format"
+    )
+
+    args = parser.parse_args()
+
+    if args.command == "detect":
+        stack = detect_stack(args.target)
+
+        if args.format == "json":
+            print(json.dumps(stack, indent=2))
+        else:
+            # Summary format
+            print(f"\n🔍 Detected stack in {args.target}:")
+            print(f"\n{'Category':<12} | {'Name':<20}")
+            print("-" * 36)
+            for item in stack:
+                category = item["category"]
+                name = item["name"].replace(".md", "")
+                print(f"{category:<12} | {name:<20}")
+            print(f"\nTotal: {len(stack)} items detected")
+    else:
+        parser.print_help()
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
