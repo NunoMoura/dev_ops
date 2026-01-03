@@ -5,6 +5,8 @@ import {
   registerBoardCommands,
   handleBoardMoveTasks,
   handleBoardOpenTask,
+  handleArchiveAll,
+  handleArchiveSingle,
   DevOpsCommandServices,
 } from './handlers';
 import { registerInitializeCommand } from './handlers/initializeCommand';
@@ -260,6 +262,12 @@ function registerBoardViewRequests(context: vscode.ExtensionContext, services: D
       void Promise.resolve(vscode.commands.executeCommand('devops.createTask')).catch((error: unknown) => {
         vscode.window.showErrorMessage(`Unable to create task: ${formatError(error)}`);
       });
+    }),
+    boardPanelManager.onDidRequestArchiveTasks(async () => {
+      await handleArchiveAll(provider);
+    }),
+    boardPanelManager.onDidRequestArchiveTask(async (taskId: string) => {
+      await handleArchiveSingle(taskId, provider);
     }),
     boardPanelManager.onDidRequestDeleteTasks(async (taskIds: string[]) => {
       const count = taskIds.length;

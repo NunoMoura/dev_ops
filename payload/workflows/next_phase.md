@@ -18,11 +18,11 @@ Validate exit criteria and move task to next column.
 
 2. **Verify exit criteria** from current phase rule
 
-3. **If met**, record session and move:
+3. **If met**, record session and move (with auto-commit for team sync):
 
    ```bash
    python3 scripts/board_ops.py record-phase TASK-XXX <phase> <session_id>
-   python3 scripts/board_ops.py move TASK-XXX <next_column>
+   python3 scripts/board_ops.py move TASK-XXX <next_column> --commit
    ```
 
 4. **If not met**, list unmet criteria and resume work

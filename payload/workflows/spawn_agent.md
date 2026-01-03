@@ -17,10 +17,10 @@ Pick highest priority task from Backlog and claim it.
 
    Or use VS Code: Click "Spawn Agent" in Agent sidebar
 
-2. **Move to Understand**:
+2. **Move to Understand** (with auto-commit for team sync):
 
    ```bash
-   python3 scripts/board_ops.py move TASK-XXX col-understand
+   python3 scripts/board_ops.py move TASK-XXX col-understand --commit
    ```
 
 3. **Read trigger doc** (PRD/FEAT/BUG linked to task)

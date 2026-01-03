@@ -62,6 +62,27 @@ export function registerInitializeCommand(
             async () => {
                 try {
                     await runSetupScript(pythonCommand, setupScript, workspaceRoot, projectType);
+
+                    // Prompt for developer name
+                    const developerName = await vscode.window.showInputBox({
+                        prompt: 'Enter your name (for Git collaboration commits)',
+                        placeHolder: 'e.g., alice',
+                        validateInput: (value) => {
+                            if (!value || value.trim().length === 0) {
+                                return 'Name is required';
+                            }
+                            return null;
+                        }
+                    });
+
+                    if (developerName) {
+                        // Save to config file
+                        const configPath = path.join(workspaceRoot, '.dev_ops', 'config.json');
+                        const config = { developer: { name: developerName.trim() } };
+                        require('fs').writeFileSync(configPath, JSON.stringify(config, null, 2));
+                        log(`Developer name saved: ${developerName}`);
+                    }
+
                     vscode.window.showInformationMessage(
                         "✅ DevOps: Framework initialized successfully!\n\n📋 Next step: Run /bootstrap to generate project-specific rules",
                         "OK"

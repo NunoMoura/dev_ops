@@ -97,6 +97,56 @@ def git_commit(
     print("✅ Committed!")
 
 
+def board_commit(action: str, task_id: str, username: str) -> bool:
+    """Create a board-only commit with standard format.
+
+    Format: [devops] <action> <task-id> @<username>
+    Actions: claim, release, update, done
+
+    This standardized format enables:
+    - Git-based task claiming (first push wins)
+    - Collaboration visibility
+    - Automated parsing of board history
+    """
+    valid_actions = ["claim", "release", "update", "done"]
+    if action not in valid_actions:
+        print(f"❌ Invalid action: {action}. Must be one of {valid_actions}")
+        return False
+
+    message = f"[devops] {action} {task_id} @{username}"
+    print(f"📋 Board commit: {message}")
+
+    try:
+        # Stage board.json
+        result = subprocess.run(
+            ["git", "add", ".dev_ops/board.json"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            print(f"⚠️ Failed to stage board.json: {result.stderr}")
+            return False
+
+        # Commit
+        result = subprocess.run(
+            ["git", "commit", "-m", message],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            if "nothing to commit" in result.stdout or "nothing to commit" in result.stderr:
+                print("ℹ️ No changes to commit")
+                return True
+            print(f"⚠️ Commit failed: {result.stderr}")
+            return False
+
+        print("✅ Board change committed!")
+        return True
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return False
+
+
 # ==========================================
 # GITHUB CLI UTILITIES
 # ==========================================
@@ -224,6 +274,16 @@ def main():
     pr_triage_parser = subparsers.add_parser("pr-triage", help="Triage PR feedback")
     pr_triage_parser.add_argument("--pr", required=True, help="PR Number")
 
+    # BOARD-COMMIT
+    board_commit_parser = subparsers.add_parser(
+        "board-commit", help="Commit board change with standard format"
+    )
+    board_commit_parser.add_argument(
+        "action", choices=["claim", "release", "update", "done"], help="Action type"
+    )
+    board_commit_parser.add_argument("task_id", help="Task ID (e.g., TASK-001)")
+    board_commit_parser.add_argument("--user", required=True, help="Username for commit message")
+
     args = parser.parse_args()
 
     try:
@@ -235,6 +295,10 @@ def main():
             pr_extract_comments(args.pr)
         elif args.command == "pr-triage":
             pr_triage(args.pr)
+        elif args.command == "board-commit":
+            success = board_commit(args.action, args.task_id, args.user)
+            if not success:
+                sys.exit(1)
     except GitHubCLINotFoundError as e:
         print(f"❌ {e}")
         sys.exit(1)

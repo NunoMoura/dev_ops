@@ -92,7 +92,7 @@ async function main() {
 		],
 		bundle: true,
 		format: 'cjs',
-		minify: production,
+		minify: false,  // Disabled to preserve design system functions
 		sourcemap: !production,
 		sourcesContent: false,
 		platform: 'node',

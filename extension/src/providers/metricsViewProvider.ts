@@ -50,42 +50,70 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
         // Calculate Metrics
         const totals = {
             activeAgents: 0,
-            needsAttention: 0,
+            activeTeammates: 0, // humans actively working
             doneLast24h: 0,
+            totalTasks: board.items.length,
+            completionRate: 0,
+            avgCycleTime: 'N/A',
             phases: {
-                Und: 0,
-                Pln: 0,
-                Bld: 0,
-                Ver: 0
+                Understand: 0,
+                Plan: 0,
+                Build: 0,
+                Verify: 0
             }
         };
 
+        // Collect human teammates with task counts
+        const teammates = new Map<string, number>();
+
         const now = new Date();
         const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+        let doneCount = 0;
+        let tasksWithoutIntervention = 0;
 
         for (const t of board.items) {
-            if (t.status === 'agent_active') {
+            // Count agents: in_progress tasks with agent owner
+            if (t.status === 'in_progress' && t.owner?.type === 'agent') {
                 totals.activeAgents++;
             }
-            if (['blocked', 'needs_feedback'].includes(t.status || '')) {
-                totals.needsAttention++;
+            // Count active teammates (humans working on tasks)
+            if (t.status === 'in_progress' && t.owner?.type === 'human') {
+                totals.activeTeammates++;
             }
 
-            if (t.status === 'done' && t.updatedAt && new Date(t.updatedAt) > oneDayAgo) {
-                totals.doneLast24h++;
+            // Collect human teammates for Teamwork section
+            if (t.owner?.type === 'human' && t.owner?.name) {
+                const name = t.owner.name;
+                teammates.set(name, (teammates.get(name) || 0) + 1);
+            }
+
+            if (t.status === 'done') {
+                doneCount++;
+                if (t.updatedAt && new Date(t.updatedAt) > oneDayAgo) {
+                    totals.doneLast24h++;
+                }
+                // Assume tasks done by agents count as "without intervention"
+                if (t.owner?.type === 'agent') {
+                    tasksWithoutIntervention++;
+                }
             }
 
             // Phase map
             const colId = t.columnId || '';
             if (colId.includes('understand')) {
-                totals.phases.Und++;
+                totals.phases.Understand++;
             } else if (colId.includes('plan')) {
-                totals.phases.Pln++;
+                totals.phases.Plan++;
             } else if (colId.includes('build')) {
-                totals.phases.Bld++;
+                totals.phases.Build++;
             } else if (colId.includes('verify')) {
-                totals.phases.Ver++;
+                totals.phases.Verify++;
             }
+        }
+
+        // Calculate completion rate
+        if (totals.totalTasks > 0) {
+            totals.completionRate = Math.round((doneCount / totals.totalTasks) * 100);
         }
 
         return `<!DOCTYPE html>
@@ -99,32 +127,30 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
                 ${getSharedStyles()}
                 <style>
                     /* Metrics-specific styles */
-                    .metric-row { 
-                        display: flex; 
-                        justify-content: space-between; 
+                    .metrics-grid { 
+                        display: grid;
+                        grid-template-columns: repeat(2, 1fr);
                         gap: var(--space-md);
-                        margin-bottom: var(--space-lg); 
+                        margin-bottom: var(--space-xl); 
                     }
                     .metric-card { 
                         background: var(--vscode-editor-background); 
-                        border: 1px solid var(--border-normal); 
+                        border: 1px solid var(--brand-color); 
                         border-radius: 8px; 
-                        padding: var(--space-xl); 
-                        flex: 1; 
+                        padding: var(--space-lg); 
                         text-align: center;
-                        box-shadow: var(--shadow-md);
+                        box-shadow: var(--shadow-sm);
                         transition: all var(--transition-normal) ease;
                     }
                     .metric-card:hover {
-                        box-shadow: var(--shadow-lg);
-                        transform: translateY(-2px);
-                        border-color: var(--border-strong);
+                        box-shadow: var(--shadow-md);
+                        transform: translateY(-1px);
                     }
                     .big-number { 
-                        font-size: 2.5em; 
+                        font-size: 1.8em; 
                         font-weight: var(--weight-bold); 
                         display: block; 
-                        margin-bottom: var(--space-sm);
+                        margin-bottom: var(--space-xs);
                         color: var(--vscode-foreground);
                     }
                     .metric-label { 
@@ -132,14 +158,22 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
                         font-weight: var(--weight-medium);
                         opacity: 0.85; 
                         text-transform: uppercase; 
-                        letter-spacing: 0.05em;
+                        letter-spacing: 0.03em;
                         color: var(--vscode-descriptionForeground);
                     }
 
                     .sparkline { 
-                        margin-top: var(--space-2xl);
-                        padding-top: var(--space-xl);
-                        border-top: 1px solid var(--border-subtle);
+                        margin-top: var(--space-lg);
+                        padding-top: var(--space-lg);
+                        border-top: 1px solid var(--brand-color);
+                    }
+                    .section-header {
+                        font-size: var(--text-xs);
+                        font-weight: var(--weight-medium);
+                        text-transform: uppercase;
+                        letter-spacing: 0.05em;
+                        margin-bottom: var(--space-lg);
+                        color: var(--brand-color);
                     }
                     .sparkline-header {
                         font-size: var(--text-xs);
@@ -147,7 +181,7 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
                         text-transform: uppercase;
                         letter-spacing: 0.05em;
                         margin-bottom: var(--space-lg);
-                        color: var(--vscode-descriptionForeground);
+                        color: var(--brand-color);
                     }
                     .sparkline-row { 
                         display: flex; 
@@ -156,7 +190,7 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
                         font-size: var(--text-base); 
                     }
                     .sparkline-label {
-                        width: 40px;
+                        width: 70px;
                         font-weight: var(--weight-medium);
                     }
                     .bar-container { 
@@ -164,12 +198,12 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
                         height: 6px; 
                         background: rgba(255, 255, 255, 0.06); 
                         border-radius: 3px; 
-                        margin: 0 var(--space-lg);
+                        margin: 0 var(--space-md);
                         overflow: hidden; 
                     }
                     .bar { 
                         height: 100%; 
-                        background: linear-gradient(90deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+                        background: var(--brand-color);
                         transition: width var(--transition-slow) ease;
                         border-radius: 3px;
                     }
@@ -177,34 +211,50 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
                         width: 30px;
                         text-align: right;
                         font-weight: var(--weight-medium);
+                        color: var(--brand-color);
                     }
                 </style>
             </head>
             <body>
-                <div class="metric-row">
+                <div class="section-header">Core Metrics</div>
+                <div class="metrics-grid">
                     <div class="metric-card">
                         <span class="big-number">${totals.activeAgents}</span>
                         <span class="metric-label">Active Agents</span>
                     </div>
                     <div class="metric-card">
-                        <span class="big-number">${totals.needsAttention}</span>
-                        <span class="metric-label">Needs Attention</span>
+                        <span class="big-number">${totals.activeTeammates}</span>
+                        <span class="metric-label">Active Teammates</span>
                     </div>
-                </div>
-
-                <div class="metric-row">
                     <div class="metric-card">
                         <span class="big-number">${totals.doneLast24h}</span>
-                        <span class="metric-label">Velocity (24h)</span>
+                        <span class="metric-label">Done (24h)</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="big-number">${totals.avgCycleTime}</span>
+                        <span class="metric-label">Avg Cycle Time</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="big-number">${totals.completionRate}%</span>
+                        <span class="metric-label">Completion Rate</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="big-number">${totals.totalTasks}</span>
+                        <span class="metric-label">Total Tasks</span>
                     </div>
                 </div>
 
                 <div class="sparkline">
                     <div class="sparkline-header">Phase Distribution</div>
-                    ${this.renderBar('Understand', totals.phases.Und, 10)}
-                    ${this.renderBar('Plan', totals.phases.Pln, 10)}
-                    ${this.renderBar('Build', totals.phases.Bld, 10)}
-                    ${this.renderBar('Verify', totals.phases.Ver, 10)}
+                    ${this.renderBar('Understand', totals.phases.Understand, 10)}
+                    ${this.renderBar('Plan', totals.phases.Plan, 10)}
+                    ${this.renderBar('Build', totals.phases.Build, 10)}
+                    ${this.renderBar('Verify', totals.phases.Verify, 10)}
+                </div>
+
+                <div class="sparkline">
+                    <div class="sparkline-header">Teamwork</div>
+                    ${this.renderTeamwork(teammates)}
                 </div>
             </body>
             </html>`;
@@ -220,5 +270,17 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
             </div>
             <span class="bar-value">${value}</span>
         </div>`;
+    }
+
+    private renderTeamwork(teammates: Map<string, number>): string {
+        if (teammates.size === 0) {
+            return '<div class="sparkline-row"><span class="sparkline-label" style="opacity: 0.5">No teammates assigned</span></div>';
+        }
+
+        // Sort by task count descending
+        const sorted = [...teammates.entries()].sort((a, b) => b[1] - a[1]);
+        const maxTasks = sorted[0]?.[1] || 1;
+
+        return sorted.map(([name, count]) => this.renderBar(name, count, maxTasks)).join('');
     }
 }

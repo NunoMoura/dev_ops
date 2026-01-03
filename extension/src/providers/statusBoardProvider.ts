@@ -1,8 +1,7 @@
 import * as vscode from 'vscode';
-import { BoardItemNode } from './boardTreeProvider'; // Re-using item node type
+import { BoardItemNode } from './boardTreeProvider';
 import { Board, Task } from '../features/types';
 import { readBoard } from '../features/boardStore';
-import { buildTaskDescription, buildTaskTooltip } from '../features/taskPresentation';
 
 export type StatusGroupNode = {
     kind: 'group';
@@ -13,11 +12,20 @@ export type StatusGroupNode = {
     tasks: Task[];
 };
 
-export type StatusBoardNode = StatusGroupNode | BoardItemNode;
+export type ActionNode = {
+    kind: 'action';
+    id: string;
+    label: string;
+    command: string;
+    icon: string;
+};
+
+export type StatusBoardNode = StatusGroupNode | BoardItemNode | ActionNode;
 
 export class StatusBoardProvider implements vscode.TreeDataProvider<StatusBoardNode> {
     private _onDidChangeTreeData: vscode.EventEmitter<StatusBoardNode | undefined | null | void> = new vscode.EventEmitter<StatusBoardNode | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<StatusBoardNode | undefined | null | void> = this._onDidChangeTreeData.event;
+    private cachedBoard: Board | undefined;
 
     constructor() { }
 
@@ -26,7 +34,16 @@ export class StatusBoardProvider implements vscode.TreeDataProvider<StatusBoardN
     }
 
     getTreeItem(element: StatusBoardNode): vscode.TreeItem {
-        if (element.kind === 'group') {
+        if (element.kind === 'action') {
+            const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.None);
+            item.iconPath = new vscode.ThemeIcon(element.icon);
+            item.command = {
+                command: element.command,
+                title: element.label
+            };
+            item.contextValue = 'dashboardAction';
+            return item;
+        } else if (element.kind === 'group') {
             const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.Expanded);
             item.description = `(${element.tasks.length})`;
             item.iconPath = element.icon || new vscode.ThemeIcon('list-tree');
@@ -34,16 +51,17 @@ export class StatusBoardProvider implements vscode.TreeDataProvider<StatusBoardN
             return item;
         } else {
             const task = element.item;
+            const columnName = element.column?.name || this.getColumnName(task.columnId);
             const item = new vscode.TreeItem(task.title, vscode.TreeItemCollapsibleState.None);
             item.id = task.id;
-            item.description = buildTaskDescription(task);
-            item.tooltip = new vscode.MarkdownString(buildTaskTooltip(task, ''));
+            // Enhanced tooltip with owner, phase, overview
+            item.tooltip = this.buildEnhancedTooltip(task, columnName);
             item.contextValue = 'devopsTask';
-            item.iconPath = this.getTaskIcon(task.status);
+            // Use bullet icon instead of chevron
+            item.iconPath = new vscode.ThemeIcon('circle-small-filled', new vscode.ThemeColor('charts.purple'));
 
-            // Allow opening task details on click
             item.command = {
-                command: 'devops.openTaskContext',
+                command: 'devops.showTaskDetails',
                 title: 'Open Task',
                 arguments: [task.id]
             };
@@ -54,80 +72,106 @@ export class StatusBoardProvider implements vscode.TreeDataProvider<StatusBoardN
 
     getChildren(element?: StatusBoardNode): Thenable<StatusBoardNode[]> {
         if (!element) {
-            return this.getRootGroups();
+            return this.getRootNodes();
         } else if (element.kind === 'group') {
             return Promise.resolve(element.tasks.map(task => ({
                 kind: 'item',
                 item: task,
-                column: { id: task.columnId, name: '', position: 0 } // Dummy column for type compatibility
+                column: { id: task.columnId, name: '', position: 0 }
             } as BoardItemNode)));
         }
         return Promise.resolve([]);
     }
 
-    private async getRootGroups(): Promise<StatusGroupNode[]> {
+    private async getRootNodes(): Promise<StatusBoardNode[]> {
+        const nodes: StatusBoardNode[] = [];
+
+        // Status Groups
         try {
             const board = await readBoard();
+            this.cachedBoard = board;
             const tasks = board.items;
 
-            // Group definitions
+            // Define groups with explicit mapping
+            // Traffic Light Logic: Red (Blocked), Yellow (Feedback), Blue (Ready), Green (Active), Grey (Done)
+
             const groups: StatusGroupNode[] = [
                 {
                     kind: 'group',
-                    id: 'attention',
-                    label: 'Needs Attention',
-                    icon: new vscode.ThemeIcon('alert', new vscode.ThemeColor('charts.red')),
-                    tasks: tasks.filter(t => t.status && ['blocked', 'needs_feedback'].includes(t.status))
+                    id: 'blocked',
+                    label: 'Blocked',
+                    icon: new vscode.ThemeIcon('circle-filled', new vscode.ThemeColor('charts.red')),
+                    tasks: tasks.filter(t => t.status === 'blocked')
                 },
                 {
                     kind: 'group',
-                    id: 'active',
-                    label: 'Active Agents',
-                    icon: new vscode.ThemeIcon('zap', new vscode.ThemeColor('charts.green')), // Green to match board cards
-                    tasks: tasks.filter(t => t.status === 'agent_active')
+                    id: 'feedback',
+                    label: 'Needs Feedback',
+                    icon: new vscode.ThemeIcon('circle-filled', new vscode.ThemeColor('charts.orange')), // Orange/Yellow
+                    tasks: tasks.filter(t => t.status === 'needs_feedback')
+                },
+                {
+                    kind: 'group',
+                    id: 'in_progress',
+                    label: 'In Progress',
+                    icon: new vscode.ThemeIcon('circle-filled', new vscode.ThemeColor('charts.green')),
+                    tasks: tasks.filter(t => t.status === 'in_progress' || t.status === 'agent_active')
                 },
                 {
                     kind: 'group',
                     id: 'ready',
                     label: 'Ready',
-                    icon: new vscode.ThemeIcon('play-circle', new vscode.ThemeColor('charts.blue')),
+                    icon: new vscode.ThemeIcon('circle-filled', new vscode.ThemeColor('charts.blue')),
                     tasks: tasks.filter(t => t.status === 'ready')
-                },
-                {
-                    kind: 'group',
-                    id: 'human',
-                    label: 'Human Active',
-                    icon: new vscode.ThemeIcon('person'),
-                    tasks: tasks.filter(t => (t.status === 'in_progress' || t.status === 'agent_active') && (!t.owner || t.owner.type === 'human'))
                 },
                 {
                     kind: 'group',
                     id: 'done',
                     label: 'Done',
-                    icon: new vscode.ThemeIcon('check', new vscode.ThemeColor('charts.green')),
+                    icon: new vscode.ThemeIcon('check', new vscode.ThemeColor('disabledForeground')),
                     tasks: tasks.filter(t => t.status === 'done')
                 }
             ];
 
-            // Filter out empty groups (except Active, maybe, to show empty state?)
-            // Keeping all for now so the structure is visible
-            return groups;
+            // Only add non-empty groups? Or all? User wants visibility.
+            // "It can be zeroed if nothing is happening, but the chart should appear."
+            // So let's show all groups even if empty, to show the structure.
+            nodes.push(...groups);
+
         } catch (e) {
-            return [];
+            // ignore error
         }
+
+        return nodes;
     }
 
-    private getTaskIcon(status: string | undefined): vscode.ThemeIcon {
-        if (!status) {
-            return new vscode.ThemeIcon('circle-outline');
+    private getColumnName(columnId: string): string {
+        if (!this.cachedBoard?.columns) {
+            // Extract readable name from columnId like 'col-verify' -> 'Verify'
+            return columnId.replace('col-', '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
         }
-        switch (status) {
-            case 'ready': return new vscode.ThemeIcon('play-circle', new vscode.ThemeColor('charts.blue'));
-            case 'agent_active': return new vscode.ThemeIcon('zap', new vscode.ThemeColor('charts.green'));
-            case 'needs_feedback': return new vscode.ThemeIcon('bell', new vscode.ThemeColor('charts.orange'));
-            case 'blocked': return new vscode.ThemeIcon('stop', new vscode.ThemeColor('charts.red'));
-            case 'done': return new vscode.ThemeIcon('check'); // Gray/neutral - no color
-            default: return new vscode.ThemeIcon('circle-outline');
+        const column = this.cachedBoard.columns.find(c => c.id === columnId);
+        return column?.name || columnId.replace('col-', '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    private buildEnhancedTooltip(task: Task, columnName: string): vscode.MarkdownString {
+        const lines: string[] = [
+            `### ${task.title}`,
+            '',
+            `**Owner:** ${task.owner?.name || 'Unassigned'} (${task.owner?.type || 'none'})`,
+            '',
+            `**Phase:** ${columnName}`,
+            '',
+        ];
+
+        if (task.summary) {
+            lines.push(`**Overview:**`, '', task.summary, '');
         }
+
+        lines.push('---', `*Click to open task details*`);
+
+        const md = new vscode.MarkdownString(lines.join('\n'));
+        md.isTrusted = true;
+        return md;
     }
 }

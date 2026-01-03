@@ -10,20 +10,20 @@
 // ============================================================================
 
 export const STATUS_COLORS = {
-    READY: '#3b82f6',           // Blue: Task is ready for agent
-    AGENT_ACTIVE: '#22c55e',    // Green: Agent is actively working
-    NEEDS_FEEDBACK: '#f97316',  // Orange: User action required
-    BLOCKED: '#ef4444',         // Red: Task is blocked
-    DONE: '#6b7280',            // Gray: Task is complete
+  READY: '#3b82f6',           // Blue: Task is ready for agent
+  AGENT_ACTIVE: '#22c55e',    // Green: Agent is actively working
+  NEEDS_FEEDBACK: '#f97316',  // Orange: User action required
+  BLOCKED: '#ef4444',         // Red: Task is blocked
+  DONE: '#6b7280',            // Gray: Task is complete
 } as const;
 
 // VS Code Theme Color mappings for status
 export const STATUS_THEME_COLORS = {
-    READY: 'charts.blue',
-    AGENT_ACTIVE: 'charts.green',
-    NEEDS_FEEDBACK: 'charts.orange',
-    BLOCKED: 'charts.red',
-    DONE: undefined, // Use default gray
+  READY: 'charts.blue',
+  AGENT_ACTIVE: 'charts.green',
+  NEEDS_FEEDBACK: 'charts.orange',
+  BLOCKED: 'charts.red',
+  DONE: undefined, // Use default gray
 } as const;
 
 // ============================================================================
@@ -31,7 +31,7 @@ export const STATUS_THEME_COLORS = {
 // ============================================================================
 
 export function getFontLink(): string {
-    return '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">';
+  return '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">';
 }
 
 // ============================================================================
@@ -39,7 +39,7 @@ export function getFontLink(): string {
 // ============================================================================
 
 export function getSharedStyles(): string {
-    return `<style>
+  return `<style>
     /* ========================================
        DESIGN TOKENS
        ======================================== */
@@ -51,6 +51,9 @@ export function getSharedStyles(): string {
       --status-needs-feedback: ${STATUS_COLORS.NEEDS_FEEDBACK};
       --status-blocked: ${STATUS_COLORS.BLOCKED};
       --status-done: ${STATUS_COLORS.DONE};
+      
+      /* Brand Color (Catppuccin Mauve) */
+      --brand-color: #cba6f7;
       
       /* Shadows (Subtle Elevation) */
       --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
@@ -156,17 +159,19 @@ export function getSharedStyles(): string {
     
     .btn-ghost {
       background: transparent;
-      border: 1px solid var(--border-normal);
+      border: 1px solid var(--brand-color);
       border-radius: 6px;
       padding: var(--space-md) var(--space-xl);
-      color: var(--vscode-foreground);
+      color: var(--brand-color);
       font-weight: var(--weight-semibold);
       font-size: var(--text-base);
       box-shadow: var(--shadow-sm);
     }
     
     .btn-ghost:hover {
-      border-color: var(--border-strong);
+      background: var(--brand-color);
+      color: var(--vscode-sideBar-background);
+      border-color: var(--brand-color);
       box-shadow: var(--shadow-md);
       transform: translateY(-1px);
     }
@@ -394,5 +399,5 @@ export function getSharedStyles(): string {
 // ============================================================================
 
 export function getCSPMeta(): string {
-    return `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src vscode-resource: data:; font-src https://fonts.gstatic.com; style-src 'unsafe-inline' https://fonts.googleapis.com; script-src 'unsafe-inline';" />`;
+  return `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src vscode-resource: data:; font-src https://fonts.gstatic.com; style-src 'unsafe-inline' https://fonts.googleapis.com; script-src 'unsafe-inline';" />`;
 }

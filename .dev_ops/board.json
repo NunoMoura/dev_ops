@@ -247,6 +247,73 @@
         "starter"
       ],
       "updatedAt": ""
+    },
+    {
+      "id": "TASK-TEST-001",
+      "columnId": "col-backlog",
+      "title": "Test Ready Task 1",
+      "status": "ready",
+      "priority": "high",
+      "updatedAt": "2026-01-03T05:39:46.338335Z",
+      "summary": "Test task for UI verification - ready"
+    },
+    {
+      "id": "TASK-TEST-002",
+      "columnId": "col-backlog",
+      "title": "Test Ready Task 2",
+      "status": "ready",
+      "priority": "medium",
+      "updatedAt": "2026-01-03T05:39:46.338335Z",
+      "summary": "Test task for UI verification - ready"
+    },
+    {
+      "id": "TASK-TEST-004",
+      "columnId": "col-build",
+      "title": "Test In Progress (Human)",
+      "status": "in_progress",
+      "priority": "medium",
+      "owner": {
+        "type": "human",
+        "name": "developer"
+      },
+      "updatedAt": "2026-01-03T05:39:46.338335Z",
+      "summary": "Test task for UI verification - in_progress"
+    },
+    {
+      "id": "TASK-TEST-005",
+      "columnId": "col-verify",
+      "title": "Test Needs Feedback",
+      "status": "needs_feedback",
+      "priority": "high",
+      "updatedAt": "2026-01-03T05:39:46.338335Z",
+      "summary": "Test task for UI verification - needs_feedback"
+    },
+    {
+      "id": "TASK-TEST-006",
+      "columnId": "col-plan",
+      "title": "Test Blocked Task",
+      "status": "blocked",
+      "priority": "high",
+      "updatedAt": "2026-01-03T05:39:46.338335Z",
+      "summary": "Test task for UI verification - blocked"
+    },
+    {
+      "id": "TASK-TEST-007",
+      "columnId": "col-done",
+      "title": "Test Done Task 1",
+      "status": "done",
+      "priority": "low",
+      "updatedAt": "2026-01-03T05:39:46.338335Z",
+      "summary": "Test task for UI verification - done"
+    },
+    {
+      "id": "TASK-TEST-008",
+      "columnId": "col-done",
+      "title": "Test Done Task 2",
+      "status": "done",
+      "priority": "medium",
+      "updatedAt": "2026-01-03T05:39:46.338335Z",
+      "summary": "Test task for UI verification - done"
     }
   ]
 }

@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { getFontLink, getSharedStyles, getCSPMeta } from './ui/styles';
 
 export type BoardViewColumn = {
   id: string;
@@ -34,7 +35,9 @@ type WebviewMessage =
   | { type: 'moveTasks'; taskIds: string[]; columnId: string }
   | { type: 'openTask'; taskId: string }
   | { type: 'createTask'; columnId?: string }
-  | { type: 'deleteTasks'; taskIds: string[] };
+  | { type: 'deleteTasks'; taskIds: string[] }
+  | { type: 'archiveTasks' }
+  | { type: 'archiveTask'; taskId: string };
 
 type WebviewEvent = { type: 'board'; data: BoardViewSnapshot };
 
@@ -101,11 +104,27 @@ export class BoardPanelManager {
         this.onCreateEmitter.fire({ columnId: message.columnId });
       } else if (message.type === 'deleteTasks' && Array.isArray(message.taskIds) && message.taskIds.length > 0) {
         this.onDeleteEmitter.fire(message.taskIds);
+      } else if (message.type === 'archiveTasks') {
+        // Handle archive all request
+        this.archiveAllDone();
+      } else if (message.type === 'archiveTask' && typeof message.taskId === 'string') {
+        // Handle individual task archive
+        this.onArchiveSingleEmitter.fire(message.taskId);
       }
     });
 
     this.postBoard();
   }
+
+  private async archiveAllDone(): Promise<void> {
+    this.onArchiveEmitter.fire();
+  }
+
+  private readonly onArchiveEmitter = new vscode.EventEmitter<void>();
+  readonly onDidRequestArchiveTasks = this.onArchiveEmitter.event;
+
+  private readonly onArchiveSingleEmitter = new vscode.EventEmitter<string>();
+  readonly onDidRequestArchiveTask = this.onArchiveSingleEmitter.event;
 
   setBoard(board: BoardViewSnapshot | undefined): void {
     this.latestBoard = board ?? { columns: [], tasks: [] };
@@ -139,9 +158,10 @@ export function createBoardPanelManager(context: vscode.ExtensionContext): Board
 }
 
 function getBoardHtml(panelMode = false): string {
-  const cspMeta =
-    "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; img-src vscode-resource: data:; font-src https://fonts.gstatic.com; style-src 'unsafe-inline' https://fonts.googleapis.com; script-src 'unsafe-inline';\" />";
-  const fontLink = '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">';
+  // Use shared design system
+  const cspMeta = getCSPMeta();
+  const fontLink = getFontLink();
+  const sharedStyles = getSharedStyles();
 
   // Panel mode: horizontal Trello-like layout (columns side by side)
   // Sidebar mode: vertical stacked columns
@@ -207,6 +227,7 @@ function getBoardHtml(panelMode = false): string {
     <style>
       :root {
         color-scheme: var(--vscode-colorScheme);
+        --brand-color: #cba6f7;
       }
       body {
         font-family: 'IBM Plex Sans', var(--vscode-font-family), sans-serif;
@@ -447,6 +468,37 @@ function getBoardHtml(panelMode = false): string {
         background: var(--vscode-focusBorder);
         color: var(--vscode-sideBar-background);
       }
+      .archive-all-button {
+        width: 100%;
+        padding: 10px;
+        margin-top: 8px;
+        background: transparent;
+        border: 1px solid var(--brand-color);
+        border-radius: 6px;
+        color: var(--brand-color);
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+      .archive-all-button:hover {
+        background: var(--brand-color);
+        color: var(--vscode-sideBar-background);
+        border-style: solid;
+      }
+      .card-archive-button {
+        border: 1px solid var(--brand-color);
+        border-radius: 4px;
+        background: transparent;
+        color: var(--brand-color);
+        padding: 4px 10px;
+        font-size: 11px;
+        cursor: pointer;
+        margin-left: 6px;
+      }
+      .card-archive-button:hover {
+        background: var(--brand-color);
+        color: var(--vscode-sideBar-background);
+      }
       #empty-state {
         text-align: center;
         color: var(--vscode-descriptionForeground);
@@ -469,16 +521,16 @@ function getBoardHtml(panelMode = false): string {
         gap: 8px;
       }
       button.ghost {
-        border: 1px solid var(--vscode-focusBorder);
+        border: 1px solid var(--brand-color);
         border-radius: 4px;
         background: transparent;
-        color: var(--vscode-foreground);
+        color: var(--brand-color);
         padding: 4px 8px;
         cursor: pointer;
         font-size: 11px;
       }
       button.ghost:hover {
-        background: var(--vscode-focusBorder);
+        background: var(--brand-color);
         color: var(--vscode-sideBar-background);
       }
       .hint {
@@ -499,7 +551,7 @@ function getBoardHtml(panelMode = false): string {
         justify-content: space-between;
         align-items: center;
         padding: 8px 0 16px 0;
-        border-bottom: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
+        border-bottom: 2px solid var(--brand-color);
         margin-bottom: 16px;
       }
       .board-title {
@@ -509,19 +561,22 @@ function getBoardHtml(panelMode = false): string {
         color: var(--vscode-foreground);
       }
       .add-task-button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none;
+        background: transparent;
+        border: 1px solid var(--brand-color);
         border-radius: 6px;
-        color: white;
+        color: var(--brand-color);
         padding: 8px 16px;
         font-size: 13px;
         font-weight: 600;
         cursor: pointer;
-        transition: transform 0.1s ease, box-shadow 0.15s ease;
+        transition: all var(--transition-fast, 0.15s ease);
       }
       .add-task-button:hover {
+        background: var(--brand-color);
+        color: var(--vscode-sideBar-background);
+        border-color: var(--brand-color);
+        box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
       }
       .add-task-button:active {
         transform: translateY(0);
@@ -619,7 +674,6 @@ function getBoardHtml(panelMode = false): string {
             count.className = 'column-count';
             const tasks = getTasksForColumn(column.id);
             count.textContent = String(tasks.length);
-            header.appendChild(title);
             header.appendChild(count);
             columnEl.appendChild(header);
 
@@ -628,9 +682,21 @@ function getBoardHtml(panelMode = false): string {
             list.addEventListener('dragover', (event) => handleDragOver(event, columnEl));
             list.addEventListener('drop', (event) => handleDrop(event, column.id, columnEl));
             tasks.forEach((task) => {
-              const card = renderTaskCard(task);
+              const card = renderTaskCard(task, column.id);
               list.appendChild(card);
             });
+            
+            // Add Archive All button after cards in Done column
+            if (column.id === 'col-done' && tasks.length > 0) {
+                const archiveAllBtn = document.createElement('button');
+                archiveAllBtn.className = 'archive-all-button';
+                archiveAllBtn.textContent = 'Archive All';
+                archiveAllBtn.onclick = () => {
+                    vscode.postMessage({ type: 'archiveTasks' });
+                };
+                list.appendChild(archiveAllBtn);
+            }
+            
             columnEl.appendChild(list);
             boardEl.appendChild(columnEl);
           });
@@ -641,7 +707,7 @@ function getBoardHtml(panelMode = false): string {
           return state.tasks.filter((task) => task.columnId === columnId);
         }
 
-        function renderTaskCard(task) {
+        function renderTaskCard(task, columnId) {
           const card = document.createElement('article');
           card.className = 'task-card';
           card.draggable = true;
@@ -778,6 +844,20 @@ function getBoardHtml(panelMode = false): string {
             }
             
             card.appendChild(footer);
+          }
+          // Actions row for Done tasks
+          if (columnId === 'col-done') {
+            const actionsRow = document.createElement('div');
+            actionsRow.className = 'card-actions';
+            const archiveBtn = document.createElement('button');
+            archiveBtn.className = 'card-archive-button';
+            archiveBtn.textContent = 'Archive';
+            archiveBtn.onclick = (e) => {
+              e.stopPropagation();
+              vscode.postMessage({ type: 'archiveTask', taskId: task.id });
+            };
+            actionsRow.appendChild(archiveBtn);
+            card.appendChild(actionsRow);
           }
 
           return card;
@@ -949,5 +1029,5 @@ function getBoardHtml(panelMode = false): string {
     </script>
   `;
 
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" />${cspMeta}${fontLink}${styles}<style>${layoutStyles}</style></head>${body}${script}</html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" />${cspMeta}${fontLink}${sharedStyles}${styles}<style>${layoutStyles}</style></head>${body}${script}</html>`;
 }

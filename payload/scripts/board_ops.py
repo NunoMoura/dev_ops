@@ -8,12 +8,13 @@ and artifact linking with identifiers.
 
 Column = Workflow phase (6 phases), Status = Prediction-ready autonomy state:
 - Columns: Backlog, Understand, Plan, Build, Verify, Done
-- Status: ready, agent_active, needs_feedback, blocked, done
+- Status: ready, in_progress, needs_feedback, blocked, done
 """
 
 import argparse
 import json
 import os
+import subprocess
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -143,6 +144,69 @@ def save_board(board: dict, project_root: Optional[str] = None) -> None:
     os.makedirs(os.path.dirname(board_path), exist_ok=True)
     with open(board_path, "w") as f:
         json.dump(board, f, indent=2)
+
+
+def get_developer_config(project_root: Optional[str] = None) -> dict:
+    """Read developer configuration from .dev_ops/config.json.
+
+    Returns dict with developer info, or empty dict if not configured.
+    """
+    from utils import get_dev_ops_root
+
+    if project_root is None:
+        dev_ops_root = get_dev_ops_root()
+    else:
+        if os.path.isdir(os.path.join(project_root, ".dev_ops")):
+            dev_ops_root = os.path.join(project_root, ".dev_ops")
+        else:
+            dev_ops_root = os.path.join(project_root, "payload")
+
+    config_path = os.path.join(dev_ops_root, "config.json")
+    if os.path.exists(config_path):
+        try:
+            with open(config_path) as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            pass
+    return {}
+
+
+def _run_board_commit(action: str, task_id: str, username: str) -> bool:
+    """Run a board commit with the standard format.
+
+    Format: [devops] <action> <task-id> @<username>
+    """
+    message = f"[devops] {action} {task_id} @{username}"
+    try:
+        # Stage board.json
+        result = subprocess.run(
+            ["git", "add", ".dev_ops/board.json"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            # Try payload path for framework development
+            subprocess.run(
+                ["git", "add", "payload/board/board.json"],
+                capture_output=True,
+                text=True,
+            )
+
+        # Commit
+        result = subprocess.run(
+            ["git", "commit", "-m", message],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            if "nothing to commit" in result.stdout or "nothing to commit" in result.stderr:
+                return True
+            return False
+
+        print(f"📝 Committed: {message}")
+        return True
+    except Exception:
+        return False
 
 
 def get_column_name(board: dict, column_id: str) -> str:
@@ -280,8 +344,14 @@ def add_downstream(
     return False
 
 
-def move_to_column(task_id: str, column_id: str, project_root: Optional[str] = None) -> bool:
-    """Move a task to a specific column."""
+def move_to_column(
+    task_id: str, column_id: str, project_root: Optional[str] = None, commit: bool = False
+) -> bool:
+    """Move a task to a specific column.
+
+    Args:
+        commit: If True, auto-commit the board change with standard format.
+    """
     board = load_board(project_root)
 
     for task in board.get("items", []):
@@ -291,6 +361,15 @@ def move_to_column(task_id: str, column_id: str, project_root: Optional[str] = N
             save_board(board, project_root)
             column_name = get_column_name(board, column_id)
             print(f"✅ Moved {task_id} to {column_name}")
+
+            # Auto-commit if requested
+            if commit:
+                config = get_developer_config(project_root)
+                dev_name = config.get("developer", {}).get(
+                    "name", task.get("owner", {}).get("name", "unknown")
+                )
+                _run_board_commit("update", task_id, dev_name)
+
             return True
     print(f"⚠️ Task {task_id} not found")
     return False
@@ -302,8 +381,8 @@ def mark_build(task_id: str, project_root: Optional[str] = None) -> bool:
 
 
 def set_status(task_id: str, status: str, project_root: Optional[str] = None) -> bool:
-    """Set the status of a task (ready, agent_active, needs_feedback, blocked, done)."""
-    valid_statuses = {"ready", "agent_active", "needs_feedback", "blocked", "done"}
+    """Set the status of a task (ready, in_progress, needs_feedback, blocked, done)."""
+    valid_statuses = {"ready", "in_progress", "needs_feedback", "blocked", "done"}
     if status not in valid_statuses:
         print(f"⚠️ Invalid status: {status}. Must be one of: {', '.join(valid_statuses)}")
         return False
@@ -525,16 +604,16 @@ def mark_done(
     outputs: Optional[list] = None,
     create_pr_flag: bool = False,
     capture_sha: bool = True,
-    archive: bool = True,
+    archive: bool = False,
     project_root: Optional[str] = None,
+    commit: bool = False,
 ) -> bool:
     """Move a task to Done column, optionally add output artifacts, and archive.
 
     Args:
-        archive: If True (default), automatically archive the task after completion.
+        archive: If True (default False), automatically archive the task after completion.
+        commit: If True, auto-commit the board change with standard format.
     """
-    import subprocess
-
     if not task_id:
         return False
 
@@ -569,6 +648,14 @@ def mark_done(
 
             sha_info = f" (commit: {task.get('commitSha', 'N/A')})" if capture_sha else ""
             print(f"✅ Marked {task_id} as done{sha_info}")
+
+            # Auto-commit if requested
+            if commit:
+                config = get_developer_config(project_root)
+                dev_name = config.get("developer", {}).get(
+                    "name", task.get("owner", {}).get("name", "unknown")
+                )
+                _run_board_commit("done", task_id, dev_name)
 
             # Create PR if requested
             if create_pr_flag:
@@ -714,7 +801,7 @@ def register_agent(
             if "assignee" in task:
                 del task["assignee"]
 
-            task["status"] = "agent_active"
+            task["status"] = "in_progress"
             task["updatedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
             save_board(board, project_root)
@@ -746,7 +833,7 @@ def get_active_agents(project_root: Optional[str] = None) -> list[dict]:
     active = []
     for task in board.get("items", []):
         owner = task.get("owner")
-        if owner and task.get("status") in ["agent_active", "in_progress"]:
+        if owner and task.get("status") in ["in_progress"]:
             active.append(
                 {
                     "task_id": task["id"],
@@ -765,12 +852,16 @@ def claim_task(
     agent_type: str = "agent",
     name: str = "antigravity",
     project_root: Optional[str] = None,
+    commit: bool = False,
 ) -> bool:
-    """Claim a task by setting status to in_progress/agent_active. Works at any phase.
+    """Claim a task by setting status to in_progress. Works at any phase.
 
     Does not change the task's column - just marks it as claimed.
     Both agents and humans can claim tasks at any phase.
     Optionally tracks the Antigravity session ID.
+
+    Args:
+        commit: If True, auto-commit the board change with standard format.
     """
     board = load_board(project_root)
 
@@ -804,8 +895,7 @@ def claim_task(
                 del task["assignee"]
 
             # Set status based on type
-            # Set status based on type
-            task["status"] = "agent_active"
+            task["status"] = "in_progress"
             task["updatedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
             # Track session ID if provided (legacy field support)
@@ -821,6 +911,14 @@ def claim_task(
 
             column_name = get_column_name(board, task.get("columnId", ""))
             print(f"✅ Claimed {task_id} in {column_name} by {name} ({agent_type})")
+
+            # Auto-commit if requested
+            if commit:
+                # Get developer name from config, fallback to provided name
+                config = get_developer_config(project_root)
+                dev_name = config.get("developer", {}).get("name", name)
+                _run_board_commit("claim", task_id, dev_name)
+
             return True
 
     print(f"⚠️ Task {task_id} not found")
@@ -943,7 +1041,7 @@ def calculate_metrics(board: dict) -> dict:
 
     status_counts = {
         "ready": 0,
-        "agent_active": 0,
+        "in_progress": 0,
         "needs_feedback": 0,
         "blocked": 0,
         "done": 0,
@@ -1159,7 +1257,7 @@ def main():
     list_parser.add_argument("--column", help="Filter by column ID (e.g., col-backlog)")
     list_parser.add_argument(
         "--status",
-        choices=["ready", "agent_active", "needs_feedback", "blocked", "done"],
+        choices=["ready", "in_progress", "needs_feedback", "blocked", "done"],
         help="Filter by status",
     )
 
@@ -1194,13 +1292,18 @@ def main():
         dest="create_pr",
         help="Create a Pull Request using GitHub CLI",
     )
+    done_parser.add_argument(
+        "--commit",
+        action="store_true",
+        help="Auto-commit board change for collaboration",
+    )
 
     # Set status
     status_parser = subparsers.add_parser("status", help="Set task status")
     status_parser.add_argument("task_id", help="Task ID")
     status_parser.add_argument(
         "status",
-        choices=["ready", "agent_active", "needs_feedback", "blocked", "done"],
+        choices=["ready", "in_progress", "needs_feedback", "blocked", "done"],
         help="New status",
     )
 
@@ -1218,6 +1321,11 @@ def main():
     move_parser = subparsers.add_parser("move", help="Move task to column")
     move_parser.add_argument("task_id", help="Task ID")
     move_parser.add_argument("column_id", help="Target column ID")
+    move_parser.add_argument(
+        "--commit",
+        action="store_true",
+        help="Auto-commit board change for collaboration",
+    )
 
     # Pick task
     pick_parser = subparsers.add_parser("pick", help="Pick next available task")
@@ -1232,6 +1340,11 @@ def main():
         "--type", dest="agent_type", default="agent", choices=["agent", "human"], help="Owner type"
     )
     claim_parser.add_argument("--name", default="antigravity", help="Owner name")
+    claim_parser.add_argument(
+        "--commit",
+        action="store_true",
+        help="Auto-commit board change for collaboration",
+    )
 
     # Register/Unregister
     register_parser = subparsers.add_parser("register", help="Register agent on task")
@@ -1298,6 +1411,13 @@ def main():
         help="Path to AG session directory with walkthrough.md",
     )
 
+    # Archive task
+    archive_parser = subparsers.add_parser("archive", help="Archive a task or all tasks in Done")
+    archive_parser.add_argument("--task-id", help="Task ID to archive")
+    archive_parser.add_argument(
+        "--all-done", action="store_true", help="Archive all tasks in Done column"
+    )
+
     # JSON API Commands
     # Get full board state
     get_board_parser = subparsers.add_parser("get-board", help="Get full board state as JSON")
@@ -1351,7 +1471,9 @@ def main():
             spawn_from=args.spawn_from,
         )
     elif args.command == "done":
-        mark_done(args.task_id, outputs=args.outputs, create_pr_flag=args.create_pr)
+        mark_done(
+            args.task_id, outputs=args.outputs, create_pr_flag=args.create_pr, commit=args.commit
+        )
     elif args.command == "status":
         set_status(args.task_id, args.status)
     elif args.command == "upstream":
@@ -1359,7 +1481,7 @@ def main():
     elif args.command == "downstream":
         add_downstream(args.task_id, args.artifact_id)
     elif args.command == "move":
-        move_to_column(args.task_id, args.column_id)
+        move_to_column(args.task_id, args.column_id, commit=args.commit)
     elif args.command == "pick":
         task = pick_task()
         if task and args.claim:
@@ -1371,6 +1493,7 @@ def main():
             session_id=args.session_id,
             agent_type=args.agent_type,
             name=args.name,
+            commit=args.commit,
         )
     elif args.command == "register":
         register_agent(args.task_id, args.agent_type, session_id=args.session_id, name=args.name)
@@ -1423,6 +1546,22 @@ def main():
         board = load_board()
         metrics = calculate_metrics(board)
         print(json.dumps(metrics, indent=2 if args.format == "json" else None))
+    elif args.command == "archive":
+        if args.all_done:
+            # Archive all tasks in Done column
+            board = load_board()
+            done_tasks = [t for t in board.get("items", []) if t.get("columnId") == "col-done"]
+            if not done_tasks:
+                print("ℹ️ No tasks to archive in Done column.")
+            else:
+                for t in done_tasks:
+                    archive_task(t["id"])
+                print(f"✅ Archived {len(done_tasks)} tasks from Done column.")
+        elif args.task_id:
+            archive_task(args.task_id)
+        else:
+            print("⚠️ Specify --task-id or --all-done")
+
     elif args.command == "validate-task-id":
         board = load_board()
         task_id = args.task_id

@@ -18,6 +18,11 @@ and automated bot analysis (bug detection, feature extraction, triage).
 - PRD/Feature: <link or ID>
 - Related: <any related issues/PRs>
 
+## Collaboration
+- Claimed by: @<username>
+- Collaborators: <list of @usernames who contributed>
+- Board-Sync: <short hash - first 7 chars of board.json commit>
+
 ## Changes
 ### Added
 - <new feature or file>
@@ -138,4 +143,34 @@ Out of scope: OAuth provider integration (future work)
 ---
 Signed-off-by: agent@antigravity
 Session: abc123-def456
+```
+
+---
+
+## Board-Only Commits
+
+For commits that only change board.json (claims, status updates), use:
+
+```text
+[devops] <action> <task-id> @<username>
+```
+
+| Action | When to Use |
+|--------|------------|
+| `claim` | Taking ownership of a task |
+| `release` | Releasing a task for others |
+| `update` | Status/column change |
+| `done` | Marking task complete |
+
+**Examples:**
+
+- `[devops] claim TASK-001 @alice`
+- `[devops] done TASK-042 @bob`
+- `[devops] release TASK-003 @carol`
+
+**CLI Usage:**
+
+```bash
+python git_ops.py board-commit claim TASK-001 --user alice
+python git_ops.py board-commit done TASK-042 --user bob
 ```

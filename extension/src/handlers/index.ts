@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { runBoardOps, runDocOps } from './pythonRunner';
 import { TaskDetailsPayload } from '../taskDetailsView';
-import { DashboardViewProvider } from '../dashboardView';
+
 import { BoardTreeProvider, BoardNode, BoardManagerNode } from '../providers/boardTreeProvider';
 import {
   Board,
@@ -1351,4 +1351,48 @@ async function handleNewArchDoc(): Promise<void> {
   }
 
   await vscode.commands.executeCommand('devops.refreshDocs');
+}
+
+export async function handleArchiveAll(provider: BoardTreeProvider): Promise<void> {
+  const root = getWorkspaceRoot();
+  if (!root) {
+    return;
+  }
+  const confirmed = await vscode.window.showWarningMessage(
+    'Archive all tasks in Done column?',
+    { modal: true },
+    'Archive',
+  );
+  if (confirmed !== 'Archive') {
+    return;
+  }
+
+  try {
+    const result = await runBoardOps(['archive', '--all-done'], root);
+    if (result.code !== 0) {
+      throw new Error(result.stderr);
+    }
+    await provider.refresh();
+    vscode.window.showInformationMessage(result.stdout.trim() || 'Archived Done tasks.');
+  } catch (error) {
+    vscode.window.showErrorMessage(`Unable to archive tasks: ${formatError(error)}`);
+  }
+}
+
+export async function handleArchiveSingle(taskId: string, provider: BoardTreeProvider): Promise<void> {
+  const root = getWorkspaceRoot();
+  if (!root) {
+    return;
+  }
+
+  try {
+    const result = await runBoardOps(['archive', '--task-id', taskId], root);
+    if (result.code !== 0) {
+      throw new Error(result.stderr);
+    }
+    await provider.refresh();
+    vscode.window.showInformationMessage(`Archived task ${taskId}`);
+  } catch (error) {
+    vscode.window.showErrorMessage(`Unable to archive task: ${formatError(error)}`);
+  }
 }

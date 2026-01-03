@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { readBoard, writeBoard, getBoardPath } from './features/boardStore';
 import { Task, ChecklistItem, COLUMN_FALLBACK_NAME, TaskStatus } from './features/types';
+import { getFontLink, getSharedStyles, getCSPMeta } from './ui/styles';
 
 /**
  * Content provider for devops-task:// URIs.
@@ -165,103 +166,130 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     // Simple Markdown parsing for Trace
     const parsedTrace = this.parseTraceMarkdown(traceMarkdown);
 
+    // Get status color for left border
+    const statusColors: Record<string, string> = {
+      ready: '#3b82f6',
+      agent_active: '#22c55e',
+      needs_feedback: '#f97316',
+      blocked: '#ef4444',
+      done: '#6b7280'
+    };
+    const statusColor = statusColors[task.status || 'ready'] || statusColors.ready;
+
+    // Page-specific styles
+    const pageStyles = `<style>
+      /* Page-specific overrides */
+      body {
+        padding: 0; margin: 0;
+      }
+      
+      /* Status indicator bar at top */
+      .status-bar {
+        height: 4px;
+        background: ${statusColor};
+      }
+      
+      /* Sticky Header */
+      .header {
+        position: sticky; top: 0; z-index: 100;
+        background: var(--vscode-editor-background);
+        border-bottom: 1px solid var(--border-normal);
+        padding: var(--space-md) var(--space-lg);
+        box-shadow: var(--shadow-md);
+      }
+      .header-top { display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-md); }
+      .header-row { display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; }
+      
+      /* Title Input */
+      input.title-input {
+        font-size: var(--font-lg); font-weight: var(--weight-semibold);
+        background: transparent; border: none; color: inherit; 
+        flex: 1; min-width: 0; /* Allow flexing */
+        outline: none; border-bottom: 2px solid transparent;
+        font-family: inherit;
+      }
+      input.title-input:focus { border-bottom-color: var(--vscode-focusBorder); }
+
+      /* Controls */
+      select {
+        background: var(--vscode-dropdown-background);
+        color: var(--vscode-dropdown-foreground);
+        border: 1px solid var(--border-normal);
+        padding: var(--space-xs) var(--space-sm); border-radius: 4px;
+        font-family: inherit;
+      }
+
+      .badge {
+        padding: 2px var(--space-sm); border-radius: 99px; font-size: var(--font-xs); font-weight: var(--weight-medium);
+        text-transform: none; letter-spacing: normal;
+        white-space: nowrap; flex-shrink: 0; /* Prevent squashing */
+      }
+      .badge-id { background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); }
+      
+      /* Main Content */
+      .container { max-width: 900px; margin: 0 auto; padding: var(--space-lg); }
+      
+      .section { margin-bottom: var(--space-xl); }
+      .section-title { 
+        font-size: var(--font-sm); text-transform: uppercase; letter-spacing: 0.05em; 
+        color: var(--vscode-descriptionForeground); margin-bottom: var(--space-md); 
+        border-bottom: 1px solid var(--border-subtle); padding-bottom: var(--space-xs);
+        font-weight: var(--weight-medium);
+      }
+
+      /* Summary */
+      textarea.summary-input {
+        width: 100%; min-height: 80px;
+        background: var(--vscode-input-background);
+        color: var(--vscode-input-foreground);
+        border: 1px solid var(--border-normal);
+        padding: var(--space-sm); font-family: inherit; resize: vertical;
+        border-radius: 4px;
+        transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+      }
+      textarea.summary-input:focus {
+        border-color: var(--vscode-focusBorder);
+        outline: none;
+        box-shadow: var(--shadow-sm);
+      }
+
+      /* Timeline / Trace */
+      .timeline { position: relative; padding-left: 20px; }
+      .timeline::before {
+        content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+        background: var(--border-normal);
+      }
+      .trace-item { position: relative; margin-bottom: var(--space-lg); padding-left: var(--space-md); }
+      .trace-item::before {
+        content: ''; position: absolute; left: -24px; top: 6px; width: 10px; height: 10px;
+        border-radius: 50%; background: ${statusColor};
+        border: 2px solid var(--vscode-editor-background);
+      }
+      .trace-date { font-size: var(--font-xs); color: var(--vscode-descriptionForeground); margin-bottom: var(--space-xs); }
+      .trace-content { 
+        background: var(--vscode-textBlockQuote-background); 
+        padding: var(--space-md); border-radius: 6px;
+        border: 1px solid var(--border-subtle);
+      }
+      .trace-content h3 { margin-top: 0; font-size: var(--font-base); font-weight: var(--weight-semibold); }
+      
+      /* Actions */
+      .actions { display: flex; gap: var(--space-md); justify-content: flex-end; margin-top: var(--space-lg); }
+    </style>`;
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';">
+  ${getCSPMeta()}
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  ${getFontLink()}
   <title>${task.title}</title>
-  <style>
-    :root {
-      --vscode-editor-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      --status-ready: #3b82f6;
-      --status-active: #22c55e;
-      --status-feedback: #f97316;
-      --status-blocked: #ef4444;
-      --status-done: #6b7280;
-    }
-    body {
-      padding: 0; margin: 0;
-      font-family: var(--vscode-editor-font-family);
-      color: var(--vscode-editor-foreground);
-      background: var(--vscode-editor-background);
-    }
-    /* Sticky Header */
-    .header {
-      position: sticky; top: 0; z-index: 100;
-      background: var(--vscode-editor-background);
-      border-bottom: 1px solid var(--vscode-widget-border);
-      padding: 10px 20px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-    .header-row { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
-    
-    /* Title Input */
-    input.title-input {
-      font-size: 1.2rem; font-weight: 600;
-      background: transparent; border: none; color: inherit; width: 100%;
-      outline: none; border-bottom: 2px solid transparent;
-    }
-    input.title-input:focus { border-bottom-color: var(--vscode-focusBorder); }
-
-    /* Controls */
-    select {
-      background: var(--vscode-dropdown-background);
-      color: var(--vscode-dropdown-foreground);
-      border: 1px solid var(--vscode-dropdown-border);
-      padding: 4px; border-radius: 4px;
-    }
-
-    .badge {
-      padding: 2px 8px; border-radius: 99px; font-size: 0.8rem; font-weight: 500;
-      text-transform: uppercase;
-    }
-    .badge-id { background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); }
-    
-    /* Main Content */
-    .container { max-width: 900px; margin: 0 auto; padding: 20px; }
-    
-    .section { margin-bottom: 30px; }
-    .section-title { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--vscode-descriptionForeground); margin-bottom: 10px; border-bottom: 1px solid var(--vscode-widget-border); padding-bottom: 5px; }
-
-    /* Summary */
-    textarea.summary-input {
-      width: 100%; min-height: 80px;
-      background: var(--vscode-input-background);
-      color: var(--vscode-input-foreground);
-      border: 1px solid var(--vscode-input-border);
-      padding: 8px; font-family: inherit; resize: vertical;
-    }
-
-    /* Timeline / Trace */
-    .timeline { position: relative; padding-left: 20px; }
-    .timeline::before {
-      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
-      background: var(--vscode-widget-border);
-    }
-    .trace-item { position: relative; margin-bottom: 20px; padding-left: 15px; }
-    .trace-item::before {
-      content: ''; position: absolute; left: -24px; top: 6px; width: 10px; height: 10px;
-      border-radius: 50%; background: var(--vscode-button-background);
-      border: 2px solid var(--vscode-editor-background);
-    }
-    .trace-date { font-size: 0.8rem; color: var(--vscode-descriptionForeground); margin-bottom: 4px; }
-    .trace-content { background: var(--vscode-textBlockQuote-background); padding: 10px; border-radius: 4px; }
-    .trace-content h3 { margin-top: 0; font-size: 1rem; }
-    
-    /* Actions */
-    .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
-    button {
-      padding: 6px 14px; border: none; border-radius: 4px; cursor: pointer;
-      background: var(--vscode-button-background); color: var(--vscode-button-foreground);
-    }
-    button:hover { background: var(--vscode-button-hoverBackground); }
-    button.delete { background: var(--status-blocked); }
-  </style>
+  ${getSharedStyles()}
+  ${pageStyles}
 </head>
 <body>
+  <div class="status-bar"></div>
   <div class="header">
     <div class="header-top">
       <input type="text" class="title-input" id="title" value="${task.title}" placeholder="Task Title">
@@ -276,7 +304,6 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       </select>
       <div style="flex:1"></div>
       <div>Owner: <strong>${task.owner?.name || 'Unassigned'}</strong> (${task.owner?.type || '-'})</div>
-      <button id="saveBtn">Save</button>
     </div>
   </div>
 
@@ -294,7 +321,8 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     </div>
     
     <div class="actions">
-      <button class="delete" id="deleteBtn">Delete Task</button>
+      <button id="saveBtn" class="btn-ghost">Save</button>
+      <button class="btn-danger" id="deleteBtn">Delete Task</button>
     </div>
   </div>
 
@@ -336,9 +364,10 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
   private renderStatusOptions(current?: string): string {
     const statuses = ['ready', 'agent_active', 'in_progress', 'needs_feedback', 'blocked', 'done'];
-    return statuses.map(s =>
-      `<option value="${s}" ${s === current ? 'selected' : ''}>${s.replace('_', ' ').toUpperCase()}</option>`
-    ).join('');
+    return statuses.map(s => {
+      const label = s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      return `<option value="${s}" ${s === current ? 'selected' : ''}>${label}</option>`;
+    }).join('');
   }
 
   private parseTraceMarkdown(md: string): string {
