@@ -250,11 +250,11 @@
     },
     {
       "id": "TASK-TEST-001",
-      "columnId": "col-backlog",
+      "columnId": "col-understand",
       "title": "Test Ready Task 1",
       "status": "ready",
       "priority": "high",
-      "updatedAt": "2026-01-03T05:39:46.338335Z",
+      "updatedAt": "2026-01-04T21:34:51.713Z",
       "summary": "Test task for UI verification - ready"
     },
     {
@@ -292,9 +292,9 @@
       "id": "TASK-TEST-006",
       "columnId": "col-plan",
       "title": "Test Blocked Task",
-      "status": "blocked",
+      "status": "ready",
       "priority": "high",
-      "updatedAt": "2026-01-03T05:39:46.338335Z",
+      "updatedAt": "2026-01-04T21:35:27.923Z",
       "summary": "Test task for UI verification - blocked"
     },
     {

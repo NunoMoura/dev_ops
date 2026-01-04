@@ -97,6 +97,10 @@ export async function activate(context: vscode.ExtensionContext) {
       }
     }
 
+    // Check for developer config and prompt if missing
+    log('[Activation] Checking developer config...');
+    await checkDeveloperConfig();
+
     log('[Activation] Step 4: Binding views');
     bindDevOpsViews(context, services);
     log('[Activation] Step 4 complete');
@@ -291,4 +295,59 @@ function registerBoardViewRequests(context: vscode.ExtensionContext, services: D
   );
 }
 
+/**
+ * Check if developer config exists and prompt for name if missing.
+ * This enables Git collaboration by ensuring commits have proper attribution.
+ */
+async function checkDeveloperConfig(): Promise<void> {
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (!workspaceFolders || workspaceFolders.length === 0) {
+    return;
+  }
 
+  const workspaceRoot = workspaceFolders[0].uri.fsPath;
+  const fs = require('fs');
+  const path = require('path');
+  const configPath = path.join(workspaceRoot, '.dev_ops', 'config.json');
+
+  // Only check if .dev_ops folder exists (project is initialized)
+  const devOpsDir = path.join(workspaceRoot, '.dev_ops');
+  if (!fs.existsSync(devOpsDir)) {
+    return; // Not initialized yet
+  }
+
+  // Check if config exists and has developer name
+  let needsPrompt = true;
+  if (fs.existsSync(configPath)) {
+    try {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      if (config.developer?.name) {
+        needsPrompt = false;
+        log(`Developer name found: ${config.developer.name}`);
+      }
+    } catch {
+      // Invalid JSON, will prompt
+    }
+  }
+
+  if (needsPrompt) {
+    const developerName = await vscode.window.showInputBox({
+      prompt: 'Enter your name (for Git collaboration commits)',
+      placeHolder: 'e.g., alice',
+      ignoreFocusOut: true,
+      validateInput: (value) => {
+        if (!value || value.trim().length === 0) {
+          return 'Name is required for team collaboration';
+        }
+        return null;
+      }
+    });
+
+    if (developerName) {
+      const config = { developer: { name: developerName.trim() } };
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+      log(`Developer name saved: ${developerName}`);
+      vscode.window.showInformationMessage(`✅ Developer name set to: ${developerName}`);
+    }
+  }
+}
