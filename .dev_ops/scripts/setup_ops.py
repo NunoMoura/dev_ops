@@ -475,7 +475,7 @@ def install_rules(proposed_rules: list, rules_dest: str, ide: str = "antigravity
             rule_name = rule_name[:-3] + ".mdc"
 
         dest_path = os.path.join(target_dir, rule_name)
-        write_file(dest_path, content, overwrite=True)  # Allow updates
+        write_file(dest_path, content)
         print(f"   - Installed {rule_name} ({category})")
 
 
@@ -509,16 +509,6 @@ def bootstrap(target_dir: str):
         DOCS_TEMPLATES_DIR = os.path.join(ASSETS_ROOT, "templates", "docs")
         GITHUB_SRC_DIR = None  # GitHub workflows not included in extension
         print(f"   📦 Running from extension context: {ASSETS_ROOT}")
-        # Debug: verify paths exist
-        print(
-            f"   DEBUG: SCRIPTS_SRC_DIR exists: {os.path.exists(SCRIPTS_SRC_DIR)} - {SCRIPTS_SRC_DIR}"
-        )
-        print(
-            f"   DEBUG: TEMPLATES_SRC_DIR exists: {os.path.exists(TEMPLATES_SRC_DIR)} - {TEMPLATES_SRC_DIR}"
-        )
-        print(
-            f"   DEBUG: WORKFLOWS_SRC_DIR exists: {os.path.exists(WORKFLOWS_SRC_DIR)} - {WORKFLOWS_SRC_DIR}"
-        )
     else:
         # Framework repo mode: payload/ sibling to installer/
         FRAMEWORK_ROOT = os.path.dirname(SCRIPT_DIR)  # installer/ -> root
