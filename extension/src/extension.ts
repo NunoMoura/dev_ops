@@ -111,6 +111,9 @@ export async function activate(context: vscode.ExtensionContext) {
     agentManager.registerAdapter(new CursorAdapter());
     registerAgentManager(context);
 
+    // Check if existing .dev_ops/ needs framework files update
+    await checkAndUpdateFramework(context);
+
     // Auto-open board tab when extension activates
     try {
       // Note: Board will show onboarding if not initialized
@@ -124,6 +127,36 @@ export async function activate(context: vscode.ExtensionContext) {
   } catch (error) {
     logError('DevOps extension activation failed', error);
     vscode.window.showErrorMessage(`DevOps extension failed to activate: ${formatError(error)}`);
+  }
+}
+
+/**
+ * Check if existing .dev_ops/ project needs framework files update.
+ * Runs silently on activation to ensure scripts, templates, etc. are present.
+ */
+async function checkAndUpdateFramework(context: vscode.ExtensionContext): Promise<void> {
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (!workspaceFolders || workspaceFolders.length === 0) {
+    return;
+  }
+
+  const workspaceRoot = workspaceFolders[0].uri.fsPath;
+  const fs = require('fs');
+  const path = require('path');
+
+  const devOpsDir = path.join(workspaceRoot, '.dev_ops');
+  const scriptsDir = path.join(devOpsDir, 'scripts');
+  const boardPath = path.join(devOpsDir, 'board.json');
+
+  // Check if project is initialized (.dev_ops/board.json exists) but missing scripts
+  if (fs.existsSync(boardPath) && !fs.existsSync(scriptsDir)) {
+    log('Detected existing project missing framework files, updating...');
+    try {
+      await vscode.commands.executeCommand('devops.initialize');
+      log('Framework files updated successfully');
+    } catch (error) {
+      warn(`Framework update failed: ${formatError(error)}`);
+    }
   }
 }
 
@@ -297,60 +330,4 @@ async function detectProjectType(): Promise<'greenfield' | 'brownfield'> {
 
   log('Detected greenfield: new project');
   return 'greenfield';
-}
-
-/**
- * Register the setDeveloperName command.
- * Called from StatusBoardProvider when user clicks "Set Your Name".
- */
-export function registerSetDeveloperNameCommand(
-  context: vscode.ExtensionContext,
-  statusBoard: { refresh(): void }
-): void {
-  context.subscriptions.push(
-    vscode.commands.registerCommand('devops.setDeveloperName', async () => {
-      const developerName = await vscode.window.showInputBox({
-        title: 'DevOps: Set Your Name',
-        prompt: 'Your name for Git collaboration and team attribution',
-        placeHolder: 'e.g., Nuno, Alice, Bob',
-        ignoreFocusOut: true,
-        validateInput: (value) => {
-          if (!value || value.trim().length === 0) {
-            return 'Name is required to continue';
-          }
-          return null;
-        }
-      });
-
-      if (developerName) {
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        if (!workspaceFolders || workspaceFolders.length === 0) {
-          return;
-        }
-
-        const workspaceRoot = workspaceFolders[0].uri.fsPath;
-        const fs = require('fs');
-        const path = require('path');
-        const devOpsDir = path.join(workspaceRoot, '.dev_ops');
-        const configPath = path.join(devOpsDir, 'config.json');
-
-        // Ensure .dev_ops directory exists
-        if (!fs.existsSync(devOpsDir)) {
-          fs.mkdirSync(devOpsDir, { recursive: true });
-        }
-
-        // Write config
-        const config = { developer: { name: developerName.trim() } };
-        fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-        log(`Developer name saved: ${developerName}`);
-
-        vscode.window.showInformationMessage(
-          `✅ Welcome, ${developerName}! Your DevOps workspace is ready.`
-        );
-
-        // Refresh sidebar to show normal content
-        statusBoard.refresh();
-      }
-    })
-  );
 }

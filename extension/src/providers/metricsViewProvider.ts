@@ -38,15 +38,72 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
             return;
         }
 
+        // Check if onboarding is complete
+        const developerName = this._getDeveloperName();
+        if (!developerName) {
+            // Show placeholder during onboarding
+            this._view.webview.html = this._getOnboardingPlaceholderHtml();
+            return;
+        }
+
         try {
             const board = await readBoard();
-            this._view.webview.html = this._getHtmlForWebview(this._view.webview, board);
+            this._view.webview.html = this._getHtmlForWebview(this._view.webview, board, developerName);
         } catch (e) {
-            // console.error(e);
+            // Show onboarding placeholder if board doesn't exist
+            this._view.webview.html = this._getOnboardingPlaceholderHtml();
         }
     }
 
-    private _getHtmlForWebview(webview: vscode.Webview, board: Board): string {
+    private _getDeveloperName(): string | null {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders || workspaceFolders.length === 0) {
+            return null;
+        }
+
+        const workspaceRoot = workspaceFolders[0].uri.fsPath;
+        const fs = require('fs');
+        const path = require('path');
+        const configPath = path.join(workspaceRoot, '.dev_ops', 'config.json');
+
+        if (!fs.existsSync(configPath)) {
+            return null;
+        }
+
+        try {
+            const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+            return config.developer?.name || null;
+        } catch {
+            return null;
+        }
+    }
+
+    private _getOnboardingPlaceholderHtml(): string {
+        return `<!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body {
+                    font-family: var(--vscode-font-family);
+                    color: var(--vscode-foreground);
+                    background: var(--vscode-sideBar-background);
+                    padding: 20px;
+                    text-align: center;
+                }
+                .placeholder {
+                    opacity: 0.6;
+                    font-size: 12px;
+                }
+            </style>
+        </head>
+        <body>
+            <p class="placeholder">Complete onboarding above to see metrics</p>
+        </body>
+        </html>`;
+    }
+
+    private _getHtmlForWebview(webview: vscode.Webview, board: Board, developerName: string): string {
         // Calculate Metrics
         const totals = {
             activeAgents: 0,
@@ -64,7 +121,9 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
         };
 
         // Collect human teammates with task counts
+        // Always include the current developer
         const teammates = new Map<string, number>();
+        teammates.set(developerName, 0);
 
         const now = new Date();
         const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));

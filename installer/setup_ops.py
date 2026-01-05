@@ -487,19 +487,42 @@ def install_rules(proposed_rules: list, rules_dest: str, ide: str = "antigravity
 def bootstrap(target_dir: str):
     PROJECT_ROOT = os.path.abspath(target_dir)
 
-    # Locate Global Sources (framework repo with payload/)
+    # Locate Global Sources - detect context (extension vs framework repo)
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-    # Assuming this script is running from [framework]/installer/setup_ops.py
-    FRAMEWORK_ROOT = os.path.dirname(SCRIPT_DIR)
 
-    RULES_SRC_DIR = os.path.join(
-        FRAMEWORK_ROOT, "payload", "templates", "rules"
-    )  # Generator templates
-    CORE_RULES_SRC_DIR = os.path.join(
-        FRAMEWORK_ROOT, "payload", "rules"
-    )  # Actual rules (phases, guide)
-    WORKFLOWS_SRC_DIR = os.path.join(FRAMEWORK_ROOT, "payload", "workflows")
-    # Note: Scripts stay in framework repo, not copied to user projects
+    # Detect if running from VS Code extension context
+    # Extension bundles assets as: dist/assets/scripts/, dist/assets/templates/, etc.
+    is_extension_context = (
+        "dist" in SCRIPT_DIR
+        and "assets" in SCRIPT_DIR
+        and os.path.basename(SCRIPT_DIR) == "scripts"
+    )
+
+    if is_extension_context:
+        # Extension mode: assets are sibling directories to scripts/
+        ASSETS_ROOT = os.path.dirname(SCRIPT_DIR)  # dist/assets/
+        RULES_SRC_DIR = os.path.join(ASSETS_ROOT, "rules")  # Both core and template rules
+        CORE_RULES_SRC_DIR = os.path.join(ASSETS_ROOT, "rules")
+        WORKFLOWS_SRC_DIR = os.path.join(ASSETS_ROOT, "workflows")
+        TEMPLATES_SRC_DIR = os.path.join(ASSETS_ROOT, "templates")
+        SCRIPTS_SRC_DIR = os.path.join(ASSETS_ROOT, "scripts")
+        DOCS_TEMPLATES_DIR = os.path.join(ASSETS_ROOT, "templates", "docs")
+        GITHUB_SRC_DIR = None  # GitHub workflows not included in extension
+        print(f"   📦 Running from extension context: {ASSETS_ROOT}")
+    else:
+        # Framework repo mode: payload/ sibling to installer/
+        FRAMEWORK_ROOT = os.path.dirname(SCRIPT_DIR)  # installer/ -> root
+        RULES_SRC_DIR = os.path.join(
+            FRAMEWORK_ROOT, "payload", "templates", "rules"
+        )  # Generator templates
+        CORE_RULES_SRC_DIR = os.path.join(
+            FRAMEWORK_ROOT, "payload", "rules"
+        )  # Actual rules (phases, guide)
+        WORKFLOWS_SRC_DIR = os.path.join(FRAMEWORK_ROOT, "payload", "workflows")
+        TEMPLATES_SRC_DIR = os.path.join(FRAMEWORK_ROOT, "payload", "templates")
+        SCRIPTS_SRC_DIR = os.path.join(FRAMEWORK_ROOT, "payload", "scripts")
+        DOCS_TEMPLATES_DIR = os.path.join(FRAMEWORK_ROOT, "payload", "templates", "docs")
+        GITHUB_SRC_DIR = os.path.join(FRAMEWORK_ROOT, ".github", "workflows")
 
     # Destination Paths - User project structure
     AGENT_DIR = os.path.join(PROJECT_ROOT, ".agent")
@@ -613,7 +636,6 @@ def bootstrap(target_dir: str):
         print("✅ PRD found.")
 
     # Install Scripts to .dev_ops/scripts/ (for workflows to use)
-    SCRIPTS_SRC_DIR = os.path.join(FRAMEWORK_ROOT, "payload", "scripts")
     DEVOPS_SCRIPTS_DIR = os.path.join(DEVOPS_DIR, "scripts")
     if os.path.exists(SCRIPTS_SRC_DIR):
         print("\n📦 Installing Scripts...")
@@ -631,7 +653,6 @@ def bootstrap(target_dir: str):
                 f.write('"""DevOps framework scripts."""\n')
 
     # Install Templates to .dev_ops/templates/ (for /bootstrap to use)
-    TEMPLATES_SRC_DIR = os.path.join(FRAMEWORK_ROOT, "payload", "templates")
     DEVOPS_TEMPLATES_DIR = os.path.join(DEVOPS_DIR, "templates")
     if os.path.exists(TEMPLATES_SRC_DIR):
         print("\n📦 Installing Templates...")
@@ -657,35 +678,33 @@ def bootstrap(target_dir: str):
                 print(f"   - Installed {file}")
 
     # Install constitution.md template to .dev_ops/docs/ (referenced by dev_ops_guide.md rule)
-    constitution_src = os.path.join(
-        FRAMEWORK_ROOT, "payload", "templates", "docs", "constitution.md"
-    )
+    constitution_src = os.path.join(DOCS_TEMPLATES_DIR, "constitution.md")
     if os.path.exists(constitution_src):
         constitution_dest = os.path.join(DEVOPS_DOCS_DIR, "constitution.md")
         if not os.path.exists(constitution_dest):
             shutil.copy2(constitution_src, constitution_dest)
             print("   📜 Created constitution.md template in docs/")
 
-    # Install GitHub Actions Workflows (only PR triage)
-    GITHUB_SRC_DIR = os.path.join(FRAMEWORK_ROOT, ".github", "workflows")
-    GITHUB_DEST_DIR = os.path.join(PROJECT_ROOT, ".github", "workflows")
+    # Install GitHub Actions Workflows (only PR triage) - not in extension mode
+    if GITHUB_SRC_DIR:  # None in extension mode
+        GITHUB_DEST_DIR = os.path.join(PROJECT_ROOT, ".github", "workflows")
 
-    # Only install pr_triage.yml - lightweight PR comment → task ingestion
-    pr_triage_src = os.path.join(GITHUB_SRC_DIR, "pr_triage.yml")
-    if os.path.exists(pr_triage_src):
-        print("\n🤖 Installing PR Triage Workflow...")
-        os.makedirs(GITHUB_DEST_DIR, exist_ok=True)
-        pr_triage_dest = os.path.join(GITHUB_DEST_DIR, "pr_triage.yml")
-        if os.path.exists(pr_triage_dest):
-            choice = prompt_user("⚠️  pr_triage.yml already exists. Overwrite? (y/n)", "n")
-            if choice.lower() != "y":
-                print("   - Skipped pr_triage.yml")
+        # Only install pr_triage.yml - lightweight PR comment → task ingestion
+        pr_triage_src = os.path.join(GITHUB_SRC_DIR, "pr_triage.yml")
+        if os.path.exists(pr_triage_src):
+            print("\n🤖 Installing PR Triage Workflow...")
+            os.makedirs(GITHUB_DEST_DIR, exist_ok=True)
+            pr_triage_dest = os.path.join(GITHUB_DEST_DIR, "pr_triage.yml")
+            if os.path.exists(pr_triage_dest):
+                choice = prompt_user("⚠️  pr_triage.yml already exists. Overwrite? (y/n)", "n")
+                if choice.lower() != "y":
+                    print("   - Skipped pr_triage.yml")
+                else:
+                    shutil.copy2(pr_triage_src, pr_triage_dest)
+                    print("   - Installed .github/workflows/pr_triage.yml")
             else:
                 shutil.copy2(pr_triage_src, pr_triage_dest)
                 print("   - Installed .github/workflows/pr_triage.yml")
-        else:
-            shutil.copy2(pr_triage_src, pr_triage_dest)
-            print("   - Installed .github/workflows/pr_triage.yml")
 
     # Detect project type and prompt user
     print("\n🔍 Analyzing project type...")
@@ -710,8 +729,9 @@ def bootstrap(target_dir: str):
     # Initialize DevOps Board with template
     init_board(PROJECT_ROOT, project_type)
 
-    # Install Extension (if VS Code available)
-    install_extension(FRAMEWORK_ROOT)
+    # Install Extension (if VS Code available and not already running from extension)
+    if not is_extension_context:
+        install_extension(os.path.dirname(SCRIPT_DIR))
 
     print("\n✨ Setup Complete!")
     print("\n📁 Created structure:")
