@@ -23,10 +23,26 @@ VALID_PRIORITIES = frozenset({"high", "medium", "low", "p0", "p1", "p2"})
 
 
 def _load_default_columns() -> list[dict]:
-    """Load default columns from columns.json."""
+    """Load default columns from columns.json.
+
+    Falls back to hardcoded defaults if not in a valid dev_ops environment
+    (e.g., during setup_ops.py execution before .dev_ops is created).
+    """
     from utils import get_dev_ops_root
 
-    dev_ops_root = get_dev_ops_root()
+    try:
+        dev_ops_root = get_dev_ops_root()
+    except RuntimeError:
+        # Not in a valid environment yet (e.g., running setup_ops.py)
+        # Return hardcoded defaults
+        return [
+            {"id": "col-backlog", "name": "Backlog", "position": 1},
+            {"id": "col-understand", "name": "Understand", "position": 2},
+            {"id": "col-plan", "name": "Plan", "position": 3},
+            {"id": "col-build", "name": "Build", "position": 4},
+            {"id": "col-verify", "name": "Verify", "position": 5},
+            {"id": "col-done", "name": "Done", "position": 6},
+        ]
 
     # Framework repo: payload/board/columns.json
     # User project: .dev_ops/columns.json

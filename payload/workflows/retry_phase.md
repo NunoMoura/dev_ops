@@ -12,8 +12,8 @@ Spawn new agent with same prompt. Previous artifacts preserved.
 1. **Check current task and phase**:
 
    ```bash
-   cat dev_ops/.current_task
-   python3 scripts/board_ops.py list --status agent_active
+   cat .dev_ops/.current_task
+   python3 .dev_ops/scripts/board_ops.py list --status agent_active
    ```
 
 2. **Spawn new agent** with identical phase rule prompt

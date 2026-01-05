@@ -274,7 +274,7 @@
       "priority": "medium",
       "owner": {
         "type": "human",
-        "name": "developer"
+        "name": "Nuno"
       },
       "updatedAt": "2026-01-03T05:39:46.338335Z",
       "summary": "Test task for UI verification - in_progress"

@@ -16,7 +16,7 @@ import { showPhaseNotification } from './features/phaseNotifications';
 import { createStatusBar, StatusBarManager } from './statusBar';
 import { TaskEditorProvider } from './taskEditorProvider';
 // NEW Providers
-import { StatusBoardProvider } from './providers/statusBoardProvider';
+import { DashboardViewProvider } from './providers/dashboardViewProvider';
 import { MetricsViewProvider } from './providers/metricsViewProvider';
 
 import { SessionBridge } from './features/sessionBridge';
@@ -48,58 +48,15 @@ export async function activate(context: vscode.ExtensionContext) {
     const services = await initializeDevOpsServices(context);
     log('[Activation] Step 3 complete');
 
-    // Check for initialization and prompt if needed
-    const initialized = await isProjectInitialized();
-    if (!initialized) {
-      log('[Activation] Project not initialized - prompting user');
-      services.statusBar.showUninitialized();
+    // Onboarding and initialization are handled by DashboardViewProvider
+    // When user completes the onboarding form, it triggers devops.initialize
 
-      // Prompt user to initialize (modal - won't auto-dismiss)
-      const choice = await vscode.window.showInformationMessage(
-        '👋 Welcome to DevOps Framework! This workspace is not set up yet. Would you like to initialize it now?',
-        { modal: true },
-        'Initialize Now',
-        'Not Now'
-      );
-
-      if (choice === 'Initialize Now') {
-        // Prompt for project type (also modal)
-        const typeChoice = await vscode.window.showQuickPick([
-          {
-            label: '🌱 Greenfield',
-            description: 'New project starting from scratch',
-            detail: 'Loads 8 starter tasks: vision, architecture, tech stack, scaffolding',
-            value: 'greenfield'
-          },
-          {
-            label: '🏗️ Brownfield',
-            description: 'Existing codebase',
-            detail: 'Loads 10 audit tasks: architecture review, dependencies, technical debt',
-            value: 'brownfield'
-          }
-        ], {
-          placeHolder: 'What type of project is this?',
-          title: 'DevOps Framework: Project Type',
-          ignoreFocusOut: true  // Don't dismiss when clicking elsewhere
-        });
-
-        if (typeChoice) {
-          await vscode.commands.executeCommand('devops.initialize', typeChoice.value);
-          // Refresh views after initialization
-          try {
-            await services.provider.refresh();
-            services.statusBoard.refresh();
-            services.metricsView.updateContent();
-          } catch (error) {
-            warn(`Board refresh after initialization failed: ${error}`);
-          }
-        }
-      }
-    }
-
-    // Check for developer config and prompt if missing
-    log('[Activation] Checking developer config...');
-    await checkDeveloperConfig();
+    // Listen for onboarding completion to refresh views
+    services.dashboard.onDidComplete(() => {
+      services.provider.refresh();
+      services.dashboard.refresh();
+      services.metricsView.updateContent();
+    });
 
     log('[Activation] Step 4: Binding views');
     bindDevOpsViews(context, services);
@@ -107,17 +64,17 @@ export async function activate(context: vscode.ExtensionContext) {
 
     try {
       await services.provider.refresh();
-      services.statusBoard.refresh();
+      services.dashboard.refresh();
       services.metricsView.updateContent();
     } catch (error) {
       warn(`Board not loaded on activation: ${error}`);
     }
 
     await registerBoardWatchers(services.provider, context);
-    // Also watch for updates to refresh status board and metrics
+    // Also watch for updates to refresh dashboard and metrics
     context.subscriptions.push(
       services.provider.onDidUpdateBoardView(() => {
-        services.statusBoard.refresh();
+        services.dashboard.refresh();
         services.metricsView.updateContent();
       })
     );
@@ -156,12 +113,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Auto-open board tab when extension activates
     try {
-      if (initialized) {
-        // Maybe don't auto-open board anymore since we have the sidebar?
-        // Keeping it for now as per config check usually inside openBoard
-        await vscode.commands.executeCommand('devops.openBoard');
-        log('Board automatically opened');
-      }
+      // Note: Board will show onboarding if not initialized
+      await vscode.commands.executeCommand('devops.openBoard');
+      log('Board automatically opened');
     } catch (error) {
       warn(`Board auto-open skipped: ${formatError(error)}`);
     }
@@ -179,7 +133,7 @@ type DevOpsExtensionServices = DevOpsCommandServices & {
   boardPanelManager: BoardPanelManager;
   statusBar: StatusBarManager;
   syncFilterUI: () => void;
-  statusBoard: StatusBoardProvider;
+  dashboard: DashboardViewProvider;
   metricsView: MetricsViewProvider;
 };
 
@@ -187,9 +141,11 @@ async function initializeDevOpsServices(context: vscode.ExtensionContext): Promi
   // Internal board state provider (data source)
   const provider = new BoardTreeProvider(readBoard);
 
-  // NEW Sidebar Providers
-  const statusBoard = new StatusBoardProvider();
-  vscode.window.registerTreeDataProvider('devopsStatusBoard', statusBoard);
+  // Dashboard (handles onboarding and status display)
+  const dashboard = new DashboardViewProvider(context.extensionUri);
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider('devopsStatusBoard', dashboard)
+  );
 
   const metricsView = new MetricsViewProvider(context.extensionUri);
   context.subscriptions.push(
@@ -211,7 +167,7 @@ async function initializeDevOpsServices(context: vscode.ExtensionContext): Promi
   return {
     provider,
     boardView: undefined as unknown as vscode.TreeView<import('./providers/boardTreeProvider').BoardNode>,
-    statusBoard,
+    dashboard,
     metricsView,
     boardPanelManager,
     statusBar,
@@ -228,13 +184,13 @@ function bindDevOpsViews(
 }
 
 function registerBoardSnapshotSync(context: vscode.ExtensionContext, services: DevOpsExtensionServices): void {
-  const { provider, boardPanelManager, statusBar, statusBoard, metricsView } = services;
+  const { provider, boardPanelManager, statusBar, dashboard, metricsView } = services;
 
   const updateAll = async () => {
     try {
       const board = await readBoard();
       statusBar.update(board);
-      statusBoard.refresh();
+      dashboard.refresh();
       metricsView.updateContent();
     } catch (e) { }
   };
@@ -296,58 +252,105 @@ function registerBoardViewRequests(context: vscode.ExtensionContext, services: D
 }
 
 /**
- * Check if developer config exists and prompt for name if missing.
- * This enables Git collaboration by ensuring commits have proper attribution.
+ * Detect if project is greenfield or brownfield based on existing files.
+ * Greenfield: < 5 files, no manifest files
+ * Brownfield: existing codebase
  */
-async function checkDeveloperConfig(): Promise<void> {
+async function detectProjectType(): Promise<'greenfield' | 'brownfield'> {
   const workspaceFolders = vscode.workspace.workspaceFolders;
   if (!workspaceFolders || workspaceFolders.length === 0) {
-    return;
+    return 'greenfield';
   }
 
   const workspaceRoot = workspaceFolders[0].uri.fsPath;
   const fs = require('fs');
   const path = require('path');
-  const configPath = path.join(workspaceRoot, '.dev_ops', 'config.json');
 
-  // Only check if .dev_ops folder exists (project is initialized)
-  const devOpsDir = path.join(workspaceRoot, '.dev_ops');
-  if (!fs.existsSync(devOpsDir)) {
-    return; // Not initialized yet
-  }
+  // Check for common manifest files
+  const manifestFiles = [
+    'package.json',
+    'pyproject.toml',
+    'Cargo.toml',
+    'go.mod',
+    'pom.xml',
+    'build.gradle'
+  ];
 
-  // Check if config exists and has developer name
-  let needsPrompt = true;
-  if (fs.existsSync(configPath)) {
-    try {
-      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-      if (config.developer?.name) {
-        needsPrompt = false;
-        log(`Developer name found: ${config.developer.name}`);
-      }
-    } catch {
-      // Invalid JSON, will prompt
+  for (const manifest of manifestFiles) {
+    if (fs.existsSync(path.join(workspaceRoot, manifest))) {
+      log(`Detected brownfield: found ${manifest}`);
+      return 'brownfield';
     }
   }
 
-  if (needsPrompt) {
-    const developerName = await vscode.window.showInputBox({
-      prompt: 'Enter your name (for Git collaboration commits)',
-      placeHolder: 'e.g., alice',
-      ignoreFocusOut: true,
-      validateInput: (value) => {
-        if (!value || value.trim().length === 0) {
-          return 'Name is required for team collaboration';
+  // Count files (excluding hidden dirs)
+  try {
+    const entries = fs.readdirSync(workspaceRoot);
+    const visibleFiles = entries.filter((e: string) => !e.startsWith('.'));
+    if (visibleFiles.length > 5) {
+      log(`Detected brownfield: ${visibleFiles.length} files`);
+      return 'brownfield';
+    }
+  } catch {
+    // Ignore errors
+  }
+
+  log('Detected greenfield: new project');
+  return 'greenfield';
+}
+
+/**
+ * Register the setDeveloperName command.
+ * Called from StatusBoardProvider when user clicks "Set Your Name".
+ */
+export function registerSetDeveloperNameCommand(
+  context: vscode.ExtensionContext,
+  statusBoard: { refresh(): void }
+): void {
+  context.subscriptions.push(
+    vscode.commands.registerCommand('devops.setDeveloperName', async () => {
+      const developerName = await vscode.window.showInputBox({
+        title: 'DevOps: Set Your Name',
+        prompt: 'Your name for Git collaboration and team attribution',
+        placeHolder: 'e.g., Nuno, Alice, Bob',
+        ignoreFocusOut: true,
+        validateInput: (value) => {
+          if (!value || value.trim().length === 0) {
+            return 'Name is required to continue';
+          }
+          return null;
         }
-        return null;
-      }
-    });
+      });
 
-    if (developerName) {
-      const config = { developer: { name: developerName.trim() } };
-      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-      log(`Developer name saved: ${developerName}`);
-      vscode.window.showInformationMessage(`✅ Developer name set to: ${developerName}`);
-    }
-  }
+      if (developerName) {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders || workspaceFolders.length === 0) {
+          return;
+        }
+
+        const workspaceRoot = workspaceFolders[0].uri.fsPath;
+        const fs = require('fs');
+        const path = require('path');
+        const devOpsDir = path.join(workspaceRoot, '.dev_ops');
+        const configPath = path.join(devOpsDir, 'config.json');
+
+        // Ensure .dev_ops directory exists
+        if (!fs.existsSync(devOpsDir)) {
+          fs.mkdirSync(devOpsDir, { recursive: true });
+        }
+
+        // Write config
+        const config = { developer: { name: developerName.trim() } };
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+        log(`Developer name saved: ${developerName}`);
+
+        vscode.window.showInformationMessage(
+          `✅ Welcome, ${developerName}! Your DevOps workspace is ready.`
+        );
+
+        // Refresh sidebar to show normal content
+        statusBoard.refresh();
+      }
+    })
+  );
 }

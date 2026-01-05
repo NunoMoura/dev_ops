@@ -138,6 +138,30 @@ def detect_stack(project_root: str) -> list[dict[str, Any]]:
                 }
             )
 
+    # ---------------------------------------------------------
+    # 4. Databases
+    # ---------------------------------------------------------
+    databases: list[tuple[str, list[str]]] = [
+        ("postgresql", ["docker-compose.yml", "alembic.ini", "**/*.sql"]),
+        ("mysql", ["docker-compose.yml", "**/*.sql"]),
+        ("mongodb", ["docker-compose.yml", "mongod.conf"]),
+        ("redis", ["docker-compose.yml", "redis.conf"]),
+        ("sqlite", ["**/*.db", "**/*.sqlite", "**/*.sqlite3"]),
+    ]
+
+    for db_name, triggers in databases:
+        if _check_triggers(project_root, triggers, content_search=db_name):
+            stack.append(
+                {
+                    "name": f"{db_name}.md",
+                    "category": "Database",
+                    "template": "templates/rules/databases.md",
+                    "replacements": {
+                        "[Database Name]": db_name.capitalize(),
+                    },
+                }
+            )
+
     return stack
 
 

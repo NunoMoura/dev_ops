@@ -12,7 +12,7 @@ Add a new task to the Board board.
 1. **Create task**:
 
    ```bash
-   python3 scripts/board_ops.py create --title "{{user_input}}" --priority medium
+   python3 .dev_ops/scripts/board_ops.py create --title "{{user_input}}" --priority medium
    ```
 
    Or use VS Code: `Board: Create Task` or `+` button in board

@@ -1,66 +1,57 @@
 ---
-description: Generate project-specific rules and constitution after initialization
+description: Generate project-specific rules and constitution
 ---
 
-# Bootstrap DevOps Framework
+# Bootstrap
 
-Run this **ONCE** after initialization to generate project-specific rules.
+Run ONCE after initialization to generate customized rules.
 
-## Step 1: Detect Project Stack
-
-Run the detection script to analyze your project:
+## Step 1: Detect Stack
 
 ```bash
-python3 scripts/project_ops.py detect --target .
+python3 .dev_ops/scripts/project_ops.py detect --target .
 ```
 
-This will show detected languages, linters, and frameworks.
+This shows detected languages, linters, libraries, and databases.
 
-## Step 2: Generate Rules (Manual Agent Task)
+## Step 2: Generate Rules
 
-Using the detection output above, generate rules in `.agent/rules/`:
+For each detected item, read the corresponding template in `.dev_ops/templates/rules/`:
 
-1. For each detected **language**, read `payload/templates/rules/languages.md`
-2. For each detected **linter**, read `payload/templates/rules/linters.md`
-3. For each detected **library**, read `payload/templates/rules/libraries.md`
+- **Languages** → `languages.md`
+- **Linters** → `linters.md`
+- **Libraries** → `libraries.md`
+- **Databases** → `databases.md`
 
-Create files following the template instructions:
+Create customized rules in `.agent/rules/` (or `.cursor/rules/` for Cursor).
 
-- Naming: `language_<name>.md`, `linter_<name>.md`, `library_<name>.md`
-- Include proper frontmatter (activation_mode, name, globs)
-- Customize based on actual project patterns
-- Reference real files and conventions
+### Rule Naming
+
+- `language_<name>.md` (e.g., `language_python.md`)
+- `linter_<name>.md` (e.g., `linter_ruff.md`)
+- `library_<name>.md` (e.g., `library_fastapi.md`)
+- `database_<name>.md` (e.g., `database_postgresql.md`)
 
 ## Step 3: Create Constitution
 
-Read the constitution template:
-
-```bash
-cat payload/templates/docs/constitution.md
-```
+Read template: `.dev_ops/templates/docs/constitution.md`
 
 Create `.dev_ops/docs/constitution.md` customized for this project:
 
-- Project size and architecture
-- Observable technical decisions
-- Development workflow patterns
-- Testing and deployment approach
+- Project architecture
+- Technical decisions
+- Development workflow
+- Testing approach
 
 ## Expected Output
 
-```markdown
+```text
 .agent/rules/
-├── language_*.md      (per detected language)
-├── linter_*.md        (per detected linter)
-└── library_*.md       (per detected framework)
+├── language_*.md
+├── linter_*.md
+├── library_*.md
+└── database_*.md
 
 .dev_ops/docs/
-└── constitution.md    (project governance)
+└── constitution.md
 ```
-
-## Validation
-
-- All rules have proper frontmatter
-- Globs match actual project files
-- Constitution reflects real decisions
-- No placeholder text remains

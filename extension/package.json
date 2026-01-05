@@ -224,7 +224,8 @@
         {
           "id": "devopsStatusBoard",
           "name": "Dashboard",
-          "icon": "$(list-tree)"
+          "icon": "$(list-tree)",
+          "type": "webview"
         },
         {
           "id": "devopsMetricsView",

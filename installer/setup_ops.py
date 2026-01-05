@@ -18,15 +18,20 @@ sys.path.append(
 
 from board_ops import DEFAULT_COLUMNS  # Import shared column definitions
 from project_ops import detect_stack, get_file_content
-from utils import get_dev_ops_root, get_project_root, prompt_user, write_file
+from utils import prompt_user, write_file
 
 # ==========================================
 # CONSTANTS & PATHS
 # ==========================================
 
-PROJECT_ROOT = get_project_root()
-DEV_OPS_ROOT = get_dev_ops_root()
-TEMPLATES_DIR = os.path.join(DEV_OPS_ROOT, "templates")
+# Module-level constants removed - setup_ops.py creates the environment,
+# so we can't rely on get_dev_ops_root() at import time.
+# Paths are computed inside bootstrap() and passed to functions as needed.
+
+# Framework root is determined relative to this script's location
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+FRAMEWORK_ROOT = os.path.dirname(SCRIPT_DIR)  # installer/ -> root
+TEMPLATES_DIR = os.path.join(FRAMEWORK_ROOT, "payload", "templates")
 
 # ==========================================
 # Extension Installation
@@ -113,10 +118,11 @@ def detect_project_type(project_root: str) -> str:
         return "unknown"
 
 
-def load_board_template(project_type: str) -> list:
+def load_board_template(project_type: str, templates_dir: str = None) -> list:
     """Load the appropriate board template based on project type."""
     template_file = f"board_{project_type}.json"
-    template_path = os.path.join(TEMPLATES_DIR, "boards", template_file)
+    base_dir = templates_dir or TEMPLATES_DIR
+    template_path = os.path.join(base_dir, "boards", template_file)
 
     if not os.path.exists(template_path):
         print(f"   ⚠️  Template {template_file} not found, using empty board")
@@ -606,9 +612,33 @@ def bootstrap(target_dir: str):
     else:
         print("✅ PRD found.")
 
-    # Note: Scripts stay in framework repo (payload/scripts)
-    # User projects call them via Python module imports or CLI
-    # No need to copy scripts to user projects in new architecture
+    # Install Scripts to .dev_ops/scripts/ (for workflows to use)
+    SCRIPTS_SRC_DIR = os.path.join(FRAMEWORK_ROOT, "payload", "scripts")
+    DEVOPS_SCRIPTS_DIR = os.path.join(DEVOPS_DIR, "scripts")
+    if os.path.exists(SCRIPTS_SRC_DIR):
+        print("\n📦 Installing Scripts...")
+        os.makedirs(DEVOPS_SCRIPTS_DIR, exist_ok=True)
+        for file in os.listdir(SCRIPTS_SRC_DIR):
+            if file.endswith(".py") and not file.startswith("_"):
+                src_path = os.path.join(SCRIPTS_SRC_DIR, file)
+                if os.path.isfile(src_path):
+                    shutil.copy2(src_path, os.path.join(DEVOPS_SCRIPTS_DIR, file))
+                    print(f"   - Installed {file}")
+        # Also create __init__.py for package imports
+        init_path = os.path.join(DEVOPS_SCRIPTS_DIR, "__init__.py")
+        if not os.path.exists(init_path):
+            with open(init_path, "w") as f:
+                f.write('"""DevOps framework scripts."""\n')
+
+    # Install Templates to .dev_ops/templates/ (for /bootstrap to use)
+    TEMPLATES_SRC_DIR = os.path.join(FRAMEWORK_ROOT, "payload", "templates")
+    DEVOPS_TEMPLATES_DIR = os.path.join(DEVOPS_DIR, "templates")
+    if os.path.exists(TEMPLATES_SRC_DIR):
+        print("\n📦 Installing Templates...")
+        if os.path.exists(DEVOPS_TEMPLATES_DIR):
+            shutil.rmtree(DEVOPS_TEMPLATES_DIR)  # Replace existing
+        shutil.copytree(TEMPLATES_SRC_DIR, DEVOPS_TEMPLATES_DIR)
+        print("   - Installed templates to .dev_ops/templates/")
 
     # Install Rules (using the plan and IDE-specific format)
     install_rules(proposed_rules, AGENT_RULES_DIR, detected_ide)
