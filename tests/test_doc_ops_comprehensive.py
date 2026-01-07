@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "payload", "scr
 from doc_ops import (
     create_doc,
     create_mockup,
-    create_prd,
+    create_project_defs,
     create_story,
     create_user,
     get_doc_template,
@@ -83,7 +83,7 @@ class TestDocOpsComprehensive:
             assert "User" in open(story_path).read()
 
             # PRD
-            prd_path = create_prd("My PRD")
+            prd_path = create_project_defs("My PRD")
             assert "My PRD" in open(prd_path).read()
 
             # Mockup
@@ -198,14 +198,14 @@ class TestDocOpsComprehensive:
                 with patch("sys.argv", ["doc_ops.py", "scaffold", "--root", temp_project]):
                     main()
 
-                # create-prd
-                with patch("sys.argv", ["doc_ops.py", "create-prd", "--title", "CLI PRD"]):
+                # create-project-defs
+                with patch("sys.argv", ["doc_ops.py", "create-project-defs", "--title", "CLI PRD"]):
                     main()
                     assert os.path.exists(os.path.join(docs_dir, "prds", "cli-prd.md"))
 
                 # duplicate checks
                 assert create_user("CLI User") is not None
-                assert create_prd("CLI PRD") is not None
+                assert create_project_defs("CLI PRD") is not None
 
                 # 365: create_mockup duplicate check
                 assert create_mockup("CLI Mockup") is not None

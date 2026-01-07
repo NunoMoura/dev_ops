@@ -178,7 +178,7 @@ Automatically:
 
 ```bash
 # High-level planning
-/create_prd "Q1 Feature Roadmap"
+/create_project_defs "Q1 Feature Roadmap"
 
 # Break into features  
 /add_feature "User dashboard redesign"
@@ -288,7 +288,7 @@ def authenticate(username, password):
 ```markdown
 ┌─────────────────────────────────┐
 │  Cursor / Antigravity (AI)      │ 
-│  Uses: /spawn_agent, /claim     │
+│  Uses: /pick_task, /claim       │
 └──────────────┬──────────────────┘
                │
                │ Commands
@@ -338,7 +338,7 @@ your-project/
 │   │       └── 5_verify.md
 │   └── workflows/                  # User slash commands
 │       ├── create_task.md
-│       ├── spawn_agent.md
+│       ├── pick_task.md
 │       └── ...
 └── .dev_ops/                       # Hidden DevOps directory
     ├── board.json                  # Task board state (flat location)

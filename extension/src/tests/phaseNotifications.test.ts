@@ -35,7 +35,7 @@ function getWorkflowForPhase(
     }
     const backward = isBackwardMovement(fromColumnId, toColumnId);
     if (fromColumnId === 'col-backlog') {
-        return { workflow: 'spawn_agent', isBackward: false };
+        return { workflow: 'pick_task', isBackward: false };
     }
     return { workflow: 'next_phase', isBackward: backward };
 }
@@ -96,9 +96,9 @@ suite('phaseNotifications - getWorkflowForPhase', () => {
         assert.strictEqual(getWorkflowForPhase('col-build', 'col-backlog'), undefined);
     });
 
-    test('returns spawn_agent from Backlog', () => {
+    test('returns pick_task from Backlog', () => {
         const result = getWorkflowForPhase('col-backlog', 'col-understand');
-        assert.deepStrictEqual(result, { workflow: 'spawn_agent', isBackward: false });
+        assert.deepStrictEqual(result, { workflow: 'pick_task', isBackward: false });
     });
 
     test('returns next_phase with isBackward:false for forward movement', () => {

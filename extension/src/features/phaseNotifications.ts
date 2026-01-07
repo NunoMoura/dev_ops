@@ -49,11 +49,14 @@ function getWorkflowForPhase(
         return undefined;
     }
 
+    const toPhase = PHASE_INFO[toColumnId]?.name;
+    const fromPhase = fromColumnId ? PHASE_INFO[fromColumnId]?.name : undefined;
+
     const backward = isBackwardMovement(fromColumnId, toColumnId);
 
-    // From Backlog → first active phase: use spawn_agent
-    if (fromColumnId === 'col-backlog') {
-        return { workflow: 'spawn_agent', isBackward: false };
+    // From Backlog → first active phase: use pick_task
+    if (fromPhase === 'Backlog' && toPhase === 'Understand') {
+        return { workflow: 'pick_task', isBackward: false };
     }
 
     // Any other transition: use next_phase (forward) or indicate backward
