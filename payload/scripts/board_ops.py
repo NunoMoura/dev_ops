@@ -1297,6 +1297,11 @@ def main():
         dest="spawn_from",
         help="Parent task ID if spawned from blocker/conflict (e.g., TASK-001)",
     )
+    create_parser.add_argument(
+        "--upstream",
+        nargs="*",
+        help="Upstream dependencies (e.g., STORY-123)",
+    )
 
     # Mark done
     done_parser = subparsers.add_parser("done", help="Mark task as done")
@@ -1485,6 +1490,7 @@ def main():
             assignee=args.assignee,
             column_id=args.column,
             spawn_from=args.spawn_from,
+            upstream=args.upstream,
         )
     elif args.command == "done":
         mark_done(

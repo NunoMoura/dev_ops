@@ -4,7 +4,9 @@ import argparse
 import glob
 import json
 import os
+import re
 import sys
+from collections import Counter
 from typing import Any, Optional
 
 
@@ -18,9 +20,129 @@ def get_file_content(path: str) -> str:
         File contents as string, or empty string if file doesn't exist.
     """
     if os.path.exists(path):
-        with open(path) as f:
+        with open(path, encoding="utf-8", errors="ignore") as f:
             return f.read()
     return ""
+
+
+# Global mapping of technologies to their activation globs
+# This separates file extension patterns from library/framework patterns
+_GLOB_MAPPINGS = {
+    # Languages
+    "python": ["**/*.py"],
+    "typescript": ["**/*.ts", "**/*.tsx"],
+    "javascript": ["**/*.js", "**/*.jsx"],
+    "go": ["**/*.go"],
+    "rust": ["**/*.rs"],
+    "java": ["**/*.java"],
+    "cpp": ["**/*.cpp", "**/*.cc", "**/*.h", "**/*.hpp"],
+    # Frameworks / Libraries
+    "svelte": ["**/*.svelte"],
+    "vue": ["**/*.vue"],
+    "react": ["**/*.jsx", "**/*.tsx"],
+    "fastapi": ["**/routers/*.py", "**/routes.py", "**/main.py"],
+    "django": ["**/models.py", "**/views.py", "**/admin.py", "**/apps.py"],
+    "flask": ["**/app.py", "**/views.py"],
+    "sqlalchemy": ["**/models.py", "**/models/*.py"],
+    "pydantic": ["**/schemas.py", "**/schemas/*.py"],
+    # Databases
+    "postgresql": ["**/migrations/**", "**/*.sql"],
+    "mysql": ["**/*.sql"],
+    "mongodb": ["mongod.conf"],
+    "redis": ["redis.conf"],
+    "sqlite": ["**/*.db", "**/*.sqlite", "**/*.sqlite3"],
+}
+
+
+def detect_patterns(project_root: str) -> dict[str, Any]:
+    """Detect common file naming patterns and directories.
+
+    Args:
+        project_root: Path to the project root directory.
+
+    Returns:
+        Dictionary containing 'common_files' (counts) and 'common_dirs' (list).
+    """
+    patterns = {"common_files": {}, "common_dirs": []}
+
+    file_names = []
+    dir_names = []
+
+    try:
+        # Walk through the project (limited depth/exclusion handling implicitly via _check_triggers logic reuse?
+        # No, we need explicit walk here but respecting exclusions)
+        for root, dirs, files in os.walk(project_root):
+            # Modify dirs in-place to skip excluded directories
+            dirs[:] = [d for d in dirs if d not in _EXCLUDED_DIRS]
+
+            rel_root = os.path.relpath(root, project_root)
+            if rel_root != ".":
+                dir_names.append(os.path.basename(root) + "/")
+
+            for f in files:
+                if not f.startswith(".") and not f.startswith("__"):
+                    file_names.append(f)
+    except Exception:
+        pass
+
+    # Top 10 common files (excluding obvious noise if needed)
+    file_counts = Counter(file_names).most_common(10)
+    patterns["common_files"] = dict(file_counts)
+
+    # Common directories - simplistic frequency of directory basenames
+    dir_counts = Counter(dir_names).most_common(10)
+    patterns["common_dirs"] = [d[0] for d in dir_counts]
+
+    return patterns
+
+
+def detect_versions(project_root: str, stack_items: list[str]) -> dict[str, str]:
+    """Detect versions for detected stack items.
+
+    Args:
+        project_root: Path to project root.
+        stack_items: List of detected technology names (lowercase).
+
+    Returns:
+        Dictionary mapping technology name to detected version string.
+    """
+    versions = {}
+
+    # Python
+    if "python" in stack_items:
+        pyproject = os.path.join(project_root, "pyproject.toml")
+        if os.path.exists(pyproject):
+            content = get_file_content(pyproject)
+            # Look for requires-python = ">=3.11" or python = "^3.11"
+            match = re.search(r'(?:requires-python|python)\s*=\s*["\']([^"\']+)["\']', content)
+            if match:
+                versions["python"] = match.group(1)
+
+    # Node/JS/TS/Frameworks
+    package_json = os.path.join(project_root, "package.json")
+    if os.path.exists(package_json):
+        try:
+            with open(package_json) as f:
+                data = json.load(f)
+
+                # Node engine
+                if "engines" in data and "node" in data["engines"]:
+                    versions["node"] = data["engines"]["node"]
+                    # If javascript/typescript in stack, map node version to them roughly?
+                    # Or just keep it as node version.
+
+                # Dependencies
+                deps = {**data.get("dependencies", {}), **data.get("devDependencies", {})}
+
+                for item in stack_items:
+                    if item in deps:
+                        versions[item] = deps[item]
+                    elif item == "typescript" and "typescript" in deps:
+                        versions["typescript"] = deps["typescript"]
+        except Exception:
+            pass
+
+    return versions
 
 
 def detect_stack(project_root: str) -> list[dict[str, Any]]:
@@ -39,6 +161,8 @@ def detect_stack(project_root: str) -> list[dict[str, Any]]:
         - category: Language, Linter, or Library
         - template: Path to the _template.md file
         - replacements: Dictionary of placeholder values to fill in template
+        - version: Detected version string (optional)
+        - globs: List of glob patterns for activation
     """
     stack: list[dict[str, Any]] = []
 
@@ -162,6 +286,26 @@ def detect_stack(project_root: str) -> list[dict[str, Any]]:
                 }
             )
 
+    # Enrich stack with versions and globs
+    detected_names = [item["name"].replace(".md", "").lower() for item in stack]
+    versions = detect_versions(project_root, detected_names)
+
+    for item in stack:
+        name_key = item["name"].replace(".md", "").lower()
+
+        # Add version if detected
+        if name_key in versions:
+            item["version"] = versions[name_key]
+
+        # Add specific globs if mapped, otherwise default (agent should refine)
+        if name_key in _GLOB_MAPPINGS:
+            item["globs"] = _GLOB_MAPPINGS[name_key]
+        else:
+            # Fallback for unmapped items?
+            # Or assume the template defaults will be handled by the agent.
+            # But we want to avoid "Always On".
+            pass
+
     return stack
 
 
@@ -222,17 +366,27 @@ def main():
         stack = detect_stack(args.target)
 
         if args.format == "json":
-            print(json.dumps(stack, indent=2))
+            # Include patterns in JSON output for bootstrap orchestration
+            patterns = detect_patterns(args.target)
+            output = {"stack": stack, "patterns": patterns}
+            print(json.dumps(output, indent=2))
         else:
             # Summary format
             print(f"\n🔍 Detected stack in {args.target}:")
-            print(f"\n{'Category':<12} | {'Name':<20}")
-            print("-" * 36)
+            print(f"\n{'Category':<12} | {'Name':<20} | {'Version':<10}")
+            print("-" * 48)
             for item in stack:
                 category = item["category"]
                 name = item["name"].replace(".md", "")
-                print(f"{category:<12} | {name:<20}")
+                version = item.get("version", "-")
+                print(f"{category:<12} | {name:<20} | {version:<10}")
             print(f"\nTotal: {len(stack)} items detected")
+
+            # Print pattern summary
+            patterns = detect_patterns(args.target)
+            print("\n📂 Common Files:")
+            for f, count in patterns["common_files"].items():
+                print(f"  {f}: {count}")
     else:
         parser.print_help()
         sys.exit(1)

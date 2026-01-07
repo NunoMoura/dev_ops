@@ -33,6 +33,8 @@ The following sections are included in generated rules:
 
 ### General Principles (Always Included)
 
+- **Assumes**: State dependency on database service
+- **Related Rules**: Link to relevant libraries (ORMs)
 - **Schema First**: Define schema before queries
 - **Migrations**: All changes via versioned migrations
 - **Parameterization**: Never interpolate user input
@@ -67,12 +69,20 @@ After bootstrap detects PostgreSQL, `.agent/rules/databases/postgresql.md` conta
 
 ```yaml
 ---
-activation_mode: Always On
 name: PostgreSQL
 globs: ["**/migrations/**", "**/models/**"]
 ---
 
 # PostgreSQL Standards
+
+## Assumes
+This rule applies when interacting with the database layer.
+
+## Related Rules
+- `sqlalchemy` (if using ORM)
+- `alembic` (for migrations)
+
+## Standards
 
 pool_min: 2
 pool_max: 10

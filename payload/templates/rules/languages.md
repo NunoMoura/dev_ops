@@ -31,6 +31,8 @@ The bootstrap workflow detects languages via:
 
 ### General Principles (Always Included)
 
+- **Assumes**: State what this rule builds upon
+- **Related Rules**: Link to other relevant rules
 - **Clarity over Cleverness**: Readable by humans and AI
 - **Consistent Formatting**: Use standard tooling
 - **Error Handling**: Use idiomatic patterns
@@ -64,12 +66,21 @@ After bootstrap detects Python, `.agent/rules/languages/python.md` contains:
 
 ```yaml
 ---
-activation_mode: Always On
-name: Python
 globs: ["**/*.py"]
+name: Python
 ---
 
-# Python Standards
+# Python Rules
+
+## Assumes
+This rule serves as the base layer for Python development.
+Library and framework rules will layer on top of this.
+
+## Related Rules
+- Linter rules (e.g. `linter_*.md`)
+- Library rules (e.g. `library_*.md`)
+
+## Coding Standards
 
 strict: true
 type_checker: mypy

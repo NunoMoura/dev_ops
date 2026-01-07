@@ -185,3 +185,20 @@ class TestDetectStack:
             assert "python.md" in names
             assert "ruff.md" in names
             assert "fastapi.md" in names
+
+    def test_detect_python_with_version_and_globs(self):
+        """Test Python version detection and glob assignment."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            pyproject = os.path.join(tmpdir, "pyproject.toml")
+            with open(pyproject, "w") as f:
+                f.write('requires-python = ">=3.11"\n')
+
+            stack = detect_stack(tmpdir)
+            py_rule = next(s for s in stack if s["name"] == "python.md")
+
+            # Version check
+            assert py_rule.get("version") == ">=3.11"
+
+            # Globs check
+            assert "globs" in py_rule
+            assert "**/*.py" in py_rule["globs"]

@@ -670,6 +670,7 @@ function getBoardHtml(panelMode = false): string {
             const title = document.createElement('span');
             title.className = 'column-title';
             title.textContent = column.name;
+            header.appendChild(title);
             const count = document.createElement('span');
             count.className = 'column-count';
             const tasks = getTasksForColumn(column.id);

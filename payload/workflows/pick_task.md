@@ -3,7 +3,7 @@ description: Pick next task and start working
 category: automated
 ---
 
-# Spawn Agent
+# Pick Task
 
 Pick highest priority task from Backlog and claim it.
 
@@ -15,7 +15,7 @@ Pick highest priority task from Backlog and claim it.
    python3 .dev_ops/scripts/board_ops.py pick --claim
    ```
 
-   Or use VS Code: Click "Spawn Agent" in Agent sidebar
+   Or use VS Code: Click "Pick Task" in Agent sidebar
 
 2. **Move to Understand** (with auto-commit for team sync):
 

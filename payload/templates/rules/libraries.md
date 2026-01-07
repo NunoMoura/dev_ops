@@ -31,6 +31,8 @@ The bootstrap workflow detects libraries via:
 
 ### General Principles (Always Included)
 
+- **Assumes**: State dependency on language/base rules
+- **Related Rules**: Link to related libraries or frameworks
 - **Single Initialization**: Initialize once, reuse globally
 - **Idiomatic Usage**: Follow library's recommended patterns
 - **Version Pinning**: Pin major versions
@@ -62,12 +64,20 @@ After bootstrap detects FastAPI, `.agent/rules/libraries/fastapi.md` contains:
 
 ```yaml
 ---
-activation_mode: Always On
 name: FastAPI
 globs: ["**/routers/**", "**/api/**"]
 ---
 
 # FastAPI Standards
+
+## Assumes
+This rule assumes the base `python` language rule is active.
+
+## Related Rules
+- `pydantic` - for schema validation
+- `sqlalchemy` - for database models
+
+## Standards
 
 location: app/main.py
 singleton: true
