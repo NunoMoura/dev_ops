@@ -325,7 +325,7 @@ See [`docs/architecture/typescript-python-boundary.md`](./docs/architecture/type
 
 ### File Structure
 
-```
+```markdown
 your-project/
 ├── .agent/
 │   ├── rules/

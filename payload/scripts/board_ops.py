@@ -689,15 +689,25 @@ def mark_done(
     return False
 
 
-def pick_task(project_root: Optional[str] = None) -> Optional[dict]:
+def pick_task(task_id: Optional[str] = None, project_root: Optional[str] = None) -> Optional[dict]:
     """Pick the next available task based on priority and column.
 
     Selection criteria:
-    1. In Backlog column (not yet started)
-    2. Status is 'todo' (ready to work on)
-    3. Priority order: high > medium > low
-    4. Oldest updatedAt wins ties
+    1. If task_id provided: return that task
+    2. Else: In Backlog column (not yet started)
+       - Status is 'todo' (ready to work on)
+       - Priority order: high > medium > low
+       - Oldest updatedAt wins ties
     """
+    if task_id:
+        tasks = get_tasks(project_root=project_root)
+        for t in tasks:
+            if t.get("id") == task_id:
+                print(f"📋 Picked specific task: {t['id']} - {t['title']}")
+                return t
+        print(f"⚠️ Task {task_id} not found")
+        return None
+
     tasks = get_tasks(project_root=project_root, column_id="col-backlog", status="ready")
 
     if not tasks:
@@ -1349,7 +1359,8 @@ def main():
     )
 
     # Pick task
-    pick_parser = subparsers.add_parser("pick", help="Pick next available task")
+    pick_parser = subparsers.add_parser("pick", help="Pick the next task to work on")
+    pick_parser.add_argument("task_id", nargs="?", help="Specific Task ID to pick")
     pick_parser.add_argument("--claim", action="store_true", help="Also claim the picked task")
 
     # Claim task
@@ -1505,7 +1516,7 @@ def main():
     elif args.command == "move":
         move_to_column(args.task_id, args.column_id, commit=args.commit)
     elif args.command == "pick":
-        task = pick_task()
+        task = pick_task(args.task_id)
         if task and args.claim:
             claim_task(task["id"])
     elif args.command == "claim":
