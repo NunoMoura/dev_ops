@@ -69,7 +69,7 @@ suite('BoardTreeProvider Integration Tests', () => {
 
         const treeItem = provider.getTreeItem(column);
         assert.strictEqual(treeItem.label, column.column.name);
-        assert.strictEqual(treeItem.contextValue, 'boardColumn');
+        assert.strictEqual(treeItem.contextValue, 'devopsColumn');
     });
 
     test('getTreeItem returns correct label for task', async () => {
@@ -82,7 +82,7 @@ suite('BoardTreeProvider Integration Tests', () => {
 
         const treeItem = provider.getTreeItem(task);
         assert.strictEqual(treeItem.label, 'First task');
-        assert.strictEqual(treeItem.contextValue, 'boardTask');
+        assert.strictEqual(treeItem.contextValue, 'devopsTask');
     });
 
     test('getParent returns column for task', async () => {
