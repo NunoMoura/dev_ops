@@ -16,14 +16,7 @@ export function registerWorkflowCommands(
 ): void {
     const { provider } = services;
 
-    registerDevOpsCommand(
-        context,
-        'devops.claimTask',
-        async (node?: BoardNode) => {
-            await handleClaimTaskViaPython(provider, node);
-        },
-        'Unable to claim task',
-    );
+
 
     registerDevOpsCommand(
         context,
@@ -62,32 +55,7 @@ export function registerWorkflowCommands(
     );
 }
 
-/**
- * Claim a task using Python CLI (board_ops.py claim)
- * Sets status to in_progress and updates .current_task file.
- */
-async function handleClaimTaskViaPython(
-    provider: BoardTreeProvider,
-    node?: BoardNode,
-): Promise<void> {
-    const board = await readBoard();
-    const task = node && node.kind === 'item' ? node.item : await promptForTask(board);
-    if (!task) {
-        return;
-    }
-    const cwd = getWorkspaceRoot();
-    if (!cwd) {
-        throw new Error('No workspace folder open');
-    }
 
-    const result = await runBoardOps(['claim', task.id], cwd);
-    if (result.code !== 0) {
-        throw new Error(result.stderr || `Failed to claim task: exit code ${result.code}`);
-    }
-
-    await provider.refresh();
-    vscode.window.showInformationMessage(`✅ Claimed ${task.id}: ${task.title}`);
-}
 
 /**
  * Pick and claim the next highest priority task from Backlog
