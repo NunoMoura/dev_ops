@@ -1,16 +1,16 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { runBoardOps, runDocOps } from './pythonRunner';
-import { TaskDetailsPayload } from '../taskDetailsView';
+import { TaskDetailsPayload } from '../views/task/TaskDetailsView';
 
-import { BoardTreeProvider, BoardNode, BoardManagerNode } from '../providers/boardTreeProvider';
+import { BoardTreeProvider, BoardNode, BoardManagerNode } from '../views/board/BoardTreeProvider';
 import {
   Board,
   Column,
   Task,
   COLUMN_FALLBACK_NAME,
   DEFAULT_COLUMN_NAME,
-} from '../features/types';
+} from '../core';
 import { readBoard, writeBoard, ensureBoardUri, getWorkspaceRoot } from '../features/boardStore';
 import {
   compareNumbers,
@@ -45,14 +45,14 @@ import {
   moveTasksToColumn,
   MoveTasksResult,
 } from '../features/taskAccess';
-import { formatError } from '../features/errors';
+import { formatError } from '../core';
 import { MoveTasksRequest } from './types';
 
 export type DevOpsCommandServices = {
   provider: BoardTreeProvider;
   boardView: vscode.TreeView<BoardNode>;
-  dashboard: import('../providers/dashboardViewProvider').DashboardViewProvider;
-  metricsView: import('../providers/metricsViewProvider').MetricsViewProvider;
+  dashboard?: import('../views/dashboard/DashboardViewProvider').DashboardViewProvider;
+  metricsView?: import('../views/metrics/MetricsViewProvider').MetricsViewProvider;
   // Legacy providers removed
   // boardOverview: import('../providers/boardOverviewProvider').BoardOverviewProvider;
   // taskList: import('../providers/taskListProvider').TaskListProvider;
@@ -855,8 +855,8 @@ async function handleClaimTaskViaPython(
 }
 
 /**
- * Spawn a new agent by picking and claiming the highest priority task.
- * Wraps: board_ops.py pick --claim
+ * Pick and claim the next highest priority task from Backlog.
+ * Wraps: agentWorkflowService.pickAndClaimTask()
  */
 async function handleSpawnAgent(provider: BoardTreeProvider): Promise<void> {
   const cwd = getWorkspaceRoot();
@@ -870,11 +870,11 @@ async function handleSpawnAgent(provider: BoardTreeProvider): Promise<void> {
       vscode.window.showInformationMessage('ℹ️ No tasks available in Backlog');
       return;
     }
-    throw new Error(result.stderr || `Failed to spawn agent: exit code ${result.code}`);
+    throw new Error(result.stderr || `Failed to pick task: exit code ${result.code}`);
   }
 
   await provider.refresh();
-  vscode.window.showInformationMessage(`▶ Agent spawned! ${result.stdout.trim()}`);
+  vscode.window.showInformationMessage(`▶ Task claimed! ${result.stdout.trim()}`);
 }
 
 /**

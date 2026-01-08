@@ -6,7 +6,7 @@ import {
     buildCardPayload,
     buildCodexPrompt,
 } from '../features/taskPresentation';
-import { Task } from '../features/types';
+import { Task } from '../core';
 
 // Helper to create a minimal task
 function createTask(overrides?: Partial<Task>): Task {

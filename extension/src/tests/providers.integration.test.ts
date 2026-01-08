@@ -1,8 +1,8 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as sinon from 'sinon';
-import { BoardTreeProvider, BoardColumnNode, BoardItemNode } from '../providers/boardTreeProvider';
-import { Board, Column, Task, DEFAULT_COLUMN_BLUEPRINTS } from '../features/types';
+import { BoardTreeProvider, BoardColumnNode, BoardItemNode } from '../views/board/BoardTreeProvider';
+import { Board, Column, Task, DEFAULT_COLUMN_BLUEPRINTS } from '../core';
 
 /**
  * Integration tests for View Providers.

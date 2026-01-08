@@ -16,7 +16,7 @@ import {
     isDefined,
     createTaskId,
 } from '../features/boardData';
-import { Board, Column, Task } from '../features/types';
+import { Board, Column, Task } from '../core';
 
 suite('boardData - getColumnRank', () => {
     test('returns 0 for col-build (active work)', () => {

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { BoardPanelManager, createBoardPanelManager } from './boardView';
-import { BoardTreeProvider } from './providers/boardTreeProvider';
+import { BoardPanelManager, createBoardPanelManager } from './views/board/BoardPanelView';
+import { BoardTreeProvider } from './views/board/BoardTreeProvider';
 import {
   registerBoardCommands,
   handleBoardMoveTasks,
@@ -11,13 +11,13 @@ import {
 } from './handlers';
 import { registerInitializeCommand } from './handlers/initializeCommand';
 import { readBoard, writeBoard, registerBoardWatchers, isProjectInitialized } from './features/boardStore';
-import { formatError } from './features/errors';
+import { formatError } from './core';
 import { showPhaseNotification } from './features/phaseNotifications';
 import { createStatusBar, StatusBarManager } from './statusBar';
-import { TaskEditorProvider } from './taskEditorProvider';
+import { TaskEditorProvider } from './views/task/TaskEditorProvider';
 // NEW Providers
-import { DashboardViewProvider } from './providers/dashboardViewProvider';
-import { MetricsViewProvider } from './providers/metricsViewProvider';
+import { DashboardViewProvider } from './views/dashboard/DashboardViewProvider';
+import { MetricsViewProvider } from './views/metrics/MetricsViewProvider';
 
 import { SessionBridge } from './features/sessionBridge';
 import { CursorBridge } from './features/cursorBridge';
@@ -28,7 +28,7 @@ import { registerTaskProvider } from './providers/taskProvider';
 import { registerCodeLensProvider } from './providers/codeLensProvider';
 import { registerSCMDecorations } from './scm/scmDecorator';
 import { registerTestController } from './testExplorer/testController';
-import { log, warn, error as logError } from './features/logger';
+import { log, warn, error as logError } from './core';
 
 export async function activate(context: vscode.ExtensionContext) {
   log('DevOps extension v0.0.1 activating...');
@@ -199,7 +199,7 @@ async function initializeDevOpsServices(context: vscode.ExtensionContext): Promi
 
   return {
     provider,
-    boardView: undefined as unknown as vscode.TreeView<import('./providers/boardTreeProvider').BoardNode>,
+    boardView: undefined as unknown as vscode.TreeView<import('./views/board/BoardTreeProvider').BoardNode>,
     dashboard,
     metricsView,
     boardPanelManager,

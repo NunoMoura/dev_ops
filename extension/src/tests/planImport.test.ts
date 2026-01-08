@@ -6,7 +6,7 @@ import {
   mergeLists,
   ensureStringArray,
 } from '../features/planImport';
-import { Board } from '../features/types';
+import { Board } from '../core';
 
 suite('Plan import helpers', () => {
   test('parsePlanJson normalizes optional arrays and fields', () => {
