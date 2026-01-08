@@ -15,7 +15,7 @@ import { readBoard, writeBoard, registerBoardWatchers, isProjectInitialized } fr
 import { formatError } from './core';
 import { showPhaseNotification } from './domains/notifications';
 import { createStatusBar, StatusBarManager } from './ui/statusBar';
-import { TaskEditorProvider } from './ui/tasks';
+import { TaskEditorProvider, registerTaskDetailsView, BoardTaskDetailsViewProvider } from './ui/tasks';
 // NEW Providers
 import { DashboardViewProvider } from './ui/dashboard';
 import { MetricsViewProvider } from './ui/metrics';
@@ -167,6 +167,7 @@ type DevOpsExtensionServices = DevOpsCommandServices & {
   syncFilterUI: () => void;
   dashboard: DashboardViewProvider;
   metricsView: MetricsViewProvider;
+  taskDetails: BoardTaskDetailsViewProvider;
 };
 
 async function initializeDevOpsServices(context: vscode.ExtensionContext): Promise<DevOpsExtensionServices> {
@@ -182,6 +183,17 @@ async function initializeDevOpsServices(context: vscode.ExtensionContext): Promi
   const metricsView = new MetricsViewProvider(context.extensionUri);
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider('devopsMetricsView', metricsView)
+  );
+
+  // Task Details View (Sidebar)
+  const taskDetails = registerTaskDetailsView(context);
+  context.subscriptions.push(
+    taskDetails.onDidRequestClaim((taskId) => {
+      vscode.commands.executeCommand('devops.claimTask', { id: taskId });
+    }),
+    taskDetails.onDidRequestDelete((taskId) => {
+      vscode.commands.executeCommand('devops.deleteTask', { id: taskId });
+    })
   );
 
   const boardPanelManager = createBoardPanelManager(context);
@@ -201,6 +213,7 @@ async function initializeDevOpsServices(context: vscode.ExtensionContext): Promi
     boardView: undefined as unknown as vscode.TreeView<import('./ui/board').BoardNode>,
     dashboard,
     metricsView,
+    taskDetails,
     boardPanelManager,
     statusBar,
     syncFilterUI,

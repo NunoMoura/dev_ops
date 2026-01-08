@@ -202,6 +202,17 @@ export function registerTaskCommands(
         },
         'Unable to update status',
     );
+
+    // Claim Task (Lexicon Unification)
+    registerDevOpsCommand(
+        context,
+        'devops.claimTask',
+        async (node?: BoardNode) => {
+            // If node provided, claim that task. If not, auto-claim next (optional ID).
+            await handleClaimTaskViaPython(provider, node);
+        },
+        'Unable to claim task',
+    );
 }
 
 /**
@@ -475,4 +486,62 @@ async function handleMarkDoneViaPython(
 
     await provider.refresh();
     vscode.window.showInformationMessage(`✅ ${task.id} marked done and archived`);
+}
+
+/**
+ * Claim a task (Specific or Next)
+ * Wraps: board_ops.py claim [TASK_ID]
+ */
+async function handleClaimTaskViaPython(
+    provider: BoardTreeProvider,
+    node?: BoardNode,
+): Promise<void> {
+    const cwd = getWorkspaceRoot();
+    if (!cwd) {
+        throw new Error('No workspace folder open');
+    }
+
+    let taskId: string | undefined;
+
+    // If invoked from context menu or tree item
+    if (node && node.kind === 'item') {
+        taskId = node.item.id;
+    }
+    // If invoked from command palette with no context, verify if user wants specific task or next
+    else {
+        const board = await readBoard();
+        const task = await promptForTask(board);
+        if (task) {
+            taskId = task.id;
+        } else {
+            // User cancelled selection, maybe they want "next"?
+            // Let's explicitly ask or default to next.
+            // For now, let's assume if they don't pick one, we try to claim next IF they selected "Claim Next" command, 
+            // but this is a generic claim command.
+
+            // Allow "Claim Next" behavior if no task selected?
+            // Let's support a separate invocation or just pass no ID to python to let it decide.
+            // But promptForTask returns undefined on escape.
+        }
+    }
+
+    const args = ['claim'];
+    if (taskId) {
+        args.push(taskId);
+    }
+
+    // Auto-commit board state
+    args.push('--commit');
+
+    const result = await runBoardOps(args, cwd);
+    if (result.code !== 0) {
+        throw new Error(result.stderr || `Failed to claim task: exit code ${result.code}`);
+    }
+
+    await provider.refresh();
+    // Parse output for task ID if it was auto-picked
+    const match = result.stdout.match(/Claimed (TASK-\d+)/);
+    const claimedId = match ? match[1] : (taskId || 'task');
+
+    vscode.window.showInformationMessage(`✅ Claimed ${claimedId}`);
 }

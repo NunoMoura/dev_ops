@@ -16,12 +16,19 @@ export type TaskDetailsPayload = {
   workflow?: string;              // DevOps workflow (e.g., /create_plan)
   upstream?: string[];            // Artifact dependencies
   downstream?: string[];          // Artifacts depending on this task
+  owner?: {                       // Task Ownership
+    developer?: string;
+    agent?: string;
+    type?: string;
+    sessionId?: string;
+  };
 };
 
 
 type WebviewMessage =
   | { type: 'update'; task: TaskDetailsPayload }
   | { type: 'delete'; id: string }
+  | { type: 'claim'; id: string }
   | { type: 'task'; task: TaskDetailsPayload }
   | { type: 'empty' };
 
@@ -30,9 +37,11 @@ export class BoardTaskDetailsViewProvider implements vscode.WebviewViewProvider 
   private pendingTask: TaskDetailsPayload | undefined;
   private readonly onUpdateEmitter = new vscode.EventEmitter<TaskDetailsPayload>();
   private readonly onDeleteEmitter = new vscode.EventEmitter<string>();
+  private readonly onClaimEmitter = new vscode.EventEmitter<string>();
 
   readonly onDidSubmitUpdate = this.onUpdateEmitter.event;
   readonly onDidRequestDelete = this.onDeleteEmitter.event;
+  readonly onDidRequestClaim = this.onClaimEmitter.event;
 
   constructor(private readonly extensionUri: vscode.Uri) { }
 
@@ -53,6 +62,8 @@ export class BoardTaskDetailsViewProvider implements vscode.WebviewViewProvider 
         this.onUpdateEmitter.fire(message.task);
       } else if (message.type === 'delete' && typeof message.id === 'string') {
         this.onDeleteEmitter.fire(message.id);
+      } else if (message.type === 'claim' && typeof message.id === 'string') {
+        this.onClaimEmitter.fire(message.id);
       }
     });
     if (this.pendingTask) {
@@ -139,7 +150,42 @@ function getCardHtml(): string {
       .feature-section h3 {
         font-size: var(--text-lg);
         font-weight: var(--weight-semibold);
+        font-weight: var(--weight-semibold);
         margin-bottom: var(--space-md);
+      }
+      .owner-section {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+        padding: var(--space-sm) var(--space-md);
+        margin-bottom: var(--space-md);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .owner-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .owner-label {
+        font-size: 10px;
+        color: var(--vscode-descriptionForeground);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .owner-name {
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .agent-active {
+        color: var(--status-agent-active);
+        font-size: 11px;
+        background: rgba(34, 197, 94, 0.1);
+        padding: 1px 6px;
+        border-radius: 99px;
       }
       .section-header {
         display: flex;
@@ -346,6 +392,9 @@ function getCardHtml(): string {
       const columnLabel = document.getElementById('columnLabel');
       const deleteBtn = document.getElementById('deleteBtn');
       const saveBtn = document.getElementById('saveBtn');
+      const claimBtn = document.getElementById('claimBtn');
+      const ownerContainer = document.getElementById('ownerContainer');
+      const ownerNameEl = document.getElementById('ownerName');
       const featureTasksContainer = document.getElementById('featureTasksContainer');
       const addFeatureTaskBtn = document.getElementById('addFeatureTask');
       const upstreamContainer = document.getElementById('upstreamArtifacts');
@@ -606,6 +655,21 @@ function getCardHtml(): string {
           prioritySelect.value = message.task.priority || '';
           statusSelect.value = message.task.status || 'todo';
           columnLabel.textContent = message.task.column ? 'Column: ' + message.task.column : '';
+          
+          // Owner Display
+          if (message.task.owner && message.task.owner.developer) {
+              ownerContainer.classList.remove('hidden');
+              let ownerHtml = '👤 ' + message.task.owner.developer;
+              if (message.task.owner.agent) {
+                  ownerHtml += \` <span class="agent-active">⚡ \${message.task.owner.agent} Active</span>\`;
+              }
+              ownerNameEl.innerHTML = ownerHtml;
+              claimBtn.textContent = "Re-Claim Task";
+          } else {
+              ownerContainer.classList.add('hidden');
+              claimBtn.textContent = "Claim Task";
+          }
+
           featureTasks = cloneFeatureTasks(message.task.featureTasks);
           upstreamArtifacts = Array.isArray(message.task.upstream) ? [...message.task.upstream] : [];
           downstreamArtifacts = Array.isArray(message.task.downstream) ? [...message.task.downstream] : [];
@@ -672,6 +736,13 @@ function getCardHtml(): string {
         }
         vscode.postMessage({ type: 'delete', id: currentTaskId });
       });
+
+      claimBtn.addEventListener('click', () => {
+        if (!currentTaskId) {
+          return;
+        }
+        vscode.postMessage({ type: 'claim', id: currentTaskId });
+      });
     </script>
   `;
 
@@ -684,6 +755,14 @@ function getCardHtml(): string {
           id="columnLabel"
           style="margin-bottom: 8px; font-size: 12px; color: var(--vscode-descriptionForeground);"
         ></div>
+        
+        <div id="ownerContainer" class="owner-section hidden">
+            <div class="owner-info">
+                <span class="owner-label">Current Owner</span>
+                <span id="ownerName" class="owner-name"></span>
+            </div>
+        </div>
+
         <label for="title">Title</label>
         <input id="title" type="text" required />
 
@@ -738,6 +817,7 @@ function getCardHtml(): string {
 
         <div class="actions">
           <button id="saveBtn" type="button" class="btn-ghost">Save</button>
+          <button id="claimBtn" type="button" class="btn-ghost" style="border-color: var(--brand-color); color: var(--brand-color);">Claim Task</button>
           <button id="deleteBtn" type="button" class="btn-danger">Delete Task</button>
         </div>
         <div id="saveIndicator" class="save-indicator"></div>

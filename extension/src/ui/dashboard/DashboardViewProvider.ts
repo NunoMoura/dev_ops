@@ -42,8 +42,10 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
         await vscode.commands.executeCommand('devops.initialize', projectType);
         this._onDidComplete.fire();
         this._updateContent();
-      } else if (message.type === 'openTask') {
-        await vscode.commands.executeCommand('devops.showTaskDetails', message.taskId);
+      } else if (message.type === 'openTask' && typeof message.taskId === 'string') {
+        vscode.commands.executeCommand('devops.showTaskDetails', message.taskId);
+      } else if (message.type === 'openBoard') {
+        vscode.commands.executeCommand('devops.openBoard');
       }
     });
   }
@@ -344,13 +346,51 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       border-radius: 4px; cursor: pointer; font-size: 12px;
     }
     .task:hover { background: var(--vscode-list-activeSelectionBackground); }
+    
+    .dashboard-header {
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--vscode-panel-border);
+    }
+    .open-board-btn {
+      width: 100%;
+      padding: 10px;
+      /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+      background: #cba6f7;
+      color: #11111b; /* Dark text for contrast on pastel purple */
+      border: none;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+      font-family: inherit;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .open-board-btn:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+    .open-board-btn:active {
+      transform: translateY(0);
+    }
+    .open-board-btn .icon { font-size: 16px; }
   </style>
 </head>
 <body>
+  <div class="dashboard-header">
+    <button class="open-board-btn" onclick="openBoard()">
+      Open Board
+    </button>
+  </div>
   ${groupsHtml}
   <script>
     const vscode = acquireVsCodeApi();
     function openTask(id) { vscode.postMessage({ type: 'openTask', taskId: id }); }
+    function openBoard() { vscode.postMessage({ type: 'openBoard' }); }
   </script>
 </body>
 </html>`;

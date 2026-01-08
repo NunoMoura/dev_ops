@@ -17,6 +17,11 @@ export type BoardViewTask = {
   status?: string;               // Autonomy state: ready, agent_active, needs_feedback, blocked, done
   tags?: string[];
   updatedAt?: string;
+  owner?: {                      // Task Ownership
+    developer?: string;
+    agent?: string;
+    type?: string;
+  };
   // Artifact linking
   upstream?: string[];           // Artifacts this task reads from
   downstream?: string[];         // Artifacts this task produces
@@ -270,16 +275,22 @@ function getBoardHtml(panelMode = false): string {
         box-shadow: 0 0 0 1px var(--vscode-focusBorder) inset;
       }
       .column-header {
-        padding: 10px 12px;
+        padding: 12px 16px;
         border-bottom: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
         display: flex;
         align-items: center;
         justify-content: space-between;
-        font-weight: 600;
+        font-weight: 700;
+        background: rgba(255, 255, 255, 0.02);
       }
       .column-title {
         flex: 1;
         margin-right: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-size: 13px;
+        color: var(--brand-color);
+        font-weight: 700;
       }
       .column-actions {
         display: flex;
@@ -446,6 +457,20 @@ function getBoardHtml(panelMode = false): string {
       .card-footer-left .priority-high { color: #ef4444; }
       .card-footer-left .priority-medium { color: #f59e0b; }
       .card-footer-left .priority-low { color: #22c55e; }
+      .card-footer-left .owner-badge {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        background: rgba(255, 255, 255, 0.08);
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 10px;
+        color: var(--vscode-foreground);
+        opacity: 0.9;
+      }
+      .card-footer-left .agent-badge {
+        color: #22c55e; /* Green for active agent */
+      }
       .card-footer-left .date {
         text-transform: uppercase;
         font-size: 10px;
@@ -794,42 +819,66 @@ function getBoardHtml(panelMode = false): string {
             card.appendChild(progressContainer);
           }
 
-          // Tags
-          if (task.tags?.length) {
-            const tags = document.createElement('div');
-            tags.className = 'task-tags';
-            tags.textContent = task.tags.join(', ');
-            card.appendChild(tags);
-          }
-
-          // Footer: priority/date on left, status on right
+          // Footer: Priority, Owner, Date on left; Status on right
+          
+          // Check what we need to show
           const status = task.status || 'ready';
           const hasStatus = status !== 'ready';
           const hasPriority = !!task.priority;
           const hasDate = !!task.updatedAt;
-          
-          if (hasStatus || hasPriority || hasDate) {
+          const hasOwner = !!(task.owner && task.owner.developer);
+
+          if (hasStatus || hasPriority || hasDate || hasOwner) {
             const footer = document.createElement('div');
             footer.className = 'card-footer';
             
-            // Left side: priority · date
+            // Left side
             const footerLeft = document.createElement('div');
             footerLeft.className = 'card-footer-left';
             
+            // Priority
             if (hasPriority) {
               const prioritySpan = document.createElement('span');
-              prioritySpan.className = 'priority priority-' + task.priority;
+              prioritySpan.className = 'priority priority-' + (task.priority.toLowerCase() || 'medium');
               prioritySpan.textContent = task.priority;
               footerLeft.appendChild(prioritySpan);
             }
-            
-            if (hasPriority && hasDate) {
-              const separator = document.createElement('span');
-              separator.className = 'separator';
-              separator.textContent = '·';
-              footerLeft.appendChild(separator);
+
+            // Separator 1
+            if (hasPriority && (hasOwner || hasDate)) {
+               const sep = document.createElement('span');
+               sep.className = 'separator';
+               sep.textContent = '·';
+               footerLeft.appendChild(sep);
+            }
+
+            // Owner
+            if (hasOwner) {
+                const ownerBadge = document.createElement('span');
+                ownerBadge.className = 'owner-badge';
+                ownerBadge.title = 'Developer: ' + task.owner.developer;
+                ownerBadge.textContent = '👤 ' + task.owner.developer;
+                footerLeft.appendChild(ownerBadge);
+
+                // Agent
+                if (task.owner.agent) {
+                    const agentBadge = document.createElement('span');
+                    agentBadge.className = 'owner-badge agent-badge';
+                    agentBadge.title = 'Agent Activity: ' + task.owner.agent;
+                    agentBadge.textContent = '🤖'; // Minimal badge
+                    footerLeft.appendChild(agentBadge);
+                }
+            }
+
+            // Separator 2
+            if (hasOwner && hasDate) {
+               const sep = document.createElement('span');
+               sep.className = 'separator';
+               sep.textContent = '·';
+               footerLeft.appendChild(sep);
             }
             
+            // Date
             if (hasDate) {
               const dateSpan = document.createElement('span');
               dateSpan.className = 'date';
