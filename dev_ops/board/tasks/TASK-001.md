@@ -1,0 +1,8 @@
+- [2026-01-08T21:10:29.508Z] Moved to column Understand
+- [2026-01-08T21:10:29.508Z] Moved to column Understand
+- [2026-01-08T21:10:31.352Z] Moved to column Plan
+- [2026-01-08T21:10:31.353Z] Moved to column Plan
+- [2026-01-08T21:10:32.558Z] Moved to column Understand
+- [2026-01-08T21:10:32.558Z] Moved to column Understand
+- [2026-01-08T21:10:33.768Z] Moved to column Backlog
+- [2026-01-08T21:10:33.768Z] Moved to column Backlog
