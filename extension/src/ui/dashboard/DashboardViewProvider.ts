@@ -53,7 +53,9 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
   }
 
   private async _updateContent(): Promise<void> {
-    if (!this._view) return;
+    if (!this._view) {
+      return;
+    }
 
     const state = await this._getOnboardingState();
     if (state.needsOnboarding) {

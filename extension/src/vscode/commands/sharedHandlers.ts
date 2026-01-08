@@ -196,3 +196,32 @@ export async function handleArchiveSingle(taskId: string, provider: BoardTreePro
         vscode.window.showErrorMessage(`Unable to archive task: ${formatError(error)}`);
     }
 }
+
+/**
+ * Handle deleting multiple tasks (from board webview)
+ * 
+ * Used by: BoardPanelManager in extension.ts
+ */
+export async function handleBoardDeleteTasks(taskIds: string[], provider: BoardTreeProvider): Promise<void> {
+    if (!taskIds?.length) {
+        return;
+    }
+    const count = taskIds.length;
+    const confirmed = await vscode.window.showWarningMessage(
+        `Delete ${count} task${count > 1 ? 's' : ''}?`,
+        { modal: true },
+        'Delete'
+    );
+    if (confirmed !== 'Delete') {
+        return;
+    }
+    try {
+        const board = await readBoard();
+        board.items = board.items.filter(t => !taskIds.includes(t.id));
+        await writeBoard(board);
+        await provider.refresh();
+        vscode.window.showInformationMessage(`Deleted ${count} task${count > 1 ? 's' : ''}`);
+    } catch (error) {
+        vscode.window.showErrorMessage(`Unable to delete tasks: ${formatError(error)}`);
+    }
+}

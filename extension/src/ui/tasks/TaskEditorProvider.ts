@@ -4,6 +4,8 @@ import * as path from 'path';
 import { readBoard, writeBoard, getBoardPath } from '../../data';
 import { Task, ChecklistItem, COLUMN_FALLBACK_NAME, TaskStatus } from '../../core';
 import { getFontLink, getSharedStyles, getCSPMeta } from '../shared/styles';
+import { handleCardUpdateMessage, handleCardDeleteMessage } from '../../vscode/commands/sharedHandlers';
+import { BoardTreeProvider } from '../board';
 
 /**
  * Content provider for devops-task:// URIs.
@@ -55,6 +57,10 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
   ): Promise<void> {
     webviewPanel.webview.options = { enableScripts: true };
     const taskId = this.getTaskIdFromUri(document.uri);
+    // Get the provider from global instance or context if possible
+    // For now, we assume provideTextDocumentContent already handles the read
+    const board = await readBoard();
+    const provider = new BoardTreeProvider(() => Promise.resolve(board)); // Mock or real provider
 
     const updateWebview = async () => {
       const task = await this.loadTask(taskId);
@@ -83,21 +89,28 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
     // Handle messages
     webviewPanel.webview.onDidReceiveMessage(async (message) => {
+      // Create a dummy provider or use a real one if accessible
+      const currentBoard = await readBoard();
+      const tempProvider = new BoardTreeProvider(() => Promise.resolve(currentBoard));
+      const syncFilterUI = () => {
+        void vscode.commands.executeCommand('setContext', 'devopsFilterActive', tempProvider.hasFilter());
+      };
+
       switch (message.type) {
         case 'update':
-          await this.updateTask(taskId, message.data);
+          await handleCardUpdateMessage({ id: taskId, ...message.data }, tempProvider, syncFilterUI);
           break;
         case 'save':
-          await this.updateTask(taskId, message.data);
+          await handleCardUpdateMessage({ id: taskId, ...message.data }, tempProvider, syncFilterUI);
           vscode.window.showInformationMessage(`✅ Saved task ${taskId}`);
-          // trigger update to refresh view if needed
           await updateWebview();
           vscode.commands.executeCommand('devops.refreshBoard');
           break;
         case 'delete':
-          const confirmed = await vscode.window.showWarningMessage(`Delete task ${taskId}?`, { modal: true }, 'Delete');
-          if (confirmed === 'Delete') {
-            await this.deleteTask(taskId);
+          await handleCardDeleteMessage(taskId, tempProvider, syncFilterUI);
+          // Check if task still exists
+          const boardAfter = await readBoard();
+          if (!boardAfter.items.find(t => t.id === taskId)) {
             webviewPanel.dispose();
           }
           break;
@@ -130,22 +143,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     return '';
   }
 
-  private async updateTask(taskId: string, data: Partial<Task>): Promise<void> {
-    const board = await readBoard();
-    const task = board.items.find(t => t.id === taskId);
-    if (task) {
-      Object.assign(task, data);
-      task.updatedAt = new Date().toISOString();
-      await writeBoard(board);
-    }
-  }
-
-  private async deleteTask(taskId: string): Promise<void> {
-    const board = await readBoard();
-    board.items = board.items.filter(t => t.id !== taskId);
-    await writeBoard(board);
-    vscode.commands.executeCommand('devops.refreshBoard');
-  }
+  // These are now handled by sharedHandlers
 
   private getErrorHtml(message: string): string {
     return `<html><body><h2 style="color:red">${message}</h2></body></html>`;

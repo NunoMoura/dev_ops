@@ -15,6 +15,7 @@ export {
   handleCardDeleteMessage,
   handleArchiveAll,
   handleArchiveSingle,
+  handleBoardDeleteTasks,
 } from './sharedHandlers';
 
 // Re-export types for consumers

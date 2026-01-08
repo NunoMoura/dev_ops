@@ -7,6 +7,7 @@ import {
   handleBoardOpenTask,
   handleArchiveAll,
   handleArchiveSingle,
+  handleBoardDeleteTasks,
   DevOpsCommandServices,
 } from './vscode/commands';
 import { registerInitializeCommand } from './vscode/commands/initializeCommand';
@@ -261,23 +262,7 @@ function registerBoardViewRequests(context: vscode.ExtensionContext, services: D
       await handleArchiveSingle(taskId, provider);
     }),
     boardPanelManager.onDidRequestDeleteTasks(async (taskIds: string[]) => {
-      const count = taskIds.length;
-      const confirmed = await vscode.window.showWarningMessage(
-        `Delete ${count} task${count > 1 ? 's' : ''}?`,
-        { modal: true },
-        'Delete'
-      );
-      if (confirmed === 'Delete') {
-        try {
-          const board = await readBoard();
-          board.items = board.items.filter(t => !taskIds.includes(t.id));
-          await writeBoard(board);
-          vscode.window.showInformationMessage(`Deleted ${count} task${count > 1 ? 's' : ''}`);
-          vscode.commands.executeCommand('devops.refreshBoard');
-        } catch (error: unknown) {
-          vscode.window.showErrorMessage(`Unable to delete tasks: ${formatError(error)}`);
-        }
-      }
+      await handleBoardDeleteTasks(taskIds, provider);
     }),
   );
 }
