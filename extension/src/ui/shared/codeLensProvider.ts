@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { BoardApi, Task } from '../../api/boardApi';
+import { BoardApi, Task } from '../../data';
 
 /**
  * CodeLens provider for DevOps task references.
