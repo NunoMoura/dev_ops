@@ -10,7 +10,7 @@ import {
   DevOpsCommandServices,
 } from './handlers';
 import { registerInitializeCommand } from './handlers/initializeCommand';
-import { readBoard, writeBoard, registerBoardWatchers, isProjectInitialized } from './features/boardStore';
+import { readBoard, writeBoard, registerBoardWatchers, isProjectInitialized } from './data';
 import { formatError } from './core';
 import { showPhaseNotification } from './features/phaseNotifications';
 import { createStatusBar, StatusBarManager } from './statusBar';

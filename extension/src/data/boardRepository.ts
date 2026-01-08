@@ -1,5 +1,5 @@
 import { Board, Task, Column } from '../core';
-import { readBoard, writeBoard } from '../data';
+import { readBoard, writeBoard } from './boardStore';
 import { createTaskId } from '../features/boardData';
 
 /**

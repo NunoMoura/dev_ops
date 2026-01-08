@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { runBoardOps, runDocOps } from './pythonRunner';
+import { runBoardOps, runDocOps } from '../data';
 import { TaskDetailsPayload } from '../views/task/TaskDetailsView';
 
 import { BoardTreeProvider, BoardNode, BoardManagerNode } from '../views/board/BoardTreeProvider';
@@ -11,7 +11,7 @@ import {
   COLUMN_FALLBACK_NAME,
   DEFAULT_COLUMN_NAME,
 } from '../core';
-import { readBoard, writeBoard, ensureBoardUri, getWorkspaceRoot } from '../features/boardStore';
+import { readBoard, writeBoard, ensureBoardUri, getWorkspaceRoot } from '../data';
 import {
   compareNumbers,
   compareTasks,
