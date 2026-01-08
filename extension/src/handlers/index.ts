@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { runBoardOps, runDocOps } from '../data';
-import { TaskDetailsPayload } from '../views/task/TaskDetailsView';
+import { TaskDetailsPayload } from '../ui/tasks';
 
-import { BoardTreeProvider, BoardNode, BoardManagerNode } from '../views/board/BoardTreeProvider';
+import { BoardTreeProvider, BoardNode, BoardManagerNode } from '../ui/board';
 import {
   Board,
   Column,
@@ -29,13 +29,13 @@ import {
   findOrCreateColumn,
   upsertPlanTask,
   ensureTaskDocument,
-} from '../features/planImport';
+} from '../domains/planning';
 import {
   buildTaskDescription,
   buildTaskDetail,
   buildCardPayload,
   presentCodexPrompt,
-} from '../features/taskPresentation';
+} from '../domains/tasks';
 import {
   promptForTask,
   promptForColumn,
@@ -44,15 +44,15 @@ import {
   openTaskContext,
   moveTasksToColumn,
   MoveTasksResult,
-} from '../features/taskAccess';
+} from '../domains/tasks';
 import { formatError } from '../core';
 import { MoveTasksRequest } from './types';
 
 export type DevOpsCommandServices = {
   provider: BoardTreeProvider;
   boardView: vscode.TreeView<BoardNode>;
-  dashboard?: import('../views/dashboard/DashboardViewProvider').DashboardViewProvider;
-  metricsView?: import('../views/metrics/MetricsViewProvider').MetricsViewProvider;
+  dashboard?: import('../ui/dashboard').DashboardViewProvider;
+  metricsView?: import('../ui/metrics').MetricsViewProvider;
   // Legacy providers removed
   // boardOverview: import('../providers/boardOverviewProvider').BoardOverviewProvider;
   // taskList: import('../providers/taskListProvider').TaskListProvider;

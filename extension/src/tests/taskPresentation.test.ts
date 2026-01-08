@@ -5,7 +5,7 @@ import {
     buildTaskDetail,
     buildCardPayload,
     buildCodexPrompt,
-} from '../features/taskPresentation';
+} from '../domains/tasks';
 import { Task } from '../core';
 
 // Helper to create a minimal task

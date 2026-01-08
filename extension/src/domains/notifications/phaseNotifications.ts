@@ -70,7 +70,7 @@ function getWorkspaceRoot(): string | undefined {
     return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 }
 
-import { AgentManager } from '../../agents/AgentManager';
+import { AgentManager } from '../agents';
 
 /**
  * Show a notification when a task is moved to a new phase.

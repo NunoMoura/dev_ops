@@ -2,7 +2,7 @@ import { strict as assert } from 'assert';
 import * as sinon from 'sinon';
 import * as cp from 'child_process';
 import { EventEmitter } from 'events';
-import { parseTaskList } from '../handlers/pythonRunner';
+import { parseTaskList } from '../data';
 
 // Note: Testing runBoardOps and findPython requires mocking child_process.spawn
 // which is complex in the VS Code test environment. We focus on pure functions

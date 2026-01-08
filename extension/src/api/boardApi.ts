@@ -1,4 +1,4 @@
-import { runBoardOps } from '../handlers/pythonRunner';
+import { runBoardOps } from '../data';
 
 // ============================================================================
 // Type Definitions

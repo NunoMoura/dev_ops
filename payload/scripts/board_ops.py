@@ -807,6 +807,11 @@ def register_agent(
 ) -> bool:
     """Register an agent working on a task. Returns True if successful."""
     board = load_board(project_root)
+
+    # Get developer name from config
+    config = get_developer_config(project_root)
+    developer_name = config.get("developer", {}).get("name", "unknown")
+
     for task in board.get("items", []):
         if task.get("id") == task_id:
             # Archive previous owner if exists
@@ -819,10 +824,13 @@ def register_agent(
                 "id": session_id or f"agent-{datetime.now(timezone.utc).timestamp()}",
                 "type": agent_type,  # "agent" or "human"
                 "name": name,
-                "sessionId": session_id,
                 "phase": get_column_name(board, task.get("columnId", "")),
                 "startedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "developer": developer_name,  # Track human developer
             }
+
+            if session_id:
+                task["owner"]["sessionId"] = session_id
             # Remove legacy assignee field
             if "assignee" in task:
                 del task["assignee"]
@@ -938,12 +946,14 @@ def claim_task(
             column_name = get_column_name(board, task.get("columnId", ""))
             print(f"✅ Claimed {task_id} in {column_name} by {name} ({agent_type})")
 
+            # Populate developer field from config
+            config = get_developer_config(project_root)
+            developer_name = config.get("developer", {}).get("name", name)
+            task["owner"]["developer"] = developer_name
+
             # Auto-commit if requested
             if commit:
-                # Get developer name from config, fallback to provided name
-                config = get_developer_config(project_root)
-                dev_name = config.get("developer", {}).get("name", name)
-                _run_board_commit("claim", task_id, dev_name)
+                _run_board_commit("claim", task_id, developer_name)
 
             return True
 

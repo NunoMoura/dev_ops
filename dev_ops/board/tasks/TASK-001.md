@@ -1,4 +1,0 @@
-- [2026-01-06T23:32:40.291Z] Moved to column Understand
-- [2026-01-06T23:32:40.291Z] Moved to column Understand
-- [2026-01-06T23:32:46.361Z] Moved to column Backlog
-- [2026-01-06T23:32:46.361Z] Moved to column Backlog

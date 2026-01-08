@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { BoardPanelManager, createBoardPanelManager } from './views/board/BoardPanelView';
-import { BoardTreeProvider } from './views/board/BoardTreeProvider';
+import { BoardPanelManager, createBoardPanelManager } from './ui/board';
+import { BoardTreeProvider } from './ui/board';
 import {
   registerBoardCommands,
   handleBoardMoveTasks,
@@ -12,20 +12,19 @@ import {
 import { registerInitializeCommand } from './handlers/initializeCommand';
 import { readBoard, writeBoard, registerBoardWatchers, isProjectInitialized } from './data';
 import { formatError } from './core';
-import { showPhaseNotification } from './features/phaseNotifications';
-import { createStatusBar, StatusBarManager } from './statusBar';
-import { TaskEditorProvider } from './views/task/TaskEditorProvider';
+import { showPhaseNotification } from './domains/notifications';
+import { createStatusBar, StatusBarManager } from './ui/statusBar';
+import { TaskEditorProvider } from './ui/tasks';
 // NEW Providers
-import { DashboardViewProvider } from './views/dashboard/DashboardViewProvider';
-import { MetricsViewProvider } from './views/metrics/MetricsViewProvider';
+import { DashboardViewProvider } from './ui/dashboard';
+import { MetricsViewProvider } from './ui/metrics';
 
-import { SessionBridge } from './features/sessionBridge';
-import { CursorBridge } from './features/cursorBridge';
-import { AgentManager, registerAgentManager } from './agents/AgentManager';
-import { AntigravityAdapter } from './agents/AntigravityAdapter';
-import { CursorAdapter } from './agents/CursorAdapter';
-import { registerTaskProvider } from './providers/taskProvider';
-import { registerCodeLensProvider } from './providers/codeLensProvider';
+import { SessionBridge } from './integrations/sessionBridge';
+import { CursorBridge } from './integrations/cursorBridge';
+import { AgentManager, registerAgentManager } from './domains/agents';
+import { AntigravityAdapter } from './domains/agents';
+import { CursorAdapter } from './domains/agents';
+import { registerCodeLensProvider } from './ui/shared';
 import { registerSCMDecorations } from './scm/scmDecorator';
 import { registerTestController } from './testExplorer/testController';
 import { log, warn, error as logError } from './core';
@@ -94,7 +93,6 @@ export async function activate(context: vscode.ExtensionContext) {
     // }
 
     // Register task provider
-    registerTaskProvider(context);
 
     // Register CodeLens provider
     registerCodeLensProvider(context);
@@ -199,7 +197,7 @@ async function initializeDevOpsServices(context: vscode.ExtensionContext): Promi
 
   return {
     provider,
-    boardView: undefined as unknown as vscode.TreeView<import('./views/board/BoardTreeProvider').BoardNode>,
+    boardView: undefined as unknown as vscode.TreeView<import('./ui/board').BoardNode>,
     dashboard,
     metricsView,
     boardPanelManager,

@@ -8,6 +8,7 @@ category: automated
 Pick highest priority task from Backlog and claim it.
 
 ## Inputs
+
 - `input`: (Optional) Specific Task ID to pick (e.g., `TASK-123`). If empty, picks next from Backlog.
 
 ## Steps
@@ -15,10 +16,13 @@ Pick highest priority task from Backlog and claim it.
 1. **Pick and claim**:
 
    - **If `{input}` provided**:
+
      ```bash
      python3 .dev_ops/scripts/board_ops.py pick {{input}} --claim
      ```
+
    - **If `{input}` empty**:
+
      ```bash
      python3 .dev_ops/scripts/board_ops.py pick --claim
      ```

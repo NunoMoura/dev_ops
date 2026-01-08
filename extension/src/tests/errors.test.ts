@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert';
-import { formatError } from '../features/errors';
+import { formatError } from '../core';
 
 suite('errors - formatError', () => {
     test('returns message for Error instance', () => {

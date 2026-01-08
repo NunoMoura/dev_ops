@@ -9,7 +9,7 @@ import {
   ChecklistItem,
   COLUMN_FALLBACK_NAME,
   PLAN_EXTENSIONS,
-} from '../../features/types';
+} from '../../core';
 import { readBoard, writeBoard, getWorkspaceRoot } from '../../data';
 import {
   appendParagraph,
