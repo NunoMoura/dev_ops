@@ -8,8 +8,8 @@ import {
   handleArchiveAll,
   handleArchiveSingle,
   DevOpsCommandServices,
-} from './handlers';
-import { registerInitializeCommand } from './handlers/initializeCommand';
+} from './vscode/commands';
+import { registerInitializeCommand } from './vscode/commands/initializeCommand';
 import { readBoard, writeBoard, registerBoardWatchers, isProjectInitialized } from './data';
 import { formatError } from './core';
 import { showPhaseNotification } from './domains/notifications';
@@ -25,8 +25,8 @@ import { AgentManager, registerAgentManager } from './domains/agents';
 import { AntigravityAdapter } from './domains/agents';
 import { CursorAdapter } from './domains/agents';
 import { registerCodeLensProvider } from './ui/shared';
-import { registerSCMDecorations } from './scm/scmDecorator';
-import { registerTestController } from './testExplorer/testController';
+import { registerSCMDecorations } from './vscode/scm/scmDecorator';
+import { registerTestController } from './vscode/testing/testController';
 import { log, warn, error as logError } from './core';
 
 export async function activate(context: vscode.ExtensionContext) {

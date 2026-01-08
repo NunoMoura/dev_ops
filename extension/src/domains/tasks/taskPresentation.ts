@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { TaskDetailsPayload } from '../../ui/tasks';
 import { Task, COLUMN_FALLBACK_NAME } from '../../core';
-import { isDefined } from '../../features/boardData';
+import { isDefined } from '../../domains/tasks/taskUtils';
 
 export function buildTaskDescription(task: Task): string | undefined {
   const parts = [

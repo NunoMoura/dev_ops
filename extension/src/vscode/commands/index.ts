@@ -1,17 +1,17 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { runBoardOps, runDocOps } from '../data';
-import { TaskDetailsPayload } from '../ui/tasks';
+import { runBoardOps, runDocOps } from '../../data';
+import { TaskDetailsPayload } from '../../ui/tasks';
 
-import { BoardTreeProvider, BoardNode, BoardManagerNode } from '../ui/board';
+import { BoardTreeProvider, BoardNode, BoardManagerNode } from '../../ui/board';
 import {
   Board,
   Column,
   Task,
   COLUMN_FALLBACK_NAME,
   DEFAULT_COLUMN_NAME,
-} from '../core';
-import { readBoard, writeBoard, ensureBoardUri, getWorkspaceRoot } from '../data';
+} from '../../core';
+import { readBoard, writeBoard, ensureBoardUri, getWorkspaceRoot } from '../../data';
 import {
   compareNumbers,
   compareTasks,
@@ -21,7 +21,7 @@ import {
   parseTags,
   sortColumnsForManager,
   isDefined,
-} from '../features/boardData';
+} from '../../domains/tasks/taskUtils';
 import {
   ensurePlanDirectory,
   listPlanFiles,
@@ -29,13 +29,13 @@ import {
   findOrCreateColumn,
   upsertPlanTask,
   ensureTaskDocument,
-} from '../domains/planning';
+} from '../../domains/planning';
 import {
   buildTaskDescription,
   buildTaskDetail,
   buildCardPayload,
   presentCodexPrompt,
-} from '../domains/tasks';
+} from '../../domains/tasks';
 import {
   promptForTask,
   promptForColumn,
@@ -44,15 +44,15 @@ import {
   openTaskContext,
   moveTasksToColumn,
   MoveTasksResult,
-} from '../domains/tasks';
-import { formatError } from '../core';
+} from '../../domains/tasks';
+import { formatError } from '../../core';
 import { MoveTasksRequest } from './types';
 
 export type DevOpsCommandServices = {
   provider: BoardTreeProvider;
   boardView: vscode.TreeView<BoardNode>;
-  dashboard?: import('../ui/dashboard').DashboardViewProvider;
-  metricsView?: import('../ui/metrics').MetricsViewProvider;
+  dashboard?: import('../../ui/dashboard').DashboardViewProvider;
+  metricsView?: import('../../ui/metrics').MetricsViewProvider;
   // Legacy providers removed
   // boardOverview: import('../providers/boardOverviewProvider').BoardOverviewProvider;
   // taskList: import('../providers/taskListProvider').TaskListProvider;

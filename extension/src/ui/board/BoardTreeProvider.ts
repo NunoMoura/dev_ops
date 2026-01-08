@@ -3,7 +3,7 @@ import { BoardViewSnapshot } from './BoardPanelView';
 import { Board, Column, Task, COLUMN_FALLBACK_NAME, FilterState } from '../../core';
 import { readBoard, writeBoard } from '../../data';
 import { applyFilters, columnMatchesFilters, parseTaskFilter } from '../../domains/tasks';
-import { compareNumbers, compareTasks, sortColumnsForManager } from '../../features/boardData';
+import { compareNumbers, compareTasks, sortColumnsForManager } from '../../domains/tasks/taskUtils';
 import { buildTaskDescription, buildTaskTooltip } from '../../domains/tasks';
 import { formatError } from '../../core';
 

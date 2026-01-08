@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import { spawn } from "child_process";
-import { log, error as logError } from "../core";
+import { log, error as logError } from "../../core";
 
 /**
  * DevOps: Initialize command
