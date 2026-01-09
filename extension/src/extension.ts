@@ -226,21 +226,26 @@ async function checkAndUpdateFramework(context: vscode.ExtensionContext): Promis
   if (needsUpdate) {
     log(`Detected project needing framework update: ${reason}`);
 
-    // Show user-friendly notification
+    // Use status bar message instead of modal/toast for "in progress"
     const missingItemsStr = missingItems.join(', ');
-    vscode.window.showInformationMessage(
-      `📦 DevOps: Updating framework files (missing: ${missingItemsStr})...`,
-    );
+    const statusMsg = vscode.window.setStatusBarMessage(`$(sync~spin) DevOps: Updating framework files (missing: ${missingItemsStr})...`);
 
     try {
-      await vscode.commands.executeCommand('devops.initialize');
+      // Run silently - no popups from the command itself
+      await vscode.commands.executeCommand('devops.initialize', { silent: true });
       log('Framework files updated successfully');
 
-      // Success notification
-      vscode.window.showInformationMessage(
-        `✅ DevOps: Framework files updated successfully!`
-      );
+      statusMsg.dispose();
+
+      // Show ONE single success notification
+      const enableNotifications = vscode.workspace.getConfiguration('devops').get('enableNotifications', true);
+      if (enableNotifications) {
+        vscode.window.showInformationMessage(
+          `✅ DevOps: Framework files updated successfully!`
+        );
+      }
     } catch (error) {
+      statusMsg.dispose();
       warn(`Framework update failed: ${formatError(error)}`);
 
       // Error notification with action

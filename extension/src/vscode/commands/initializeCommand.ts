@@ -12,12 +12,25 @@ import { log, error as logError } from "../../core";
 export function registerInitializeCommand(
     context: vscode.ExtensionContext
 ): vscode.Disposable {
-    return vscode.commands.registerCommand("devops.initialize", async (projectType?: 'greenfield' | 'brownfield') => {
+    return vscode.commands.registerCommand("devops.initialize", async (options?: { projectType?: 'greenfield' | 'brownfield', silent?: boolean }) => {
+        // Handle legacy string argument if passed
+        let projectType: 'greenfield' | 'brownfield' | undefined;
+        let silent = false;
+
+        if (typeof options === 'string') {
+            projectType = options;
+        } else if (typeof options === 'object') {
+            projectType = options.projectType;
+            silent = !!options.silent;
+        }
+
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders || workspaceFolders.length === 0) {
-            vscode.window.showErrorMessage(
-                "DevOps: Please open a workspace folder first."
-            );
+            if (!silent) {
+                vscode.window.showErrorMessage(
+                    "DevOps: Please open a workspace folder first."
+                );
+            }
             return;
         }
 
@@ -37,46 +50,66 @@ export function registerInitializeCommand(
         }
 
         if (!require('fs').existsSync(setupScript)) {
-            vscode.window.showErrorMessage(
-                `DevOps: setup_ops.py not found. Expected at ${setupScript}`
-            );
+            const msg = `DevOps: setup_ops.py not found. Expected at ${setupScript}`;
+            if (!silent) {
+                vscode.window.showErrorMessage(msg);
+            } else {
+                logError(msg);
+            }
             return;
         }
 
         // Check for Python availability
         const pythonCommand = await findPython();
         if (!pythonCommand) {
-            vscode.window.showErrorMessage(
-                "DevOps: Python 3 is required but not found. Please install Python 3 and try again."
-            );
+            const msg = "DevOps: Python 3 is required but not found. Please install Python 3 and try again.";
+            if (!silent) {
+                vscode.window.showErrorMessage(msg);
+            } else {
+                logError(msg);
+            }
             return;
         }
 
-        // Show progress while running
-        await vscode.window.withProgress(
-            {
-                location: vscode.ProgressLocation.Notification,
-                title: "DevOps: Initializing framework...",
-                cancellable: false,
-            },
-            async () => {
-                try {
-                    await runSetupScript(pythonCommand, setupScript, workspaceRoot, projectType);
+        // Function to run setup
+        const runSetup = async () => {
+            await runSetupScript(pythonCommand, setupScript, workspaceRoot, projectType);
 
-                    // Note: Developer name is collected by DashboardViewProvider onboarding form
-                    // before initialize is called, so no need to prompt here
-
-                    vscode.window.showInformationMessage(
-                        "✅ DevOps: Framework initialized successfully!\n\n📋 Next step: Run /bootstrap to generate project-specific rules",
-                        "OK"
-                    );
-                } catch (error) {
-                    vscode.window.showErrorMessage(
-                        `DevOps: Initialization failed: ${error}`
-                    );
-                }
+            if (!silent) {
+                vscode.window.showInformationMessage(
+                    "✅ DevOps: Framework initialized successfully!\n\n📋 Next step: Run /bootstrap to generate project-specific rules",
+                    "OK"
+                );
             }
-        );
+        };
+
+        if (silent) {
+            // Run without progress UI
+            try {
+                await runSetup();
+            } catch (error) {
+                logError(`DevOps: Initialization failed: ${error}`);
+                throw error; // Re-throw so caller knows it failed
+            }
+        } else {
+            // Show progress while running
+            await vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: "DevOps: Initializing framework...",
+                    cancellable: false,
+                },
+                async () => {
+                    try {
+                        await runSetup();
+                    } catch (error) {
+                        vscode.window.showErrorMessage(
+                            `DevOps: Initialization failed: ${error}`
+                        );
+                    }
+                }
+            );
+        }
     });
 }
 

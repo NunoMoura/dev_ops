@@ -207,6 +207,11 @@
           "type": "boolean",
           "default": true,
           "description": "Show CodeLens annotations for task references (TASK-XXX) in files"
+        },
+        "devops.enableNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable success notifications for automatic framework updates"
         }
       }
     },
