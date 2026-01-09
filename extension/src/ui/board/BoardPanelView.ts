@@ -60,7 +60,15 @@ export class BoardPanelManager {
   readonly onDidRequestMoveTasks = this.onMoveEmitter.event;
   readonly onDidRequestOpenTask = this.onOpenEmitter.event;
   readonly onDidRequestCreateTask = this.onCreateEmitter.event;
+
   readonly onDidRequestDeleteTasks = this.onDeleteEmitter.event;
+
+  private readonly onViewStateChangeEmitter = new vscode.EventEmitter<boolean>();
+  readonly onDidViewStateChange = this.onViewStateChangeEmitter.event;
+
+  public isPanelOpen(): boolean {
+    return !!this.panel;
+  }
 
   constructor(private readonly extensionUri: vscode.Uri) { }
 
@@ -90,7 +98,11 @@ export class BoardPanelManager {
     this.panel.onDidDispose(() => {
       this.panel = undefined;
       this.webviewReady = false;
+      this.onViewStateChangeEmitter.fire(false);
     });
+
+    // Notify listeners that panel is open
+    this.onViewStateChangeEmitter.fire(true);
 
     this.panel.webview.onDidReceiveMessage((message: WebviewMessage) => {
       if (!message) {
@@ -287,10 +299,10 @@ function getBoardHtml(panelMode = false): string {
         flex: 1;
         margin-right: 8px;
         text-transform: uppercase;
-        letter-spacing: 0.1em;
-        font-size: 13px;
+        letter-spacing: 0.05em; /* Slightly tighter */
+        font-size: 11px;       /* Reduced from 13px */
         color: var(--brand-color);
-        font-weight: 700;
+        font-weight: 600;      /* Slightly reduced weight */
       }
       .column-actions {
         display: flex;
@@ -586,8 +598,10 @@ function getBoardHtml(panelMode = false): string {
         justify-content: space-between;
         align-items: center;
         padding: 8px 0 16px 0;
-        border-bottom: 2px solid var(--brand-color);
         margin-bottom: 16px;
+        min-height: 28px; /* Force consistent height for alignment with Dashboard */
+        /* Consistent separator to match Dashboard and Columns */
+        border-bottom: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
       }
       .board-title {
         margin: 0;
@@ -596,21 +610,23 @@ function getBoardHtml(panelMode = false): string {
         color: var(--vscode-foreground);
       }
       .add-task-button {
-        background: transparent;
-        border: 1px solid var(--brand-color);
-        border-radius: 6px;
-        color: var(--brand-color);
         padding: 8px 16px;
-        font-size: 13px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
         font-weight: 600;
         cursor: pointer;
-        transition: all var(--transition-fast, 0.15s ease);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+        font-family: inherit;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 11px; /* Match column header size */
       }
       .add-task-button:hover {
-        background: var(--brand-color);
-        color: var(--vscode-sideBar-background);
-        border-color: var(--brand-color);
-        box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        filter: brightness(1.1);
         transform: translateY(-1px);
       }
       .add-task-button:active {

@@ -224,7 +224,7 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
                     .sparkline { 
                         margin-top: var(--space-lg);
                         padding-top: var(--space-lg);
-                        border-top: 1px solid var(--brand-color);
+                        border-top: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
                     }
                     .section-header {
                         font-size: var(--text-xs);

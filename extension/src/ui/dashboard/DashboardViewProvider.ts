@@ -17,7 +17,16 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
   private _onDidComplete = new vscode.EventEmitter<void>();
   public readonly onDidComplete = this._onDidComplete.event;
 
+  private _isBoardOpen = false;
+
   constructor(private readonly _extensionUri: vscode.Uri) { }
+
+  public setBoardOpenState(isOpen: boolean): void {
+    if (this._isBoardOpen !== isOpen) {
+      this._isBoardOpen = isOpen;
+      this._updateContent();
+    }
+  }
 
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
@@ -348,26 +357,35 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     .task:hover { background: var(--vscode-list-activeSelectionBackground); }
     
     .dashboard-header {
-      margin-bottom: 20px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--vscode-panel-border);
+      margin-bottom: 16px;
+      padding: 8px 0 16px 0;
+      min-height: 28px; /* Force consistent height for alignment with Board */
+      border-bottom: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
     }
     .open-board-btn {
       width: 100%;
-      padding: 10px;
-      /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
-      background: #cba6f7;
-      color: #11111b; /* Dark text for contrast on pastel purple */
+      padding: 6px 12px; /* Reduced vertical padding to match inline button style */
+      /* Gradient for modern "cool" look */
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
       border: none;
       border-radius: 6px;
-      font-weight: 700;
+      font-weight: 600;
       cursor: pointer;
       text-align: center;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease, opacity 0.2s ease;
       font-family: inherit;
       text-transform: uppercase;
       letter-spacing: 0.05em;
+      font-size: 11px; /* Match column header size */
+    }
+    .open-board-btn.disabled {
+      opacity: 0.5;
+      cursor: default;
+      box-shadow: none;
+      filter: grayscale(100%);
+      pointer-events: none;
     }
     .open-board-btn:hover {
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
@@ -382,8 +400,8 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
 </head>
 <body>
   <div class="dashboard-header">
-    <button class="open-board-btn" onclick="openBoard()">
-      Open Board
+    <button class="open-board-btn ${this._isBoardOpen ? 'disabled' : ''}" onclick="openBoard()" ${this._isBoardOpen ? 'disabled' : ''}>
+      ${this._isBoardOpen ? 'Board Active' : 'Open Board'}
     </button>
   </div>
   ${groupsHtml}
