@@ -113,6 +113,18 @@ export async function activate(context: vscode.ExtensionContext) {
     // Check if existing .dev_ops/ needs framework files update
     await checkAndUpdateFramework(context);
 
+    // Listen for workspace folder changes and update framework
+    context.subscriptions.push(
+      vscode.workspace.onDidChangeWorkspaceFolders(async (event) => {
+        log('Workspace folders changed, checking framework status...');
+        // Re-check framework for each added folder
+        for (const folder of event.added) {
+          log(`New workspace folder detected: ${folder.uri.fsPath}`);
+          await checkAndUpdateFramework(context);
+        }
+      })
+    );
+
     // Auto-open board tab when extension activates
     try {
       // Note: Board will show onboarding if not initialized
@@ -130,8 +142,9 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 /**
- * Check if existing .dev_ops/ project needs framework files update.
- * Runs silently on activation to ensure scripts, templates, etc. are present.
+ * Check if existing project needs framework files update.
+ * Checks both .dev_ops and .agent/.cursor directories.
+ * Runs silently to ensure scripts, rules, workflows are present.
  */
 async function checkAndUpdateFramework(context: vscode.ExtensionContext): Promise<void> {
   const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -147,15 +160,101 @@ async function checkAndUpdateFramework(context: vscode.ExtensionContext): Promis
   const scriptsDir = path.join(devOpsDir, 'scripts');
   const boardPath = path.join(devOpsDir, 'board.json');
 
-  // Check if project is initialized (.dev_ops/board.json exists) but missing scripts
+  // Detect IDE to check correct folder
+  const agentDir = path.join(workspaceRoot, '.agent');
+  const cursorDir = path.join(workspaceRoot, '.cursor');
+
+  let needsUpdate = false;
+  let reason = '';
+  const missingItems: string[] = [];
+
+  // Check 1: .dev_ops exists but scripts missing
   if (fs.existsSync(boardPath) && !fs.existsSync(scriptsDir)) {
-    log('Detected existing project missing framework files, updating...');
+    needsUpdate = true;
+    missingItems.push('scripts');
+    reason = 'missing .dev_ops/scripts';
+  }
+
+  // Check 2: .agent exists but rules or workflows missing
+  if (fs.existsSync(agentDir)) {
+    const rulesDir = path.join(agentDir, 'rules');
+    const workflowsDir = path.join(agentDir, 'workflows');
+
+    if (!fs.existsSync(rulesDir) || !fs.existsSync(workflowsDir)) {
+      needsUpdate = true;
+      if (!fs.existsSync(rulesDir)) { missingItems.push('rules'); }
+      if (!fs.existsSync(workflowsDir)) { missingItems.push('workflows'); }
+      reason = reason ? `${reason}, missing .agent/rules or .agent/workflows` : 'missing .agent/rules or .agent/workflows';
+    } else {
+      // Check if directories are empty
+      const rulesEmpty = fs.readdirSync(rulesDir).length === 0;
+      const workflowsEmpty = fs.readdirSync(workflowsDir).length === 0;
+
+      if (rulesEmpty || workflowsEmpty) {
+        needsUpdate = true;
+        if (rulesEmpty) { missingItems.push('rules'); }
+        if (workflowsEmpty) { missingItems.push('workflows'); }
+        reason = reason ? `${reason}, empty .agent directories` : 'empty .agent directories';
+      }
+    }
+  }
+
+  // Check 3: .cursor exists but rules or commands missing
+  if (fs.existsSync(cursorDir)) {
+    const rulesDir = path.join(cursorDir, 'rules');
+    const commandsDir = path.join(cursorDir, 'commands');
+
+    if (!fs.existsSync(rulesDir) || !fs.existsSync(commandsDir)) {
+      needsUpdate = true;
+      if (!fs.existsSync(rulesDir)) { missingItems.push('rules'); }
+      if (!fs.existsSync(commandsDir)) { missingItems.push('commands'); }
+      reason = reason ? `${reason}, missing .cursor/rules or .cursor/commands` : 'missing .cursor/rules or .cursor/commands';
+    } else {
+      // Check if directories are empty
+      const rulesEmpty = fs.readdirSync(rulesDir).length === 0;
+      const commandsEmpty = fs.readdirSync(commandsDir).length === 0;
+
+      if (rulesEmpty || commandsEmpty) {
+        needsUpdate = true;
+        if (rulesEmpty) { missingItems.push('rules'); }
+        if (commandsEmpty) { missingItems.push('commands'); }
+        reason = reason ? `${reason}, empty .cursor directories` : 'empty .cursor directories';
+      }
+    }
+  }
+
+  if (needsUpdate) {
+    log(`Detected project needing framework update: ${reason}`);
+
+    // Show user-friendly notification
+    const missingItemsStr = missingItems.join(', ');
+    vscode.window.showInformationMessage(
+      `📦 DevOps: Updating framework files (missing: ${missingItemsStr})...`,
+    );
+
     try {
       await vscode.commands.executeCommand('devops.initialize');
       log('Framework files updated successfully');
+
+      // Success notification
+      vscode.window.showInformationMessage(
+        `✅ DevOps: Framework files updated successfully!`
+      );
     } catch (error) {
       warn(`Framework update failed: ${formatError(error)}`);
+
+      // Error notification with action
+      vscode.window.showErrorMessage(
+        `DevOps: Framework update failed. Try running "DevOps: Initialize" manually.`,
+        'Open Output'
+      ).then(selection => {
+        if (selection === 'Open Output') {
+          vscode.commands.executeCommand('workbench.action.output.toggleOutput');
+        }
+      });
     }
+  } else {
+    log('Framework files are up to date');
   }
 }
 
@@ -277,7 +376,14 @@ function registerBoardViewRequests(context: vscode.ExtensionContext, services: D
     boardPanelManager.onDidRequestDeleteTasks(async (taskIds: string[]) => {
       await handleBoardDeleteTasks(taskIds, provider);
     }),
+    // Sync view state with dashboard
+    boardPanelManager.onDidViewStateChange((isOpen) => {
+      services.dashboard.setBoardOpenState(isOpen);
+    })
   );
+
+  // Initialize state
+  services.dashboard.setBoardOpenState(boardPanelManager.isPanelOpen());
 }
 
 /**
