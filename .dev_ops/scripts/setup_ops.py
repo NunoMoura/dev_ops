@@ -475,7 +475,7 @@ def install_rules(proposed_rules: list, rules_dest: str, ide: str = "antigravity
             rule_name = rule_name[:-3] + ".mdc"
 
         dest_path = os.path.join(target_dir, rule_name)
-        write_file(dest_path, content)
+        write_file(dest_path, content, overwrite=True)  # Allow updates
         print(f"   - Installed {rule_name} ({category})")
 
 
@@ -509,6 +509,16 @@ def bootstrap(target_dir: str):
         DOCS_TEMPLATES_DIR = os.path.join(ASSETS_ROOT, "templates", "docs")
         GITHUB_SRC_DIR = None  # GitHub workflows not included in extension
         print(f"   📦 Running from extension context: {ASSETS_ROOT}")
+        # Debug: verify paths exist
+        print(
+            f"   DEBUG: SCRIPTS_SRC_DIR exists: {os.path.exists(SCRIPTS_SRC_DIR)} - {SCRIPTS_SRC_DIR}"
+        )
+        print(
+            f"   DEBUG: TEMPLATES_SRC_DIR exists: {os.path.exists(TEMPLATES_SRC_DIR)} - {TEMPLATES_SRC_DIR}"
+        )
+        print(
+            f"   DEBUG: WORKFLOWS_SRC_DIR exists: {os.path.exists(WORKFLOWS_SRC_DIR)} - {WORKFLOWS_SRC_DIR}"
+        )
     else:
         # Framework repo mode: payload/ sibling to installer/
         FRAMEWORK_ROOT = os.path.dirname(SCRIPT_DIR)  # installer/ -> root
@@ -560,10 +570,14 @@ def bootstrap(target_dir: str):
         print(f"   {r['category']:<15} | {r['name']:<20} | {reason}")
     print("   -------------------------------------------------")
 
-    confirm = prompt_user("\nProceed with installation? (y/n)", "y")
-    if confirm.lower() != "y":
-        print("❌ Installation aborted by user.")
-        return
+    # In headless mode, auto-proceed without confirmation
+    if os.environ.get("HEADLESS"):
+        print("\n✓ Auto-proceeding in headless mode")
+    else:
+        confirm = prompt_user("\nProceed with installation? (y/n)", "y")
+        if confirm.lower() != "y":
+            print("❌ Installation aborted by user.")
+            return
 
     # 5. Execute Installation
 
@@ -662,20 +676,34 @@ def bootstrap(target_dir: str):
         print("   - Installed templates to .dev_ops/templates/")
 
     # Install Rules (using the plan and IDE-specific format)
-    install_rules(proposed_rules, AGENT_RULES_DIR, detected_ide)
+    if os.path.exists(CORE_RULES_SRC_DIR):
+        print(f"\n   DEBUG: Installing rules from: {CORE_RULES_SRC_DIR}")
+        print(f"   DEBUG: Target directory: {AGENT_RULES_DIR}")
+        install_rules(proposed_rules, AGENT_RULES_DIR, detected_ide)
+    else:
+        print(f"\n   ⚠️ Rules source directory not found: {CORE_RULES_SRC_DIR}")
 
     # Install Workflows/Commands (Antigravity: .agent/workflows, Cursor: .cursor/commands)
     if os.path.exists(WORKFLOWS_SRC_DIR):
         folder_name = "commands" if detected_ide == "cursor" else "workflows"
         print(f"\n📦 Installing {folder_name.capitalize()}...")
+        print(f"   DEBUG: Source: {WORKFLOWS_SRC_DIR}")
+        print(f"   DEBUG: Target: {AGENT_WORKFLOWS_DIR}")
+
         os.makedirs(AGENT_WORKFLOWS_DIR, exist_ok=True)
+        workflow_count = 0
         for file in os.listdir(WORKFLOWS_SRC_DIR):
             if file.endswith(".md") and not file.startswith("_"):
-                shutil.copy2(
-                    os.path.join(WORKFLOWS_SRC_DIR, file),
-                    os.path.join(AGENT_WORKFLOWS_DIR, file),
-                )
+                src_file = os.path.join(WORKFLOWS_SRC_DIR, file)
+                dest_file = os.path.join(AGENT_WORKFLOWS_DIR, file)
+                shutil.copy2(src_file, dest_file)
+                workflow_count += 1
                 print(f"   - Installed {file}")
+
+        if workflow_count == 0:
+            print(f"   ⚠️ No workflow files found in {WORKFLOWS_SRC_DIR}")
+    else:
+        print(f"\n⚠️ Workflows source directory not found: {WORKFLOWS_SRC_DIR}")
 
     # Install constitution.md template to .dev_ops/docs/ (referenced by dev_ops_guide.md rule)
     constitution_src = os.path.join(DOCS_TEMPLATES_DIR, "constitution.md")
@@ -728,6 +756,35 @@ def bootstrap(target_dir: str):
 
     # Initialize DevOps Board with template
     init_board(PROJECT_ROOT, project_type)
+
+    # Verify installation
+    print("\n📊 Installation Summary:")
+    if os.path.exists(AGENT_RULES_DIR):
+        rules_files = [
+            f
+            for f in os.listdir(AGENT_RULES_DIR)
+            if os.path.isfile(os.path.join(AGENT_RULES_DIR, f))
+        ]
+        # Also count files in subdirectories (for development_phases)
+        for _root, _dirs, files in os.walk(AGENT_RULES_DIR):
+            for f in files:
+                if f not in rules_files and not f.startswith("."):
+                    rules_files.append(f)
+        rules_count = len(rules_files)
+        print(f"   Rules installed: {rules_count} files")
+    else:
+        print(f"   ⚠️ Rules directory not found: {AGENT_RULES_DIR}")
+
+    if os.path.exists(AGENT_WORKFLOWS_DIR):
+        workflows_files = [
+            f
+            for f in os.listdir(AGENT_WORKFLOWS_DIR)
+            if os.path.isfile(os.path.join(AGENT_WORKFLOWS_DIR, f))
+        ]
+        workflows_count = len(workflows_files)
+        print(f"   Workflows installed: {workflows_count} files")
+    else:
+        print(f"   ⚠️ Workflows directory not found: {AGENT_WORKFLOWS_DIR}")
 
     # Install Extension (if VS Code available and not already running from extension)
     if not is_extension_context:

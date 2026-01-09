@@ -689,15 +689,25 @@ def mark_done(
     return False
 
 
-def pick_task(project_root: Optional[str] = None) -> Optional[dict]:
+def pick_task(task_id: Optional[str] = None, project_root: Optional[str] = None) -> Optional[dict]:
     """Pick the next available task based on priority and column.
 
     Selection criteria:
-    1. In Backlog column (not yet started)
-    2. Status is 'todo' (ready to work on)
-    3. Priority order: high > medium > low
-    4. Oldest updatedAt wins ties
+    1. If task_id provided: return that task
+    2. Else: In Backlog column (not yet started)
+       - Status is 'todo' (ready to work on)
+       - Priority order: high > medium > low
+       - Oldest updatedAt wins ties
     """
+    if task_id:
+        tasks = get_tasks(project_root=project_root)
+        for t in tasks:
+            if t.get("id") == task_id:
+                print(f"📋 Picked specific task: {t['id']} - {t['title']}")
+                return t
+        print(f"⚠️ Task {task_id} not found")
+        return None
+
     tasks = get_tasks(project_root=project_root, column_id="col-backlog", status="ready")
 
     if not tasks:
@@ -793,10 +803,16 @@ def register_agent(
     agent_type: str,
     session_id: Optional[str] = None,
     name: str = "antigravity",
+    model: Optional[str] = None,
     project_root: Optional[str] = None,
 ) -> bool:
     """Register an agent working on a task. Returns True if successful."""
     board = load_board(project_root)
+
+    # Get developer name from config
+    config = get_developer_config(project_root)
+    developer_name = config.get("developer", {}).get("name", "unknown")
+
     for task in board.get("items", []):
         if task.get("id") == task_id:
             # Archive previous owner if exists
@@ -805,23 +821,30 @@ def register_agent(
             # Initialize trace file for NEW session
             _init_activity_file(task_id, project_root)
 
+            # Owner is the Agent, but we explicitly link the Developer
             task["owner"] = {
                 "id": session_id or f"agent-{datetime.now(timezone.utc).timestamp()}",
-                "type": agent_type,  # "agent" or "human"
-                "name": name,
-                "sessionId": session_id,
+                "type": "agent",
+                "name": name,  # Agent Name (e.g. Antigravity)
+                "agent": name,  # Explicit Agent Field
+                "developer": developer_name,  # The Developer supervising
+                "model": model,  # Model info if available
                 "phase": get_column_name(board, task.get("columnId", "")),
                 "startedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             }
+
+            if session_id:
+                task["owner"]["sessionId"] = session_id
+
             # Remove legacy assignee field
             if "assignee" in task:
                 del task["assignee"]
 
-            task["status"] = "in_progress"
+            task["status"] = "agent_active"  # Explicit status for agent
             task["updatedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
             save_board(board, project_root)
-            print(f"✅ Registered {agent_type} '{name}' on {task_id}")
+            print(f"✅ Registered agent '{name}' on {task_id} (Dev: {developer_name})")
             return True
 
     print(f"⚠️ Task {task_id} not found")
@@ -862,24 +885,34 @@ def get_active_agents(project_root: Optional[str] = None) -> list[dict]:
 
 
 def claim_task(
-    task_id: str,
+    task_id: Optional[str] = None,
     force: bool = False,
     session_id: Optional[str] = None,
-    agent_type: str = "agent",
-    name: str = "antigravity",
+    name: Optional[str] = None,
     project_root: Optional[str] = None,
     commit: bool = False,
 ) -> bool:
-    """Claim a task by setting status to in_progress. Works at any phase.
+    """Claim a task. Defaults to the Developer claiming it.
 
-    Does not change the task's column - just marks it as claimed.
-    Both agents and humans can claim tasks at any phase.
-    Optionally tracks the Antigravity session ID.
-
-    Args:
-        commit: If True, auto-commit the board change with standard format.
+    If task_id is None or "next", picks the highest priority task.
+    Setting owner sets the Developer as the primary owner.
     """
     board = load_board(project_root)
+
+    # Auto-pick if next/None
+    if not task_id or task_id.lower() == "next":
+        print("🔍 Looking for next task...")
+        picked = pick_task(project_root=project_root)
+        if not picked:
+            return False
+        task_id = picked["id"]
+
+    # Get developer name from config
+    config = get_developer_config(project_root)
+    developer_name = config.get("developer", {}).get("name", "unknown")
+
+    # Use provided name or default to developer name
+    claimant_name = name or developer_name
 
     for task in board.get("items", []):
         if task.get("id") == task_id:
@@ -892,33 +925,29 @@ def claim_task(
                         print(f"   Missing tasks: {missing['tasks']}")
                     return False
 
-            # Use register_agent logic logic
             # Archive previous owner if exists
             _archive_current_owner(task, project_root)
 
-            # Initialize trace file for NEW session
-            _init_activity_file(task_id, project_root)
-
+            # Claiming clears active agent - Developer takes control
             task["owner"] = {
-                "id": session_id or f"{agent_type}-{datetime.now(timezone.utc).timestamp()}",
-                "type": agent_type,
-                "name": name,
-                "sessionId": session_id,
+                "id": f"dev-{datetime.now(timezone.utc).timestamp()}",
+                "type": "developer",
+                "name": claimant_name,  # Display Name
+                "developer": claimant_name,  # Explicit Developer Field
+                "agent": None,  # No agent active
                 "phase": get_column_name(board, task.get("columnId", "")),
                 "startedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             }
             if "assignee" in task:
                 del task["assignee"]
 
-            # Set status based on type
+            # Set status to in_progress (Manual work)
             task["status"] = "in_progress"
             task["updatedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
             # Track session ID if provided (legacy field support)
             if session_id:
                 task["currentSessionId"] = session_id
-                if "phases" not in task:
-                    task["phases"] = {}
 
             save_board(board, project_root)
 
@@ -926,14 +955,11 @@ def claim_task(
             set_current_task(task_id, project_root)
 
             column_name = get_column_name(board, task.get("columnId", ""))
-            print(f"✅ Claimed {task_id} in {column_name} by {name} ({agent_type})")
+            print(f"✅ Claimed {task_id} in {column_name} by {claimant_name}")
 
             # Auto-commit if requested
             if commit:
-                # Get developer name from config, fallback to provided name
-                config = get_developer_config(project_root)
-                dev_name = config.get("developer", {}).get("name", name)
-                _run_board_commit("claim", task_id, dev_name)
+                _run_board_commit("claim", task_id, claimant_name)
 
             return True
 
@@ -1297,6 +1323,11 @@ def main():
         dest="spawn_from",
         help="Parent task ID if spawned from blocker/conflict (e.g., TASK-001)",
     )
+    create_parser.add_argument(
+        "--upstream",
+        nargs="*",
+        help="Upstream dependencies (e.g., STORY-123)",
+    )
 
     # Mark done
     done_parser = subparsers.add_parser("done", help="Mark task as done")
@@ -1344,18 +1375,18 @@ def main():
     )
 
     # Pick task
-    pick_parser = subparsers.add_parser("pick", help="Pick next available task")
+    pick_parser = subparsers.add_parser("pick", help="Pick the next task to work on")
+    pick_parser.add_argument("task_id", nargs="?", help="Specific Task ID to pick")
     pick_parser.add_argument("--claim", action="store_true", help="Also claim the picked task")
 
     # Claim task
     claim_parser = subparsers.add_parser("claim", help="Claim a task")
-    claim_parser.add_argument("task_id", help="Task ID to claim")
+    claim_parser.add_argument(
+        "task_id", nargs="?", help="Task ID to claim (optional, defaults to next)"
+    )
     claim_parser.add_argument("--force", action="store_true", help="Skip prerequisite check")
     claim_parser.add_argument("--session-id", dest="session_id", help="Antigravity session ID")
-    claim_parser.add_argument(
-        "--type", dest="agent_type", default="agent", choices=["agent", "human"], help="Owner type"
-    )
-    claim_parser.add_argument("--name", default="antigravity", help="Owner name")
+    claim_parser.add_argument("--name", help="Owner name (defaults to config.developer.name)")
     claim_parser.add_argument(
         "--commit",
         action="store_true",
@@ -1368,6 +1399,7 @@ def main():
     register_parser.add_argument("--type", dest="agent_type", default="agent", help="Agent type")
     register_parser.add_argument("--session-id", dest="session_id", help="Session ID")
     register_parser.add_argument("--name", default="antigravity", help="Agent name")
+    register_parser.add_argument("--model", help="Model name (e.g., Claude 3.5)")
 
     unregister_parser = subparsers.add_parser("unregister", help="Unregister agent from task")
     unregister_parser.add_argument("task_id", help="Task ID")
@@ -1485,6 +1517,7 @@ def main():
             assignee=args.assignee,
             column_id=args.column,
             spawn_from=args.spawn_from,
+            upstream=args.upstream,
         )
     elif args.command == "done":
         mark_done(
@@ -1499,7 +1532,7 @@ def main():
     elif args.command == "move":
         move_to_column(args.task_id, args.column_id, commit=args.commit)
     elif args.command == "pick":
-        task = pick_task()
+        task = pick_task(args.task_id)
         if task and args.claim:
             claim_task(task["id"])
     elif args.command == "claim":
@@ -1507,12 +1540,17 @@ def main():
             args.task_id,
             force=args.force,
             session_id=args.session_id,
-            agent_type=args.agent_type,
             name=args.name,
             commit=args.commit,
         )
     elif args.command == "register":
-        register_agent(args.task_id, args.agent_type, session_id=args.session_id, name=args.name)
+        register_agent(
+            args.task_id,
+            args.agent_type,
+            session_id=args.session_id,
+            name=args.name,
+            model=args.model,
+        )
     elif args.command == "unregister":
         unregister_agent(args.task_id)
     elif args.command == "active-agents":

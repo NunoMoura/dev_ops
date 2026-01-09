@@ -299,8 +299,8 @@ def create_story(title: str, persona: str = "") -> str:
     return filepath
 
 
-def create_prd(title: str, owner: str = "") -> str:
-    """Create a new PRD document. Returns the filepath."""
+def create_project_defs(title: str, owner: str = "") -> str:
+    """Create a new Project Definition (PRD) document. Returns the filepath."""
     target_dir = os.path.join(DOCS_DIR, "prds")
     os.makedirs(target_dir, exist_ok=True)
 
@@ -319,7 +319,7 @@ def create_prd(title: str, owner: str = "") -> str:
     content = content.replace("{{id}}", slug.upper())
 
     write_file(filepath, content)
-    print(f"✅ Created PRD: {filepath}")
+    print(f"✅ Created Project Definition (PRD): {filepath}")
     return filepath
 
 
@@ -509,10 +509,12 @@ def main():
     mockup_parser.add_argument("--title", required=True, help="Mockup title")
     mockup_parser.add_argument("--component", default="", help="Component/feature this represents")
 
-    # CREATE-PRD
-    prd_parser = subparsers.add_parser("create-prd", help="Create a new PRD")
-    prd_parser.add_argument("--title", required=True, help="PRD title")
-    prd_parser.add_argument("--owner", default="", help="PRD owner")
+    # CREATE-PROJECT-DEFS
+    prd_parser = subparsers.add_parser(
+        "create-project-defs", help="Create a new Project Definition (PRD)"
+    )
+    prd_parser.add_argument("--title", required=True, help="Project Definition title")
+    prd_parser.add_argument("--owner", default="", help="Project Owner")
 
     args = parser.parse_args()
 
@@ -529,8 +531,8 @@ def main():
         create_user(args.title)
     elif args.command == "create-story":
         create_story(args.title, args.persona)
-    elif args.command == "create-prd":
-        create_prd(args.title, args.owner)
+    elif args.command == "create-project-defs":
+        create_project_defs(args.title, args.owner)
     elif args.command == "create-mockup":
         create_mockup(args.title, args.component)
 

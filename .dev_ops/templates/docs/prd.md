@@ -14,6 +14,14 @@ downstream: []         # STORY-XXX items derived from this
 
 <!-- One paragraph: What are we building and why? -->
 
+## References
+
+<!-- Link to designated UX documents -->
+
+- **Personas**: [User Roles](../ux/users/)
+- **Mockups**: [UI Designs](../ux/mockups/)
+- **Stories**: [User Stories](../ux/stories/)
+
 ## Goals
 
 1. Goal 1 — measurable outcome

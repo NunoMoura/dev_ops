@@ -1,19 +1,14 @@
 ---
-id: constitution
-title: "Project Constitution"
-type: constitution
+id: non-negotiables
+title: "Non-Negotiables"
+type: non-negotiables
 date: "{{date}}"
-prd: ""  # PRD-XXX this was derived from
 ---
 
-# Project Constitution
+# Non-Negotiables
 
-Governing principles derived from PRD + user input.
-Checked during Researching phase alignment.
-
-## Derived From
-
-PRD: <!-- Link to PRD-XXX that this constitution is derived from -->
+Governing principles and constraints for the project.
+Checked during alignment phases.
 
 ---
 
@@ -40,6 +35,20 @@ Examples by category:
 - Quality: "No PRs without tests"
 - Process: "Every change must have documentation"
 -->
+
+---
+
+## File Naming Conventions
+
+<!-- 
+Define patterns for file names to ensure consistency.
+Detect from existing codebase (for brownfield) or propose standard conventions (whitefield).
+-->
+
+| Type | Pattern |
+|------|---------|
+
+| | |
 
 ---
 
