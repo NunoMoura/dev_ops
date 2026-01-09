@@ -73,7 +73,8 @@ export function registerInitializeCommand(
 
         // Function to run setup
         const runSetup = async () => {
-            await runSetupScript(pythonCommand, setupScript, workspaceRoot, projectType);
+            const ide = detectIDE();
+            await runSetupScript(pythonCommand, setupScript, workspaceRoot, projectType, ide);
 
             if (!silent) {
                 vscode.window.showInformationMessage(
@@ -170,12 +171,16 @@ async function runSetupScript(
     pythonCommand: string,
     scriptPath: string,
     targetDir: string,
-    projectType?: string
+    projectType?: string,
+    ide?: string
 ): Promise<void> {
     return new Promise((resolve, reject) => {
         const args = [scriptPath, "--target", targetDir];
         if (projectType) {
             args.push("--project-type", projectType);
+        }
+        if (ide) {
+            args.push("--ide", ide);
         }
 
         const proc = spawn(pythonCommand, args, {
@@ -206,5 +211,24 @@ async function runSetupScript(
             reject(err);
         });
     });
+}
+
+function detectIDE(): string {
+    const appName = vscode.env.appName || '';
+
+    // Check for Cursor IDE (VS Code fork with AI features)
+    if (appName.includes('Cursor')) {
+        return 'cursor';
+    }
+
+    // Check for Antigravity IDE (Google's VS Code fork)
+    // Future-proofing in case Antigravity sets a branded appName
+    if (appName.includes('Antigravity')) {
+        return 'antigravity';
+    }
+
+    // Default to antigravity format for VS Code and compatible editors
+    // (Antigravity uses .agent/rules, VS Code can use either format)
+    return 'antigravity';
 }
 

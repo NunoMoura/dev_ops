@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
+from typing import Optional
 
 # Add current directory to sys.path (for project_ops)
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -32,6 +33,25 @@ from utils import prompt_user, write_file
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 FRAMEWORK_ROOT = os.path.dirname(SCRIPT_DIR)  # installer/ -> root
 TEMPLATES_DIR = os.path.join(FRAMEWORK_ROOT, "payload", "templates")
+
+
+# ==========================================
+# Audit Helpers
+# ==========================================
+
+
+def needs_update(src_path: str, dest_path: str) -> bool:
+    """
+    Check if destination file needs updating from source.
+    Returns True if the file should be copied (missing or different size).
+    """
+    if not os.path.exists(dest_path):
+        return True
+    # Compare file sizes as quick check
+    src_size = os.path.getsize(src_path)
+    dest_size = os.path.getsize(dest_path)
+    return src_size != dest_size
+
 
 # ==========================================
 # Extension Installation
@@ -409,18 +429,16 @@ def get_core_rules(core_rules_src: str) -> list:
     return proposed
 
 
-def get_all_rules(core_rules_src: str, templates_rules_src: str, project_root: str):
+def get_all_rules(core_rules_src: str, base_path: str, project_root: str):
     """Combines Core rules with Dynamic Stack rules."""
     core_rules = get_core_rules(core_rules_src)
     dynamic_rules = detect_stack(project_root)
 
     # Fix paths for dynamic rules (templates need full path)
     # project_ops returns 'templates/rules/languages.md'
-    # templates_rules_src is '.../templates/rules'
-    # So we go up two levels to get repo root, then join with template path
+    # We join base_path (assets/ or payload/) with template path
     for rule in dynamic_rules:
-        repo_root = os.path.dirname(os.path.dirname(templates_rules_src))
-        rule["src"] = os.path.join(repo_root, rule["template"])
+        rule["src"] = os.path.join(base_path, rule["template"])
 
     return sorted(core_rules + dynamic_rules, key=lambda x: (x["category"], x["name"]))
 
@@ -428,6 +446,9 @@ def get_all_rules(core_rules_src: str, templates_rules_src: str, project_root: s
 def install_rules(proposed_rules: list, rules_dest: str, ide: str = "antigravity"):
     """Installs the selected rules with text replacement and IDE-specific formatting."""
     print(f"\n📦 Installing Rules (format: {ide})...")
+
+    installed_count = 0
+    skipped_count = 0
 
     for rule in proposed_rules:
         # Antigravity: Flat structure, Cursor: Subdirectories
@@ -463,6 +484,17 @@ def install_rules(proposed_rules: list, rules_dest: str, ide: str = "antigravity
             print(f"   ! Warning: Source for {rule['name']} not found at {rule['src']}")
             continue
 
+        # Apply .mdc extension for Cursor before checking existence
+        if ide == "cursor" and rule_name.endswith(".md"):
+            rule_name = rule_name[:-3] + ".mdc"
+
+        dest_path = os.path.join(target_dir, rule_name)
+
+        # Skip if file already exists (preserve user customizations)
+        if os.path.exists(dest_path):
+            skipped_count += 1
+            continue
+
         # Read template content (no replacements - agent will generate rules via /bootstrap)
         content = get_file_content(rule["src"])
 
@@ -470,13 +502,13 @@ def install_rules(proposed_rules: list, rules_dest: str, ide: str = "antigravity
         if ide == "cursor":
             content = convert_frontmatter_for_cursor(content)
 
-        # Apply .mdc extension for Cursor (Antigravity already handled above)
-        if ide == "cursor" and rule_name.endswith(".md"):
-            rule_name = rule_name[:-3] + ".mdc"
-
-        dest_path = os.path.join(target_dir, rule_name)
-        write_file(dest_path, content, overwrite=True)  # Allow updates
+        print(f"Created: {dest_path}")
+        write_file(dest_path, content, overwrite=True)
         print(f"   - Installed {rule_name} ({category})")
+        installed_count += 1
+
+    if skipped_count:
+        print(f"   ⏭️ {skipped_count} rules already exist (preserved)")
 
 
 # ==========================================
@@ -484,7 +516,7 @@ def install_rules(proposed_rules: list, rules_dest: str, ide: str = "antigravity
 # ==========================================
 
 
-def bootstrap(target_dir: str):
+def bootstrap(target_dir: str, ide_override: Optional[str] = None):
     PROJECT_ROOT = os.path.abspath(target_dir)
 
     # Locate Global Sources - detect context (extension vs framework repo)
@@ -501,13 +533,14 @@ def bootstrap(target_dir: str):
     if is_extension_context:
         # Extension mode: assets are sibling directories to scripts/
         ASSETS_ROOT = os.path.dirname(SCRIPT_DIR)  # dist/assets/
-        RULES_SRC_DIR = os.path.join(ASSETS_ROOT, "rules")  # Both core and template rules
+        # RULES_SRC_DIR no longer used, we use RULE_BASE_PATH
         CORE_RULES_SRC_DIR = os.path.join(ASSETS_ROOT, "rules")
         WORKFLOWS_SRC_DIR = os.path.join(ASSETS_ROOT, "workflows")
         TEMPLATES_SRC_DIR = os.path.join(ASSETS_ROOT, "templates")
         SCRIPTS_SRC_DIR = os.path.join(ASSETS_ROOT, "scripts")
         DOCS_TEMPLATES_DIR = os.path.join(ASSETS_ROOT, "templates", "docs")
         GITHUB_SRC_DIR = None  # GitHub workflows not included in extension
+        RULE_BASE_PATH = ASSETS_ROOT
         print(f"   📦 Running from extension context: {ASSETS_ROOT}")
         # Debug: verify paths exist
         print(
@@ -522,9 +555,9 @@ def bootstrap(target_dir: str):
     else:
         # Framework repo mode: payload/ sibling to installer/
         FRAMEWORK_ROOT = os.path.dirname(SCRIPT_DIR)  # installer/ -> root
-        RULES_SRC_DIR = os.path.join(
-            FRAMEWORK_ROOT, "payload", "templates", "rules"
-        )  # Generator templates
+        RULE_BASE_PATH = os.path.join(FRAMEWORK_ROOT, "payload")
+        # Generator templates are under payload/templates
+
         CORE_RULES_SRC_DIR = os.path.join(
             FRAMEWORK_ROOT, "payload", "rules"
         )  # Actual rules (phases, guide)
@@ -545,7 +578,11 @@ def bootstrap(target_dir: str):
 
     # 0. Detect IDE
     print("\n🔍 Detecting IDE...")
-    detected_ide = detect_ide()
+    if ide_override:
+        detected_ide = ide_override
+        print(f"   🔧 Using IDE override: {detected_ide}")
+    else:
+        detected_ide = detect_ide()
 
     # Get IDE-specific paths
     AGENT_DIR, AGENT_RULES_DIR, AGENT_WORKFLOWS_DIR, _ = get_ide_paths(PROJECT_ROOT, detected_ide)
@@ -556,7 +593,7 @@ def bootstrap(target_dir: str):
     # 2. Detect & Propose Rules
     print("🔍 Analyzing project stack...")
 
-    proposed_rules = get_all_rules(CORE_RULES_SRC_DIR, RULES_SRC_DIR, PROJECT_ROOT)
+    proposed_rules = get_all_rules(CORE_RULES_SRC_DIR, RULE_BASE_PATH, PROJECT_ROOT)
 
     # 3. Interactive Confirmation
     ide_folder = ".cursor" if detected_ide == "cursor" else ".agent"
@@ -654,12 +691,22 @@ def bootstrap(target_dir: str):
     if os.path.exists(SCRIPTS_SRC_DIR):
         print("\n📦 Installing Scripts...")
         os.makedirs(DEVOPS_SCRIPTS_DIR, exist_ok=True)
+        installed_count = 0
+        skipped_count = 0
         for file in os.listdir(SCRIPTS_SRC_DIR):
             if file.endswith(".py") and not file.startswith("_"):
                 src_path = os.path.join(SCRIPTS_SRC_DIR, file)
+                dest_path = os.path.join(DEVOPS_SCRIPTS_DIR, file)
                 if os.path.isfile(src_path):
-                    shutil.copy2(src_path, os.path.join(DEVOPS_SCRIPTS_DIR, file))
-                    print(f"   - Installed {file}")
+                    if needs_update(src_path, dest_path):
+                        shutil.copy2(src_path, dest_path)
+                        action = "Updated" if os.path.exists(dest_path) else "Installed"
+                        print(f"   ✓ {action} {file}")
+                        installed_count += 1
+                    else:
+                        skipped_count += 1
+        if skipped_count:
+            print(f"   ⏭️ {skipped_count} scripts already up-to-date")
         # Also create __init__.py for package imports
         init_path = os.path.join(DEVOPS_SCRIPTS_DIR, "__init__.py")
         if not os.path.exists(init_path):
@@ -670,10 +717,30 @@ def bootstrap(target_dir: str):
     DEVOPS_TEMPLATES_DIR = os.path.join(DEVOPS_DIR, "templates")
     if os.path.exists(TEMPLATES_SRC_DIR):
         print("\n📦 Installing Templates...")
-        if os.path.exists(DEVOPS_TEMPLATES_DIR):
-            shutil.rmtree(DEVOPS_TEMPLATES_DIR)  # Replace existing
-        shutil.copytree(TEMPLATES_SRC_DIR, DEVOPS_TEMPLATES_DIR)
-        print("   - Installed templates to .dev_ops/templates/")
+        installed_count = 0
+        skipped_count = 0
+        for root, _dirs, files in os.walk(TEMPLATES_SRC_DIR):
+            rel_dir = os.path.relpath(root, TEMPLATES_SRC_DIR)
+            dest_dir = (
+                os.path.join(DEVOPS_TEMPLATES_DIR, rel_dir)
+                if rel_dir != "."
+                else DEVOPS_TEMPLATES_DIR
+            )
+            os.makedirs(dest_dir, exist_ok=True)
+            for file in files:
+                src_path = os.path.join(root, file)
+                dest_path = os.path.join(dest_dir, file)
+                if needs_update(src_path, dest_path):
+                    shutil.copy2(src_path, dest_path)
+                    installed_count += 1
+                else:
+                    skipped_count += 1
+        if installed_count:
+            print(f"   ✓ Updated {installed_count} template files")
+        if skipped_count:
+            print(f"   ⏭️ {skipped_count} templates already up-to-date")
+        if not installed_count and not skipped_count:
+            print("   - Installed templates to .dev_ops/templates/")
 
     # Install Rules (using the plan and IDE-specific format)
     if os.path.exists(CORE_RULES_SRC_DIR):
@@ -691,16 +758,24 @@ def bootstrap(target_dir: str):
         print(f"   DEBUG: Target: {AGENT_WORKFLOWS_DIR}")
 
         os.makedirs(AGENT_WORKFLOWS_DIR, exist_ok=True)
-        workflow_count = 0
+        installed_count = 0
+        skipped_count = 0
         for file in os.listdir(WORKFLOWS_SRC_DIR):
             if file.endswith(".md") and not file.startswith("_"):
                 src_file = os.path.join(WORKFLOWS_SRC_DIR, file)
                 dest_file = os.path.join(AGENT_WORKFLOWS_DIR, file)
-                shutil.copy2(src_file, dest_file)
-                workflow_count += 1
-                print(f"   - Installed {file}")
+                if needs_update(src_file, dest_file):
+                    shutil.copy2(src_file, dest_file)
+                    installed_count += 1
+                    print(f"   ✓ Updated {file}")
+                else:
+                    skipped_count += 1
 
-        if workflow_count == 0:
+        if installed_count:
+            print(f"   ✓ Updated {installed_count} {folder_name} files")
+        if skipped_count:
+            print(f"   ⏭️ {skipped_count} {folder_name} already up-to-date")
+        if not installed_count and not skipped_count:
             print(f"   ⚠️ No workflow files found in {WORKFLOWS_SRC_DIR}")
     else:
         print(f"\n⚠️ Workflows source directory not found: {WORKFLOWS_SRC_DIR}")
@@ -808,13 +883,23 @@ def main():
         choices=["greenfield", "brownfield"],
         help="Project type (greenfield or brownfield)",
     )
+    parser.add_argument(
+        "--ide",
+        choices=["antigravity", "cursor", "vscode"],
+        help="Force IDE detection result",
+    )
     args = parser.parse_args()
 
     # Set environment variable if project type specified
     if args.project_type:
         os.environ["PROJECT_TYPE"] = args.project_type
 
-    bootstrap(args.target)
+    # Map vscode to antigravity compatible
+    ide = args.ide
+    if ide == "vscode":
+        ide = "antigravity"
+
+    bootstrap(args.target, ide_override=ide)
 
 
 if __name__ == "__main__":

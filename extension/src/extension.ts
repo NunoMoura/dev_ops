@@ -1,34 +1,18 @@
 import * as vscode from 'vscode';
-import { BoardPanelManager, createBoardPanelManager } from './ui/board';
-import { BoardTreeProvider } from './ui/board';
-import {
-  registerBoardCommands,
-  handleBoardMoveTasks,
-  handleBoardOpenTask,
-  handleArchiveAll,
-  handleArchiveSingle,
-  handleBoardDeleteTasks,
-  DevOpsCommandServices,
-} from './vscode/commands';
+import { TaskEditorProvider } from './ui/tasks';
 import { registerInitializeCommand } from './vscode/commands/initializeCommand';
-import { readBoard, writeBoard, registerBoardWatchers, isProjectInitialized } from './data';
-import { formatError } from './core';
-import { showPhaseNotification } from './domains/notifications';
-import { createStatusBar, StatusBarManager } from './ui/statusBar';
-import { TaskEditorProvider, registerTaskDetailsView, BoardTaskDetailsViewProvider } from './ui/tasks';
-// NEW Providers
-import { DashboardViewProvider } from './ui/dashboard';
-import { MetricsViewProvider } from './ui/metrics';
-
+import { registerBoardWatchers } from './data';
+import { formatError, log, warn, error as logError } from './core';
 import { SessionBridge } from './integrations/sessionBridge';
 import { CursorBridge } from './integrations/cursorBridge';
-import { AgentManager, registerAgentManager } from './domains/agents';
-import { AntigravityAdapter } from './domains/agents';
-import { CursorAdapter } from './domains/agents';
+import { AgentManager, registerAgentManager, AntigravityAdapter, CursorAdapter } from './domains/agents';
 import { registerCodeLensProvider } from './ui/shared';
 import { registerSCMDecorations } from './vscode/scm/scmDecorator';
 import { registerTestController } from './vscode/testing/testController';
-import { log, warn, error as logError } from './core';
+import { checkAndUpdateFramework } from './vscode/framework';
+import { initializeDevOpsServices } from './vscode/services';
+import { bindDevOpsViews } from './vscode/views';
+import { registerBoardCommands } from './vscode/commands';
 
 export async function activate(context: vscode.ExtensionContext) {
   log('DevOps extension v0.0.1 activating...');
@@ -45,6 +29,7 @@ export async function activate(context: vscode.ExtensionContext) {
     log('[Activation] Step 2 complete');
 
     log('[Activation] Step 3: Initializing DevOps services...');
+    // Moved to vscode/services.ts
     const services = await initializeDevOpsServices(context);
     log('[Activation] Step 3 complete');
 
@@ -59,6 +44,7 @@ export async function activate(context: vscode.ExtensionContext) {
     });
 
     log('[Activation] Step 4: Binding views');
+    // Moved to vscode/views.ts
     bindDevOpsViews(context, services);
     log('[Activation] Step 4 complete');
 
@@ -141,300 +127,4 @@ export async function activate(context: vscode.ExtensionContext) {
   }
 }
 
-/**
- * Check if existing project needs framework files update.
- * Checks both .dev_ops and .agent/.cursor directories.
- * Runs silently to ensure scripts, rules, workflows are present.
- */
-async function checkAndUpdateFramework(context: vscode.ExtensionContext): Promise<void> {
-  const workspaceFolders = vscode.workspace.workspaceFolders;
-  if (!workspaceFolders || workspaceFolders.length === 0) {
-    return;
-  }
-
-  const workspaceRoot = workspaceFolders[0].uri.fsPath;
-  const fs = require('fs');
-  const path = require('path');
-
-  const devOpsDir = path.join(workspaceRoot, '.dev_ops');
-  const scriptsDir = path.join(devOpsDir, 'scripts');
-  const boardPath = path.join(devOpsDir, 'board.json');
-
-  // Detect IDE to check correct folder
-  const agentDir = path.join(workspaceRoot, '.agent');
-  const cursorDir = path.join(workspaceRoot, '.cursor');
-
-  let needsUpdate = false;
-  let reason = '';
-  const missingItems: string[] = [];
-
-  // Check 1: .dev_ops exists but scripts missing
-  if (fs.existsSync(boardPath) && !fs.existsSync(scriptsDir)) {
-    needsUpdate = true;
-    missingItems.push('scripts');
-    reason = 'missing .dev_ops/scripts';
-  }
-
-  // Check 2: .agent exists but rules or workflows missing
-  if (fs.existsSync(agentDir)) {
-    const rulesDir = path.join(agentDir, 'rules');
-    const workflowsDir = path.join(agentDir, 'workflows');
-
-    if (!fs.existsSync(rulesDir) || !fs.existsSync(workflowsDir)) {
-      needsUpdate = true;
-      if (!fs.existsSync(rulesDir)) { missingItems.push('rules'); }
-      if (!fs.existsSync(workflowsDir)) { missingItems.push('workflows'); }
-      reason = reason ? `${reason}, missing .agent/rules or .agent/workflows` : 'missing .agent/rules or .agent/workflows';
-    } else {
-      // Check if directories are empty
-      const rulesEmpty = fs.readdirSync(rulesDir).length === 0;
-      const workflowsEmpty = fs.readdirSync(workflowsDir).length === 0;
-
-      if (rulesEmpty || workflowsEmpty) {
-        needsUpdate = true;
-        if (rulesEmpty) { missingItems.push('rules'); }
-        if (workflowsEmpty) { missingItems.push('workflows'); }
-        reason = reason ? `${reason}, empty .agent directories` : 'empty .agent directories';
-      }
-    }
-  }
-
-  // Check 3: .cursor exists but rules or commands missing
-  if (fs.existsSync(cursorDir)) {
-    const rulesDir = path.join(cursorDir, 'rules');
-    const commandsDir = path.join(cursorDir, 'commands');
-
-    if (!fs.existsSync(rulesDir) || !fs.existsSync(commandsDir)) {
-      needsUpdate = true;
-      if (!fs.existsSync(rulesDir)) { missingItems.push('rules'); }
-      if (!fs.existsSync(commandsDir)) { missingItems.push('commands'); }
-      reason = reason ? `${reason}, missing .cursor/rules or .cursor/commands` : 'missing .cursor/rules or .cursor/commands';
-    } else {
-      // Check if directories are empty
-      const rulesEmpty = fs.readdirSync(rulesDir).length === 0;
-      const commandsEmpty = fs.readdirSync(commandsDir).length === 0;
-
-      if (rulesEmpty || commandsEmpty) {
-        needsUpdate = true;
-        if (rulesEmpty) { missingItems.push('rules'); }
-        if (commandsEmpty) { missingItems.push('commands'); }
-        reason = reason ? `${reason}, empty .cursor directories` : 'empty .cursor directories';
-      }
-    }
-  }
-
-  if (needsUpdate) {
-    log(`Detected project needing framework update: ${reason}`);
-
-    // Use status bar message instead of modal/toast for "in progress"
-    const missingItemsStr = missingItems.join(', ');
-    const statusMsg = vscode.window.setStatusBarMessage(`$(sync~spin) DevOps: Updating framework files (missing: ${missingItemsStr})...`);
-
-    try {
-      // Run silently - no popups from the command itself
-      await vscode.commands.executeCommand('devops.initialize', { silent: true });
-      log('Framework files updated successfully');
-
-      statusMsg.dispose();
-
-      // Show ONE single success notification
-      const enableNotifications = vscode.workspace.getConfiguration('devops').get('enableNotifications', true);
-      if (enableNotifications) {
-        vscode.window.showInformationMessage(
-          `✅ DevOps: Framework files updated successfully!`
-        );
-      }
-    } catch (error) {
-      statusMsg.dispose();
-      warn(`Framework update failed: ${formatError(error)}`);
-
-      // Error notification with action
-      vscode.window.showErrorMessage(
-        `DevOps: Framework update failed. Try running "DevOps: Initialize" manually.`,
-        'Open Output'
-      ).then(selection => {
-        if (selection === 'Open Output') {
-          vscode.commands.executeCommand('workbench.action.output.toggleOutput');
-        }
-      });
-    }
-  } else {
-    log('Framework files are up to date');
-  }
-}
-
 export function deactivate() { }
-
-type DevOpsExtensionServices = DevOpsCommandServices & {
-  boardPanelManager: BoardPanelManager;
-  statusBar: StatusBarManager;
-  syncFilterUI: () => void;
-  dashboard: DashboardViewProvider;
-  metricsView: MetricsViewProvider;
-  taskDetails: BoardTaskDetailsViewProvider;
-};
-
-async function initializeDevOpsServices(context: vscode.ExtensionContext): Promise<DevOpsExtensionServices> {
-  // Internal board state provider (data source)
-  const provider = new BoardTreeProvider(readBoard);
-
-  // Dashboard (handles onboarding and status display)
-  const dashboard = new DashboardViewProvider(context.extensionUri);
-  context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider('devopsStatusBoard', dashboard)
-  );
-
-  const metricsView = new MetricsViewProvider(context.extensionUri);
-  context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider('devopsMetricsView', metricsView)
-  );
-
-  // Task Details View (Sidebar)
-  const taskDetails = registerTaskDetailsView(context);
-  context.subscriptions.push(
-    taskDetails.onDidRequestClaim((taskId) => {
-      vscode.commands.executeCommand('devops.claimTask', { id: taskId });
-    }),
-    taskDetails.onDidRequestDelete((taskId) => {
-      vscode.commands.executeCommand('devops.deleteTask', { id: taskId });
-    })
-  );
-
-  const boardPanelManager = createBoardPanelManager(context);
-
-  // Create status bar
-  const statusBar = createStatusBar(context);
-
-  // Create filter synchronizer
-  const syncFilterUI = () => {
-    const active = provider.hasFilter();
-    void vscode.commands.executeCommand('setContext', 'devopsFilterActive', active);
-  };
-  syncFilterUI();
-
-  return {
-    provider,
-    boardView: undefined as unknown as vscode.TreeView<import('./ui/board').BoardNode>,
-    dashboard,
-    metricsView,
-    taskDetails,
-    boardPanelManager,
-    statusBar,
-    syncFilterUI,
-  };
-}
-
-function bindDevOpsViews(
-  context: vscode.ExtensionContext,
-  services: DevOpsExtensionServices,
-): void {
-  registerBoardSnapshotSync(context, services);
-  registerBoardViewRequests(context, services);
-}
-
-function registerBoardSnapshotSync(context: vscode.ExtensionContext, services: DevOpsExtensionServices): void {
-  const { provider, boardPanelManager, statusBar, dashboard, metricsView } = services;
-
-  const updateAll = async () => {
-    try {
-      const board = await readBoard();
-      statusBar.update(board);
-      dashboard.refresh();
-      metricsView.updateContent();
-    } catch (e) { }
-  };
-
-  boardPanelManager.setBoard(provider.getBoardViewSnapshot());
-  updateAll();
-
-  context.subscriptions.push(
-    provider.onDidUpdateBoardView((snapshot) => {
-      boardPanelManager.setBoard(snapshot);
-      updateAll();
-    }),
-  );
-}
-
-function registerBoardViewRequests(context: vscode.ExtensionContext, services: DevOpsExtensionServices): void {
-  const { provider, boardPanelManager } = services;
-  context.subscriptions.push(
-    boardPanelManager.onDidRequestMoveTasks(async (request) => {
-      await handleBoardMoveTasks(request, provider);
-      if (request.taskIds?.length > 0) {
-        await showPhaseNotification(request.taskIds[0], request.columnId);
-      }
-    }),
-    boardPanelManager.onDidRequestOpenTask((taskId: string) => {
-      void handleBoardOpenTask(taskId);
-    }),
-    boardPanelManager.onDidRequestCreateTask(() => {
-      void Promise.resolve(vscode.commands.executeCommand('devops.createTask')).catch((error: unknown) => {
-        vscode.window.showErrorMessage(`Unable to create task: ${formatError(error)}`);
-      });
-    }),
-    boardPanelManager.onDidRequestArchiveTasks(async () => {
-      await handleArchiveAll(provider);
-    }),
-    boardPanelManager.onDidRequestArchiveTask(async (taskId: string) => {
-      await handleArchiveSingle(taskId, provider);
-    }),
-    boardPanelManager.onDidRequestDeleteTasks(async (taskIds: string[]) => {
-      await handleBoardDeleteTasks(taskIds, provider);
-    }),
-    // Sync view state with dashboard
-    boardPanelManager.onDidViewStateChange((isOpen) => {
-      services.dashboard.setBoardOpenState(isOpen);
-    })
-  );
-
-  // Initialize state
-  services.dashboard.setBoardOpenState(boardPanelManager.isPanelOpen());
-}
-
-/**
- * Detect if project is greenfield or brownfield based on existing files.
- * Greenfield: < 5 files, no manifest files
- * Brownfield: existing codebase
- */
-async function detectProjectType(): Promise<'greenfield' | 'brownfield'> {
-  const workspaceFolders = vscode.workspace.workspaceFolders;
-  if (!workspaceFolders || workspaceFolders.length === 0) {
-    return 'greenfield';
-  }
-
-  const workspaceRoot = workspaceFolders[0].uri.fsPath;
-  const fs = require('fs');
-  const path = require('path');
-
-  // Check for common manifest files
-  const manifestFiles = [
-    'package.json',
-    'pyproject.toml',
-    'Cargo.toml',
-    'go.mod',
-    'pom.xml',
-    'build.gradle'
-  ];
-
-  for (const manifest of manifestFiles) {
-    if (fs.existsSync(path.join(workspaceRoot, manifest))) {
-      log(`Detected brownfield: found ${manifest}`);
-      return 'brownfield';
-    }
-  }
-
-  // Count files (excluding hidden dirs)
-  try {
-    const entries = fs.readdirSync(workspaceRoot);
-    const visibleFiles = entries.filter((e: string) => !e.startsWith('.'));
-    if (visibleFiles.length > 5) {
-      log(`Detected brownfield: ${visibleFiles.length} files`);
-      return 'brownfield';
-    }
-  } catch {
-    // Ignore errors
-  }
-
-  log('Detected greenfield: new project');
-  return 'greenfield';
-}
