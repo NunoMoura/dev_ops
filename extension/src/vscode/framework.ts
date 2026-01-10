@@ -86,38 +86,70 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
     if (needsUpdate) {
         log(`Detected project needing framework update: ${reason}`);
 
-        // Use status bar message instead of modal/toast for "in progress"
-        const missingItemsStr = missingItems.join(', ');
-        const statusMsg = vscode.window.setStatusBarMessage(`$(sync~spin) DevOps: Updating framework files (missing: ${missingItemsStr})...`);
-
-        try {
-            // Run silently - no popups from the command itself
-            await vscode.commands.executeCommand('devops.initialize', { silent: true });
-            log('Framework files updated successfully');
-
-            statusMsg.dispose();
-
-            // Show ONE single success notification
-            const enableNotifications = vscode.workspace.getConfiguration('devops').get('enableNotifications', true);
-            if (enableNotifications) {
-                vscode.window.showInformationMessage(
-                    `✅ DevOps: Framework files updated successfully!`
-                );
-            }
-        } catch (error) {
-            statusMsg.dispose();
-            warn(`Framework update failed: ${formatError(error)}`);
-
-            // Error notification with action
-            vscode.window.showErrorMessage(
-                `DevOps: Framework update failed. Try running "DevOps: Initialize" manually.`,
-                'Open Output'
-            ).then(selection => {
-                if (selection === 'Open Output') {
-                    vscode.commands.executeCommand('workbench.action.output.toggleOutput');
-                }
-            });
+        // Build descriptive message for user
+        const itemDescriptions: string[] = [];
+        if (missingItems.includes('scripts')) { itemDescriptions.push('• Scripts (Python automation tools)'); }
+        if (missingItems.includes('rules')) { itemDescriptions.push('• Rules (AI assistant guidelines)'); }
+        if (missingItems.includes('workflows') || missingItems.includes('commands')) {
+            itemDescriptions.push('• Workflows (slash commands for your IDE)');
         }
+
+        // Ask for user authorization
+        const selection = await vscode.window.showInformationMessage(
+            `📦 DevOps Framework Update Required\n\nThe following components need to be installed:\n${itemDescriptions.join('\n')}`,
+            { modal: false },
+            'Install Now',
+            'Skip'
+        );
+
+        if (selection !== 'Install Now') {
+            log('User skipped framework update');
+            return;
+        }
+
+        // Show progress during installation
+        await vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+                title: 'DevOps Framework',
+                cancellable: false,
+            },
+            async (progress) => {
+                progress.report({ message: 'Preparing installation...' });
+
+                try {
+                    // Run initialization
+                    await vscode.commands.executeCommand('devops.initialize', { silent: true });
+                    log('Framework files updated successfully');
+
+                    progress.report({ message: 'Installation complete!' });
+
+                    // Show success summary with actions
+                    const successAction = await vscode.window.showInformationMessage(
+                        `✅ DevOps Framework Installed!\n\nInstalled to your project:\n• Rules → .agent/rules/\n• Workflows → .agent/workflows/\n• Scripts → .dev_ops/scripts/\n\n💡 Run /bootstrap to customize rules for your project.`,
+                        'Open Board',
+                        'Run Bootstrap'
+                    );
+
+                    if (successAction === 'Open Board') {
+                        vscode.commands.executeCommand('devops.openBoard');
+                    } else if (successAction === 'Run Bootstrap') {
+                        vscode.commands.executeCommand('workbench.action.chat.open');
+                    }
+                } catch (error) {
+                    warn(`Framework update failed: ${formatError(error)}`);
+
+                    vscode.window.showErrorMessage(
+                        `DevOps: Framework installation failed. Try running "DevOps: Initialize" manually.`,
+                        'Open Output'
+                    ).then(sel => {
+                        if (sel === 'Open Output') {
+                            vscode.commands.executeCommand('workbench.action.output.toggleOutput');
+                        }
+                    });
+                }
+            }
+        );
     } else {
         log('Framework files are up to date');
     }

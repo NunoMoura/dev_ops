@@ -12,16 +12,18 @@ import { log, error as logError } from "../../core";
 export function registerInitializeCommand(
     context: vscode.ExtensionContext
 ): vscode.Disposable {
-    return vscode.commands.registerCommand("devops.initialize", async (options?: { projectType?: 'greenfield' | 'brownfield', silent?: boolean }) => {
+    return vscode.commands.registerCommand("devops.initialize", async (options?: { projectType?: 'greenfield' | 'brownfield' | 'fresh', silent?: boolean, githubWorkflows?: boolean }) => {
         // Handle legacy string argument if passed
-        let projectType: 'greenfield' | 'brownfield' | undefined;
+        let projectType: 'greenfield' | 'brownfield' | 'fresh' | undefined;
         let silent = false;
+        let githubWorkflows = false;
 
         if (typeof options === 'string') {
-            projectType = options;
+            projectType = options as 'greenfield' | 'brownfield' | 'fresh';
         } else if (typeof options === 'object') {
             projectType = options.projectType;
             silent = !!options.silent;
+            githubWorkflows = !!options.githubWorkflows;
         }
 
         const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -74,13 +76,17 @@ export function registerInitializeCommand(
         // Function to run setup
         const runSetup = async () => {
             const ide = detectIDE();
-            await runSetupScript(pythonCommand, setupScript, workspaceRoot, projectType, ide);
+            await runSetupScript(pythonCommand, setupScript, workspaceRoot, projectType, ide, githubWorkflows);
 
             if (!silent) {
                 vscode.window.showInformationMessage(
-                    "✅ DevOps: Framework initialized successfully!\n\n📋 Next step: Run /bootstrap to generate project-specific rules",
-                    "OK"
-                );
+                    "✅ DevOps ready! Run /bootstrap to analyze your project and generate tasks.",
+                    "Open Board"
+                ).then(sel => {
+                    if (sel === "Open Board") {
+                        vscode.commands.executeCommand('devops.openBoard');
+                    }
+                });
             }
         };
 
@@ -172,7 +178,8 @@ async function runSetupScript(
     scriptPath: string,
     targetDir: string,
     projectType?: string,
-    ide?: string
+    ide?: string,
+    githubWorkflows?: boolean
 ): Promise<void> {
     return new Promise((resolve, reject) => {
         const args = [scriptPath, "--target", targetDir];
@@ -181,6 +188,9 @@ async function runSetupScript(
         }
         if (ide) {
             args.push("--ide", ide);
+        }
+        if (githubWorkflows) {
+            args.push("--github-workflows");
         }
 
         const proc = spawn(pythonCommand, args, {
@@ -231,4 +241,3 @@ function detectIDE(): string {
     // (Antigravity uses .agent/rules, VS Code can use either format)
     return 'antigravity';
 }
-

@@ -6,9 +6,10 @@ import { readBoard } from '../../data';
 import { log } from '../../core';
 
 /**
- * Dashboard webview that shows either:
+ * Dashboard webview that shows:
  * 1. Onboarding form (if developer name not set)
- * 2. Status overview (if setup complete)
+ * 2. Getting Started view (if board not initialized)
+ * 3. Status overview (if fully setup)
  */
 export class DashboardViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'devopsStatusBoard';
@@ -45,11 +46,26 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     // Handle messages from webview
     webviewView.webview.onDidReceiveMessage(async (message) => {
       if (message.type === 'submit') {
-        const { name, projectType } = message;
-        await this._saveConfig(name, projectType);
-        // Trigger initialization with project type
-        await vscode.commands.executeCommand('devops.initialize', projectType);
+        const { name, projectType, githubWorkflows } = message;
+        await this._saveConfig(name, projectType, githubWorkflows);
+        // Skip doesn't initialize board - just saves config
+        if (projectType !== 'skip') {
+          await vscode.commands.executeCommand('devops.initialize', { projectType, githubWorkflows });
+        }
         this._onDidComplete.fire();
+        this._updateContent();
+      } else if (message.type === 'initBoardLater') {
+        // User clicked "Initialize Board" from Getting Started or Preferences
+        const projectType = message.projectType;
+        await vscode.commands.executeCommand('devops.initialize', { projectType });
+        this._onDidComplete.fire();
+        this._updateContent();
+      } else if (message.type === 'openPreferences') {
+        // Show preferences in the current view
+        if (this._view) {
+          this._view.webview.html = await this._getPreferencesHtml();
+        }
+      } else if (message.type === 'backToDashboard') {
         this._updateContent();
       } else if (message.type === 'openTask' && typeof message.taskId === 'string') {
         vscode.commands.executeCommand('devops.showTaskDetails', message.taskId);
@@ -69,8 +85,10 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     }
 
     const state = await this._getOnboardingState();
-    if (state.needsOnboarding) {
+    if (state.needsDeveloperName) {
       this._view.webview.html = this._getOnboardingHtml(state);
+    } else if (state.needsBoardInit) {
+      this._view.webview.html = this._getGettingStartedHtml();
     } else {
       this._view.webview.html = await this._getDashboardHtml();
     }
@@ -80,14 +98,15 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
    * Get detailed onboarding state to show adaptive form.
    */
   private async _getOnboardingState(): Promise<{
-    needsOnboarding: boolean;
+    needsDeveloperName: boolean;
+    needsBoardInit: boolean;
     projectExists: boolean;
     savedName: string | null;
     gitName: string | null;
   }> {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders || workspaceFolders.length === 0) {
-      return { needsOnboarding: true, projectExists: false, savedName: null, gitName: null };
+      return { needsDeveloperName: true, needsBoardInit: true, projectExists: false, savedName: null, gitName: null };
     }
 
     const workspaceRoot = workspaceFolders[0].uri.fsPath;
@@ -95,8 +114,11 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     const configPath = path.join(devOpsDir, 'config.json');
     const boardPath = path.join(devOpsDir, 'board.json');
 
-    // Check if project is initialized (has board.json)
-    const projectExists = fs.existsSync(boardPath);
+    // Check if project has existing code (for detecting brownfield)
+    const projectExists = this._hasExistingCode(workspaceRoot);
+
+    // Check if board is initialized
+    const boardExists = fs.existsSync(boardPath);
 
     // Get saved developer name
     let savedName: string | null = null;
@@ -119,14 +141,48 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     } catch { /* Ignore */ }
 
     return {
-      needsOnboarding: !savedName,
+      needsDeveloperName: !savedName,
+      needsBoardInit: !boardExists,
       projectExists,
       savedName,
       gitName
     };
   }
 
-  private async _saveConfig(name: string, projectType: string): Promise<void> {
+  /**
+   * Check if workspace has existing source code (not just config files).
+   */
+  private _hasExistingCode(workspaceRoot: string): boolean {
+    const codeExtensions = ['.ts', '.js', '.py', '.java', '.go', '.rs', '.rb', '.php', '.cs', '.cpp', '.c', '.swift', '.kt'];
+    try {
+      const files = fs.readdirSync(workspaceRoot);
+      for (const file of files) {
+        if (file.startsWith('.')) {
+          continue;
+        }
+        const ext = path.extname(file).toLowerCase();
+        if (codeExtensions.includes(ext)) {
+          return true;
+        }
+        const fullPath = path.join(workspaceRoot, file);
+        if (fs.statSync(fullPath).isDirectory() && !file.startsWith('.') && file !== 'node_modules') {
+          // Check one level deep
+          try {
+            const subfiles = fs.readdirSync(fullPath);
+            for (const subfile of subfiles) {
+              const subext = path.extname(subfile).toLowerCase();
+              if (codeExtensions.includes(subext)) {
+                return true;
+              }
+            }
+          } catch { /* Ignore */ }
+        }
+      }
+    } catch { /* Ignore */ }
+    return false;
+  }
+
+  private async _saveConfig(name: string, projectType: string, githubWorkflows?: boolean): Promise<void> {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders || workspaceFolders.length === 0) {
       return;
@@ -149,9 +205,10 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
 
     config.developer = { name: name.trim() };
     config.projectType = projectType;
+    config.githubWorkflowsEnabled = githubWorkflows ?? false;
 
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-    log(`Onboarding complete: ${name}, ${projectType}`);
+    log(`Onboarding complete: ${name}, ${projectType}, github_workflows=${githubWorkflows}`);
 
     vscode.window.showInformationMessage(
       `✅ Welcome, ${name}! Your DevOps workspace is ready.`
@@ -166,35 +223,49 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     const prefillName = state.savedName || state.gitName || '';
     const projectExists = state.projectExists;
 
-    // If project exists, only show name field (brownfield is forced)
-    const projectTypeSection = projectExists ? `
+    // If project has existing code, auto-select brownfield but still allow choice
+    const projectTypeSection = `
       <div class="form-group">
-        <label>Project Type</label>
-        <div class="info-box">
-          <span class="info-icon">✅</span>
-          <span>Existing project detected (brownfield mode)</span>
-        </div>
-        <input type="hidden" name="projectType" value="brownfield">
-      </div>
-    ` : `
-      <div class="form-group">
-        <label>Project Type</label>
+        <label>How would you like to start?</label>
         <div class="radio-group">
-          <label class="radio-option" id="opt-greenfield">
-            <input type="radio" name="projectType" value="greenfield" checked>
+          <label class="radio-option ${!projectExists ? 'selected' : ''}" id="opt-greenfield">
+            <input type="radio" name="projectType" value="greenfield" ${!projectExists ? 'checked' : ''}>
             <div class="radio-content">
               <div class="radio-label">🌱 Greenfield</div>
               <div class="radio-desc">New project starting from scratch</div>
             </div>
           </label>
-          <label class="radio-option selected" id="opt-brownfield">
-            <input type="radio" name="projectType" value="brownfield">
+          <label class="radio-option ${projectExists ? 'selected' : ''}" id="opt-brownfield">
+            <input type="radio" name="projectType" value="brownfield" ${projectExists ? 'checked' : ''}>
             <div class="radio-content">
               <div class="radio-label">🏗️ Brownfield</div>
-              <div class="radio-desc">Existing codebase to improve</div>
+              <div class="radio-desc">Existing codebase to understand & improve</div>
+            </div>
+          </label>
+          <label class="radio-option" id="opt-fresh">
+            <input type="radio" name="projectType" value="fresh">
+            <div class="radio-content">
+              <div class="radio-label">📋 Fresh Start</div>
+              <div class="radio-desc">Empty board, I know what I'm doing</div>
+            </div>
+          </label>
+          <label class="radio-option" id="opt-skip">
+            <input type="radio" name="projectType" value="skip">
+            <div class="radio-content">
+              <div class="radio-label">⏭️ Skip for Now</div>
+              <div class="radio-desc">Just install framework, setup board later</div>
             </div>
           </label>
         </div>
+      </div>
+      <div class="form-group">
+        <label class="checkbox-option">
+          <input type="checkbox" id="githubWorkflows" name="githubWorkflows">
+          <span class="checkbox-content">
+            <span class="checkbox-label">🔄 Enable GitHub Workflows</span>
+            <span class="checkbox-desc">Install PR comment collector for feedback loop (recommended)</span>
+          </span>
+        </label>
       </div>
     `;
 
@@ -244,6 +315,16 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     .radio-content { flex: 1; }
     .radio-label { font-weight: 500; font-size: 13px; }
     .radio-desc { font-size: 11px; opacity: 0.7; margin-top: 2px; }
+    .checkbox-option {
+      display: flex; align-items: flex-start; padding: 10px;
+      border: 1px solid var(--vscode-input-border);
+      border-radius: 6px; cursor: pointer;
+    }
+    .checkbox-option:hover { background: var(--vscode-list-hoverBackground); }
+    .checkbox-option input { margin-right: 10px; margin-top: 2px; }
+    .checkbox-content { flex: 1; }
+    .checkbox-label { font-weight: 500; font-size: 13px; }
+    .checkbox-desc { display: block; font-size: 11px; opacity: 0.7; margin-top: 2px; }
     button {
       width: 100%; padding: 10px; font-size: 13px; font-weight: 500;
       border: none; border-radius: 4px; cursor: pointer;
@@ -274,26 +355,24 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     const form = document.getElementById('onboardingForm');
     const nameInput = document.getElementById('name');
     const nameError = document.getElementById('nameError');
-    const projectExists = ${projectExists};
     
-    // Handle radio selection styling (only if radio buttons exist)
-    if (!projectExists) {
-      document.querySelectorAll('.radio-option').forEach(opt => {
-        const radio = opt.querySelector('input');
-        if (radio.checked) opt.classList.add('selected');
-        radio.addEventListener('change', () => {
-          document.querySelectorAll('.radio-option').forEach(o => o.classList.remove('selected'));
-          opt.classList.add('selected');
-        });
+    // Handle radio selection styling
+    document.querySelectorAll('.radio-option').forEach(opt => {
+      const radio = opt.querySelector('input');
+      if (radio.checked) opt.classList.add('selected');
+      radio.addEventListener('change', () => {
+        document.querySelectorAll('.radio-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
       });
-    }
+    });
     
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       const name = nameInput.value.trim();
       if (!name) { nameError.textContent = 'Name is required'; return; }
-      const projectType = projectExists ? 'brownfield' : document.querySelector('input[name="projectType"]:checked').value;
-      vscode.postMessage({ type: 'submit', name, projectType });
+      const projectType = document.querySelector('input[name="projectType"]:checked').value;
+      const githubWorkflows = document.getElementById('githubWorkflows').checked;
+      vscode.postMessage({ type: 'submit', name, projectType, githubWorkflows });
     });
     nameInput.addEventListener('input', () => { nameError.textContent = ''; });
   </script>
@@ -357,15 +436,18 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     .task:hover { background: var(--vscode-list-activeSelectionBackground); }
     
     .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
       margin-bottom: 16px;
       padding: 8px 0 16px 0;
-      min-height: 28px; /* Force consistent height for alignment with Board */
+      min-height: 28px;
       border-bottom: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
     }
     .open-board-btn {
-      width: 100%;
-      padding: 6px 12px; /* Reduced vertical padding to match inline button style */
-      /* Gradient for modern "cool" look */
+      flex: 1;
+      padding: 6px 12px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       border: none;
@@ -378,7 +460,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       font-family: inherit;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      font-size: 11px; /* Match column header size */
+      font-size: 11px;
     }
     .open-board-btn.disabled {
       opacity: 0.5;
@@ -395,7 +477,21 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     .open-board-btn:active {
       transform: translateY(0);
     }
-    .open-board-btn .icon { font-size: 16px; }
+    .prefs-btn {
+      padding: 6px 8px;
+      background: none;
+      border: 1px solid var(--vscode-input-border);
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--vscode-foreground);
+      font-size: 14px;
+      opacity: 0.7;
+      transition: opacity 0.1s ease, background 0.1s ease;
+    }
+    .prefs-btn:hover {
+      opacity: 1;
+      background: var(--vscode-list-hoverBackground);
+    }
   </style>
 </head>
 <body>
@@ -403,12 +499,187 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     <button class="open-board-btn ${this._isBoardOpen ? 'disabled' : ''}" onclick="openBoard()" ${this._isBoardOpen ? 'disabled' : ''}>
       ${this._isBoardOpen ? 'Board Active' : 'Open Board'}
     </button>
+    <button class="prefs-btn" onclick="openPrefs()" title="Preferences">⚙️</button>
   </div>
   ${groupsHtml}
   <script>
     const vscode = acquireVsCodeApi();
     function openTask(id) { vscode.postMessage({ type: 'openTask', taskId: id }); }
     function openBoard() { vscode.postMessage({ type: 'openBoard' }); }
+    function openPrefs() { vscode.postMessage({ type: 'openPreferences' }); }
+  </script>
+</body>
+</html>`;
+  }
+
+  /**
+   * Getting Started view for users who skipped board initialization.
+   */
+  private _getGettingStartedHtml(): string {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--vscode-font-family);
+      font-size: var(--vscode-font-size);
+      color: var(--vscode-foreground);
+      background: var(--vscode-sideBar-background);
+      padding: 16px;
+    }
+    .header { text-align: center; margin-bottom: 24px; }
+    .header h2 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+    .header p { font-size: 12px; opacity: 0.8; line-height: 1.5; }
+    .info-box {
+      display: flex; align-items: flex-start; gap: 10px; padding: 12px;
+      background: var(--vscode-textBlockQuote-background);
+      border-left: 3px solid var(--vscode-textLink-foreground);
+      border-radius: 4px; font-size: 12px; margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .info-icon { font-size: 16px; flex-shrink: 0; }
+    .options { display: flex; flex-direction: column; gap: 8px; }
+    .option-btn {
+      width: 100%; padding: 12px; font-size: 12px; font-weight: 500;
+      border: 1px solid var(--vscode-input-border);
+      border-radius: 6px; cursor: pointer;
+      background: var(--vscode-button-secondaryBackground);
+      color: var(--vscode-button-secondaryForeground);
+      text-align: left;
+      transition: all 0.1s ease;
+    }
+    .option-btn:hover {
+      background: var(--vscode-list-hoverBackground);
+      border-color: var(--vscode-focusBorder);
+    }
+    .option-title { font-weight: 600; margin-bottom: 4px; }
+    .option-desc { font-size: 11px; opacity: 0.7; }
+    .divider { text-align: center; margin: 16px 0; font-size: 11px; opacity: 0.5; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>📋 Getting Started</h2>
+    <p>Framework installed! Choose how to start your board.</p>
+  </div>
+  <div class="info-box">
+    <span class="info-icon">💡</span>
+    <span>You can always access this later via the <strong>⚙️ preferences</strong> button.</span>
+  </div>
+  <div class="options">
+    <button class="option-btn" onclick="initBoard('greenfield')">
+      <div class="option-title">🌱 Greenfield</div>
+      <div class="option-desc">New project starting from scratch</div>
+    </button>
+    <button class="option-btn" onclick="initBoard('brownfield')">
+      <div class="option-title">🏗️ Brownfield</div>
+      <div class="option-desc">Existing codebase to understand & improve</div>
+    </button>
+    <button class="option-btn" onclick="initBoard('fresh')">
+      <div class="option-title">📋 Fresh Start</div>
+      <div class="option-desc">Empty board, I know what I'm doing</div>
+    </button>
+  </div>
+  <script>
+    const vscode = acquireVsCodeApi();
+    function initBoard(type) {
+      vscode.postMessage({ type: 'initBoardLater', projectType: type });
+    }
+  </script>
+</body>
+</html>`;
+  }
+
+  /**
+   * Preferences view with board initialization and settings.
+   */
+  private async _getPreferencesHtml(): Promise<string> {
+    const state = await this._getOnboardingState();
+
+    const initBoardSection = state.needsBoardInit ? `
+      <div class="section">
+        <div class="section-title">Board</div>
+        <div class="options">
+          <button class="option-btn" onclick="initBoard('greenfield')">
+            <div class="option-title">🌱 Initialize Greenfield Board</div>
+          </button>
+          <button class="option-btn" onclick="initBoard('brownfield')">
+            <div class="option-title">🏗️ Initialize Brownfield Board</div>
+          </button>
+          <button class="option-btn" onclick="initBoard('fresh')">
+            <div class="option-title">📋 Initialize Empty Board</div>
+          </button>
+        </div>
+      </div>
+    ` : `
+      <div class="section">
+        <div class="section-title">Board</div>
+        <div class="info-box">
+          <span class="info-icon">✅</span>
+          <span>Board initialized</span>
+        </div>
+      </div>
+    `;
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--vscode-font-family);
+      font-size: var(--vscode-font-size);
+      color: var(--vscode-foreground);
+      background: var(--vscode-sideBar-background);
+      padding: 16px;
+    }
+    .header { 
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px; padding-bottom: 12px;
+      border-bottom: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
+    }
+    .header h2 { font-size: 14px; font-weight: 600; }
+    .back-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--vscode-textLink-foreground);
+      font-size: 12px; padding: 4px 8px;
+    }
+    .back-btn:hover { opacity: 0.8; }
+    .section { margin-bottom: 20px; }
+    .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; opacity: 0.6; margin-bottom: 10px; }
+    .info-box {
+      display: flex; align-items: center; gap: 8px; padding: 10px;
+      background: var(--vscode-textBlockQuote-background);
+      border-radius: 4px; font-size: 12px;
+    }
+    .info-icon { font-size: 14px; }
+    .options { display: flex; flex-direction: column; gap: 6px; }
+    .option-btn {
+      width: 100%; padding: 10px; font-size: 12px;
+      border: 1px solid var(--vscode-input-border);
+      border-radius: 6px; cursor: pointer;
+      background: var(--vscode-button-secondaryBackground);
+      color: var(--vscode-button-secondaryForeground);
+      text-align: left;
+    }
+    .option-btn:hover { background: var(--vscode-list-hoverBackground); border-color: var(--vscode-focusBorder); }
+    .option-title { font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>⚙️ Preferences</h2>
+    <button class="back-btn" onclick="goBack()">← Back</button>
+  </div>
+  ${initBoardSection}
+  <script>
+    const vscode = acquireVsCodeApi();
+    function goBack() { vscode.postMessage({ type: 'backToDashboard' }); }
+    function initBoard(type) { vscode.postMessage({ type: 'initBoardLater', projectType: type }); }
   </script>
 </body>
 </html>`;
@@ -418,3 +689,4 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 }
+

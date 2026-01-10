@@ -5,31 +5,51 @@ category: automated
 
 # Create Task
 
-Add a new task to the Board board.
+Add a new task to the board following the task template structure.
 
-## Steps
+> [!IMPORTANT]
+> Task template: `.dev_ops/templates/artifacts/task.md`
+> Tasks must have proper fields for tracking and phase transitions.
 
-### Option 1: Standard Task
+## Required Fields
 
-1. **Create task**:
+| Field | Description | Values |
+|-------|-------------|--------|
+| **title** | Short descriptive title | String |
+| **summary** | Clear scope of work | String |
+| **priority** | Urgency level | `high` \| `medium` \| `low` |
 
-   ```bash
-   python3 .dev_ops/scripts/board_ops.py create --title "{{user_input}}" --priority medium
-   ```
+## Create Task
 
-2. **Set priority**: `high` | `medium` | `low`
+```bash
+python3 .dev_ops/scripts/board_ops.py create_task \
+  --title "{{title}}" \
+  --summary "{{summary}}" \
+  --priority {{priority}} \
+  --commit
+```
 
-### Option 2: From Story
+## Optional: Link to Trigger
 
-1. **Select Story**: Identify the `STORY-XXX` ID from `docs/ux/stories/`.
+If task comes from a PRD, Story, or Bug:
 
-2. **Create Linked Task**:
-
-   ```bash
-   python3 .dev_ops/scripts/board_ops.py create --title "Implement {{story_title}}" --upstream STORY-XXX --priority medium
-   ```
+```bash
+python3 .dev_ops/scripts/board_ops.py create_task \
+  --title "Implement {{feature}}" \
+  --summary "{{description}}" \
+  --priority high \
+  --trigger "{{PRD-XXX or STORY-XXX or BUG-XXX}}" \
+  --commit
+```
 
 ## Outputs
 
-- TASK-XXX in Backlog column
-- Linked to upstream Story (if Option 2 selected)
+- TASK-XXX created in Backlog column
+- Status: `ready`
+- Linked to trigger doc (if specified)
+
+## Next Steps
+
+1. Review created task in board
+2. Claim task with `/claim TASK-XXX`
+3. Begin Backlog phase

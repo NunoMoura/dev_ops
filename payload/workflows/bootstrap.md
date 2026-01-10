@@ -1,74 +1,103 @@
 ---
-description: Generate project-specific rules and non-negotiables
+description: Analyze project and generate tailored task backlog
 category: guided
 ---
 
-# Bootstrap Orchestrator
+# Bootstrap - Project Setup & Task Generation
 
-Run this workflow once to initialize the project structure and rules.
+Run this workflow once to analyze your project and generate a tailored task backlog.
 
-## Step 1: Detect Stack & Patterns
+## Step 1: Run Detection
 
-Run the detection script to analyze the codebase:
+Execute the detection script to analyze the codebase:
 
 ```bash
 python3 .dev_ops/scripts/project_ops.py detect --target . --format json
 ```
 
-**Output Analysis**:
+**Read the output carefully.** It contains:
 
-- **Stack**: Languages, frameworks, linters, databases (with versions & globs).
-- **Patterns**: Common file names and directory structures.
+- **stack**: Languages, frameworks, linters, databases
+- **docs**: Which DevOps docs exist (PRD, architecture, constitution)
+- **tests**: Test framework, CI status
+- **patterns**: Common files and directories
 
-## Step 2: Determine Project Type
+## Step 2: Understand the Project
 
-- **Greenfield**: Empty project or only config files.
-  - *Focus*: User vision and requirements.
-- **Brownfield**: Existing code files source code.
-  - *Focus*: Analyzing existing patterns and aligning with goals.
+Based on detection results:
 
-## Step 3: Define Project (Vision)
+### If Brownfield (existing code)
 
-Explain input expectations:
-> "We need to understand your vision. Please prepare:
+1. Review key entry points (main.py, src/index.ts, etc.)
+2. Understand the module structure from `patterns.common_dirs`
+3. Note which documentation is missing from `docs`
+4. Check test coverage from `tests`
+
+### If Greenfield (new project)
+
+1. Note the intended technologies from `stack`
+2. All docs will be missing - tasks will be created for them
+
+## Step 3: Generate Task Backlog
+
+Create tasks using the **task template** format. Reference: `.dev_ops/templates/artifacts/task.md`
+
+### Required Framework Tasks
+
+Check `docs` from detection. Create tasks for any missing:
+
+| Missing Doc | Task to Create |
+|-------------|----------------|
+| `docs.prd = null` | "Create Product Requirements Document (PRD)" |
+| `docs.constitution = null` | "Define Project Constitution (non-negotiables)" |
+| `docs.architecture = null` | "Document System Architecture" |
+
+### Create Tasks
+
+Use the board_ops script with proper task fields:
+
+```bash
+python3 .dev_ops/scripts/board_ops.py create_task \
+  --title "Create PRD" \
+  --summary "Define product vision, personas, and requirements" \
+  --priority high \
+  --commit
+```
+
+> [!IMPORTANT]
+> Each task must have:
 >
-> - **Text**: What are you building? Who is it for?
-> - **Visuals** (Recommended): Images, diagrams, or descriptions of the UI."
+> - **title**: Short, actionable description
+> - **summary**: Clear scope of what needs to be done
+> - **priority**: high | medium | low
 
-**Action**: Run `/define_project`
+### Project-Specific Tasks
 
-- Creates: Personas, Mockups, PRD, and User Stories.
+Based on your audit, create 3-5 additional tasks such as:
 
-## Step 4: Non-Negotiables
+- "Document [undocumented module]"
+- "Add unit tests for [untested component]"
+- "Set up CI/CD pipeline" (if `tests.ci_configured = false`)
+- "Improve README" (if `docs.readme = minimal`)
 
-Explain input expectations:
-> "We need to define the constraints. Please prepare to answer:
->
-> - What constraints must never be violated?
-> - What tech stack decisions are locked?
-> - What patterns are mandatory?"
+## Step 4: Customize Rules
 
-**Action**: Run `/create_nonnegotiables`
+Using the `stack` from detection:
 
-## Step 5: Generate Rules
+1. **Read templates**: `.dev_ops/templates/rules/*.md`
+2. **For each detected stack item**, create a rule in `.agent/rules/`:
+   - Languages: `language_python.md`, `language_typescript.md`
+   - Linters: `linter_eslint.md`, `linter_ruff.md`
+3. **Use globs** from detection for activation patterns
 
-Using the **Stack** and **Patterns** from Step 1, and the context from provided documents:
+## Output Checklist
 
-1. **Read Templates**: `.dev_ops/templates/rules/*.md`
-2. **Generate Rules**: Create files in `.agent/rules/` (or `.cursor/rules/`).
-   - Use `globs` from detection.
-   - Use `patterns` to refine `globs` if needed (e.g. `models/` vs `app/models/`).
-   - Fill hierarchy sections (`Assumes`, `Related Rules`).
+At the end of bootstrap, verify:
 
-### Rule Naming
+- [ ] 5-10 context-aware tasks created in board
+- [ ] PRD task included (if PRD missing)
+- [ ] Constitution task included (if missing)
+- [ ] Architecture task included (if missing)
+- [ ] Rules customized for detected stack
 
-- `language_<name>.md`
-- `library_<name>.md`
-- `linter_<name>.md`
-- `database_<name>.md`
-
-## Output Check
-
-- [ ] PRD created
-- [ ] Non-Negotiables created
-- [ ] Rules generated in `.agent/rules/`
+**Next step:** User reviews generated tasks, then claims first task with `/claim`

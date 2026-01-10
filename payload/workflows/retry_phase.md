@@ -5,7 +5,7 @@ category: manual
 
 # Retry Phase
 
-Spawn new agent with same prompt. Previous artifacts preserved.
+Start new agent with same prompt. Previous artifacts preserved.
 
 ## Steps
 
@@ -16,7 +16,7 @@ Spawn new agent with same prompt. Previous artifacts preserved.
    python3 .dev_ops/scripts/board_ops.py list --status agent_active
    ```
 
-2. **Spawn new agent** with identical phase rule prompt
+2. **Start new agent** with identical phase rule prompt
 
 3. **Compare outputs** — Keep best or merge artifacts
 
