@@ -1,73 +1,41 @@
 ---
-phase: plan
+description: Plan phase - create implementation plan before building
 activation_mode: Model Decides
-triggers: [task_in_plan]
 ---
 
 # Plan Phase
 
-## SIGNAL
+| INPUTS | ARTIFACT | EXIT_TO |
+|--------|----------|---------|
+| RES-XXX + architecture docs | implementation_plan.md | Build |
 
-| Key | Value |
-|-----|-------|
-| INPUTS | RES-XXX + architecture docs |
-| ARTIFACT | implementation_plan.md |
-| EXIT_TO | Build |
+> A plan so clear any developer could execute it.
 
-## Goal
+## Actions
 
-> **A plan so clear that any developer could execute it.**
+1. **Review research** — Internalize "why" before "how"
 
-The plan is not a todo list — it's a blueprint that anticipates problems and defines success.
+2. **Create implementation_plan.md**
+   - Acceptance criteria (what success looks like)
+   - Test strategy (behaviors + edge cases)
+   - Ordered checklist (dependencies first)
 
-## ACTIONS
+3. **Anticipate problems** — What could block you?
 
-1. **Review research** — Internalize the "why" before planning the "how"
-
-2. **Create implementation plan** — Use AG-native `implementation_plan.md`
-
-3. **Define acceptance criteria**
-   - Specific, measurable conditions
-   - Include negative cases: what should NOT happen
-   - Consider performance, security, accessibility where relevant
-
-4. **Design test strategy**
-   - Which behaviors need tests?
-   - What edge cases must be covered?
-   - What would a failure look like?
-
-5. **Create actionable checklist**
-   - Each item is independently completable
-   - Order by dependencies (what must come first)
-   - Include both code and test items
-
-6. **Anticipate problems**
-   - What could go wrong during implementation?
-   - What dependencies might block you?
-   - What's the riskiest part?
-
-### If Research Gaps Found
-
-If you discover you don't understand the problem well enough, **move backward**:
-
-```bash
-python3 dev_ops/scripts/board_ops.py move TASK-XXX col-understand
-```
-
-### When Ready
-
-1. **Link and move**
+4. **Move to Build**
 
    ```bash
-   python3 dev_ops/scripts/board_ops.py upstream TASK-XXX PLN-XXX
-   python3 dev_ops/scripts/board_ops.py move TASK-XXX col-build
+   python3 .dev_ops/scripts/board_ops.py move TASK-XXX col-build --commit
    ```
 
-## EXIT_CRITERIA
+**If research gaps found** → move back to Understand
+
+## Exit Criteria
 
 - [ ] implementation_plan.md created
-- [ ] Acceptance criteria are specific and testable
-- [ ] Test strategy covers happy path AND edge cases
-- [ ] Checklist is ordered by dependencies
-- [ ] Another developer could execute this plan without clarification
+- [ ] Acceptance criteria testable
+- [ ] Another dev could execute without clarification
 - [ ] Task in Build column
+
+
+<!-- To prevent automatic updates, add '<!-- dev-ops-customized -->' to this file -->

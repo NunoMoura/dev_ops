@@ -1,75 +1,44 @@
 ---
-phase: verify
+description: Verify phase - validate, document proof, ship via PR
 activation_mode: Model Decides
-triggers: [task_in_verify]
 ---
 
 # Verify Phase
 
-## SIGNAL
+| INPUTS | ARTIFACT | EXIT_TO |
+|--------|----------|---------|
+| Code + tests | walkthrough.md, PR (see `.dev_ops/templates/artifacts/pr.md`) | Done |
 
-| Key | Value |
-|-----|-------|
-| INPUTS | Code + Tests from Build |
-| ARTIFACT | walkthrough.md, Pull Request |
-| EXIT_TO | Done |
+> Prove it works. Document the proof.
 
-## Goal
+## Actions
 
-> **Prove it works. Document the proof.**
-
-This phase exists to catch what Build missed and create evidence of correctness.
-
-## ACTIONS
-
-1. **Run full validation**
+1. **Validate**
 
    ```bash
-   ruff check .
    pytest tests/ -v --cov
    ```
 
-2. **Review your own code critically**
-   - Read it as if someone else wrote it
-   - Look for assumptions that aren't tested
-   - Check for missing error handling
+2. **Self-review** — Read as if someone else wrote it
 
-3. **Verify security basics**
-   - No hardcoded secrets or credentials
-   - Inputs validated before use
-   - Sensitive data handled appropriately
+3. **Security check** — No secrets, inputs validated
 
-4. **Check documentation coherence**
-   - Do architecture docs match what you built?
-   - Update any docs that are now stale
+4. **Update docs** — Architecture matches implementation
 
-5. **Create walkthrough**
-   - What was implemented and why
-   - Key decisions made during build
-   - Test results and coverage
-   - Screenshots/recordings if UI changes
+5. **Create walkthrough.md** — What, why, test results
 
-6. **Create PR**
+6. **Create PR and complete**
 
    ```bash
-   python3 dev_ops/scripts/board_ops.py done TASK-XXX --create-pr
+   python3 .dev_ops/scripts/board_ops.py move TASK-XXX col-done --commit
    ```
 
-7. **Address feedback** — Treat review comments as opportunities to improve
+## Exit Criteria
 
-8. **Merge and complete**
-
-   ```bash
-   python3 dev_ops/scripts/board_ops.py move TASK-XXX col-done
-   ```
-
-## EXIT_CRITERIA
-
-- [ ] Lint passes
-- [ ] All tests pass
-- [ ] Code reviewed (self or peer)
-- [ ] No obvious security issues
-- [ ] Documentation is current
-- [ ] walkthrough.md created with proof of correctness
-- [ ] PR opened, reviewed, and merged
+- [ ] Tests pass
+- [ ] Docs current
+- [ ] walkthrough.md with proof
 - [ ] Task in Done column
+
+
+<!-- To prevent automatic updates, add '<!-- dev-ops-customized -->' to this file -->

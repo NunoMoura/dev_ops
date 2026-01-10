@@ -5,20 +5,51 @@ category: automated
 
 # Create Task
 
-Add a new task to the Board board.
+Add a new task to the board following the task template structure.
 
-## Steps
+> [!IMPORTANT]
+> Task template: `.dev_ops/templates/artifacts/task.md`
+> Tasks must have proper fields for tracking and phase transitions.
 
-1. **Create task**:
+## Required Fields
 
-   ```bash
-   python3 scripts/board_ops.py create --title "{{user_input}}" --priority medium
-   ```
+| Field | Description | Values |
+|-------|-------------|--------|
+| **title** | Short descriptive title | String |
+| **summary** | Clear scope of work | String |
+| **priority** | Urgency level | `high` \| `medium` \| `low` |
 
-   Or use VS Code: `Board: Create Task` or `+` button in board
+## Create Task
 
-2. **Set priority**: `high` | `medium` | `low`
+```bash
+python3 .dev_ops/scripts/board_ops.py create_task \
+  --title "{{title}}" \
+  --summary "{{summary}}" \
+  --priority {{priority}} \
+  --commit
+```
+
+## Optional: Link to Trigger
+
+If task comes from a PRD, Story, or Bug:
+
+```bash
+python3 .dev_ops/scripts/board_ops.py create_task \
+  --title "Implement {{feature}}" \
+  --summary "{{description}}" \
+  --priority high \
+  --trigger "{{PRD-XXX or STORY-XXX or BUG-XXX}}" \
+  --commit
+```
 
 ## Outputs
 
-- TASK-XXX in Backlog column
+- TASK-XXX created in Backlog column
+- Status: `ready`
+- Linked to trigger doc (if specified)
+
+## Next Steps
+
+1. Review created task in board
+2. Claim task with `/claim TASK-XXX`
+3. Begin Backlog phase

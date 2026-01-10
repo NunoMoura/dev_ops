@@ -96,6 +96,146 @@ def detect_patterns(project_root: str) -> dict[str, Any]:
     return patterns
 
 
+def detect_docs(project_root: str) -> dict[str, Any]:
+    """Detect existing DevOps-relevant documentation.
+
+    Args:
+        project_root: Path to project root.
+
+    Returns:
+        Dictionary mapping doc type to path (if found) or None.
+    """
+    docs = {
+        "prd": None,
+        "constitution": None,
+        "architecture": None,
+        "readme": None,
+        "contributing": None,
+        "changelog": None,
+    }
+
+    # PRD - various locations
+    prd_patterns = [
+        "docs/prd*.md",
+        "docs/PRD*.md",
+        ".dev_ops/docs/prds/*.md",
+        "PRD.md",
+        "prd.md",
+    ]
+    for pattern in prd_patterns:
+        matches = glob.glob(os.path.join(project_root, pattern), recursive=False)
+        if matches:
+            docs["prd"] = os.path.relpath(matches[0], project_root)
+            break
+
+    # Constitution / Non-negotiables
+    const_patterns = [
+        ".dev_ops/docs/constitution.md",
+        "docs/constitution.md",
+        "CONSTITUTION.md",
+    ]
+    for pattern in const_patterns:
+        path = os.path.join(project_root, pattern)
+        if os.path.exists(path):
+            docs["constitution"] = pattern
+            break
+
+    # Architecture docs
+    arch_patterns = [
+        "docs/architecture/",
+        ".dev_ops/docs/architecture/",
+        "ARCHITECTURE.md",
+        "docs/ARCHITECTURE.md",
+    ]
+    for pattern in arch_patterns:
+        path = os.path.join(project_root, pattern)
+        if os.path.exists(path):
+            docs["architecture"] = pattern
+            break
+
+    # README quality check
+    readme_path = os.path.join(project_root, "README.md")
+    if os.path.exists(readme_path):
+        content = get_file_content(readme_path)
+        word_count = len(content.split())
+        if word_count > 500:
+            docs["readme"] = "comprehensive"
+        elif word_count > 100:
+            docs["readme"] = "basic"
+        else:
+            docs["readme"] = "minimal"
+
+    # Other standard docs
+    if os.path.exists(os.path.join(project_root, "CONTRIBUTING.md")):
+        docs["contributing"] = "CONTRIBUTING.md"
+    if os.path.exists(os.path.join(project_root, "CHANGELOG.md")):
+        docs["changelog"] = "CHANGELOG.md"
+
+    return docs
+
+
+def detect_tests(project_root: str) -> dict[str, Any]:
+    """Detect test infrastructure.
+
+    Args:
+        project_root: Path to project root.
+
+    Returns:
+        Dictionary with test detection results.
+    """
+    tests = {
+        "exists": False,
+        "framework": None,
+        "ci_configured": False,
+        "test_dirs": [],
+    }
+
+    # Check for test directories
+    test_dir_patterns = ["tests/", "test/", "__tests__/", "spec/"]
+    for pattern in test_dir_patterns:
+        test_path = os.path.join(project_root, pattern)
+        if os.path.isdir(test_path):
+            tests["exists"] = True
+            tests["test_dirs"].append(pattern)
+
+    # Detect test framework
+    # Python
+    if os.path.exists(os.path.join(project_root, "pyproject.toml")):
+        content = get_file_content(os.path.join(project_root, "pyproject.toml"))
+        if "pytest" in content.lower():
+            tests["framework"] = "pytest"
+        elif "unittest" in content.lower():
+            tests["framework"] = "unittest"
+
+    # JavaScript/TypeScript
+    pkg_json = os.path.join(project_root, "package.json")
+    if os.path.exists(pkg_json):
+        content = get_file_content(pkg_json)
+        if "jest" in content.lower():
+            tests["framework"] = "jest"
+        elif "mocha" in content.lower():
+            tests["framework"] = "mocha"
+        elif "vitest" in content.lower():
+            tests["framework"] = "vitest"
+
+    # CI/CD detection
+    ci_patterns = [
+        ".github/workflows/*.yml",
+        ".github/workflows/*.yaml",
+        ".gitlab-ci.yml",
+        ".circleci/config.yml",
+        "Jenkinsfile",
+        ".travis.yml",
+    ]
+    for pattern in ci_patterns:
+        matches = glob.glob(os.path.join(project_root, pattern))
+        if matches:
+            tests["ci_configured"] = True
+            break
+
+    return tests
+
+
 def detect_versions(project_root: str, stack_items: list[str]) -> dict[str, str]:
     """Detect versions for detected stack items.
 
@@ -359,16 +499,31 @@ def main():
     detect_parser.add_argument(
         "--format", choices=["json", "summary"], default="summary", help="Output format"
     )
+    detect_parser.add_argument(
+        "--include-docs", action="store_true", help="Include doc/test detection (for bootstrap)"
+    )
 
     args = parser.parse_args()
 
     if args.command == "detect":
         stack = detect_stack(args.target)
+        patterns = detect_patterns(args.target)
 
         if args.format == "json":
-            # Include patterns in JSON output for bootstrap orchestration
-            patterns = detect_patterns(args.target)
-            output = {"stack": stack, "patterns": patterns}
+            # Determine project type based on stack detection
+            # Has language files = brownfield, otherwise greenfield
+            has_code = any(item["category"] == "Language" for item in stack)
+            project_type = "brownfield" if has_code else "greenfield"
+            
+            # Full JSON output for bootstrap orchestration
+            output = {
+                "project_type": project_type,
+                "stack": stack,
+                "patterns": patterns,
+            }
+            # Always include docs/tests in JSON format (bootstrap needs it)
+            output["docs"] = detect_docs(args.target)
+            output["tests"] = detect_tests(args.target)
             print(json.dumps(output, indent=2))
         else:
             # Summary format
@@ -383,10 +538,22 @@ def main():
             print(f"\nTotal: {len(stack)} items detected")
 
             # Print pattern summary
-            patterns = detect_patterns(args.target)
             print("\n📂 Common Files:")
             for f, count in patterns["common_files"].items():
                 print(f"  {f}: {count}")
+            
+            # Include docs if requested
+            if args.include_docs:
+                docs = detect_docs(args.target)
+                tests = detect_tests(args.target)
+                print("\n� Documentation:")
+                for doc_type, value in docs.items():
+                    status = value if value else "❌ Missing"
+                    print(f"  {doc_type}: {status}")
+                print("\n🧪 Tests:")
+                print(f"  Exists: {'✅' if tests['exists'] else '❌'}")
+                print(f"  Framework: {tests['framework'] or 'Unknown'}")
+                print(f"  CI: {'✅' if tests['ci_configured'] else '❌'}")
     else:
         parser.print_help()
         sys.exit(1)

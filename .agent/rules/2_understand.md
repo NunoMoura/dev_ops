@@ -1,70 +1,41 @@
 ---
-phase: understand
+description: Understand phase - research deeply before planning
 activation_mode: Model Decides
-triggers: [task_in_understand]
 ---
 
 # Understand Phase
 
-## SIGNAL
+| INPUTS | ARTIFACT | EXIT_TO |
+|--------|----------|---------|
+| TASK + trigger + architecture docs | RES-XXX | Plan |
 
-| Key | Value |
-|-----|-------|
-| INPUTS | TASK + trigger doc + architecture docs + constitution.md |
-| ARTIFACT | RES-XXX, updated architecture docs |
-| EXIT_TO | Plan |
+> Know more about the problem than the person who wrote the trigger doc.
 
-## Goal
+## Actions
 
-> **Deep comprehension before action.**
+1. **Define scope** — What's in/out, which components affected
 
-You should exit this phase knowing more about the problem than the person who wrote the trigger doc.
-
-## ACTIONS
-
-1. **Create research artifact**
-
-   ```bash
-   python3 dev_ops/scripts/doc_ops.py create --title "Topic" --category research
-   ```
-
-2. **Define scope precisely**
-   - What's in scope vs out of scope
-   - Which components are affected
-   - What will NOT change
-
-3. **Verify alignment**
-   - Do architecture docs match current code?
-   - Does this align with constitution principles?
-   - Flag any contradictions you find
-
-4. **Research thoroughly**
-   - Internal: existing code patterns, similar implementations
-   - External: library docs, best practices, alternatives
+2. **Research**
+   - Internal: existing patterns, similar code
+   - External: docs, best practices
    - Edge cases: what could go wrong?
 
-5. **Challenge assumptions**
-   - Question requirements that seem incomplete
-   - Propose alternatives if you see better approaches
-   - Identify risks and unknowns
+3. **Challenge assumptions** — Question incomplete requirements
 
-6. **Update documentation**
-   - Create/update architecture docs for affected components
-   - Add ADRs for any non-trivial decisions
-   - Document your recommendation
+4. **Update docs** — Architecture, ADRs for decisions
 
-7. **Link and move**
+5. **Move to Plan**
 
    ```bash
-   python3 dev_ops/scripts/board_ops.py upstream TASK-XXX RES-XXX
-   python3 dev_ops/scripts/board_ops.py move TASK-XXX col-plan
+   python3 .dev_ops/scripts/board_ops.py move TASK-XXX col-plan --commit
    ```
 
-## EXIT_CRITERIA
+## Exit Criteria
 
-- [ ] Research artifact created with clear recommendation
 - [ ] Scope defined (explicit in/out)
-- [ ] Risks and unknowns documented
-- [ ] Architecture docs updated if needed
-- [ ] Ready to explain the "what" and "why" to another developer
+- [ ] Risks documented
+- [ ] Can explain "what" and "why" to another dev
 - [ ] Task in Plan column
+
+
+<!-- To prevent automatic updates, add '<!-- dev-ops-customized -->' to this file -->
