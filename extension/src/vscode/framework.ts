@@ -58,9 +58,8 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
         }
     }
 
-    // Only prompt for version update if it's an existing project 
-    // AND has a version.json (so we know it's at least version-aware)
-    if (isDevOpsProject && fs.existsSync(projectVersionPath) && bundledVersion !== projectVersion) {
+    // Only prompt for version update if it's an existing project
+    if (isDevOpsProject && bundledVersion !== projectVersion) {
         needsUpdate = true;
         updateType = 'outdated';
         reason = `version mismatch: project (${projectVersion}) vs bundled (${bundledVersion})`;
