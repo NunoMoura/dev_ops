@@ -610,29 +610,44 @@ def bootstrap(target_dir: str, ide_override: Optional[str] = None, github_workfl
     print("\n📂 Checking Documentation...")
     # Check for existing doc folders
     found_docs = None
-    for candidate in ["docs", "documentation", "doc", "dev_docs"]:
+    for candidate in ["docs", "documentation", "doc", "dev_docs", "specs", "requirements"]:
         path = os.path.join(PROJECT_ROOT, candidate)
         if os.path.exists(path) and os.path.isdir(path) and path != DEVOPS_DOCS_DIR:
             found_docs = path
             break
 
     if found_docs:
-        should_move = prompt_user(
-            f"Found existing docs at '{os.path.basename(found_docs)}'. Move to 'dev_ops/docs'? (y/n)",
+        should_copy = prompt_user(
+            f"Found existing docs at '{os.path.basename(found_docs)}'. Copy to '.dev_ops/docs'? (y/n)",
             "y",
         )
-        if should_move.lower() == "y":
-            os.makedirs(os.path.dirname(DEVOPS_DOCS_DIR), exist_ok=True)
-            if os.path.exists(DEVOPS_DOCS_DIR):
-                print(f"Warning: {DEVOPS_DOCS_DIR} already exists. Merging content...")
-                shutil.copytree(found_docs, DEVOPS_DOCS_DIR, dirs_exist_ok=True)
-                shutil.rmtree(found_docs)
-                print(f"✅ Moved content to {DEVOPS_DOCS_DIR} (Old folder removed)")
-            else:
-                shutil.move(found_docs, DEVOPS_DOCS_DIR)
-                print(f"✅ Moved {os.path.basename(found_docs)} to {DEVOPS_DOCS_DIR}")
+        if should_copy.lower() == "y":
+            os.makedirs(DEVOPS_DOCS_DIR, exist_ok=True)
+            shutil.copytree(found_docs, DEVOPS_DOCS_DIR, dirs_exist_ok=True)
+            print(f"✅ Copied content from {os.path.basename(found_docs)} to {DEVOPS_DOCS_DIR}")
         else:
-            print("Skipping docs move.")
+            print("Skipping docs copy.")
+
+    # Check for mockups/design folders
+    found_mockups = None
+    for candidate in ["mockups", "designs", "ui", "ux", "wireframes"]:
+        path = os.path.join(PROJECT_ROOT, candidate)
+        if os.path.exists(path) and os.path.isdir(path):
+            found_mockups = path
+            break
+
+    mockups_target = os.path.join(DEVOPS_DOCS_DIR, "ux", "mockups")
+    if found_mockups:
+        should_copy = prompt_user(
+            f"Found mockups/designs at '{os.path.basename(found_mockups)}'. Copy to '.dev_ops/docs/ux/mockups'? (y/n)",
+            "y",
+        )
+        if should_copy.lower() == "y":
+            os.makedirs(mockups_target, exist_ok=True)
+            shutil.copytree(found_mockups, mockups_target, dirs_exist_ok=True)
+            print(f"✅ Copied mockups from {os.path.basename(found_mockups)}")
+        else:
+            print("Skipping mockups copy.")
 
     # Ensure Subdirectories in .dev_ops/
     # Persistent Docs folders
@@ -654,6 +669,22 @@ def bootstrap(target_dir: str, ide_override: Optional[str] = None, github_workfl
     with open(version_path, "w") as f:
         json.dump({"version": FRAMEWORK_VERSION}, f, indent=2)
     print(f"   📍 Framework version: {FRAMEWORK_VERSION}")
+
+    # Scaffold architecture documentation
+    print("\n📐 Scaffolding architecture documentation...")
+    from project_ops import scaffold_architecture
+
+    arch_dir = os.path.join(DEVOPS_DOCS_DIR, "architecture")
+    template_path = os.path.join(TEMPLATES_SRC_DIR, "docs", "architecture_doc.md")
+
+    try:
+        results = scaffold_architecture(PROJECT_ROOT, arch_dir, template_path)
+        if results["created"] > 0:
+            print(f"   ✓ Created {results['created']} architecture doc(s)")
+        if results["skipped"] > 0:
+            print(f"   ⏭️ Skipped {results['skipped']} existing doc(s)")
+    except Exception as e:
+        print(f"   ⚠️  Scaffolding failed: {e}")
 
     # Create PRD if missing
     prd_found = False

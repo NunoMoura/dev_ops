@@ -24,7 +24,9 @@ activation_mode: Model Decides
 
 4. **Update docs** — Architecture, ADRs for decisions
 
-5. **Move to Plan**
+5. **Decompose if needed** — If the task scope is too large during understanding, break it into smaller atomic tasks and add them to the backlog
+
+6. **Move to Plan**
 
    ```bash
    python3 .dev_ops/scripts/board_ops.py move TASK-XXX col-plan --commit

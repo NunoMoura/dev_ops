@@ -32,13 +32,32 @@ Based on detection results:
 2. Understand the module structure from `patterns.common_dirs`
 3. Note which documentation is missing from `docs`
 4. Check test coverage from `tests`
+5. **Review scaffolded architecture docs** in `.dev_ops/docs/architecture/`
+   - The installer has auto-generated a `.md` file for each directory
+   - Your job is to populate these files with actual documentation
 
 ### If Greenfield (new project)
 
 1. Note the intended technologies from `stack`
 2. All docs will be missing - tasks will be created for them
 
-## Step 3: Generate Task Backlog
+## Step 3: Populate Architecture Documentation
+
+The installer has created placeholder architecture docs in `.dev_ops/docs/architecture/`.
+
+**For each generated `.md` file:**
+
+1. Analyze the corresponding codebase directory
+2. Fill in the Purpose, Overview, Public Interface sections
+3. Document key files and dependencies
+4. Add implementation notes
+
+**If the project is large (>10 components):**
+
+- Create tasks in the backlog for documenting each major subsystem
+- Focus on high-level architecture first, details can be tasked later
+
+## Step 4: Generate Task Backlog
 
 Create tasks using the **task template** format. Reference: `.dev_ops/templates/artifacts/task.md`
 
