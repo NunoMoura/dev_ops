@@ -19,19 +19,52 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
     const devOpsDir = path.join(workspaceRoot, '.dev_ops');
     const scriptsDir = path.join(devOpsDir, 'scripts');
     const boardPath = path.join(devOpsDir, 'board.json');
+    const projectVersionPath = path.join(devOpsDir, 'version.json');
 
     // Detect IDE to check correct folder
     const agentDir = path.join(workspaceRoot, '.agent');
     const cursorDir = path.join(workspaceRoot, '.cursor');
 
     let needsUpdate = false;
+    let updateType: 'missing' | 'outdated' = 'missing';
     let reason = '';
-    const missingItems: string[] = [];
+    const itemsToUpdate: string[] = [];
+
+    // Version Check
+    const extensionPath = context.extensionPath;
+    const bundledVersionPath = path.join(extensionPath, 'dist', 'assets', 'version.json');
+    let projectVersion = '0.0.0';
+    let bundledVersion = '0.0.0';
+
+    if (fs.existsSync(projectVersionPath)) {
+        try {
+            const projectVersionData = JSON.parse(fs.readFileSync(projectVersionPath, 'utf8'));
+            projectVersion = projectVersionData.version || '0.0.0';
+        } catch (e) {
+            warn(`Failed to read project version: ${e}`);
+        }
+    }
+
+    if (fs.existsSync(bundledVersionPath)) {
+        try {
+            const bundledVersionData = JSON.parse(fs.readFileSync(bundledVersionPath, 'utf8'));
+            bundledVersion = bundledVersionData.version || '0.0.0';
+        } catch (e) {
+            warn(`Failed to read bundled version: ${e}`);
+        }
+    }
+
+    if (bundledVersion !== projectVersion) {
+        needsUpdate = true;
+        updateType = 'outdated';
+        reason = `version mismatch: project (${projectVersion}) vs bundled (${bundledVersion})`;
+    }
 
     // Check 1: .dev_ops exists but scripts missing
     if (fs.existsSync(boardPath) && !fs.existsSync(scriptsDir)) {
         needsUpdate = true;
-        missingItems.push('scripts');
+        updateType = 'missing';
+        itemsToUpdate.push('scripts');
         reason = 'missing .dev_ops/scripts';
     }
 
@@ -42,8 +75,9 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
 
         if (!fs.existsSync(rulesDir) || !fs.existsSync(workflowsDir)) {
             needsUpdate = true;
-            if (!fs.existsSync(rulesDir)) { missingItems.push('rules'); }
-            if (!fs.existsSync(workflowsDir)) { missingItems.push('workflows'); }
+            updateType = 'missing';
+            if (!fs.existsSync(rulesDir)) { itemsToUpdate.push('rules'); }
+            if (!fs.existsSync(workflowsDir)) { itemsToUpdate.push('workflows'); }
             reason = reason ? `${reason}, missing .agent/rules or .agent/workflows` : 'missing .agent/rules or .agent/workflows';
         } else {
             // Check if directories are empty
@@ -52,8 +86,9 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
 
             if (rulesEmpty || workflowsEmpty) {
                 needsUpdate = true;
-                if (rulesEmpty) { missingItems.push('rules'); }
-                if (workflowsEmpty) { missingItems.push('workflows'); }
+                updateType = 'missing';
+                if (rulesEmpty) { itemsToUpdate.push('rules'); }
+                if (workflowsEmpty) { itemsToUpdate.push('workflows'); }
                 reason = reason ? `${reason}, empty .agent directories` : 'empty .agent directories';
             }
         }
@@ -66,18 +101,20 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
 
         if (!fs.existsSync(rulesDir) || !fs.existsSync(commandsDir)) {
             needsUpdate = true;
-            if (!fs.existsSync(rulesDir)) { missingItems.push('rules'); }
-            if (!fs.existsSync(commandsDir)) { missingItems.push('commands'); }
+            updateType = 'missing';
+            if (!fs.existsSync(rulesDir)) { itemsToUpdate.push('rules'); }
+            if (!fs.existsSync(commandsDir)) { itemsToUpdate.push('commands'); }
             reason = reason ? `${reason}, missing .cursor/rules or .cursor/commands` : 'missing .cursor/rules or .cursor/commands';
         } else {
             // Check if directories are empty
             const rulesEmpty = fs.readdirSync(rulesDir).length === 0;
-            const commandsEmpty = fs.readdirSync(commandsDir).length === 0;
+            const workflowsEmpty = fs.readdirSync(commandsDir).length === 0;
 
-            if (rulesEmpty || commandsEmpty) {
+            if (rulesEmpty || workflowsEmpty) {
                 needsUpdate = true;
-                if (rulesEmpty) { missingItems.push('rules'); }
-                if (commandsEmpty) { missingItems.push('commands'); }
+                updateType = 'missing';
+                if (rulesEmpty) { itemsToUpdate.push('rules'); }
+                if (workflowsEmpty) { itemsToUpdate.push('commands'); }
                 reason = reason ? `${reason}, empty .cursor directories` : 'empty .cursor directories';
             }
         }
@@ -86,18 +123,27 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
     if (needsUpdate) {
         log(`Detected project needing framework update: ${reason}`);
 
-        // Build descriptive message for user
-        const itemDescriptions: string[] = [];
-        if (missingItems.includes('scripts')) { itemDescriptions.push('• Scripts (Python automation tools)'); }
-        if (missingItems.includes('rules')) { itemDescriptions.push('• Rules (AI assistant guidelines)'); }
-        if (missingItems.includes('workflows') || missingItems.includes('commands')) {
-            itemDescriptions.push('• Workflows (slash commands for your IDE)');
+        let title = '📦 DevOps Framework Update Required';
+        let message = '';
+
+        if (updateType === 'outdated') {
+            title = '📦 DevOps Framework Update Available';
+            message = `A new version of the DevOps framework is available (${bundledVersion}).\n\nThis will update your scripts, workflows, and core rules (preserving customizations).`;
+        } else {
+            // Build descriptive message for user
+            const itemDescriptions: string[] = [];
+            if (itemsToUpdate.includes('scripts')) { itemDescriptions.push('• Scripts (Python automation tools)'); }
+            if (itemsToUpdate.includes('rules')) { itemDescriptions.push('• Rules (AI assistant guidelines)'); }
+            if (itemsToUpdate.includes('workflows') || itemsToUpdate.includes('commands')) {
+                itemDescriptions.push('• Workflows (slash commands for your IDE)');
+            }
+            message = `The following components need to be installed:\n${itemDescriptions.join('\n')}`;
         }
 
         // Ask for user authorization
         const selection = await vscode.window.showInformationMessage(
-            `📦 DevOps Framework Update Required\n\nThe following components need to be installed:\n${itemDescriptions.join('\n')}`,
-            { modal: false },
+            `${title}\n\n${message}`,
+            { modal: updateType === 'missing' },
             'Install Now',
             'Skip'
         );

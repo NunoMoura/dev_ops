@@ -44,6 +44,7 @@ function copyAssets() {
 	copyDir(path.join(projectRoot, 'payload', 'templates'), path.join(assetsDir, 'templates'));
 	copyDir(path.join(projectRoot, 'payload', 'scripts'), path.join(assetsDir, 'scripts'));
 	copyDir(path.join(projectRoot, 'payload', 'github'), path.join(assetsDir, 'github'));
+	fs.copyFileSync(path.join(projectRoot, 'payload', 'version.json'), path.join(assetsDir, 'version.json'));
 
 	// Copy setup_ops.py from installer to scripts directory
 	const setupOpsSource = path.join(projectRoot, 'installer', 'setup_ops.py');

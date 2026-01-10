@@ -21,6 +21,9 @@ from board_ops import DEFAULT_COLUMNS  # Import shared column definitions
 from project_ops import detect_stack, get_file_content
 from utils import prompt_user, write_file
 
+# Current framework version - should be synced with payload/version.json
+FRAMEWORK_VERSION = "0.1.0"
+
 # ==========================================
 # CONSTANTS & PATHS
 # ==========================================
@@ -345,6 +348,7 @@ def get_ide_paths(project_root: str, ide: str) -> tuple:
 # Workflows & Rules Installation
 # ==========================================
 
+
 def get_core_rules(core_rules_src: str) -> list:
     """Get all Core rules that should always be present (phase rules and guide)."""
     proposed = []
@@ -448,10 +452,30 @@ def install_rules(proposed_rules: list, rules_dest: str, ide: str = "antigravity
 
         dest_path = os.path.join(target_dir, rule_name)
 
-        # Skip if file already exists (preserve user customizations)
         if os.path.exists(dest_path):
-            skipped_count += 1
-            continue
+            # Check if it's a Core rule and if it should be updated
+            if category == "Core":
+                # For Core rules, we update them if they haven't been modified by the user.
+                # Simplified check: if it's a core rule, we update it unless it contains
+                # a 'user-customized' marker.
+                try:
+                    with open(dest_path) as f:
+                        old_content = f.read()
+                    if "<!-- dev-ops-customized -->" in old_content:
+                        print(f"   ⏭️ Skipped {rule_name} (User customized)")
+                        skipped_count += 1
+                        continue
+                    else:
+                        # Update core rule
+                        action = "Updated"
+                except Exception:
+                    skipped_count += 1
+                    continue
+            else:
+                skipped_count += 1
+                continue
+        else:
+            action = "Installed"
 
         # Read template content (no replacements - agent will generate rules via /bootstrap)
         content = get_file_content(rule["src"])
@@ -460,9 +484,13 @@ def install_rules(proposed_rules: list, rules_dest: str, ide: str = "antigravity
         if ide == "cursor":
             content = convert_frontmatter_for_cursor(content)
 
-        print(f"Created: {dest_path}")
+        # Add a note about customization protection to Core rules
+        if category == "Core":
+            if "<!-- dev-ops-customized -->" not in content:
+                content += "\n\n<!-- To prevent automatic updates, add '<!-- dev-ops-customized -->' to this file -->\n"
+
         write_file(dest_path, content, overwrite=True)
-        print(f"   - Installed {rule_name} ({category})")
+        print(f"   ✓ {action} {rule_name} ({category})")
         installed_count += 1
 
     if skipped_count:
@@ -497,7 +525,9 @@ def bootstrap(target_dir: str, ide_override: Optional[str] = None, github_workfl
         TEMPLATES_SRC_DIR = os.path.join(ASSETS_ROOT, "templates")
         SCRIPTS_SRC_DIR = os.path.join(ASSETS_ROOT, "scripts")
         DOCS_TEMPLATES_DIR = os.path.join(ASSETS_ROOT, "templates", "docs")
-        GITHUB_SRC_DIR = os.path.join(ASSETS_ROOT, "github", "workflows")  # payload/github/workflows/
+        GITHUB_SRC_DIR = os.path.join(
+            ASSETS_ROOT, "github", "workflows"
+        )  # payload/github/workflows/
         RULE_BASE_PATH = ASSETS_ROOT
         print(f"   📦 Running from extension context: {ASSETS_ROOT}")
         # Debug: verify paths exist
@@ -618,6 +648,12 @@ def bootstrap(target_dir: str, ide_override: Optional[str] = None, github_workfl
     if not os.path.exists(archive_index_path):
         with open(archive_index_path, "w") as f:
             json.dump(archive_index, f, indent=2)
+
+    # Create/Update version.json
+    version_path = os.path.join(DEVOPS_DIR, "version.json")
+    with open(version_path, "w") as f:
+        json.dump({"version": FRAMEWORK_VERSION}, f, indent=2)
+    print(f"   📍 Framework version: {FRAMEWORK_VERSION}")
 
     # Create PRD if missing
     prd_found = False
