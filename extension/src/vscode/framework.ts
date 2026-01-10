@@ -36,7 +36,11 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
     let projectVersion = '0.0.0';
     let bundledVersion = '0.0.0';
 
-    if (fs.existsSync(projectVersionPath)) {
+    // Only perform version check if it's an existing project
+    // (at least one of the core directories must exist)
+    const isDevOpsProject = fs.existsSync(devOpsDir) || fs.existsSync(agentDir) || fs.existsSync(cursorDir);
+
+    if (isDevOpsProject && fs.existsSync(projectVersionPath)) {
         try {
             const projectVersionData = JSON.parse(fs.readFileSync(projectVersionPath, 'utf8'));
             projectVersion = projectVersionData.version || '0.0.0';
@@ -54,7 +58,9 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
         }
     }
 
-    if (bundledVersion !== projectVersion) {
+    // Only prompt for version update if it's an existing project 
+    // AND has a version.json (so we know it's at least version-aware)
+    if (isDevOpsProject && fs.existsSync(projectVersionPath) && bundledVersion !== projectVersion) {
         needsUpdate = true;
         updateType = 'outdated';
         reason = `version mismatch: project (${projectVersion}) vs bundled (${bundledVersion})`;

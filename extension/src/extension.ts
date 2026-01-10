@@ -97,7 +97,8 @@ export async function activate(context: vscode.ExtensionContext) {
     registerAgentManager(context);
 
     // Check if existing .dev_ops/ needs framework files update
-    await checkAndUpdateFramework(context);
+    // Call without await to avoid blocking activation if UI is shown
+    checkAndUpdateFramework(context);
 
     // Listen for workspace folder changes and update framework
     context.subscriptions.push(
