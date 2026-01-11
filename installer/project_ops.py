@@ -551,52 +551,94 @@ coverage: 0
 **Last Verified**: {date}
 """
 
-    # Ensure target directory exists
-    os.makedirs(target_dir, exist_ok=True)
+    # Additional directories to exclude for scaffolding
+    scaffolding_excluded = _EXCLUDED_DIRS | {
+        ".vscode-test",
+        "coverage",
+        "out",
+        "bin",
+        "obj",
+        "__pycache__",
+        ".pytest_cache",
+        ".mypy_cache",
+    }
 
-    # Walk the project structure
+    # First pass: collect all valid directories
+    all_dirs = set()
     for root, dirs, files in os.walk(project_root):
         # Filter out excluded directories
-        dirs[:] = [d for d in dirs if d not in _EXCLUDED_DIRS]
+        dirs[:] = [d for d in dirs if d not in scaffolding_excluded]
 
-        # Get relative path from project root
         rel_path = os.path.relpath(root, project_root)
 
-        # Skip the root directory itself and hidden directories
+        # Skip root and hidden directories
         if rel_path == "." or rel_path.startswith("."):
             continue
 
-        # Convert path to component name: src/components -> src_components
-        component_name = rel_path.replace(os.sep, "_")
-        component_file = f"{component_name}.md"
-        component_path_full = os.path.join(target_dir, component_file)
+        all_dirs.add(rel_path)
+
+    # Second pass: identify leaf directories (no children in our set)
+    leaf_dirs = []
+    for dir_path in all_dirs:
+        # Check if any other directory has this as a parent
+        has_children = any(
+            other.startswith(dir_path + os.sep) for other in all_dirs if other != dir_path
+        )
+        if not has_children:
+            leaf_dirs.append(dir_path)
+
+    # Ensure target directory exists
+    os.makedirs(target_dir, exist_ok=True)
+
+    # Create mirrored structure with .md files for leaf directories
+    import datetime
+
+    for leaf_path in sorted(leaf_dirs):
+        # Split path into parent and leaf name
+        parent = os.path.dirname(leaf_path)
+        leaf_name = os.path.basename(leaf_path)
+
+        # Create parent folder structure in target
+        target_parent = os.path.join(target_dir, parent) if parent else target_dir
+        os.makedirs(target_parent, exist_ok=True)
+
+        # Create .md file for the leaf directory
+        component_file = f"{leaf_name}.md"
+        component_path_full = os.path.join(target_parent, component_file)
 
         # Skip if file already exists
         if os.path.exists(component_path_full):
             results["skipped"] += 1
             continue
 
-        # Create component documentation file
-        import datetime
-
-        content = template_content.replace("{title}", rel_path.replace(os.sep, " / "))
-        content = content.replace("{path}", rel_path)
+        # Generate content from template
+        title = leaf_path.replace(os.sep, " / ")
+        content = template_content.replace("{title}", title)
+        content = content.replace("{path}", leaf_path)
         content = content.replace("{coverage}", "0")
         content = content.replace("{date}", datetime.datetime.now().strftime("%Y-%m-%d"))
 
-        # Add some helpful context about files
-        file_list = [f for f in files if not f.startswith(".") and not f.startswith("__")]
-        if file_list and "<!-- Key exports, entry points, or API surface -->" in content:
-            file_hint = f"<!-- Found {len(file_list)} files: {', '.join(file_list[:5])}{'...' if len(file_list) > 5 else ''} -->"
-            content = content.replace(
-                "<!-- Key exports, entry points, or API surface -->", file_hint
-            )
+        # Add file hints from the original directory
+        source_dir = os.path.join(project_root, leaf_path)
+        if os.path.isdir(source_dir):
+            file_list = [
+                f
+                for f in os.listdir(source_dir)
+                if os.path.isfile(os.path.join(source_dir, f))
+                and not f.startswith(".")
+                and not f.startswith("__")
+            ]
+            if file_list and "<!-- Key exports, entry points, or API surface -->" in content:
+                file_hint = f"<!-- Found {len(file_list)} files: {', '.join(file_list[:5])}{'...' if len(file_list) > 5 else ''} -->"
+                content = content.replace(
+                    "<!-- Key exports, entry points, or API surface -->", file_hint
+                )
 
         with open(component_path_full, "w", encoding="utf-8") as f:
             f.write(content)
 
         results["created"] += 1
-        results["files"].append(component_file)
+        results["files"].append(os.path.join(parent, component_file) if parent else component_file)
 
     return results
 
