@@ -177,15 +177,12 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
 
                     // Show success summary with actions
                     const successAction = await vscode.window.showInformationMessage(
-                        `✅ DevOps Framework Installed!\n\nInstalled to your project:\n• Rules → .agent/rules/\n• Workflows → .agent/workflows/\n• Scripts → .dev_ops/scripts/\n\n💡 Run /bootstrap to customize rules for your project.`,
-                        'Open Board',
-                        'Run Bootstrap'
+                        `✅ DevOps Framework Installed!\n\nInstalled to your project:\n• Rules → .agent/rules/\n• Workflows → .agent/workflows/\n• Scripts → .dev_ops/scripts/\n\n💡 Run /bootstrap in chat to customize rules for your project.`,
+                        'Open Board'
                     );
 
                     if (successAction === 'Open Board') {
                         vscode.commands.executeCommand('devops.openBoard');
-                    } else if (successAction === 'Run Bootstrap') {
-                        vscode.commands.executeCommand('workbench.action.chat.open');
                     }
                 } catch (error) {
                     warn(`Framework update failed: ${formatError(error)}`);
