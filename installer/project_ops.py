@@ -527,6 +527,99 @@ def check_doc_freshness(doc_path: str, source_dir: str) -> str:
         return "stale"
 
 
+def check_architecture_sync(
+    project_root: str,
+    arch_docs_dir: str,
+    create_tasks: bool = True,
+) -> dict[str, Any]:
+    """Check all architecture docs for freshness and optionally create sync tasks.
+
+    Implements docs-first workflow: if code is modified after docs, the docs are stale
+    and should be updated to reflect code changes.
+
+    Args:
+        project_root: Path to the project root directory.
+        arch_docs_dir: Path to architecture docs directory.
+        create_tasks: If True, create Critical priority tasks for stale docs.
+
+    Returns:
+        Dictionary with sync check results:
+        - current: list of up-to-date docs
+        - stale: list of docs needing update
+        - new: list of docs without corresponding source
+        - tasks_created: list of task IDs created (if create_tasks=True)
+    """
+    results = {
+        "current": [],
+        "stale": [],
+        "new": [],
+        "tasks_created": [],
+    }
+
+    if not os.path.exists(arch_docs_dir):
+        return results
+
+    # Walk the architecture docs directory
+    for root, _, files in os.walk(arch_docs_dir):
+        for file in files:
+            if not file.endswith(".md"):
+                continue
+
+            doc_path = os.path.join(root, file)
+
+            # Derive the source directory path from the doc path
+            # e.g., .dev_ops/docs/architecture/extension/src/core.md -> extension/src/core
+            rel_doc_path = os.path.relpath(doc_path, arch_docs_dir)
+            source_rel_path = os.path.splitext(rel_doc_path)[0]  # Remove .md
+            source_dir = os.path.join(project_root, source_rel_path)
+
+            # Check freshness
+            freshness = check_doc_freshness(doc_path, source_dir)
+
+            if freshness == "current":
+                results["current"].append(rel_doc_path)
+            elif freshness == "stale":
+                results["stale"].append(rel_doc_path)
+
+                # Create sync task if requested
+                if create_tasks:
+                    task_id = _create_sync_task(project_root, rel_doc_path, source_rel_path)
+                    if task_id:
+                        results["tasks_created"].append(task_id)
+            else:  # new - doc exists but source doesn't (orphaned)
+                results["new"].append(rel_doc_path)
+
+    return results
+
+
+def _create_sync_task(project_root: str, doc_path: str, source_path: str) -> str | None:
+    """Create a Critical priority sync task for a stale doc.
+
+    Returns the task ID if created, None if failed.
+    """
+    try:
+        # Import board_ops from the scripts directory
+        import sys
+
+        scripts_dir = os.path.join(project_root, ".dev_ops", "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+
+        from board_ops import create_task
+
+        task_id = create_task(
+            title=f"Sync: Update {doc_path}",
+            summary=f"Code in {source_path} was modified after documentation. Update the architecture doc to reflect current implementation.",
+            priority="high",  # Using 'high' as Critical equivalent
+            column_id="col-backlog",
+            project_root=project_root,
+        )
+        return task_id
+    except Exception as e:
+        print(f"Warning: Failed to create sync task: {e}")
+        return None
+
+
 def scaffold_architecture(
     project_root: str,
     target_dir: str,
