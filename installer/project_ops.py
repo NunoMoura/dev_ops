@@ -488,30 +488,81 @@ def _check_triggers(root: str, triggers: list[str], content_search: Optional[str
     return False
 
 
-def scaffold_architecture(project_root: str, target_dir: str, template_path: str) -> dict[str, Any]:
+def get_last_commit_time(path: str) -> int:
+    """Get Unix timestamp of last commit touching this path.
+
+    Returns 0 if path is not tracked or git is not available.
+    """
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            ["git", "log", "-1", "--format=%ct", "--", path],
+            capture_output=True,
+            text=True,
+            cwd=os.path.dirname(path) or ".",
+        )
+        return int(result.stdout.strip()) if result.stdout.strip() else 0
+    except (subprocess.SubprocessError, ValueError):
+        return 0
+
+
+def check_doc_freshness(doc_path: str, source_dir: str) -> str:
+    """Check if architecture doc is fresh relative to source code.
+
+    Returns:
+        "current" - doc was modified after or with code changes
+        "stale" - code was modified after the doc
+        "new" - doc doesn't exist yet
+    """
+    if not os.path.exists(doc_path):
+        return "new"
+
+    doc_time = get_last_commit_time(doc_path)
+    code_time = get_last_commit_time(source_dir)
+
+    if doc_time >= code_time:
+        return "current"
+    else:
+        return "stale"
+
+
+def scaffold_architecture(
+    project_root: str,
+    target_dir: str,
+    template_path: str,
+    max_depth: int = 4,
+) -> dict[str, Any]:
     """Scaffold architecture documentation by mirroring project structure.
 
-    Creates a .md file for each directory in the project, using a template.
-    This provides a clear structure for agents to populate with actual documentation.
+    Mirrors the project folder hierarchy in the target directory, with leaf
+    directories becoming .md files. Implements smart filtering:
+    - Source root detection (src, lib, app, etc.)
+    - Extended exclusions (payload, templates, resources, etc.)
+    - Code file requirement (only dirs with .py, .ts, .js, etc.)
+    - Depth limiting (default 4 levels)
 
     Args:
         project_root: Path to the project root directory.
-        target_dir: Directory where architecture docs should be created (e.g., .dev_ops/docs/architecture).
+        target_dir: Directory where architecture docs should be created.
         template_path: Path to the component template file.
+        max_depth: Maximum directory depth to scaffold (default 4).
 
     Returns:
         Dictionary with scaffolding results including count and file list.
     """
+    import datetime
+
     results = {
         "created": 0,
         "skipped": 0,
+        "filtered": 0,
         "files": [],
     }
 
     # Read template
     template_content = get_file_content(template_path)
     if not template_content:
-        # Fallback template matching architecture_doc.md structure
         template_content = """---
 title: "{title}"
 type: doc
@@ -551,36 +602,126 @@ coverage: 0
 **Last Verified**: {date}
 """
 
-    # Additional directories to exclude for scaffolding
+    # Strategy 1: Source root patterns
+    SOURCE_PATTERNS = {
+        "src",
+        "lib",
+        "app",
+        "packages",
+        "components",
+        "modules",
+        "core",
+        "extension",
+    }
+
+    # Strategy 2: Extended exclusions
     scaffolding_excluded = _EXCLUDED_DIRS | {
-        ".vscode-test",
-        "coverage",
+        # Framework/config
+        "payload",
+        "templates",
+        "resources",
+        "assets",
+        "static",
+        # Temp/generated
+        ".tmp",
+        "tmp",
+        "temp",
+        "cache",
+        ".cache",
+        # Docs (already documentation)
+        "docs",
+        "documentation",
+        ".dev_ops",
+        # Build outputs
+        "dist",
+        "build",
         "out",
+        "target",
         "bin",
         "obj",
+        # Test fixtures/data
+        "fixtures",
+        "mocks",
+        "__mocks__",
+        "testdata",
+        # Common non-code
+        ".vscode-test",
+        "coverage",
         "__pycache__",
         ".pytest_cache",
         ".mypy_cache",
     }
 
-    # First pass: collect all valid directories
+    # Strategy 3: Code file extensions
+    CODE_EXTENSIONS = {
+        ".py",
+        ".ts",
+        ".tsx",
+        ".js",
+        ".jsx",
+        ".go",
+        ".rs",
+        ".java",
+        ".kt",
+        ".swift",
+        ".c",
+        ".cpp",
+        ".h",
+        ".cs",
+        ".rb",
+    }
+
+    def has_code_files(directory: str) -> bool:
+        """Check if directory contains source code files."""
+        if not os.path.isdir(directory):
+            return False
+        for f in os.listdir(directory):
+            if os.path.isfile(os.path.join(directory, f)):
+                ext = os.path.splitext(f)[1].lower()
+                if ext in CODE_EXTENSIONS:
+                    return True
+        return False
+
+    def find_source_roots(root: str) -> list[str]:
+        """Find directories that look like source code entry points."""
+        roots = []
+        for item in os.listdir(root):
+            if item.startswith("."):
+                continue
+            path = os.path.join(root, item)
+            if os.path.isdir(path):
+                if item in SOURCE_PATTERNS or item == "installer":
+                    roots.append(item)
+        return roots if roots else [""]  # Empty string means use project root
+
+    source_roots = find_source_roots(project_root)
+
+    # First pass: collect all valid directories from source roots
     all_dirs = set()
-    for root, dirs, files in os.walk(project_root):
-        # Filter out excluded directories
-        dirs[:] = [d for d in dirs if d not in scaffolding_excluded]
+    for source_root in source_roots:
+        start_path = os.path.join(project_root, source_root) if source_root else project_root
 
-        rel_path = os.path.relpath(root, project_root)
+        for root, dirs, _ in os.walk(start_path):
+            # Filter out excluded directories
+            dirs[:] = [d for d in dirs if d not in scaffolding_excluded]
 
-        # Skip root and hidden directories
-        if rel_path == "." or rel_path.startswith("."):
-            continue
+            rel_path = os.path.relpath(root, project_root)
 
-        all_dirs.add(rel_path)
+            # Skip root and hidden directories
+            if rel_path == "." or rel_path.startswith("."):
+                continue
+
+            # Strategy 4: Depth limiting
+            depth = rel_path.count(os.sep) + 1
+            if depth > max_depth:
+                dirs.clear()  # Don't descend further
+                continue
+
+            all_dirs.add(rel_path)
 
     # Second pass: identify leaf directories (no children in our set)
     leaf_dirs = []
     for dir_path in all_dirs:
-        # Check if any other directory has this as a parent
         has_children = any(
             other.startswith(dir_path + os.sep) for other in all_dirs if other != dir_path
         )
@@ -591,9 +732,14 @@ coverage: 0
     os.makedirs(target_dir, exist_ok=True)
 
     # Create mirrored structure with .md files for leaf directories
-    import datetime
-
     for leaf_path in sorted(leaf_dirs):
+        source_dir = os.path.join(project_root, leaf_path)
+
+        # Strategy 3: Skip directories without code files
+        if not has_code_files(source_dir):
+            results["filtered"] += 1
+            continue
+
         # Split path into parent and leaf name
         parent = os.path.dirname(leaf_path)
         leaf_name = os.path.basename(leaf_path)
@@ -619,20 +765,18 @@ coverage: 0
         content = content.replace("{date}", datetime.datetime.now().strftime("%Y-%m-%d"))
 
         # Add file hints from the original directory
-        source_dir = os.path.join(project_root, leaf_path)
-        if os.path.isdir(source_dir):
-            file_list = [
-                f
-                for f in os.listdir(source_dir)
-                if os.path.isfile(os.path.join(source_dir, f))
-                and not f.startswith(".")
-                and not f.startswith("__")
-            ]
-            if file_list and "<!-- Key exports, entry points, or API surface -->" in content:
-                file_hint = f"<!-- Found {len(file_list)} files: {', '.join(file_list[:5])}{'...' if len(file_list) > 5 else ''} -->"
-                content = content.replace(
-                    "<!-- Key exports, entry points, or API surface -->", file_hint
-                )
+        file_list = [
+            f
+            for f in os.listdir(source_dir)
+            if os.path.isfile(os.path.join(source_dir, f))
+            and not f.startswith(".")
+            and not f.startswith("__")
+        ]
+        if file_list and "<!-- Key exports, entry points, or API surface -->" in content:
+            file_hint = f"<!-- Found {len(file_list)} files: {', '.join(file_list[:5])}{'...' if len(file_list) > 5 else ''} -->"
+            content = content.replace(
+                "<!-- Key exports, entry points, or API surface -->", file_hint
+            )
 
         with open(component_path_full, "w", encoding="utf-8") as f:
             f.write(content)
