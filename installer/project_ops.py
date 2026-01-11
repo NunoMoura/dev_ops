@@ -602,18 +602,6 @@ coverage: 0
 **Last Verified**: {date}
 """
 
-    # Strategy 1: Source root patterns
-    SOURCE_PATTERNS = {
-        "src",
-        "lib",
-        "app",
-        "packages",
-        "components",
-        "modules",
-        "core",
-        "extension",
-    }
-
     # Strategy 2: Extended exclusions
     scaffolding_excluded = _EXCLUDED_DIRS | {
         # Framework/config
@@ -647,6 +635,7 @@ coverage: 0
         # Common non-code
         ".vscode-test",
         "coverage",
+        "htmlcov",
         "__pycache__",
         ".pytest_cache",
         ".mypy_cache",
@@ -683,16 +672,39 @@ coverage: 0
         return False
 
     def find_source_roots(root: str) -> list[str]:
-        """Find directories that look like source code entry points."""
+        """Find directories that look like source code entry points.
+
+        Strategy:
+        1. Look for common source patterns (src, lib, app, etc.)
+        2. Fallback: detect top-level dirs containing code files
+        3. Final fallback: use project root
+        """
+        # Common source directory patterns
+        SOURCE_PATTERNS = {"src", "lib", "app", "packages", "components", "modules", "core"}
+
         roots = []
+        code_dirs = []
+
         for item in os.listdir(root):
-            if item.startswith("."):
+            if item.startswith(".") or item in scaffolding_excluded:
                 continue
             path = os.path.join(root, item)
             if os.path.isdir(path):
-                if item in SOURCE_PATTERNS or item == "installer":
+                # Check for common patterns
+                if item in SOURCE_PATTERNS:
                     roots.append(item)
-        return roots if roots else [""]  # Empty string means use project root
+                # Also track dirs that contain code files (for fallback)
+                elif has_code_files(path):
+                    code_dirs.append(item)
+
+        # If we found standard patterns, use them
+        if roots:
+            return roots
+        # Otherwise, use dirs that contain code files
+        if code_dirs:
+            return code_dirs
+        # Final fallback: scaffold from project root
+        return [""]
 
     source_roots = find_source_roots(project_root)
 
