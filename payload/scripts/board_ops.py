@@ -77,22 +77,29 @@ DEFAULT_COLUMNS = _load_default_columns()
 def get_board_path(project_root: Optional[str] = None) -> str:
     """Get the path to the board JSON file.
 
-    Returns:
-        - Framework repo: payload/board/board.json
-        - User project: .dev_ops/board.json
+    Priority:
+        1. If project_root provided, use it
+        2. Check cwd for .dev_ops/board.json (extension sets cwd to workspace)
+        3. Fall back to get_dev_ops_root() for framework development
     """
     from utils import get_dev_ops_root
 
-    if project_root is None:
-        dev_ops_root = get_dev_ops_root()
-    else:
-        # When project_root is provided, construct path directly
+    if project_root is not None:
+        # Explicit project root provided
         if os.path.isdir(os.path.join(project_root, "payload")):
             dev_ops_root = os.path.join(project_root, "payload")
         elif os.path.isdir(os.path.join(project_root, ".dev_ops")):
             dev_ops_root = os.path.join(project_root, ".dev_ops")
         else:
             raise RuntimeError(f"No payload or .dev_ops directory found in {project_root}")
+    else:
+        # Check cwd first - extension sets cwd to workspace root
+        cwd_board = os.path.join(os.getcwd(), ".dev_ops", "board.json")
+        if os.path.exists(cwd_board):
+            return cwd_board
+
+        # Fall back to framework detection
+        dev_ops_root = get_dev_ops_root()
 
     # User project: .dev_ops/board.json (flat)
     board_path = os.path.join(dev_ops_root, "board.json")

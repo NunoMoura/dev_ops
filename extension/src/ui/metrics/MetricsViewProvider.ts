@@ -116,7 +116,8 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
                 Understand: 0,
                 Plan: 0,
                 Build: 0,
-                Verify: 0
+                Verify: 0,
+                Done: 0
             }
         };
 
@@ -167,6 +168,8 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
                 totals.phases.Build++;
             } else if (colId.includes('verify')) {
                 totals.phases.Verify++;
+            } else if (colId.includes('done')) {
+                totals.phases.Done++;
             }
         }
 
@@ -309,6 +312,7 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
                     ${this.renderBar('Plan', totals.phases.Plan, 10)}
                     ${this.renderBar('Build', totals.phases.Build, 10)}
                     ${this.renderBar('Verify', totals.phases.Verify, 10)}
+                    ${this.renderBar('Done', totals.phases.Done, 10)}
                 </div>
 
                 <div class="sparkline">
