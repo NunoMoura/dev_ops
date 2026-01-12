@@ -77,55 +77,40 @@ DEFAULT_COLUMNS = _load_default_columns()
 def get_board_path(project_root: Optional[str] = None) -> str:
     """Get the path to the board JSON file.
 
-    Priority:
-        1. If project_root provided, use it
-        2. Check cwd for .dev_ops/board.json (extension sets cwd to workspace)
-        3. Fall back to get_dev_ops_root() for framework development
+    Uses project_root if provided, otherwise uses cwd.
+    Board should be at .dev_ops/board.json in the project.
     """
-    from utils import get_dev_ops_root
+    root = project_root or os.getcwd()
 
-    if project_root is not None:
-        # Explicit project root provided
-        if os.path.isdir(os.path.join(project_root, "payload")):
-            dev_ops_root = os.path.join(project_root, "payload")
-        elif os.path.isdir(os.path.join(project_root, ".dev_ops")):
-            dev_ops_root = os.path.join(project_root, ".dev_ops")
-        else:
-            raise RuntimeError(f"No payload or .dev_ops directory found in {project_root}")
-    else:
-        # Check cwd first - extension sets cwd to workspace root
-        cwd_board = os.path.join(os.getcwd(), ".dev_ops", "board.json")
-        if os.path.exists(cwd_board):
-            return cwd_board
-
-        # Fall back to framework detection
-        dev_ops_root = get_dev_ops_root()
-
-    # User project: .dev_ops/board.json (flat)
-    board_path = os.path.join(dev_ops_root, "board.json")
+    # Standard location: .dev_ops/board.json
+    board_path = os.path.join(root, ".dev_ops", "board.json")
     if os.path.exists(board_path):
         return board_path
 
-    # Framework repo: payload/board/board.json (nested)
-    return os.path.join(dev_ops_root, "board", "board.json")
+    # Legacy/framework: payload/board/board.json
+    payload_board = os.path.join(root, "payload", "board", "board.json")
+    if os.path.exists(payload_board):
+        return payload_board
+
+    # Return expected path (will be created if needed)
+    return board_path
 
 
 def get_current_task_path(project_root: Optional[str] = None) -> str:
     """Get the path to the .current_task file."""
-    from utils import get_dev_ops_root
+    root = project_root or os.getcwd()
 
-    if project_root is None:
-        dev_ops_root = get_dev_ops_root()
-    else:
-        if os.path.isdir(os.path.join(project_root, "payload")):
-            dev_ops_root = os.path.join(project_root, "payload")
-        elif os.path.isdir(os.path.join(project_root, ".dev_ops")):
-            dev_ops_root = os.path.join(project_root, ".dev_ops")
-        else:
-            raise RuntimeError(f"No payload or .dev_ops directory found in {project_root}")
+    # Standard location
+    dev_ops_path = os.path.join(root, ".dev_ops", ".current_task")
+    if os.path.isdir(os.path.join(root, ".dev_ops")):
+        return dev_ops_path
 
-    # Both environments: store at root of dev_ops directory
-    return os.path.join(dev_ops_root, ".current_task")
+    # Legacy/framework
+    payload_path = os.path.join(root, "payload", ".current_task")
+    if os.path.isdir(os.path.join(root, "payload")):
+        return payload_path
+
+    return dev_ops_path
 
 
 def get_current_task(project_root: Optional[str] = None) -> Optional[str]:
