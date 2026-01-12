@@ -75,42 +75,15 @@ DEFAULT_COLUMNS = _load_default_columns()
 
 
 def get_board_path(project_root: Optional[str] = None) -> str:
-    """Get the path to the board JSON file.
-
-    Uses project_root if provided, otherwise uses cwd.
-    Board should be at .dev_ops/board.json in the project.
-    """
+    """Get the path to the board JSON file at .dev_ops/board.json."""
     root = project_root or os.getcwd()
-
-    # Standard location: .dev_ops/board.json
-    board_path = os.path.join(root, ".dev_ops", "board.json")
-    if os.path.exists(board_path):
-        return board_path
-
-    # Legacy/framework: payload/board/board.json
-    payload_board = os.path.join(root, "payload", "board", "board.json")
-    if os.path.exists(payload_board):
-        return payload_board
-
-    # Return expected path (will be created if needed)
-    return board_path
+    return os.path.join(root, ".dev_ops", "board.json")
 
 
 def get_current_task_path(project_root: Optional[str] = None) -> str:
-    """Get the path to the .current_task file."""
+    """Get the path to the .current_task file at .dev_ops/.current_task."""
     root = project_root or os.getcwd()
-
-    # Standard location
-    dev_ops_path = os.path.join(root, ".dev_ops", ".current_task")
-    if os.path.isdir(os.path.join(root, ".dev_ops")):
-        return dev_ops_path
-
-    # Legacy/framework
-    payload_path = os.path.join(root, "payload", ".current_task")
-    if os.path.isdir(os.path.join(root, "payload")):
-        return payload_path
-
-    return dev_ops_path
+    return os.path.join(root, ".dev_ops", ".current_task")
 
 
 def get_current_task(project_root: Optional[str] = None) -> Optional[str]:
