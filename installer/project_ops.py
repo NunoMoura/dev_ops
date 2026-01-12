@@ -753,15 +753,30 @@ coverage: 0
         ".rb",
     }
 
-    def has_code_files(directory: str) -> bool:
-        """Check if directory contains source code files."""
+    def has_code_files(directory: str, recursive: bool = False) -> bool:
+        """Check if directory contains source code files.
+
+        Args:
+            directory: Path to check
+            recursive: If True, also check immediate subdirectories
+        """
         if not os.path.isdir(directory):
             return False
+
+        # Check direct children
         for f in os.listdir(directory):
-            if os.path.isfile(os.path.join(directory, f)):
+            full_path = os.path.join(directory, f)
+            if os.path.isfile(full_path):
                 ext = os.path.splitext(f)[1].lower()
                 if ext in CODE_EXTENSIONS:
                     return True
+            # Check one level deep if recursive
+            elif recursive and os.path.isdir(full_path):
+                for sub_f in os.listdir(full_path):
+                    if os.path.isfile(os.path.join(full_path, sub_f)):
+                        ext = os.path.splitext(sub_f)[1].lower()
+                        if ext in CODE_EXTENSIONS:
+                            return True
         return False
 
     def find_source_roots(root: str) -> list[str]:
@@ -772,8 +787,28 @@ coverage: 0
         2. Fallback: detect top-level dirs containing code files
         3. Final fallback: use project root
         """
-        # Common source directory patterns
-        SOURCE_PATTERNS = {"src", "lib", "app", "packages", "components", "modules", "core"}
+        # Common source directory patterns (including monorepo patterns)
+        SOURCE_PATTERNS = {
+            # Standard src patterns
+            "src",
+            "lib",
+            "app",
+            "packages",
+            "components",
+            "modules",
+            "core",
+            # Monorepo/multi-project patterns
+            "frontend",
+            "backend",
+            "client",
+            "server",
+            "api",
+            "web",
+            "mobile",
+            # Test directories
+            "tests",
+            "test",
+        }
 
         roots = []
         code_dirs = []
@@ -786,8 +821,8 @@ coverage: 0
                 # Check for common patterns
                 if item in SOURCE_PATTERNS:
                     roots.append(item)
-                # Also track dirs that contain code files (for fallback)
-                elif has_code_files(path):
+                # Also track dirs that have code files (check recursively for nested src/)
+                elif has_code_files(path, recursive=True):
                     code_dirs.append(item)
 
         # If we found standard patterns, use them
