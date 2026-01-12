@@ -128,6 +128,15 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
     if (needsUpdate) {
         log(`Detected project needing framework update: ${reason}`);
 
+        // Check auto-update setting for version updates
+        if (updateType === 'outdated') {
+            const autoUpdateEnabled = vscode.workspace.getConfiguration('extensions').get('autoUpdate', true);
+            if (!autoUpdateEnabled) {
+                log('Auto-update disabled in settings, skipping version update prompt');
+                return;
+            }
+        }
+
         let title = '📦 DevOps Framework Update Required';
         let message = '';
 
@@ -158,6 +167,10 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
             return;
         }
 
+        // Track if installation succeeded for post-progress message
+        let installSuccess = false;
+        const isFirstInstall = updateType === 'missing';
+
         // Show progress during installation
         await vscode.window.withProgress(
             {
@@ -166,24 +179,13 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
                 cancellable: false,
             },
             async (progress) => {
-                progress.report({ message: 'Preparing installation...' });
+                progress.report({ message: 'Installing...' });
 
                 try {
                     // Run initialization
                     await vscode.commands.executeCommand('devops.initialize', { silent: true });
                     log('Framework files updated successfully');
-
-                    progress.report({ message: 'Installation complete!' });
-
-                    // Show success summary with actions
-                    const successAction = await vscode.window.showInformationMessage(
-                        `✅ DevOps Framework Installed!\n\nInstalled to your project:\n• Rules → .agent/rules/\n• Workflows → .agent/workflows/\n• Scripts → .dev_ops/scripts/\n\n💡 Run /bootstrap in chat to customize rules for your project.`,
-                        'Open Board'
-                    );
-
-                    if (successAction === 'Open Board') {
-                        vscode.commands.executeCommand('devops.openBoard');
-                    }
+                    installSuccess = true;
                 } catch (error) {
                     warn(`Framework update failed: ${formatError(error)}`);
 
@@ -196,8 +198,28 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
                         }
                     });
                 }
+                // Return immediately to close progress notification
             }
         );
+
+        // Show success message AFTER progress closes (not inside withProgress)
+        if (installSuccess) {
+            let successMessage: string;
+            if (isFirstInstall) {
+                successMessage = `✅ DevOps Framework Installed!\n\nInstalled to your project:\n• Rules → .agent/rules/\n• Workflows → .agent/workflows/\n• Scripts → .dev_ops/scripts/\n\n💡 Run /bootstrap in chat to customize rules for your project.`;
+            } else {
+                successMessage = `✅ DevOps Framework Updated!\n\nScripts and workflows updated to v${bundledVersion}.\nYour customized rules were preserved.`;
+            }
+
+            const successAction = await vscode.window.showInformationMessage(
+                successMessage,
+                'Open Board'
+            );
+
+            if (successAction === 'Open Board') {
+                vscode.commands.executeCommand('devops.openBoard');
+            }
+        }
     } else {
         log('Framework files are up to date');
     }
