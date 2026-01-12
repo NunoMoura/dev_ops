@@ -296,24 +296,6 @@
       "priority": "high",
       "updatedAt": "2026-01-04T21:35:27.923Z",
       "summary": "Test task for UI verification - blocked"
-    },
-    {
-      "id": "TASK-TEST-007",
-      "columnId": "col-done",
-      "title": "Test Done Task 1",
-      "status": "done",
-      "priority": "low",
-      "updatedAt": "2026-01-03T05:39:46.338335Z",
-      "summary": "Test task for UI verification - done"
-    },
-    {
-      "id": "TASK-TEST-008",
-      "columnId": "col-done",
-      "title": "Test Done Task 2",
-      "status": "done",
-      "priority": "medium",
-      "updatedAt": "2026-01-03T05:39:46.338335Z",
-      "summary": "Test task for UI verification - done"
     }
   ]
 }

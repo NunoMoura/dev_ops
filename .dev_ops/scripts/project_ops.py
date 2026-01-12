@@ -488,6 +488,161 @@ def _check_triggers(root: str, triggers: list[str], content_search: Optional[str
     return False
 
 
+def scaffold_architecture(project_root: str, target_dir: str, template_path: str) -> dict[str, Any]:
+    """Scaffold architecture documentation by mirroring project structure.
+
+    Creates a .md file for each directory in the project, using a template.
+    This provides a clear structure for agents to populate with actual documentation.
+
+    Args:
+        project_root: Path to the project root directory.
+        target_dir: Directory where architecture docs should be created (e.g., .dev_ops/docs/architecture).
+        template_path: Path to the component template file.
+
+    Returns:
+        Dictionary with scaffolding results including count and file list.
+    """
+    results = {
+        "created": 0,
+        "skipped": 0,
+        "files": [],
+    }
+
+    # Read template
+    template_content = get_file_content(template_path)
+    if not template_content:
+        # Fallback template matching architecture_doc.md structure
+        template_content = """---
+title: "{title}"
+type: doc
+lifecycle: persistent
+path: "{path}"
+status: undocumented
+coverage: 0
+---
+
+# {title}
+
+## Purpose
+
+<!-- What does this component do? Why does it exist? -->
+
+## Overview
+
+<!-- High-level summary of the component -->
+
+## Public Interface
+
+<!-- Key exports, entry points, or API surface -->
+
+## Dependencies
+
+| Depends On | Relationship |
+|------------|--------------|
+| — | — |
+
+## Implementation Notes
+
+<!-- Design decisions, gotchas, or future improvements -->
+
+## Test Coverage
+
+**Coverage**: {coverage}%
+**Last Verified**: {date}
+"""
+
+    # Additional directories to exclude for scaffolding
+    scaffolding_excluded = _EXCLUDED_DIRS | {
+        ".vscode-test",
+        "coverage",
+        "out",
+        "bin",
+        "obj",
+        "__pycache__",
+        ".pytest_cache",
+        ".mypy_cache",
+    }
+
+    # First pass: collect all valid directories
+    all_dirs = set()
+    for root, dirs, files in os.walk(project_root):
+        # Filter out excluded directories
+        dirs[:] = [d for d in dirs if d not in scaffolding_excluded]
+
+        rel_path = os.path.relpath(root, project_root)
+
+        # Skip root and hidden directories
+        if rel_path == "." or rel_path.startswith("."):
+            continue
+
+        all_dirs.add(rel_path)
+
+    # Second pass: identify leaf directories (no children in our set)
+    leaf_dirs = []
+    for dir_path in all_dirs:
+        # Check if any other directory has this as a parent
+        has_children = any(
+            other.startswith(dir_path + os.sep) for other in all_dirs if other != dir_path
+        )
+        if not has_children:
+            leaf_dirs.append(dir_path)
+
+    # Ensure target directory exists
+    os.makedirs(target_dir, exist_ok=True)
+
+    # Create mirrored structure with .md files for leaf directories
+    import datetime
+
+    for leaf_path in sorted(leaf_dirs):
+        # Split path into parent and leaf name
+        parent = os.path.dirname(leaf_path)
+        leaf_name = os.path.basename(leaf_path)
+
+        # Create parent folder structure in target
+        target_parent = os.path.join(target_dir, parent) if parent else target_dir
+        os.makedirs(target_parent, exist_ok=True)
+
+        # Create .md file for the leaf directory
+        component_file = f"{leaf_name}.md"
+        component_path_full = os.path.join(target_parent, component_file)
+
+        # Skip if file already exists
+        if os.path.exists(component_path_full):
+            results["skipped"] += 1
+            continue
+
+        # Generate content from template
+        title = leaf_path.replace(os.sep, " / ")
+        content = template_content.replace("{title}", title)
+        content = content.replace("{path}", leaf_path)
+        content = content.replace("{coverage}", "0")
+        content = content.replace("{date}", datetime.datetime.now().strftime("%Y-%m-%d"))
+
+        # Add file hints from the original directory
+        source_dir = os.path.join(project_root, leaf_path)
+        if os.path.isdir(source_dir):
+            file_list = [
+                f
+                for f in os.listdir(source_dir)
+                if os.path.isfile(os.path.join(source_dir, f))
+                and not f.startswith(".")
+                and not f.startswith("__")
+            ]
+            if file_list and "<!-- Key exports, entry points, or API surface -->" in content:
+                file_hint = f"<!-- Found {len(file_list)} files: {', '.join(file_list[:5])}{'...' if len(file_list) > 5 else ''} -->"
+                content = content.replace(
+                    "<!-- Key exports, entry points, or API surface -->", file_hint
+                )
+
+        with open(component_path_full, "w", encoding="utf-8") as f:
+            f.write(content)
+
+        results["created"] += 1
+        results["files"].append(os.path.join(parent, component_file) if parent else component_file)
+
+    return results
+
+
 def main():
     """CLI entry point for project operations."""
     parser = argparse.ArgumentParser(description="DevOps project operations")
@@ -514,7 +669,7 @@ def main():
             # Has language files = brownfield, otherwise greenfield
             has_code = any(item["category"] == "Language" for item in stack)
             project_type = "brownfield" if has_code else "greenfield"
-            
+
             # Full JSON output for bootstrap orchestration
             output = {
                 "project_type": project_type,
@@ -541,7 +696,7 @@ def main():
             print("\n📂 Common Files:")
             for f, count in patterns["common_files"].items():
                 print(f"  {f}: {count}")
-            
+
             # Include docs if requested
             if args.include_docs:
                 docs = detect_docs(args.target)

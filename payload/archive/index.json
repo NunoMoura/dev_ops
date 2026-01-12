@@ -2,6 +2,22 @@
   "version": 1,
   "archives": [
     {
+      "taskId": "TASK-TEST-008",
+      "title": "Test Done Task 2",
+      "archivedAt": "2026-01-12T15:31:03.121110",
+      "artifactCount": 0,
+      "priority": "medium",
+      "completedAt": "2026-01-03T05:39:46.338335Z"
+    },
+    {
+      "taskId": "TASK-TEST-007",
+      "title": "Test Done Task 1",
+      "archivedAt": "2026-01-12T15:31:03.119088",
+      "artifactCount": 0,
+      "priority": "low",
+      "completedAt": "2026-01-03T05:39:46.338335Z"
+    },
+    {
       "taskId": "TASK-001",
       "title": "Done Task",
       "archivedAt": "2026-01-02T11:34:58.104652",

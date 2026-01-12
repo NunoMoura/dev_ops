@@ -75,50 +75,15 @@ DEFAULT_COLUMNS = _load_default_columns()
 
 
 def get_board_path(project_root: Optional[str] = None) -> str:
-    """Get the path to the board JSON file.
-
-    Returns:
-        - Framework repo: payload/board/board.json
-        - User project: .dev_ops/board.json
-    """
-    from utils import get_dev_ops_root
-
-    if project_root is None:
-        dev_ops_root = get_dev_ops_root()
-    else:
-        # When project_root is provided, construct path directly
-        if os.path.isdir(os.path.join(project_root, "payload")):
-            dev_ops_root = os.path.join(project_root, "payload")
-        elif os.path.isdir(os.path.join(project_root, ".dev_ops")):
-            dev_ops_root = os.path.join(project_root, ".dev_ops")
-        else:
-            raise RuntimeError(f"No payload or .dev_ops directory found in {project_root}")
-
-    # User project: .dev_ops/board.json (flat)
-    board_path = os.path.join(dev_ops_root, "board.json")
-    if os.path.exists(board_path):
-        return board_path
-
-    # Framework repo: payload/board/board.json (nested)
-    return os.path.join(dev_ops_root, "board", "board.json")
+    """Get the path to the board JSON file at .dev_ops/board.json."""
+    root = project_root or os.getcwd()
+    return os.path.join(root, ".dev_ops", "board.json")
 
 
 def get_current_task_path(project_root: Optional[str] = None) -> str:
-    """Get the path to the .current_task file."""
-    from utils import get_dev_ops_root
-
-    if project_root is None:
-        dev_ops_root = get_dev_ops_root()
-    else:
-        if os.path.isdir(os.path.join(project_root, "payload")):
-            dev_ops_root = os.path.join(project_root, "payload")
-        elif os.path.isdir(os.path.join(project_root, ".dev_ops")):
-            dev_ops_root = os.path.join(project_root, ".dev_ops")
-        else:
-            raise RuntimeError(f"No payload or .dev_ops directory found in {project_root}")
-
-    # Both environments: store at root of dev_ops directory
-    return os.path.join(dev_ops_root, ".current_task")
+    """Get the path to the .current_task file at .dev_ops/.current_task."""
+    root = project_root or os.getcwd()
+    return os.path.join(root, ".dev_ops", ".current_task")
 
 
 def get_current_task(project_root: Optional[str] = None) -> Optional[str]:
