@@ -21,8 +21,19 @@ from board_ops import DEFAULT_COLUMNS  # Import shared column definitions
 from project_ops import detect_stack, get_file_content
 from utils import prompt_user, write_file
 
-# Current framework version - should be synced with payload/version.json
-FRAMEWORK_VERSION = "0.1.0"
+
+# Current framework version - read from payload/version.json as single source of truth
+def _get_framework_version() -> str:
+    """Read framework version from payload/version.json."""
+    version_file = os.path.join(os.path.dirname(__file__), "..", "payload", "version.json")
+    if os.path.exists(version_file):
+        with open(version_file) as f:
+            data = json.load(f)
+            return data.get("version", "0.0.0")
+    return "0.0.0"
+
+
+FRAMEWORK_VERSION = _get_framework_version()
 
 # ==========================================
 # CONSTANTS & PATHS

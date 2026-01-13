@@ -99,15 +99,20 @@ Based on your audit, create 3-5 additional tasks such as:
 - "Set up CI/CD pipeline" (if `tests.ci_configured = false`)
 - "Improve README" (if `docs.readme = minimal`)
 
-## Step 4: Customize Rules
+## Step 5: Generate Rules
 
-Using the `stack` from detection:
+Run the rule generation script to create project-specific rules from detected stack:
 
-1. **Read templates**: `.dev_ops/templates/rules/*.md`
-2. **For each detected stack item**, create a rule in `.agent/rules/`:
-   - Languages: `language_python.md`, `language_typescript.md`
-   - Linters: `linter_eslint.md`, `linter_ruff.md`
-3. **Use globs** from detection for activation patterns
+```bash
+python3 .dev_ops/scripts/project_ops.py generate-rules --target .
+```
+
+This creates rules in `.agent/rules/` for:
+
+- Detected languages (e.g., `languages/python.md`, `languages/typescript.md`)
+- Detected linters (e.g., `linters/ruff.md`, `linters/eslint.md`)
+
+**Review and customize** the generated rules for your project's specific needs.
 
 ## Output Checklist
 
@@ -117,6 +122,6 @@ At the end of bootstrap, verify:
 - [ ] PRD task included (if PRD missing)
 - [ ] Constitution task included (if missing)
 - [ ] Architecture task included (if missing)
-- [ ] Rules customized for detected stack
+- [ ] Rules generated for detected stack
 
 **Next step:** User reviews generated tasks, then claims first task with `/claim`
