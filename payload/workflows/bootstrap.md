@@ -74,6 +74,7 @@ Check `docs` from detection. Create tasks for any missing:
 | `docs.prd = null` | "Create Product Requirements Document (PRD)" |
 | `docs.constitution = null` | "Define Project Constitution (non-negotiables)" |
 | `docs.architecture = null` | "Document System Architecture" |
+| `docs.existing_docs_folder != null` | "Migrate existing documentation to architecture scaffold" |
 
 ### Create Tasks
 
@@ -83,6 +84,16 @@ Use the board_ops script with proper task fields:
 python3 .dev_ops/scripts/board_ops.py create_task \
   --title "Create PRD" \
   --summary "Define product vision, personas, and requirements" \
+  --priority high \
+  --commit
+```
+
+**If existing docs folder found** (e.g., `docs/`), create migration task:
+
+```bash
+python3 .dev_ops/scripts/board_ops.py create_task \
+  --title "Migrate existing documentation" \
+  --summary "Move content from existing docs folder into .dev_ops/docs/architecture/ scaffold structure" \
   --priority high \
   --commit
 ```
