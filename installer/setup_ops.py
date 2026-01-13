@@ -18,7 +18,7 @@ sys.path.append(
 )
 
 from board_ops import DEFAULT_COLUMNS  # Import shared column definitions
-from project_ops import detect_stack, get_file_content
+from project_ops import get_file_content
 from utils import prompt_user, write_file
 
 
@@ -403,17 +403,19 @@ def get_core_rules(core_rules_src: str) -> list:
 
 
 def get_all_rules(core_rules_src: str, base_path: str, project_root: str):
-    """Combines Core rules with Dynamic Stack rules."""
+    """Returns Core rules for installation.
+
+    Note: Template-based rules (languages, linters) are NOT installed here.
+    They are generated during /bootstrap using:
+        python3 .dev_ops/scripts/project_ops.py generate-rules --target . --ide <ide>
+    """
     core_rules = get_core_rules(core_rules_src)
-    dynamic_rules = detect_stack(project_root)
 
-    # Fix paths for dynamic rules (templates need full path)
-    # project_ops returns 'templates/rules/languages.md'
-    # We join base_path (assets/ or payload/) with template path
-    for rule in dynamic_rules:
-        rule["src"] = os.path.join(base_path, rule["template"])
+    # Dynamic rules (from detect_stack) are NO LONGER included here.
+    # The templates (languages.md, linters.md) are just instructions for the agent.
+    # Actual rules are generated via `project_ops.py generate-rules` during bootstrap.
 
-    return sorted(core_rules + dynamic_rules, key=lambda x: (x["category"], x["name"]))
+    return sorted(core_rules, key=lambda x: (x["category"], x["name"]))
 
 
 def install_rules(proposed_rules: list, rules_dest: str, ide: str = "antigravity"):
