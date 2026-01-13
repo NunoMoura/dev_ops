@@ -34,8 +34,9 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
     const extensionPath = context.extensionPath;
     const bundledVersion = context.extension.packageJSON.version || '0.0.0';
 
-    // Only perform version check if it's an existing project with version.json
-    const isDevOpsProject = fs.existsSync(devOpsDir) || fs.existsSync(agentDir) || fs.existsSync(cursorDir);
+    // .dev_ops is the definitive marker of a DevOps-initialized project
+    // (.agent/.cursor may exist from other tools)
+    const isDevOpsProject = fs.existsSync(devOpsDir);
     let projectVersion: string | null = null;  // null = no version.json exists
 
     if (isDevOpsProject && fs.existsSync(projectVersionPath)) {
@@ -63,8 +64,8 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
         reason = 'missing .dev_ops/scripts';
     }
 
-    // Check 2: .agent exists but rules or workflows missing
-    if (fs.existsSync(agentDir)) {
+    // Check 2: .agent exists but rules or workflows missing (only on DevOps projects)
+    if (isDevOpsProject && fs.existsSync(agentDir)) {
         const rulesDir = path.join(agentDir, 'rules');
         const workflowsDir = path.join(agentDir, 'workflows');
 
@@ -89,8 +90,8 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
         }
     }
 
-    // Check 3: .cursor exists but rules or commands missing
-    if (fs.existsSync(cursorDir)) {
+    // Check 3: .cursor exists but rules or commands missing (only on DevOps projects)
+    if (isDevOpsProject && fs.existsSync(cursorDir)) {
         const rulesDir = path.join(cursorDir, 'rules');
         const commandsDir = path.join(cursorDir, 'commands');
 
