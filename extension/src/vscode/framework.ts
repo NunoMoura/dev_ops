@@ -30,15 +30,13 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
     let reason = '';
     const itemsToUpdate: string[] = [];
 
-    // Version Check
+    // Version Check - use extension's package.json as single source of truth
     const extensionPath = context.extensionPath;
-    const bundledVersionPath = path.join(extensionPath, 'dist', 'assets', 'version.json');
-    let projectVersion = '0.0.0';
-    let bundledVersion = '0.0.0';
+    const bundledVersion = context.extension.packageJSON.version || '0.0.0';
 
     // Only perform version check if it's an existing project
-    // (at least one of the core directories must exist)
     const isDevOpsProject = fs.existsSync(devOpsDir) || fs.existsSync(agentDir) || fs.existsSync(cursorDir);
+    let projectVersion = '0.0.0';
 
     if (isDevOpsProject && fs.existsSync(projectVersionPath)) {
         try {
@@ -46,15 +44,6 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
             projectVersion = projectVersionData.version || '0.0.0';
         } catch (e) {
             warn(`Failed to read project version: ${e}`);
-        }
-    }
-
-    if (fs.existsSync(bundledVersionPath)) {
-        try {
-            const bundledVersionData = JSON.parse(fs.readFileSync(bundledVersionPath, 'utf8'));
-            bundledVersion = bundledVersionData.version || '0.0.0';
-        } catch (e) {
-            warn(`Failed to read bundled version: ${e}`);
         }
     }
 
