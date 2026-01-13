@@ -927,6 +927,130 @@ coverage: 0
     return results
 
 
+def generate_rules(
+    project_root: str,
+    templates_dir: str,
+    target_rules_dir: str,
+    stack: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Generate rule files from templates based on detected stack.
+
+    Takes detection output and creates project-specific rule files in
+    the target directory (typically .agent/rules/).
+
+    Args:
+        project_root: Path to the project root directory.
+        templates_dir: Path to rule templates (e.g., payload/templates/rules/).
+        target_rules_dir: Path to output rules (e.g., .agent/rules/).
+        stack: Optional pre-detected stack. If None, runs detect_stack().
+
+    Returns:
+        Dictionary with generation results:
+        - created: count of rules created
+        - skipped: count of existing rules skipped
+        - files: list of created file paths
+    """
+    results = {"created": 0, "skipped": 0, "files": []}
+
+    # Run detection if stack not provided
+    if stack is None:
+        stack = detect_stack(project_root)
+
+    if not stack:
+        return results
+
+    os.makedirs(target_rules_dir, exist_ok=True)
+
+    for item in stack:
+        rule_name = item.get("name")
+        category = item.get("category", "").lower()
+        replacements = item.get("replacements", {})
+        globs = item.get("globs", [])
+        version = item.get("version", "")
+
+        if not rule_name:
+            continue
+
+        # Create category subdirectory if needed
+        if category:
+            category_dir = os.path.join(target_rules_dir, f"{category}s")
+            os.makedirs(category_dir, exist_ok=True)
+            target_path = os.path.join(category_dir, rule_name)
+        else:
+            target_path = os.path.join(target_rules_dir, rule_name)
+
+        # Skip if already exists
+        if os.path.exists(target_path):
+            results["skipped"] += 1
+            continue
+
+        # Build rule content with YAML frontmatter
+        display_name = (
+            replacements.get("[Language Name]")
+            or replacements.get("[Linter Name]")
+            or rule_name.replace(".md", "").title()
+        )
+
+        content_lines = [
+            "---",
+            f"name: {display_name}",
+        ]
+
+        if globs:
+            globs_str = json.dumps(globs)
+            content_lines.append(f"globs: {globs_str}")
+
+        if version:
+            content_lines.append(f"version: {version}")
+
+        content_lines.extend(
+            [
+                "---",
+                "",
+                f"# {display_name} Rules",
+                "",
+                "## Assumes",
+                f"This rule applies to {display_name} files in this project.",
+                "",
+                "## Related Rules",
+                "- See other rules in this category",
+                "",
+                "## Standards",
+                "",
+                "<!-- Customize these settings for your project -->",
+                "",
+            ]
+        )
+
+        # Add category-specific defaults
+        if category == "language":
+            content_lines.extend(
+                [
+                    "- Use idiomatic patterns",
+                    "- Document public APIs",
+                    "- Handle errors explicitly",
+                ]
+            )
+        elif category == "linter":
+            content_lines.extend(
+                [
+                    "- Fail CI on lint errors",
+                    "- Auto-fix when available",
+                    "- Document any ignores with reasons",
+                ]
+            )
+
+        content = "\n".join(content_lines)
+
+        with open(target_path, "w", encoding="utf-8") as f:
+            f.write(content)
+
+        results["created"] += 1
+        results["files"].append(os.path.relpath(target_path, target_rules_dir))
+
+    return results
+
+
 def main():
     """CLI entry point for project operations."""
     parser = argparse.ArgumentParser(description="DevOps project operations")
@@ -940,6 +1064,15 @@ def main():
     )
     detect_parser.add_argument(
         "--include-docs", action="store_true", help="Include doc/test detection (for bootstrap)"
+    )
+
+    # Generate-rules command
+    gen_rules_parser = subparsers.add_parser(
+        "generate-rules", help="Generate rules from detected stack"
+    )
+    gen_rules_parser.add_argument("--target", default=os.getcwd(), help="Target project directory")
+    gen_rules_parser.add_argument(
+        "--format", choices=["json", "summary"], default="summary", help="Output format"
     )
 
     args = parser.parse_args()
@@ -993,6 +1126,26 @@ def main():
                 print(f"  Exists: {'✅' if tests['exists'] else '❌'}")
                 print(f"  Framework: {tests['framework'] or 'Unknown'}")
                 print(f"  CI: {'✅' if tests['ci_configured'] else '❌'}")
+    elif args.command == "generate-rules":
+        target_rules = os.path.join(args.target, ".agent", "rules")
+        results = generate_rules(
+            project_root=args.target,
+            templates_dir=os.path.join(
+                os.path.dirname(__file__), "..", "payload", "templates", "rules"
+            ),
+            target_rules_dir=target_rules,
+        )
+        if args.format == "json":
+            print(json.dumps(results, indent=2))
+        else:
+            if results["created"] > 0:
+                print(f"✅ Generated {results['created']} rule(s):")
+                for f in results["files"]:
+                    print(f"   → {f}")
+            if results["skipped"] > 0:
+                print(f"⏭️ Skipped {results['skipped']} existing rule(s)")
+            if results["created"] == 0 and results["skipped"] == 0:
+                print("ℹ️ No stack items detected to generate rules for.")
     else:
         parser.print_help()
         sys.exit(1)
