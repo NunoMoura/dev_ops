@@ -22,14 +22,37 @@ from project_ops import get_file_content
 from utils import prompt_user, write_file
 
 
-# Current framework version - read from payload/version.json as single source of truth
+# Current framework version - read from bundled assets (extension) or package.json (development)
 def _get_framework_version() -> str:
-    """Read framework version from payload/version.json."""
-    version_file = os.path.join(os.path.dirname(__file__), "..", "payload", "version.json")
-    if os.path.exists(version_file):
-        with open(version_file) as f:
-            data = json.load(f)
-            return data.get("version", "0.0.0")
+    """Read framework version from bundled version.json or extension package.json.
+
+    The build process generates dist/assets/version.json from extension/package.json,
+    so package.json is the single source of truth.
+    """
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Extension context: look for version.json in assets (sibling to scripts/)
+    if "dist" in script_dir and "assets" in script_dir:
+        version_file = os.path.join(os.path.dirname(script_dir), "version.json")
+        if os.path.exists(version_file):
+            try:
+                with open(version_file) as f:
+                    data = json.load(f)
+                    return data.get("version", "0.0.0")
+            except (json.JSONDecodeError, OSError):
+                pass
+
+    # Development context: read from extension/package.json
+    # Script is in installer/, extension is sibling
+    package_json = os.path.join(os.path.dirname(script_dir), "extension", "package.json")
+    if os.path.exists(package_json):
+        try:
+            with open(package_json) as f:
+                data = json.load(f)
+                return data.get("version", "0.0.0")
+        except (json.JSONDecodeError, OSError):
+            pass
+
     return "0.0.0"
 
 

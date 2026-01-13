@@ -34,9 +34,9 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
     const extensionPath = context.extensionPath;
     const bundledVersion = context.extension.packageJSON.version || '0.0.0';
 
-    // Only perform version check if it's an existing project
+    // Only perform version check if it's an existing project with version.json
     const isDevOpsProject = fs.existsSync(devOpsDir) || fs.existsSync(agentDir) || fs.existsSync(cursorDir);
-    let projectVersion = '0.0.0';
+    let projectVersion: string | null = null;  // null = no version.json exists
 
     if (isDevOpsProject && fs.existsSync(projectVersionPath)) {
         try {
@@ -47,8 +47,9 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
         }
     }
 
-    // Only prompt for version update if it's an existing project
-    if (isDevOpsProject && bundledVersion !== projectVersion) {
+    // Only prompt for version update if version.json exists AND versions differ
+    // (Projects without version.json will go through the 'missing components' flow instead)
+    if (projectVersion !== null && bundledVersion !== projectVersion) {
         needsUpdate = true;
         updateType = 'outdated';
         reason = `version mismatch: project (${projectVersion}) vs bundled (${bundledVersion})`;

@@ -1120,10 +1120,21 @@ def main():
         patterns = detect_patterns(args.target)
 
         if args.format == "json":
-            # Determine project type based on stack detection
-            # Has language files = brownfield, otherwise greenfield
-            has_code = any(item["category"] == "Language" for item in stack)
-            project_type = "brownfield" if has_code else "greenfield"
+            # Check config.json for user-selected project type first
+            config_path = os.path.join(args.target, ".dev_ops", "config.json")
+            project_type = None
+            if os.path.exists(config_path):
+                try:
+                    with open(config_path) as f:
+                        config = json.load(f)
+                        project_type = config.get("projectType")
+                except (json.JSONDecodeError, OSError):
+                    pass
+
+            # Fallback to detection if no config or 'skip' was selected
+            if not project_type or project_type == "skip":
+                has_code = any(item["category"] == "Language" for item in stack)
+                project_type = "brownfield" if has_code else "greenfield"
 
             # Full JSON output for bootstrap orchestration
             output = {

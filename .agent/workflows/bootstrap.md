@@ -26,6 +26,10 @@ python3 .dev_ops/scripts/project_ops.py detect --target . --format json
 
 Based on detection results:
 
+> [!TIP]
+> The `project_type` field reflects your selection during onboarding (brownfield/greenfield).
+> If you selected "skip", the type is auto-detected based on whether source code exists.
+
 ### If Brownfield (existing code)
 
 1. Review key entry points (main.py, src/index.ts, etc.)
