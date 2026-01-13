@@ -50,6 +50,16 @@ export async function initializeDevOpsServices(context: vscode.ExtensionContext)
     // Create status bar
     const statusBar = createStatusBar(context);
 
+    // Watch for external board.json changes (from Python scripts, etc.)
+    const boardWatcher = vscode.workspace.createFileSystemWatcher('**/.dev_ops/board.json');
+    boardWatcher.onDidChange(async () => {
+        await provider.refresh();
+    });
+    boardWatcher.onDidCreate(async () => {
+        await provider.refresh();
+    });
+    context.subscriptions.push(boardWatcher);
+
     // Create filter synchronizer
     const syncFilterUI = () => {
         const active = provider.hasFilter();
