@@ -108,6 +108,7 @@ python3 .dev_ops/scripts/project_ops.py generate-rules --target .
 ```
 
 This creates rules in `.agent/rules/` for:
+
 - Detected languages (e.g., `languages/python.md`, `languages/typescript.md`)
 - Detected linters (e.g., `linters/ruff.md`, `linters/eslint.md`)
 
@@ -122,6 +123,5 @@ At the end of bootstrap, verify:
 - [ ] Constitution task included (if missing)
 - [ ] Architecture task included (if missing)
 - [ ] Rules generated for detected stack
-
 
 **Next step:** User reviews generated tasks, then claims first task with `/claim`
