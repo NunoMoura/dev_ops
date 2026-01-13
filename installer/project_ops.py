@@ -966,7 +966,6 @@ def generate_rules(
         category = item.get("category", "").lower()
         replacements = item.get("replacements", {})
         globs = item.get("globs", [])
-        version = item.get("version", "")
 
         if not rule_name:
             continue
@@ -985,23 +984,42 @@ def generate_rules(
             continue
 
         # Build rule content with YAML frontmatter
+        # Activation modes:
+        # - globs: automatically applied when matching files are open
+        # - description: allows agent to decide when to apply (Agent Requested in Cursor)
+        # - alwaysApply: true = always active, false = only with globs match
         display_name = (
             replacements.get("[Language Name]")
             or replacements.get("[Linter Name]")
             or rule_name.replace(".md", "").title()
         )
 
+        # Generate description based on category for agent-decision mode
+        if category == "language":
+            description = f"Coding standards and patterns for {display_name} files"
+        elif category == "linter":
+            description = f"Linting rules and configuration for {display_name}"
+        elif category == "library":
+            description = f"Best practices and patterns for {display_name} library"
+        elif category == "database":
+            description = f"Database conventions for {display_name}"
+        else:
+            description = f"Rules for {display_name}"
+
         content_lines = [
             "---",
-            f"name: {display_name}",
+            f"description: {description}",
         ]
 
         if globs:
             globs_str = json.dumps(globs)
             content_lines.append(f"globs: {globs_str}")
-
-        if version:
-            content_lines.append(f"version: {version}")
+            # With globs, files matching the pattern will trigger this rule
+            # alwaysApply: false means it's NOT always on
+            content_lines.append("alwaysApply: false")
+        else:
+            # No globs means agent decides based on description
+            content_lines.append("alwaysApply: false")
 
         content_lines.extend(
             [
