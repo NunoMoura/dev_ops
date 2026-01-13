@@ -1019,14 +1019,17 @@ def generate_rules(
                 content_lines.append(f"globs: {globs_str}")
             content_lines.append("alwaysApply: false")
         elif ide == "antigravity":
-            # Antigravity format: name, globs for activation
-            content_lines.append(f"name: {display_name}")
+            # Antigravity format: activation_mode, description, globs
+            # Activation modes: Manual, Always On, Model Decision, Glob
+            content_lines.append(f"description: {description}")
             if globs:
-                globs_str = json.dumps(globs)
+                content_lines.append("activation_mode: Glob")
+                globs_str = ", ".join(globs)  # Antigravity uses comma-separated
                 content_lines.append(f"globs: {globs_str}")
+            else:
+                content_lines.append("activation_mode: Model Decides")
         else:
             # VS Code/generic: description only (manual reference)
-            content_lines.append(f"name: {display_name}")
             content_lines.append(f"description: {description}")
             if globs:
                 globs_str = json.dumps(globs)
