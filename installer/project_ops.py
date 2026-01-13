@@ -932,6 +932,7 @@ def generate_rules(
     templates_dir: str,
     target_rules_dir: str,
     stack: list[dict[str, Any]] | None = None,
+    ide: str = "vscode",
 ) -> dict[str, Any]:
     """Generate rule files from templates based on detected stack.
 
@@ -943,6 +944,7 @@ def generate_rules(
         templates_dir: Path to rule templates (e.g., payload/templates/rules/).
         target_rules_dir: Path to output rules (e.g., .agent/rules/).
         stack: Optional pre-detected stack. If None, runs detect_stack().
+        ide: Target IDE format - 'cursor', 'antigravity', or 'vscode'.
 
     Returns:
         Dictionary with generation results:
@@ -1006,20 +1008,29 @@ def generate_rules(
         else:
             description = f"Rules for {display_name}"
 
-        content_lines = [
-            "---",
-            f"description: {description}",
-        ]
+        # Build frontmatter based on IDE format
+        content_lines = ["---"]
 
-        if globs:
-            globs_str = json.dumps(globs)
-            content_lines.append(f"globs: {globs_str}")
-            # With globs, files matching the pattern will trigger this rule
-            # alwaysApply: false means it's NOT always on
+        if ide == "cursor":
+            # Cursor format: description (for agent decision), globs, alwaysApply
+            content_lines.append(f"description: {description}")
+            if globs:
+                globs_str = json.dumps(globs)
+                content_lines.append(f"globs: {globs_str}")
             content_lines.append("alwaysApply: false")
+        elif ide == "antigravity":
+            # Antigravity format: name, globs for activation
+            content_lines.append(f"name: {display_name}")
+            if globs:
+                globs_str = json.dumps(globs)
+                content_lines.append(f"globs: {globs_str}")
         else:
-            # No globs means agent decides based on description
-            content_lines.append("alwaysApply: false")
+            # VS Code/generic: description only (manual reference)
+            content_lines.append(f"name: {display_name}")
+            content_lines.append(f"description: {description}")
+            if globs:
+                globs_str = json.dumps(globs)
+                content_lines.append(f"globs: {globs_str}")
 
         content_lines.extend(
             [
@@ -1092,6 +1103,12 @@ def main():
     gen_rules_parser.add_argument(
         "--format", choices=["json", "summary"], default="summary", help="Output format"
     )
+    gen_rules_parser.add_argument(
+        "--ide",
+        choices=["cursor", "antigravity", "vscode"],
+        default="vscode",
+        help="Target IDE for rule format (cursor, antigravity, vscode)",
+    )
 
     args = parser.parse_args()
 
@@ -1152,6 +1169,7 @@ def main():
                 os.path.dirname(__file__), "..", "payload", "templates", "rules"
             ),
             target_rules_dir=target_rules,
+            ide=args.ide,
         )
         if args.format == "json":
             print(json.dumps(results, indent=2))
