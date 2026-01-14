@@ -43,6 +43,7 @@ function copyAssets() {
 	copyDir(path.join(projectRoot, 'payload', 'workflows'), path.join(assetsDir, 'workflows'));
 	copyDir(path.join(projectRoot, 'payload', 'templates'), path.join(assetsDir, 'templates'));
 	copyDir(path.join(projectRoot, 'payload', 'scripts'), path.join(assetsDir, 'scripts'));
+	copyDir(path.join(projectRoot, 'payload', 'skills'), path.join(assetsDir, 'skills'));
 	copyDir(path.join(projectRoot, 'payload', 'github'), path.join(assetsDir, 'github'));
 
 	// Generate version.json from package.json (single source of truth)
