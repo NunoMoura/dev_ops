@@ -1,27 +1,10 @@
 ---
-name: bootstrap-project
-description: Analyze a project and generate a tailored task backlog. Use when initializing a new project, running /bootstrap, or setting up the DevOps framework.
+description: Analyze project and generate tailored task backlog
 ---
 
-# Bootstrap Project
+# Bootstrap Workflow
 
 Initialize a project with context-aware tasks and rules.
-
-## When to Use This Skill
-
-- Initializing a new project with DevOps framework
-- Running the /bootstrap workflow
-- Generating project-specific tasks
-- Setting up rules for detected technologies
-
-## How It Works
-
-Bootstrap analyzes your project and creates:
-
-1. Detection report (languages, frameworks, docs status)
-2. Architecture documentation scaffolds
-3. Context-aware task backlog
-4. Technology-specific rules
 
 ## Step 1: Run Detection
 
@@ -41,8 +24,6 @@ python3 .dev_ops/scripts/project_ops.py detect --target . --format json
 - **docs**: Which DevOps docs exist (PRD, architecture, constitution)
 - **tests**: Test framework, CI status
 - **patterns**: Common files and directories
-
-See `examples/detection_output.md` for a sample output.
 
 ## Step 2: Understand the Project
 

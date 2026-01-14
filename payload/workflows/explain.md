@@ -1,18 +1,10 @@
 ---
-name: explain-codebase
-description: Explain project structure, components, or code. Use when asked to explain how something works, what a module does, or to provide an overview.
+description: Explain project, component, or code structure
 ---
 
-# Explain Codebase
+# Explain Workflow
 
 Provide structured explanations of the project, components, or specific code.
-
-## When to Use This Skill
-
-- Asked to explain how something works
-- Onboarding to a new codebase
-- Documenting a component
-- Understanding unfamiliar code
 
 ## Input Types
 
@@ -26,6 +18,7 @@ Provide structured explanations of the project, components, or specific code.
 ## For Project-Level Explanations
 
 Read these files:
+
 - `README.md`
 - `.dev_ops/docs/nonnegotiables.md`
 - `.dev_ops/docs/prd/*.md`
@@ -35,6 +28,7 @@ Read these files:
 ## For Component/Code Explanations
 
 Read:
+
 - Source code files
 - Related tests
 - Usage examples in codebase
@@ -64,12 +58,8 @@ Structure all explanations like this:
 - Internal: Other modules it depends on
 
 **Usage Example**
-```python
-# Brief code example showing typical usage
-```
-```
 
-See `examples/component_explanation.md` for a complete example.
+```
 
 ## Best Practices
 
