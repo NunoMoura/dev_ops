@@ -17,8 +17,8 @@ from setup_ops import get_all_rules, get_core_rules, init_board, install_extensi
 class TestGetCoreRules:
     """Test get_core_rules function."""
 
-    def test_returns_all_phase_rules(self):
-        """Test that all expected phase rules are returned."""
+    def test_returns_core_guide_only(self):
+        """Test that only the core guide is returned (phase rules are now skills)."""
         # Get the rules source directory (payload/rules)
         script_dir = os.path.dirname(os.path.dirname(__file__))
         rules_src = os.path.join(script_dir, "payload", "rules")
@@ -26,17 +26,11 @@ class TestGetCoreRules:
         rules = get_core_rules(rules_src)
         rule_names = [r["name"] for r in rules]
 
-        expected = [
-            "dev_ops_guide.md",
-            "1_backlog.md",
-            "2_understand.md",
-            "3_plan.md",
-            "4_build.md",
-            "5_verify.md",
-        ]
+        # Phase rules are now skills in payload/skills/
+        # Only dev_ops_guide.md remains as a rule
+        expected = ["dev_ops_guide.md"]
 
-        for name in expected:
-            assert name in rule_names, f"Missing rule: {name}"
+        assert rule_names == expected, f"Expected {expected}, got {rule_names}"
 
     def test_all_rules_have_category_core(self):
         """Test that all returned rules have category 'Core'."""

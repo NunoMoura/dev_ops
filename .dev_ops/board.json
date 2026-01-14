@@ -136,13 +136,13 @@
       "title": "Map system dependencies",
       "summary": "Identify internal and external dependencies, integrations, and data flows",
       "priority": "high",
-      "columnId": "col-backlog",
+      "columnId": "col-understand",
       "status": "ready",
       "tags": [
         "brownfield",
         "starter"
       ],
-      "updatedAt": ""
+      "updatedAt": "2026-01-14T07:50:21.789Z"
     },
     {
       "id": "TASK-003",
