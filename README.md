@@ -1,254 +1,288 @@
+<p align="center">
+  <img src="docs/images/logo.png" alt="DevOps Logo" width="120" />
+</p>
+
 # DevOps Framework
 
-Board-based workflow management for AI-native development*
+**AI-native development with structured phases, skills, and workflows**
 
 [![CI](https://github.com/NunoMoura/dev_ops/actions/workflows/ci.yml/badge.svg)](https://github.com/NunoMoura/dev_ops/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/NunoMoura/dev_ops/graph/badge.svg)](https://codecov.io/gh/NunoMoura/dev_ops)
 
 ---
 
-## What is This?
+## What is DevOps?
 
-A **lightweight project management system** designed for developers and PMs working with **AI coding agents** (Cursor, Antigravity, etc.). Manage tasks, track agent sessions, and maintain development context across multiple AI agents working on your codebase.
+A **lightweight framework** for developers using AI coding agents (Cursor, Antigravity). It provides:
 
-**Built specifically for**: Developers using Cursor or Antigravity IDE who want structured AI-assisted development.
+- **Structured phases** for task progression (Backlog → Understand → Plan → Build → Verify → Done)
+- **Skills** that teach agents phase-specific behaviors
+- **Workflows** for common operations (slash commands)
+- **Templates** for consistent documentation
 
-**Not meant for**: Traditional manual task management, real-time team collaboration, or non-AI workflows.
+**Best for**: AI-assisted development with Cursor or Antigravity IDE.
+
+<p align="center">
+  <img src="docs/images/board.png" alt="DevOps Board" width="700" />
+  <br />
+  <em>Task board with 6-phase workflow</em>
+</p>
+
+<p align="center">
+  <img src="docs/images/sidebar.png" alt="DevOps Sidebar" width="350" />
+  <br />
+  <em>IDE sidebar with task status and artifacts</em>
+</p>
 
 ---
 
 ## Quick Start
 
-### Install (2 minutes)
-
-**Prerequisites**: Cursor IDE or Antigravity IDE, Python 3.9+
-
 ```bash
-# 1. Download latest VSIX
-curl -LO https://github.com/NunoMoura/dev_ops/releases/latest/download/dev-ops.vsix
-
-# 2. Install in your IDE
+# 1. Install extension in your IDE
 cursor --install-extension dev-ops.vsix
-# or
-antigravity --install-extension dev-ops.vsix
+# or: antigravity --install-extension dev-ops.vsix
 
-# 3. Open your project and initialize
+# 2. Open project and initialize
 # Cmd/Ctrl+Shift+P → "DevOps: Initialize"
-# Select template: Greenfield (new project) or Brownfield (existing code)
-```
 
-**That's it!** Check the DevOps sidebar (activity bar) to see your board.
+# 3. Run bootstrap to analyze project
+/bootstrap
+```
 
 ---
 
-## Core Concepts
+## Phase Flow
 
-### The Board
+Every task moves through a **6-phase workflow**:
 
-Your project has a **6-phase board** to track all work:
-
-```ma
+```markdown
 ┌─────────┬───────────┬──────┬───────┬────────┬──────┐
 │ Backlog │ Understand│ Plan │ Build │ Verify │ Done │
 └─────────┴───────────┴──────┴───────┴────────┴──────┘
 ```
 
-- **Backlog**: Tasks waiting to start
-- **Understand**: Research & context gathering
-- **Plan**: Implementation planning
-- **Build**: Code implementation  
-- **Verify**: Testing & validation
-- **Done**: Completed & merged
-
-Tasks move through phases as agents complete work.
-
-### Tasks
-
-Work items tracked on your board:
-
-```json
-{
-  "id": "TASK-001",
-  "title": "Add user authentication",
-  "phase": "plan",
-  "priority": "high",
-  "owner": {
-    "type": "agent",
-    "name": "Cursor",
-    "sessionId": "abc123"
-  }
-}
-```
-
-Create via UI or chat: `/create_task "Your task here"`
-
-### Artifacts
-
-Agents create documents as they work:
-
-- **RES-XXX**: Research findings
-- **PLN-XXX**: Implementation plans  
-- **VAL-XXX**: Validation reports
-
-Automatically linked to tasks for full context.
+| Phase | Purpose | Skill |
+|-------|---------|-------|
+| **Backlog** | Claim task, read context | `backlog_phase` |
+| **Understand** | Research, scope, align | `understand_phase` |
+| **Plan** | Create implementation plan | `plan_phase` |
+| **Build** | TDD implementation | `build_phase` |
+| **Verify** | Test, document, PR | `verify_phase` |
 
 ---
 
-## How It Works
+## Skills
 
-### 1. You Create a Task
+Skills are **detailed instructions** that guide agents through each phase. Located in `.agent/skills/`.
 
-```bash
-# In Cursor/Antigravity chat:
-/create_task "Add OAuth login"
+### Phase Skills
 
-# Or use command palette:
-# Cmd+Shift+P → "DevOps: Create Task"
-```
+| Skill | Description | Key Output |
+|-------|-------------|------------|
+| `backlog_phase` | Claim a task from backlog and understand context | Task ownership |
+| `understand_phase` | Deep research before planning | RES-XXX research doc |
+| `plan_phase` | Create detailed implementation plan | PLN-XXX plan doc |
+| `build_phase` | TDD implementation with tests first | Production-ready code |
+| `verify_phase` | Validate, document proof, ship PR | Walkthrough + PR |
 
-### 2. Agent Picks the Task
+### Using Skills
 
-```bash
-/spawn_agent
-
-# Framework:
-# - Selects highest priority ready task
-# - Loads relevant phase rules
-# - Provides task context to agent
-```
-
-### 3. Agent Works Through Phases
-
-Agent sees structured context:
+Agents automatically activate skills based on task phase. Each skill contains:
 
 ```markdown
-## Current Task: TASK-001 - Add OAuth login
-
-## Phase: Understand
-**Your job**: Research OAuth 2.0 implementation options
-
-**Output**: Create RES-001 document with:
-- OAuth provider comparison (Google, GitHub, Auth0)
-- Security considerations
-- Integration complexity
-
-## Context Available:
-- docs/architecture/auth.md
-- Existing login implementation
+.agent/skills/<phase>_phase/
+├── SKILL.md         # Detailed instructions
+└── examples/        # Reference implementations
 ```
 
-### 4. Agent Produces Artifacts
+To manually reference a skill:
 
-Agent creates `RES-001-oauth-research.md`:
-
-```markdown
----
-id: RES-001
-task: TASK-001
-phase: understand
----
-
-# OAuth 2.0 Research
-
-## Providers Evaluated
-1. **Google OAuth**: Best for...
-2. **GitHub OAuth**: Recommended for...
-...
-
-## Security Checklist
-- [ ] PKCE flow
-- [ ] State parameter
-...
+```bash
+view_file .agent/skills/understand_phase/SKILL.md
 ```
-
-### 5. Framework Updates Board
-
-Automatically:
-
-- Links RES-001 to TASK-001
-- Records research completion
-- Moves task to Plan phase
-- Agent continues to next phase
 
 ---
 
 ## Workflows
 
-### For Project Managers
+Workflows are **slash commands** for common operations. Located in `.agent/workflows/`.
+
+### Available Workflows
+
+| Command | Description | Category |
+|---------|-------------|----------|
+| `/bootstrap` | Analyze project, generate tasks and rules | Setup |
+| `/claim` | Claim task from backlog | Task |
+| `/create_task` | Create a new task | Task |
+| `/add_feature` | Create feature spec and decompose to tasks | Planning |
+| `/report_bug` | Create bug report | Planning |
+| `/explain` | Explain project, component, or code | Research |
+| `/refine_phase` | Generate refinement prompt with feedback | Iteration |
+| `/retry_phase` | Re-run phase with same context | Iteration |
+| `/triage_comment` | Analyze and act on PR comment | Review |
+| `/add_mcp` | Add MCP server to skill phase | Extension |
+
+### Workflow Examples
+
+**Start working on a project:**
 
 ```bash
-# High-level planning
-/create_project_defs "Q1 Feature Roadmap"
-
-# Break into features  
-/add_feature "User dashboard redesign"
-# Agent decomposes into tasks automatically
-
-# Prioritize on board
-# Drag tasks (high priority to top)
-
-# Monitor progress
-# Check "Status" sidebar for metrics
+/bootstrap                    # Analyze and generate task backlog
+/claim                        # Pick highest priority task
+# Agent follows phase flow automatically
 ```
 
-### For Developers
+**Add new work:**
 
 ```bash
-# Claim a specific task
-/claim_task TASK-042
-
-# Or let agent pick best task
-/spawn_agent
-
-# Review agent's work
-# Artifacts appear in .dev_ops/.tmp/artifacts/
-
-# Provide feedback
-/refine_phase "Also add password reset flow"
-# Agent updates plan and continues
+/add_feature "User dashboard"  # Creates FEAT-XXX, decomposes to tasks
+/report_bug "Login timeout"    # Creates BUG-XXX for tracking
+/create_task "Refactor auth"   # Direct task creation
 ```
 
-### Multi-Agent Coordination
-
-Framework prevents conflicts:
+**Iterate on agent work:**
 
 ```bash
-# Agent 1 (Cursor) claims TASK-001
-# Board shows: owner = "Cursor (session-abc)"
-
-# Agent 2 (Antigravity) tries TASK-001
-# ❌ "Task already claimed by Cursor"
-
-# Agent 2 picks TASK-002 instead
-# ✅ Both work in parallel
+/refine_phase "Also handle edge case X"  # Add feedback to current work
+/retry_phase                              # Restart phase with same context
 ```
 
 ---
 
-## Features
+## Templates
 
-### Board Management
+Templates ensure consistent documentation. Located in `.dev_ops/templates/`.
 
-- **Visual drag-drop board** in webview panel
-- **Task editor tabs** - double-click task to edit
-- **Status sidebar** - real-time metrics
-- **Multi-agent dashboard** - see active sessions
+### Artifact Templates (Ephemeral)
 
-### Agent Integration
+| Template | Purpose | Created By |
+|----------|---------|------------|
+| `research.md` | Research findings | Understand phase |
+| `plan.md` | Implementation plan | Plan phase |
+| `pr.md` | Pull request description | Verify phase |
+| `task.md` | Task structure | `/create_task` |
+| `bug.md` | Bug report format | `/report_bug` |
 
-- **Auto-claim on session start** - tracks Cursor/Antigravity
-- **Phase-specific rules** - guides agent behavior
-- **Artifact linking** - automatic context assembly
-- **Session bridge** - syncs AG implementation_plan ↔ board
+### Doc Templates (Persistent)
 
-### CLI Integration
+| Template | Purpose | Created By |
+|----------|---------|------------|
+| `prd.md` | Product requirements | Bootstrap (if missing) |
+| `nonnegotiables.md` | Project constraints | Bootstrap (if missing) |
+| `architecture_doc.md` | Component documentation | Bootstrap scaffold |
+| `story.md` | User story format | `/add_feature` |
+| `user.md` | User persona | `/add_feature` |
+| `mockup.md` | UI mockup documentation | `/add_feature` |
+
+---
+
+## Project Structure
+
+After initialization:
+
+```markdown
+your-project/
+├── .agent/                    # Agent configuration
+│   ├── rules/                 # Always-on behavioral rules
+│   │   └── dev_ops_guide.md   # Core framework guide
+│   ├── skills/                # Phase-specific instructions
+│   │   ├── backlog_phase/
+│   │   ├── understand_phase/
+│   │   ├── plan_phase/
+│   │   ├── build_phase/
+│   │   └── verify_phase/
+│   └── workflows/             # Slash commands
+│       ├── bootstrap.md
+│       ├── claim.md
+│       └── ...
+└── .dev_ops/                  # DevOps data
+    ├── board.json             # Task board state
+    ├── scripts/               # CLI tools
+    ├── templates/             # Document templates
+    ├── docs/                  # Project documentation
+    │   ├── prd.md
+    │   ├── nonnegotiables.md
+    │   └── architecture/
+    └── archive/               # Completed task archives
+```
+
+---
+
+## The Dev Cycle
+
+### 1. Initialize Project
 
 ```bash
-# From agent or terminal:
-python scripts/board_ops.py create --title "Fix bug #123" --priority high
-python scripts/board_ops.py list --status ready
-python scripts/board_ops.py claim TASK-001
-python scripts/board_ops.py done TASK-001
+/bootstrap
+```
+
+Analyzes your project:
+
+- Detects tech stack (languages, frameworks, linters)
+- Creates tasks for missing docs (PRD, Non-Negotiables)
+- Generates rules for detected technologies
+- Scaffolds architecture documentation
+
+### 2. Work on Tasks
+
+```bash
+/claim TASK-001  # Or just /claim for highest priority
+```
+
+Agent follows phase flow:
+
+1. **Backlog** → Read trigger doc, understand context
+2. **Understand** → Research, create RES-XXX
+3. **Plan** → Design solution, create PLN-XXX
+4. **Build** → TDD implementation
+5. **Verify** → Test, create walkthrough, PR
+
+### 3. Iterate
+
+```bash
+/refine_phase "Add error handling for edge case"
+```
+
+Agent updates work based on feedback.
+
+### 4. Review & Merge
+
+Agent creates PR with:
+
+- Summary of changes
+- Link to walkthrough
+- Test results
+
+---
+
+## Core Rules
+
+The framework enforces key principles via `.agent/rules/dev_ops_guide.md`:
+
+- **Quality over speed** — Understand before you build
+- **One session = one phase** — End at exit criteria, user triggers next
+- **Tasks = pointers** — Reference docs, don't duplicate them
+- **Check non-negotiables** — Verify alignment before major changes
+
+---
+
+## CLI Reference
+
+All operations available via Python CLI:
+
+```bash
+# Task operations
+python3 .dev_ops/scripts/board_ops.py create_task --title "..." --priority high --commit
+python3 .dev_ops/scripts/board_ops.py move TASK-001 col-plan --commit
+python3 .dev_ops/scripts/board_ops.py list --column col-backlog
+
+# Artifact operations
+python3 .dev_ops/scripts/artifact_ops.py create research --title "..." --task TASK-001
+python3 .dev_ops/scripts/artifact_ops.py list
+
+# Project operations
+python3 .dev_ops/scripts/project_ops.py detect --target . --format json
+python3 .dev_ops/scripts/project_ops.py generate-rules --target .
 ```
 
 ---
@@ -258,239 +292,28 @@ python scripts/board_ops.py done TASK-001
 ### Settings
 
 ```json
-// .vscode/settings.json or IDE settings
 {
   "devops.pythonPath": "/usr/local/bin/python3",
-  "devops.autoOpenBoard": true,
-  "devops.enableCodeLens": true  // Shows task refs inline
+  "devops.autoOpenBoard": true
 }
 ```
 
-### CodeLens Annotations
+### Custom Rules
 
-When enabled, see task context inline:
-
-```python
-# TASK-001: Add OAuth login
-def authenticate(username, password):
-    ...
-
-# 👆 CodeLens: "TASK-001: Add OAuth login [Plan Phase]"
-#     Click to open task details
-```
-
----
-
-## Architecture
-
-### System Design
-
-```markdown
-┌─────────────────────────────────┐
-│  Cursor / Antigravity (AI)      │ 
-│  Uses: /pick_task, /claim       │
-└──────────────┬──────────────────┘
-               │
-               │ Commands
-               ▼
-┌─────────────────────────────────┐
-│  VS Code Extension (TypeScript) │
-│  - Board UI                     │
-│  - Session tracking             │
-│  - File watchers                │
-└──────────────┬──────────────────┘
-               │
-               │ API calls
-               ▼
-┌─────────────────────────────────┐
-│  Python CLI (board_ops.py)      │
-│  - Business logic               │
-│  - State management             │
-│  - Validation                   │
-└──────────────┬──────────────────┘
-               │
-               │ File I/O
-               ▼
-┌─────────────────────────────────┐
-│  Data Files                     │
-│  - .dev_ops/board.json          │
-│  - .dev_ops/.tmp/artifacts/     │
-│  - .dev_ops/docs/               │
-└─────────────────────────────────┘
-```
-
-**Key Principle**: TypeScript = UI only, Python = all logic
-
-See [`docs/architecture/typescript-python-boundary.md`](./docs/architecture/typescript-python-boundary.md) for complete details.
-
-### File Structure
-
-```markdown
-your-project/
-├── .agent/
-│   ├── rules/
-│   │   ├── dev_ops_guide.md        # Always-on framework guide
-│   │   └── development_phases/     # Phase-specific rules
-│   │       ├── 1_backlog.md
-│   │       ├── 2_understand.md
-│   │       ├── 3_plan.md
-│   │       ├── 4_build.md
-│   │       └── 5_verify.md
-│   └── workflows/                  # User slash commands
-│       ├── create_task.md
-│       ├── pick_task.md
-│       └── ...
-└── .dev_ops/                       # Hidden DevOps directory
-    ├── board.json                  # Task board state (flat location)
-    ├── .current_task               # Active task pointer
-    ├── .tmp/                       # Temporary working directory
-    │   └── artifacts/              # Active artifacts (flat - no subdirs)
-    │       ├── PLN-001-feature.md
-    │       ├── VAL-002-tests.md
-    │       ├── BUG-003-fix.md
-    │       └── RES-004-research.md
-    ├── archive/                    # Completed tasks
-    │   ├── index.json              # Quick search metadata
-    │   ├── TASK-001.tar.gz
-    │   └── TASK-002.tar.gz
-    └── docs/                       # Persistent documentation
-        ├── prd.md
-        ├── architecture/
-        └── ux/
-            ├── personas/
-            ├── stories/
-            └── mockups/
-```
-
----
-
-## Advanced Usage
-
-### Custom Workflows
-
-Create `.agent/workflows/deploy_staging.md`:
+Add project-specific rules to `.agent/rules/`:
 
 ```markdown
 ---
-description: Deploy to staging
+activation_mode: Always On
+description: Project coding standards
 ---
 
-# Deploy to Staging
+# Coding Standards
 
-// turbo
-1. Run tests
-   ```bash
-   pytest tests/ --cov=80
-   ```
-
-1. Build Docker image
-
-   ```bash
-   docker build -t app:staging .
-   ```
-
-2. Deploy to K8s
-
-   ```bash
-   kubectl apply -f k8s/staging/
-   ```
-
-```markdown
-
-Use in chat: `/deploy_staging`
-
-> **Note**: `// turbo` annotation allows auto-execution of safe commands
-
-### Phase Rule Customization
-
-Edit `.agent/rules/development_phases/4_build.md`:
-
-```markdown
-# Build Phase
-
-## Your Custom Rules
-- Run formatter before committing
-- Update CHANGELOG.md for breaking changes
-- Add database migration if schema changed
-- Ensure test coverage >80%
-
-## Standard Build Process
-[... existing content ...]
+- Use type hints for all functions
+- Maximum 100 lines per file
+- All new code requires tests
 ```
-
-Agents see your custom rules when in Build phase.
-
----
-
-## Troubleshooting
-
-### Extension doesn't activate
-
-- Check: VS Code version ≥1.85.0
-- Verify: Extension installed (View → Extensions)
-- Debug: Help → Toggle Developer Tools → Console tab
-
-### "Board not found" error
-
-```bash
-# Run initialization
-# Cmd+Shift+P → "DevOps: Initialize"
-
-# Verify files created
-ls -la .agent/
-ls -la .dev_ops/
-
-# Check board state
-cat .dev_ops/board.json
-```
-
-### Python script fails
-
-```bash
-# Check Python version (need 3.9+)
-python3 --version
-
-# Test CLI directly
-python3 scripts/board_ops.py --help
-
-# Update Python path in settings
-# Settings → DevOps: Python Path
-```
-
-### Agent sessions not detected
-
-**Cursor**:
-
-```bash
-ls -la .cursor/tasks/
-# Cursor bridge pushes tasks here
-```
-
-**Antigravity**:
-
-```bash
-ls -la ~/.gemini/antigravity/
-# Session bridge monitors this
-```
-
----
-
-## FAQ
-
-**Q: Can I use without Cursor/Antigravity?**  
-A: Yes, but agent session tracking requires those IDEs. Manual task management works in any VS Code fork.
-
-**Q: Does this work with GitHub Copilot?**  
-A: Copilot is code completion, not task management. Use both together.
-
-**Q: Can multiple agents work on one task?**  
-A: No, tasks are claimed by one agent to prevent conflicts.
-
-**Q: What if I want Scrum instead of 6 phases?**  
-A: Edit `.dev_ops/board.json` columns. The framework is board-agnostic.
-
-**Q: Can I use for non-AI development?**  
-A: Yes, but it's optimized for AI workflows. Consider GitHub Projects for pure manual work.
 
 ---
 
@@ -501,41 +324,22 @@ A: Yes, but it's optimized for AI workflows. Consider GitHub Projects for pure m
 ```bash
 cd extension
 npm install
-npm run compile        # Development build
-npm run package        # Production build
-
-# Package VSIX
-npx @vscode/vsce package --no-dependencies
-# Creates: dev-ops-X.X.X.vsix
+npm run compile         # Dev build
+npm run package         # Production VSIX
 ```
 
 ### Run Tests
 
 ```bash
-# Python tests
-pip install -e ".[dev]"
+# Python
 pytest tests/ --cov=scripts
 
-# TypeScript tests  
-cd extension
-npm test
+# TypeScript
+cd extension && npm test
 ```
-
----
-
-## Contributing
-
-See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for guidelines.
-
----
-
-## Acknowledgments
-
-- Built on [Titan Kanban](https://github.com/MissTitanK3/titan-kanban) by MissTitanK3
-- Designed for the AI-native development era
 
 ---
 
 ## License
 
-MIT License - see [`LICENSE`](./LICENSE)
+MIT License - see [LICENSE](./LICENSE)
