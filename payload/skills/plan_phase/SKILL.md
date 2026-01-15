@@ -74,6 +74,9 @@ How we know we're done. Must be testable:
 
 Commands to run, manual checks to perform.
 
+> [!TIP]
+> Template: `.dev_ops/templates/artifacts/plan.md`
+
 See `examples/implementation_plan.md` for a complete example.
 
 ## Step 3: Anticipate Problems

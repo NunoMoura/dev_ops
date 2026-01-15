@@ -1,40 +1,70 @@
 ---
 description: Explain project, component, or code structure
-category: guided
 ---
 
-# Explain
+# Explain Workflow
 
-Explain the project, a component, or a specific piece of code in a structured way.
+Provide structured explanations of the project, components, or specific code.
 
-## Inputs
+## Input Types
 
-- `input`: (Optional) The target to explain (file, folder, class, or empty for "whole project").
+| Input | Scope |
+|-------|-------|
+| Empty | Entire project overview |
+| File path | Specific file |
+| Folder path | Module/component |
+| Class/function name | Specific code |
 
-## Steps
+## For Project-Level Explanations
 
-1. **Identify Target**:
-   - If `{input}` is empty, default to **Project**.
-   - If `{input}` is a path/symbol, target that specific scope.
+Read these files:
 
-2. **Analyze**:
-   - Read relevant files, docs, or code.
-   - For **Project**: Read `README.md`, `nonnegotiables.md`, `docs/prds/*.md`, `docs/ux/**/*.md`, and key architecture files.
-   - For **Component/Code**: Read source code, tests, and usage.
+- `README.md`
+- `.dev_ops/docs/nonnegotiables.md`
+- `.dev_ops/docs/prd/*.md`
+- `.dev_ops/docs/architecture/*.md`
+- Key entry points (`main.py`, `index.ts`, etc.)
 
-3. **Structure Output**:
-   Provide explanation using this format:
+## For Component/Code Explanations
 
-   ### [Target Name]
+Read:
 
-   **Purpose**
-   > One sentence summary of what it does and why it exists.
+- Source code files
+- Related tests
+- Usage examples in codebase
+- Architecture docs for that component
 
-   **Context**
-   > Where does it fit in the system? Who uses it?
+## Explanation Format
 
-   **Inner Workings**
-   > How does it function? Key logic flows, algorithms, or state management.
+Structure all explanations like this:
 
-   **Key Components** (if applicable)
-   - List main classes, functions, or sub-modules.
+```markdown
+## [Target Name]
+
+**Purpose**
+> One sentence summary of what it does and why it exists.
+
+**Context**
+> Where does it fit in the system? Who uses it?
+
+**Inner Workings**
+> How does it function? Key logic flows, algorithms, or state management.
+
+**Key Components**
+- List main classes, functions, or sub-modules with brief descriptions.
+
+**Dependencies**
+- External: Libraries/packages used
+- Internal: Other modules it depends on
+
+**Usage Example**
+
+```
+
+## Best Practices
+
+- Start broad, then go deep if asked
+- Link to relevant files for context
+- Highlight non-obvious design decisions
+- Note technical debt or areas for improvement
+- Use diagrams when explaining complex relationships

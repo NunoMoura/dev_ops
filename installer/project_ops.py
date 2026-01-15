@@ -107,7 +107,7 @@ def detect_docs(project_root: str) -> dict[str, Any]:
     """
     docs = {
         "prd": None,
-        "constitution": None,
+        "nonnegotiables": None,
         "architecture": None,
         "readme": None,
         "contributing": None,
@@ -128,16 +128,17 @@ def detect_docs(project_root: str) -> dict[str, Any]:
             docs["prd"] = os.path.relpath(matches[0], project_root)
             break
 
-    # Constitution / Non-negotiables
-    const_patterns = [
-        ".dev_ops/docs/constitution.md",
-        "docs/constitution.md",
-        "CONSTITUTION.md",
+    # Non-negotiables
+    nonneg_patterns = [
+        ".dev_ops/docs/nonnegotiables.md",
+        "docs/nonnegotiables.md",
+        "NONNEGOTIABLES.md",
+        "non-negotiables.md",
     ]
-    for pattern in const_patterns:
+    for pattern in nonneg_patterns:
         path = os.path.join(project_root, pattern)
         if os.path.exists(path):
-            docs["constitution"] = pattern
+            docs["nonnegotiables"] = pattern
             break
 
     # Architecture docs

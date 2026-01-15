@@ -836,13 +836,13 @@ def bootstrap(target_dir: str, ide_override: Optional[str] = None, github_workfl
     else:
         print(f"\n⚠️ Workflows source directory not found: {WORKFLOWS_SRC_DIR}")
 
-    # Install constitution.md template to .dev_ops/docs/ (referenced by dev_ops_guide.md rule)
-    constitution_src = os.path.join(DOCS_TEMPLATES_DIR, "constitution.md")
-    if os.path.exists(constitution_src):
-        constitution_dest = os.path.join(DEVOPS_DOCS_DIR, "constitution.md")
-        if not os.path.exists(constitution_dest):
-            shutil.copy2(constitution_src, constitution_dest)
-            print("   📜 Created constitution.md template in docs/")
+    # Install nonnegotiables.md template to .dev_ops/docs/ (referenced by dev_ops_guide.md rule)
+    nonneg_src = os.path.join(DOCS_TEMPLATES_DIR, "nonnegotiables.md")
+    if os.path.exists(nonneg_src):
+        nonneg_dest = os.path.join(DEVOPS_DOCS_DIR, "nonnegotiables.md")
+        if not os.path.exists(nonneg_dest):
+            shutil.copy2(nonneg_src, nonneg_dest)
+            print("   📜 Created nonnegotiables.md template in docs/")
 
     # Install GitHub Actions Workflows (only if enabled)
     if github_workflows and GITHUB_SRC_DIR and os.path.exists(GITHUB_SRC_DIR):

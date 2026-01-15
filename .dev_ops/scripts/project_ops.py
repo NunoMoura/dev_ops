@@ -107,7 +107,7 @@ def detect_docs(project_root: str) -> dict[str, Any]:
     """
     docs = {
         "prd": None,
-        "constitution": None,
+        "nonnegotiables": None,
         "architecture": None,
         "readme": None,
         "contributing": None,
@@ -128,16 +128,17 @@ def detect_docs(project_root: str) -> dict[str, Any]:
             docs["prd"] = os.path.relpath(matches[0], project_root)
             break
 
-    # Constitution / Non-negotiables
-    const_patterns = [
-        ".dev_ops/docs/constitution.md",
-        "docs/constitution.md",
-        "CONSTITUTION.md",
+    # Non-negotiables
+    nonneg_patterns = [
+        ".dev_ops/docs/nonnegotiables.md",
+        "docs/nonnegotiables.md",
+        "NONNEGOTIABLES.md",
+        "non-negotiables.md",
     ]
-    for pattern in const_patterns:
+    for pattern in nonneg_patterns:
         path = os.path.join(project_root, pattern)
         if os.path.exists(path):
-            docs["constitution"] = pattern
+            docs["nonnegotiables"] = pattern
             break
 
     # Architecture docs
@@ -170,6 +171,14 @@ def detect_docs(project_root: str) -> dict[str, Any]:
         docs["contributing"] = "CONTRIBUTING.md"
     if os.path.exists(os.path.join(project_root, "CHANGELOG.md")):
         docs["changelog"] = "CHANGELOG.md"
+
+    # Check for existing documentation folders that need migration
+    docs["existing_docs_folder"] = None
+    for candidate in ["docs", "documentation", "doc", "dev_docs", "specs"]:
+        path = os.path.join(project_root, candidate)
+        if os.path.isdir(path):
+            docs["existing_docs_folder"] = candidate
+            break
 
     return docs
 
@@ -859,30 +868,24 @@ coverage: 0
 
             all_dirs.add(rel_path)
 
-    # Second pass: identify leaf directories (no children in our set)
-    leaf_dirs = []
-    for dir_path in all_dirs:
-        has_children = any(
-            other.startswith(dir_path + os.sep) for other in all_dirs if other != dir_path
-        )
-        if not has_children:
-            leaf_dirs.append(dir_path)
+    # Second pass: create docs for ALL directories with code files (full hierarchy)
+    # This mirrors the codebase structure completely, not just leaf nodes
+    code_dirs = []
+    for dir_path in sorted(all_dirs):
+        source_dir = os.path.join(project_root, dir_path)
+        if has_code_files(source_dir):
+            code_dirs.append(dir_path)
 
     # Ensure target directory exists
     os.makedirs(target_dir, exist_ok=True)
 
-    # Create mirrored structure with .md files for leaf directories
-    for leaf_path in sorted(leaf_dirs):
-        source_dir = os.path.join(project_root, leaf_path)
-
-        # Strategy 3: Skip directories without code files
-        if not has_code_files(source_dir):
-            results["filtered"] += 1
-            continue
+    # Create mirrored structure with .md files for each code directory
+    for dir_path in code_dirs:
+        source_dir = os.path.join(project_root, dir_path)
 
         # Split path into parent and leaf name
-        parent = os.path.dirname(leaf_path)
-        leaf_name = os.path.basename(leaf_path)
+        parent = os.path.dirname(dir_path)
+        leaf_name = os.path.basename(dir_path)
 
         # Create parent folder structure in target
         target_parent = os.path.join(target_dir, parent) if parent else target_dir
@@ -898,9 +901,9 @@ coverage: 0
             continue
 
         # Generate content from template
-        title = leaf_path.replace(os.sep, " / ")
+        title = dir_path.replace(os.sep, " / ")
         content = template_content.replace("{title}", title)
-        content = content.replace("{path}", leaf_path)
+        content = content.replace("{path}", dir_path)
         content = content.replace("{coverage}", "0")
         content = content.replace("{date}", datetime.datetime.now().strftime("%Y-%m-%d"))
 

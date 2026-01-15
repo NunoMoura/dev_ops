@@ -1,15 +1,18 @@
 ---
 description: Analyze project and generate tailored task backlog
-category: guided
 ---
 
-# Bootstrap - Project Setup & Task Generation
+# Bootstrap Workflow
 
-Run this workflow once to analyze your project and generate a tailored task backlog.
+Initialize a project with context-aware tasks and rules.
 
 ## Step 1: Run Detection
 
-Execute the detection script to analyze the codebase:
+Analyze the codebase (use `--help` for options):
+
+```bash
+python3 .dev_ops/scripts/project_ops.py detect --help
+```
 
 ```bash
 python3 .dev_ops/scripts/project_ops.py detect --target . --format json
@@ -18,7 +21,7 @@ python3 .dev_ops/scripts/project_ops.py detect --target . --format json
 **Read the output carefully.** It contains:
 
 - **stack**: Languages, frameworks, linters, databases
-- **docs**: Which DevOps docs exist (PRD, architecture, constitution)
+- **docs**: Which DevOps docs exist (PRD, architecture, non-negotiables)
 - **tests**: Test framework, CI status
 - **patterns**: Common files and directories
 
@@ -26,86 +29,75 @@ python3 .dev_ops/scripts/project_ops.py detect --target . --format json
 
 Based on detection results:
 
-> [!TIP]
-> The `project_type` field reflects your selection during onboarding (brownfield/greenfield).
-> If you selected "skip", the type is auto-detected based on whether source code exists.
-
 ### If Brownfield (existing code)
 
-1. Review key entry points (main.py, src/index.ts, etc.)
-2. Understand the module structure from `patterns.common_dirs`
+1. Review key entry points from `patterns.entry_points`
+2. Understand module structure from `patterns.common_dirs`
 3. Note which documentation is missing from `docs`
 4. Check test coverage from `tests`
-5. **Review scaffolded architecture docs** in `.dev_ops/docs/architecture/`
-   - The installer has auto-generated a `.md` file for each directory
-   - Your job is to populate these files with actual documentation
+5. Review scaffolded architecture docs in `.dev_ops/docs/architecture/`
 
 ### If Greenfield (new project)
 
-1. Note the intended technologies from `stack`
-2. All docs will be missing - tasks will be created for them
+1. Note intended technologies from `stack`
+2. All docs will be missing — tasks will be created for them
 
-## Step 3: Populate Architecture Documentation
+## Step 3: Populate Architecture Docs
 
-The installer has created placeholder architecture docs in `.dev_ops/docs/architecture/`.
+The installer creates placeholder docs in `.dev_ops/docs/architecture/`.
 
 **For each generated `.md` file:**
 
 1. Analyze the corresponding codebase directory
-2. Fill in the Purpose, Overview, Public Interface sections
+2. Fill in Purpose, Overview, Public Interface sections
 3. Document key files and dependencies
-4. Add implementation notes
 
-**If the project is large (>10 components):**
+**If project is large (>10 components):**
 
-- Create tasks in the backlog for documenting each major subsystem
-- Focus on high-level architecture first, details can be tasked later
+- Create tasks for documenting each major subsystem
+- Focus on high-level architecture first
 
 ## Step 4: Generate Task Backlog
 
-Create tasks using the **task template** format. Reference: `.dev_ops/templates/artifacts/task.md`
+Check `docs` from detection. Create tasks for missing items (use `--help` for options):
+
+```bash
+python3 .dev_ops/scripts/board_ops.py create_task --help
+```
 
 ### Required Framework Tasks
 
-Check `docs` from detection. Create tasks for any missing:
+| Missing Doc | Task to Create | Template |
+|-------------|----------------|----------|
+| `docs.prd = null` | "Create PRD" | `.dev_ops/templates/docs/prd.md` |
+| `docs.nonnegotiables = null` | "Create Non-Negotiables" | `.dev_ops/templates/docs/nonnegotiables.md` |
+| `docs.architecture = null` | "Document Architecture" | `.dev_ops/templates/docs/architecture_doc.md` |
 
-| Missing Doc | Task to Create |
-|-------------|----------------|
-| `docs.prd = null` | "Create Product Requirements Document (PRD)" |
-| `docs.constitution = null` | "Define Project Constitution (non-negotiables)" |
-| `docs.architecture = null` | "Document System Architecture" |
-
-### Create Tasks
-
-Use the board_ops script with proper task fields:
+Example:
 
 ```bash
 python3 .dev_ops/scripts/board_ops.py create_task \
   --title "Create PRD" \
-  --summary "Define product vision, personas, and requirements" \
+  --summary "Define product vision using template at .dev_ops/templates/docs/prd.md" \
   --priority high \
   --commit
 ```
 
-> [!IMPORTANT]
-> Each task must have:
->
-> - **title**: Short, actionable description
-> - **summary**: Clear scope of what needs to be done
-> - **priority**: high | medium | low
-
 ### Project-Specific Tasks
 
-Based on your audit, create 3-5 additional tasks such as:
+Based on audit, create 3-5 additional tasks:
 
 - "Document [undocumented module]"
 - "Add unit tests for [untested component]"
 - "Set up CI/CD pipeline" (if `tests.ci_configured = false`)
-- "Improve README" (if `docs.readme = minimal`)
 
 ## Step 5: Generate Rules
 
-Run the rule generation script to create project-specific rules from detected stack:
+Create rules for detected technologies (use `--help` for options):
+
+```bash
+python3 .dev_ops/scripts/project_ops.py generate-rules --help
+```
 
 ```bash
 python3 .dev_ops/scripts/project_ops.py generate-rules --target .
@@ -113,19 +105,16 @@ python3 .dev_ops/scripts/project_ops.py generate-rules --target .
 
 This creates rules in `.agent/rules/` for:
 
-- Detected languages (e.g., `languages/python.md`, `languages/typescript.md`)
-- Detected linters (e.g., `linters/ruff.md`, `linters/eslint.md`)
+- Detected languages (e.g., `languages/python.md`)
+- Detected linters (e.g., `linters/ruff.md`)
 
-**Review and customize** the generated rules for your project's specific needs.
+**Review and customize** the generated rules.
 
-## Output Checklist
+## Exit Criteria
 
-At the end of bootstrap, verify:
-
-- [ ] 5-10 context-aware tasks created in board
-- [ ] PRD task included (if PRD missing)
-- [ ] Constitution task included (if missing)
-- [ ] Architecture task included (if missing)
+- [ ] Detection completed
+- [ ] Architecture docs populated (or tasks created)
+- [ ] 5-10 context-aware tasks in backlog
+- [ ] PRD task included (if missing)
+- [ ] Non-Negotiables task included (if missing)
 - [ ] Rules generated for detected stack
-
-**Next step:** User reviews generated tasks, then claims first task with `/claim`

@@ -7,6 +7,9 @@ category: guided
 
 Create BUG-XXX artifact to track a bug.
 
+> [!TIP]
+> Template: `.dev_ops/templates/artifacts/bug.md`
+
 ## Steps
 
 1. **Check for duplicates**:

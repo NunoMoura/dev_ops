@@ -80,7 +80,10 @@ See `examples/walkthrough.md` for a complete example.
 
 ## Step 6: Create PR
 
-Use the PR template at `.dev_ops/templates/artifacts/pr.md`:
+> [!TIP]
+> Template: `.dev_ops/templates/artifacts/pr.md`
+
+Use the PR template when creating pull requests:
 
 ```bash
 git push origin feature/TASK-XXX

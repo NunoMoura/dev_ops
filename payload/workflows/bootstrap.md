@@ -21,7 +21,7 @@ python3 .dev_ops/scripts/project_ops.py detect --target . --format json
 **Read the output carefully.** It contains:
 
 - **stack**: Languages, frameworks, linters, databases
-- **docs**: Which DevOps docs exist (PRD, architecture, constitution)
+- **docs**: Which DevOps docs exist (PRD, architecture, non-negotiables)
 - **tests**: Test framework, CI status
 - **patterns**: Common files and directories
 
@@ -67,18 +67,18 @@ python3 .dev_ops/scripts/board_ops.py create_task --help
 
 ### Required Framework Tasks
 
-| Missing Doc | Task to Create |
-|-------------|----------------|
-| `docs.prd = null` | "Create Product Requirements Document" |
-| `docs.constitution = null` | "Define Project Constitution" |
-| `docs.architecture = null` | "Document System Architecture" |
+| Missing Doc | Task to Create | Template |
+|-------------|----------------|----------|
+| `docs.prd = null` | "Create PRD" | `.dev_ops/templates/docs/prd.md` |
+| `docs.nonnegotiables = null` | "Create Non-Negotiables" | `.dev_ops/templates/docs/nonnegotiables.md` |
+| `docs.architecture = null` | "Document Architecture" | `.dev_ops/templates/docs/architecture_doc.md` |
 
 Example:
 
 ```bash
 python3 .dev_ops/scripts/board_ops.py create_task \
   --title "Create PRD" \
-  --summary "Define product vision, personas, and requirements" \
+  --summary "Define product vision using template at .dev_ops/templates/docs/prd.md" \
   --priority high \
   --commit
 ```
@@ -116,5 +116,5 @@ This creates rules in `.agent/rules/` for:
 - [ ] Architecture docs populated (or tasks created)
 - [ ] 5-10 context-aware tasks in backlog
 - [ ] PRD task included (if missing)
-- [ ] Constitution task included (if missing)
+- [ ] Non-Negotiables task included (if missing)
 - [ ] Rules generated for detected stack

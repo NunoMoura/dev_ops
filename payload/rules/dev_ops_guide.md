@@ -75,3 +75,14 @@ Tasks reference docs (`trigger`, `upstream`), not duplicate them.
 | `verify_phase` | Validation and PR creation |
 | `bootstrap_project` | Initialize project and generate tasks |
 | `explain_codebase` | Explain code structure |
+
+## Non-Negotiables
+
+Before significant changes, check `.dev_ops/docs/nonnegotiables.md` for:
+
+- **Constraints**: Rules that cannot be violated
+- **Tech Stack**: Locked technology decisions
+- **Patterns**: Required architectural patterns
+- **Anti-Patterns**: Explicitly forbidden practices
+
+If work would violate a non-negotiable, **stop and flag to user**.

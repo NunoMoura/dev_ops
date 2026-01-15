@@ -96,6 +96,9 @@ python3 .dev_ops/scripts/artifact_ops.py create research \
   --task TASK-XXX
 ```
 
+> [!TIP]
+> Template: `.dev_ops/templates/artifacts/research.md`
+
 See `examples/research_doc.md` for a complete example.
 
 ## Step 7: Move to Plan

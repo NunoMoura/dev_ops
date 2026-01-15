@@ -32,8 +32,8 @@
 
 ### Project Alignment
 
-- [x] Reviewed `constitution.md`
-- Violations: None. Constitution requires "fail fast with clear errors."
+- [x] Reviewed `nonnegotiables.md`
+- Violations: None. Non-negotiables require "fail fast with clear errors."
 
 ## Internal Research
 

@@ -38,8 +38,8 @@ downstream: []         # Artifacts produced (e.g., DOC-XXX, PLN-XXX)
 
 ### Project Alignment
 
-<!-- Does proposed work align with constitution/non-negotiables? -->
-- [ ] Reviewed `constitution.md`
+<!-- Does proposed work align with non-negotiables? -->
+- [ ] Reviewed `nonnegotiables.md`
 - Violations:
 
 ## Internal Research
