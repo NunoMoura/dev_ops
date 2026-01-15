@@ -27,12 +27,6 @@ A **lightweight framework** for developers using AI coding agents (Cursor, Antig
   <em>Task board with 6-phase workflow</em>
 </p>
 
-<p align="center">
-  <img src="docs/images/sidebar.png" alt="DevOps Sidebar" width="350" />
-  <br />
-  <em>IDE sidebar with task status and artifacts</em>
-</p>
-
 ---
 
 ## Quick Start
