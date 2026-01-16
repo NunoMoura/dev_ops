@@ -254,7 +254,8 @@ function getBoardHtml(panelMode = false): string {
     <style>
       :root {
         color-scheme: var(--vscode-colorScheme);
-        --brand-color: #cba6f7;
+        --brand-gradient: linear-gradient(135deg, #0d9488 0%, #4f46e5 100%);
+        --brand-teal: #0d9488;
       }
       body {
         font-family: 'IBM Plex Sans', var(--vscode-font-family), sans-serif;
@@ -299,10 +300,15 @@ function getBoardHtml(panelMode = false): string {
         flex: 1;
         margin-right: 8px;
         text-transform: uppercase;
-        letter-spacing: 0.05em; /* Slightly tighter */
-        font-size: 11px;       /* Reduced from 13px */
-        color: var(--brand-color);
-        font-weight: 600;      /* Slightly reduced weight */
+        letter-spacing: 0.05em;
+        font-size: 11px;
+        color: var(--vscode-editor-foreground);
+        font-weight: 500;
+        opacity: 0.9;
+      }
+      .column-title::before {
+        content: '▸ '; /* Native-looking chevron */
+        opacity: 0.7;
       }
       .column-actions {
         display: flex;
@@ -350,7 +356,7 @@ function getBoardHtml(panelMode = false): string {
         gap: 6px;
         transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
         position: relative;
-        border-left: 4px solid #6b7280; /* Default: ready/done gray */
+        border-left: 2px solid #6b7280; /* Default: ready/done gray */
       }
       /* Status-based left border colors for agent-human handoff */
       .task-card[data-status="ready"] { border-left-color: #3b82f6; } /* Blue: spawn agent */
@@ -360,7 +366,7 @@ function getBoardHtml(panelMode = false): string {
       .task-card[data-status="done"] { border-left-color: #6b7280; } /* Gray: complete */
       .task-card.selected {
         border-color: var(--vscode-focusBorder);
-        border-left-width: 4px;
+        border-left-width: 2px;
         box-shadow: 0 0 0 1px var(--vscode-focusBorder);
       }
       .task-card.dragging {
@@ -378,10 +384,11 @@ function getBoardHtml(panelMode = false): string {
         opacity: 0.7;
       }
       .task-title {
-        font-weight: 600;
+        font-weight: 500; /* Reduced from 600 */
         font-size: 13px;
         line-height: 1.3;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
+        color: var(--vscode-editor-foreground);
       }
       .task-summary {
         font-size: 12px;
@@ -410,12 +417,12 @@ function getBoardHtml(panelMode = false): string {
         margin-top: 4px;
       }
       .artifact-badge {
-        background: rgba(102, 126, 234, 0.15);
-        border: 1px solid rgba(102, 126, 234, 0.3);
+        background: rgba(20, 184, 166, 0.15);
+        border: 1px solid rgba(20, 184, 166, 0.3);
         border-radius: 4px;
         padding: 1px 5px;
         font-size: 9px;
-        color: #a5b4fc;
+        color: #5b72e8;
       }
       .artifact-badge.upstream::before { content: "↑ "; opacity: 0.7; }
       .artifact-badge.downstream::before { content: "↓ "; opacity: 0.7; }
@@ -435,7 +442,7 @@ function getBoardHtml(panelMode = false): string {
       }
       .progress-fill {
         height: 100%;
-        background: linear-gradient(90deg, #667eea, #764ba2);
+        background: var(--brand-gradient);
         transition: width 0.3s ease;
       }
       .progress-text {
@@ -466,9 +473,12 @@ function getBoardHtml(panelMode = false): string {
         letter-spacing: 0.05em;
         font-weight: 500;
       }
-      .card-footer-left .priority-high { color: #ef4444; }
-      .card-footer-left .priority-medium { color: #f59e0b; }
-      .card-footer-left .priority-low { color: #22c55e; }
+      .card-footer-left .priority-high,
+      .card-footer-left .priority-medium,
+      .card-footer-left .priority-low {
+        color: var(--vscode-descriptionForeground);
+        opacity: 0.9;
+      }
       .card-footer-left .owner-badge {
         display: flex;
         align-items: center;
@@ -577,8 +587,7 @@ function getBoardHtml(panelMode = false): string {
         font-size: 11px;
       }
       button.ghost:hover {
-        background: var(--brand-color);
-        color: var(--vscode-sideBar-background);
+        background: rgba(255,255,255,0.1);
       }
       .hint {
         font-size: 11px;
@@ -609,28 +618,24 @@ function getBoardHtml(panelMode = false): string {
         font-weight: 600;
         color: var(--vscode-foreground);
       }
+
       .add-task-button {
-        padding: 8px 16px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+        padding: 6px 14px;
+        background: var(--vscode-button-background);
+        color: var(--vscode-button-foreground);
         border: none;
-        border-radius: 6px;
-        font-weight: 600;
+        border-radius: 2px;
+        font-weight: 500;
         cursor: pointer;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+        transition: background 0.1s;
         font-family: inherit;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        font-size: 11px; /* Match column header size */
+        text-transform: none;
+        font-size: 11px;
+        position: relative;
+        box-shadow: none;
       }
       .add-task-button:hover {
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
-        filter: brightness(1.1);
-        transform: translateY(-1px);
-      }
-      .add-task-button:active {
-        transform: translateY(0);
+        background: var(--vscode-button-hoverBackground);
       }
     </style>
   `;
@@ -639,7 +644,7 @@ function getBoardHtml(panelMode = false): string {
     <body>
       <div class="board-wrapper">
         <div class="board-header">
-          <h2 class="board-title">DevOps Board</h2>
+          <span style="flex:1"></span>
           <button id="addTaskBtn" class="add-task-button" type="button" title="Create Task">New Task</button>
         </div>
         <div id="selectionBanner" class="selection-banner hidden">
@@ -910,11 +915,11 @@ function getBoardHtml(panelMode = false): string {
               const statusSpan = document.createElement('span');
               statusSpan.className = 'card-footer-right status-' + status;
               const statusLabels = {
-                'ready': '▶ Ready',
-                'agent_active': '⚡ Active',
-                'needs_feedback': '💬 Feedback',
-                'blocked': '⛔ Blocked',
-                'done': '✓ Done'
+                'ready': 'Ready',
+                'agent_active': 'In Progress',
+                'needs_feedback': 'Feedback',
+                'blocked': 'Blocked',
+                'done': 'Done'
               };
               statusSpan.textContent = statusLabels[status] || status;
               footer.appendChild(statusSpan);

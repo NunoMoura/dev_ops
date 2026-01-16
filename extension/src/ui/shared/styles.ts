@@ -52,19 +52,16 @@ export function getSharedStyles(): string {
       --status-blocked: ${STATUS_COLORS.BLOCKED};
       --status-done: ${STATUS_COLORS.DONE};
       
-      /* Brand Color (Catppuccin Mauve) */
-      --brand-color: #cba6f7;
+      /* Brand Colors - Removed custom brand gradients in favor of Native Theme */
       
-      /* Shadows (Subtle Elevation) */
+      /* Shadows (Subtle Elevation - using native widget shadows if possible, or keeping subtle defaults) */
       --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
       --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.12);
-      --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.16);
-      --shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.2);
       
       /* Borders (Alpha-based) */
-      --border-subtle: rgba(255, 255, 255, 0.08);
-      --border-normal: rgba(255, 255, 255, 0.12);
-      --border-strong: rgba(255, 255, 255, 0.16);
+      --border-subtle: var(--vscode-widget-border, rgba(255, 255, 255, 0.08));
+      --border-normal: var(--vscode-widget-border, rgba(255, 255, 255, 0.12));
+      --border-strong: var(--vscode-focusBorder, rgba(255, 255, 255, 0.16));
       
       /* Spacing Scale */
       --space-xs: 4px;
@@ -159,21 +156,18 @@ export function getSharedStyles(): string {
     
     .btn-ghost {
       background: transparent;
-      border: 1px solid var(--brand-color);
-      border-radius: 6px;
+      border: 1px solid transparent;
+      border-radius: 4px; /* Native standard usually 2px or 4px */
       padding: var(--space-md) var(--space-xl);
-      color: var(--brand-color);
-      font-weight: var(--weight-semibold);
+      color: var(--vscode-textLink-foreground);
+      font-weight: var(--weight-medium);
       font-size: var(--text-base);
-      box-shadow: var(--shadow-sm);
     }
     
     .btn-ghost:hover {
-      background: var(--brand-color);
-      color: var(--vscode-sideBar-background);
-      border-color: var(--brand-color);
-      box-shadow: var(--shadow-md);
-      transform: translateY(-1px);
+      background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.1));
+      color: var(--vscode-textLink-activeForeground);
+      border-color: transparent;
     }
     
     .btn-ghost:active {
@@ -182,19 +176,19 @@ export function getSharedStyles(): string {
     
     .btn-primary {
       background: var(--vscode-button-background);
-      border: 1px solid var(--border-subtle);
-      border-radius: 6px;
-      padding: var(--space-md) var(--space-xl);
+      border: 1px solid transparent;
+      border-radius: 2px; /* VS Code buttons are often sharper */
+      padding: 6px 14px;
       color: var(--vscode-button-foreground);
-      font-weight: var(--weight-semibold);
+      font-weight: var(--weight-medium);
       font-size: var(--text-base);
-      box-shadow: var(--shadow-sm);
+      font-family: var(--vscode-font-family);
     }
     
     .btn-primary:hover {
       background: var(--vscode-button-hoverBackground);
-      box-shadow: var(--shadow-md);
-      transform: translateY(-1px);
+      cursor: pointer;
+      /* Remove custom transforms/shadows to feel native */
     }
     
     .btn-primary:active {
@@ -227,12 +221,11 @@ export function getSharedStyles(): string {
        ======================================== */
     
     .card {
-      background: var(--vscode-editor-background);
-      border: 1px solid var(--border-subtle);
-      border-radius: 8px;
+      background: var(--vscode-sideBar-background); /* Blend with background for native list look, or editor-background */
+      border: 1px solid var(--vscode-widget-border);
+      border-radius: 4px;
       padding: var(--space-lg);
-      box-shadow: var(--shadow-sm);
-      transition: all var(--transition-normal) ease;
+      /* Remove shadow for cleaner look or make very subtle */
     }
     
     .card-elevated {

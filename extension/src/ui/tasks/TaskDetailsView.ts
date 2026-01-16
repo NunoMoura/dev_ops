@@ -304,12 +304,12 @@ function getCardHtml(): string {
         min-height: 24px;
       }
       .artifact-badge {
-        background: rgba(102, 126, 234, 0.12);
-        border: 1px solid rgba(102, 126, 234, 0.25);
+        background: rgba(20, 184, 166, 0.12);
+        border: 1px solid rgba(20, 184, 166, 0.25);
         border-radius: 4px;
         padding: 2px var(--space-md);
         font-size: var(--text-sm);
-        color: #a5b4fc;
+        color: #5b72e8;
         display: inline-flex;
         align-items: center;
         gap: var(--space-xs);
@@ -327,17 +327,17 @@ function getCardHtml(): string {
       }
       .add-artifact-btn {
         background: transparent;
-        border: 1px dashed rgba(102, 126, 234, 0.3);
+        border: 1px dashed rgba(20, 184, 166, 0.3);
         border-radius: 4px;
         padding: 2px var(--space-md);
         font-size: var(--text-sm);
-        color: #a5b4fc;
+        color: #5b72e8;
         cursor: pointer;
         transition: all var(--transition-fast) ease;
       }
       .add-artifact-btn:hover {
-        background: rgba(102, 126, 234, 0.08);
-        border-color: rgba(102, 126, 234, 0.4);
+        background: rgba(20, 184, 166, 0.08);
+        border-color: rgba(20, 184, 166, 0.4);
       }
       /* Status indicator at top */
       .status-indicator {

@@ -220,7 +220,7 @@
         {
           "id": "devops",
           "title": "DevOps",
-          "icon": "resources/board-icon.svg"
+          "icon": "resources/devops-icon.svg"
         }
       ]
     },
@@ -228,13 +228,13 @@
       "devops": [
         {
           "id": "devopsStatusBoard",
-          "name": "Dashboard",
-          "icon": "$(list-tree)",
+          "name": "BOARD",
+          "icon": "resources/devops-logo.png",
           "type": "webview"
         },
         {
           "id": "devopsMetricsView",
-          "name": "Metrics",
+          "name": "METRICS",
           "icon": "$(graph)",
           "type": "webview"
         }

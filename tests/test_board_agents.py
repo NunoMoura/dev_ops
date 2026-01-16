@@ -25,14 +25,14 @@ class TestSetStatus:
         board = load_board(temp_project)
         assert board["items"][0]["status"] == "ready"
 
-    def test_set_status_agent_active(self, temp_project):
-        """Test setting status to agent_active."""
+    def test_set_status_in_progress(self, temp_project):
+        """Test setting status to in_progress."""
         task_id = create_task(title="Task", project_root=temp_project)
-        result = set_status(task_id, "agent_active", temp_project)
+        result = set_status(task_id, "in_progress", temp_project)
 
         assert result is True
         board = load_board(temp_project)
-        assert board["items"][0]["status"] == "agent_active"
+        assert board["items"][0]["status"] == "in_progress"
 
     def test_set_status_needs_feedback(self, temp_project):
         """Test setting status to needs_feedback."""
@@ -84,9 +84,9 @@ class TestSetStatus:
         board = load_board(temp_project)
         assert board["items"][0]["status"] == "ready"
 
-        set_status(task_id, "agent_active", temp_project)
+        set_status(task_id, "in_progress", temp_project)
         board = load_board(temp_project)
-        assert board["items"][0]["status"] == "agent_active"
+        assert board["items"][0]["status"] == "in_progress"
 
         set_status(task_id, "done", temp_project)
         board = load_board(temp_project)
@@ -99,7 +99,9 @@ class TestRegisterAgent:
     def test_register_agent_basic(self, temp_project):
         """Test basic agent registration."""
         task_id = create_task(title="Task", project_root=temp_project)
-        result = register_agent(task_id, "agent", "session-123", "TestAgent", temp_project)
+        result = register_agent(
+            task_id, "agent", session_id="session-123", name="TestAgent", project_root=temp_project
+        )
 
         assert result is True
         board = load_board(temp_project)
@@ -108,12 +110,12 @@ class TestRegisterAgent:
         assert task["owner"]["type"] == "agent"
         assert task["owner"]["name"] == "TestAgent"
         assert task["owner"]["sessionId"] == "session-123"
-        assert task["status"] == "agent_active"
+        assert task["status"] == "in_progress"
 
     def test_register_human(self, temp_project):
         """Test registering a human."""
         task_id = create_task(title="Task", project_root=temp_project)
-        result = register_agent(task_id, "human", None, "Alice", temp_project)
+        result = register_agent(task_id, "human", name="Alice", project_root=temp_project)
 
         assert result is True
         board = load_board(temp_project)
@@ -129,7 +131,7 @@ class TestRegisterAgent:
         board = load_board(temp_project)
         original_time = board["items"][0]["updatedAt"]
 
-        register_agent(task_id, "agent", None, "Agent1", temp_project)
+        register_agent(task_id, "agent", name="Agent1", project_root=temp_project)
 
         board = load_board(temp_project)
         new_time = board["items"][0]["updatedAt"]
@@ -137,15 +139,19 @@ class TestRegisterAgent:
 
     def test_register_agent_nonexistent_task(self, temp_project):
         """Test registering agent on nonexistent task."""
-        result = register_agent("TASK-999", "agent", None, "Agent", temp_project)
+        result = register_agent("TASK-999", "agent", name="Agent", project_root=temp_project)
         assert result is False
 
     def test_register_replaces_previous_owner(self, temp_project):
         """Test that new registration replaces previous owner."""
         task_id = create_task(title="Task", project_root=temp_project)
 
-        register_agent(task_id, "agent", "session-1", "Agent1", temp_project)
-        register_agent(task_id, "agent", "session-2", "Agent2", temp_project)
+        register_agent(
+            task_id, "agent", session_id="session-1", name="Agent1", project_root=temp_project
+        )
+        register_agent(
+            task_id, "agent", session_id="session-2", name="Agent2", project_root=temp_project
+        )
 
         board = load_board(temp_project)
         task = board["items"][0]
@@ -159,7 +165,7 @@ class TestUnregisterAgent:
     def test_unregister_agent(self, temp_project):
         """Test unregistering an agent."""
         task_id = create_task(title="Task", project_root=temp_project)
-        register_agent(task_id, "agent", None, "Agent", temp_project)
+        register_agent(task_id, "agent", name="Agent", project_root=temp_project)
 
         result = unregister_agent(task_id, temp_project)
         assert result is True
@@ -195,7 +201,9 @@ class TestGetActiveAgents:
     def test_get_active_agents_single(self, temp_project):
         """Test getting single active agent."""
         task_id = create_task(title="Task", project_root=temp_project)
-        register_agent(task_id, "agent", "session-1", "Agent1", temp_project)
+        register_agent(
+            task_id, "agent", session_id="session-1", name="Agent1", project_root=temp_project
+        )
 
         active = get_active_agents(temp_project)
         assert len(active) == 1
@@ -209,8 +217,8 @@ class TestGetActiveAgents:
         task2 = create_task(title="Task 2", project_root=temp_project)
         task3 = create_task(title="Task 3", project_root=temp_project)
 
-        register_agent(task1, "agent", None, "Agent1", temp_project)
-        register_agent(task2, "agent", None, "Agent2", temp_project)
+        register_agent(task1, "agent", name="Agent1", project_root=temp_project)
+        register_agent(task2, "agent", name="Agent2", project_root=temp_project)
         # Don't register on task3
 
         active = get_active_agents(temp_project)
@@ -226,8 +234,8 @@ class TestGetActiveAgents:
         task1 = create_task(title="Task 1", project_root=temp_project)
         task2 = create_task(title="Task 2", project_root=temp_project)
 
-        register_agent(task1, "agent", None, "Agent1", temp_project)
-        register_agent(task2, "agent", None, "Agent2", temp_project)
+        register_agent(task1, "agent", name="Agent1", project_root=temp_project)
+        register_agent(task2, "agent", name="Agent2", project_root=temp_project)
 
         # Set task2 to done status
         set_status(task2, "done", temp_project)
@@ -268,9 +276,9 @@ class TestAgentIntegration:
             tasks.append(task_id)
 
         # Assign 3 agents
-        register_agent(tasks[0], "agent", None, "Agent-Alpha", temp_project)
-        register_agent(tasks[1], "agent", None, "Agent-Beta", temp_project)
-        register_agent(tasks[3], "agent", None, "Agent-Gamma", temp_project)
+        register_agent(tasks[0], "agent", name="Agent-Alpha", project_root=temp_project)
+        register_agent(tasks[1], "agent", name="Agent-Beta", project_root=temp_project)
+        register_agent(tasks[3], "agent", name="Agent-Gamma", project_root=temp_project)
 
         active = get_active_agents(temp_project)
         assert len(active) == 3

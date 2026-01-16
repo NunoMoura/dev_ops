@@ -7,6 +7,13 @@ category: guided
 
 Create FEAT-XXX and decompose into backlog tasks.
 
+> [!TIP]
+> Templates available:
+>
+> - `.dev_ops/templates/docs/story.md` - User story format
+> - `.dev_ops/templates/docs/user.md` - User persona format
+> - `.dev_ops/templates/docs/mockup.md` - UI mockup documentation
+
 ## Steps
 
 1. **Create feature**:

@@ -197,30 +197,30 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
                     }
                     .metric-card { 
                         background: var(--vscode-editor-background); 
-                        border: 1px solid var(--brand-color); 
-                        border-radius: 8px; 
+                        border: 1px solid var(--vscode-widget-border); 
+                        border-radius: 6px; 
                         padding: var(--space-lg); 
                         text-align: center;
-                        box-shadow: var(--shadow-sm);
-                        transition: all var(--transition-normal) ease;
+                        box-shadow: none;
+                        transition: background 0.1s ease;
                     }
                     .metric-card:hover {
-                        box-shadow: var(--shadow-md);
-                        transform: translateY(-1px);
+                        background: var(--vscode-list-hoverBackground);
                     }
                     .big-number { 
                         font-size: 1.8em; 
-                        font-weight: var(--weight-bold); 
+                        font-weight: var(--weight-light); 
                         display: block; 
                         margin-bottom: var(--space-xs);
-                        color: var(--vscode-foreground);
+                        color: var(--vscode-editor-foreground);
+                        letter-spacing: -0.02em;
                     }
                     .metric-label { 
-                        font-size: var(--text-xs); 
-                        font-weight: var(--weight-medium);
-                        opacity: 0.85; 
+                        font-size: 10px; 
+                        font-weight: 500;
+                        opacity: 0.7; 
                         text-transform: uppercase; 
-                        letter-spacing: 0.03em;
+                        letter-spacing: 0.05em;
                         color: var(--vscode-descriptionForeground);
                     }
 
@@ -229,51 +229,45 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
                         padding-top: var(--space-lg);
                         border-top: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
                     }
-                    .section-header {
-                        font-size: var(--text-xs);
-                        font-weight: var(--weight-medium);
+                    .section-header, .sparkline-header {
+                        font-size: 11px;
+                        font-weight: 600;
                         text-transform: uppercase;
                         letter-spacing: 0.05em;
                         margin-bottom: var(--space-lg);
-                        color: var(--brand-color);
-                    }
-                    .sparkline-header {
-                        font-size: var(--text-xs);
-                        font-weight: var(--weight-medium);
-                        text-transform: uppercase;
-                        letter-spacing: 0.05em;
-                        margin-bottom: var(--space-lg);
-                        color: var(--brand-color);
+                        color: var(--vscode-foreground);
+                        opacity: 0.9;
                     }
                     .sparkline-row { 
                         display: flex; 
                         align-items: center; 
-                        margin-bottom: var(--space-md); 
-                        font-size: var(--text-base); 
+                        margin-bottom: 8px; 
+                        font-size: 11px;
                     }
                     .sparkline-label {
                         width: 70px;
-                        font-weight: var(--weight-medium);
+                        font-weight: 500;
+                        opacity: 0.8;
                     }
                     .bar-container { 
                         flex: 1; 
                         height: 6px; 
                         background: rgba(255, 255, 255, 0.06); 
                         border-radius: 3px; 
-                        margin: 0 var(--space-md);
+                        margin: 0 10px;
                         overflow: hidden; 
                     }
                     .bar { 
                         height: 100%; 
-                        background: var(--brand-color);
-                        transition: width var(--transition-slow) ease;
+                        background: var(--vscode-progressBar-background, var(--vscode-textLink-foreground));
+                        transition: width 0.5s ease-out;
                         border-radius: 3px;
                     }
                     .bar-value {
                         width: 30px;
                         text-align: right;
-                        font-weight: var(--weight-medium);
-                        color: var(--brand-color);
+                        font-weight: 500;
+                        opacity: 0.8;
                     }
                 </style>
             </head>

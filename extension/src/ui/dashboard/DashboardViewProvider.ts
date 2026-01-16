@@ -19,6 +19,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
   public readonly onDidComplete = this._onDidComplete.event;
 
   private _isBoardOpen = false;
+  private _groupingMode: 'status' | 'phase' | 'priority' | 'owner' = 'status';
 
   constructor(private readonly _extensionUri: vscode.Uri) { }
 
@@ -71,8 +72,41 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
         vscode.commands.executeCommand('devops.showTaskDetails', message.taskId);
       } else if (message.type === 'openBoard') {
         vscode.commands.executeCommand('devops.openBoard');
+      } else if (message.type === 'setGrouping') {
+        this._groupingMode = message.mode;
+        this._updateContent();
       }
     });
+  }
+
+  private _getLogoUri(): vscode.Uri | string {
+    const uri = this._extensionUri.with({ path: this._extensionUri.path + '/resources/devops-logo.png' });
+    return this._view ? this._view.webview.asWebviewUri(uri) : uri;
+  }
+
+  private _getBoardIconUri(): vscode.Uri | string {
+    const uri = this._extensionUri.with({ path: this._extensionUri.path + '/resources/devops-logo.svg' });
+    return this._view ? this._view.webview.asWebviewUri(uri) : uri;
+  }
+
+  private _getArrowRightUri(): vscode.Uri | string {
+    const uri = this._extensionUri.with({ path: this._extensionUri.path + '/resources/arrow-right.svg' });
+    return this._view ? this._view.webview.asWebviewUri(uri) : uri;
+  }
+
+  private _getArrowDownUri(): vscode.Uri | string {
+    const uri = this._extensionUri.with({ path: this._extensionUri.path + '/resources/arrow-down.svg' });
+    return this._view ? this._view.webview.asWebviewUri(uri) : uri;
+  }
+
+  private _getArrowRightSmUri(): vscode.Uri | string {
+    const uri = this._extensionUri.with({ path: this._extensionUri.path + '/resources/arrow-right-sm.svg' });
+    return this._view ? this._view.webview.asWebviewUri(uri) : uri;
+  }
+
+  private _getArrowDownSmUri(): vscode.Uri | string {
+    const uri = this._extensionUri.with({ path: this._extensionUri.path + '/resources/arrow-down-sm.svg' });
+    return this._view ? this._view.webview.asWebviewUri(uri) : uri;
   }
 
   public refresh(): void {
@@ -387,27 +421,78 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     } catch { /* Ignore */ }
 
     const tasks = board?.items || [];
-    const groups = [
-      { id: 'blocked', label: 'Blocked', color: '#f44336', tasks: tasks.filter(t => t.status === 'blocked') },
-      { id: 'feedback', label: 'Needs Feedback', color: '#ff9800', tasks: tasks.filter(t => t.status === 'needs_feedback') },
-      { id: 'in_progress', label: 'In Progress', color: '#4caf50', tasks: tasks.filter(t => t.status === 'in_progress' || t.status === 'agent_active') },
-      { id: 'ready', label: 'Ready', color: '#2196f3', tasks: tasks.filter(t => t.status === 'ready') },
-      { id: 'done', label: 'Done', color: '#9e9e9e', tasks: tasks.filter(t => t.status === 'done') },
-    ];
+    let groups: { id: string; label: string; color: string; tasks: Task[] }[] = [];
+
+    if (this._groupingMode === 'phase' && board) {
+      // Group by Board Columns
+      groups = board.columns.map(col => ({
+        id: col.id,
+        label: col.name,
+        color: 'var(--vscode-foreground)', // Neutral color for phase headers
+        tasks: tasks.filter(t => t.columnId === col.id)
+      }));
+    } else if (this._groupingMode === 'priority') {
+      // Group by Priority
+      groups = [
+        { id: 'high', label: 'High Priority', color: 'var(--vscode-foreground)', tasks: tasks.filter(t => t.priority === 'high') },
+        { id: 'medium', label: 'Medium Priority', color: 'var(--vscode-foreground)', tasks: tasks.filter(t => t.priority === 'medium') },
+        { id: 'low', label: 'Low Priority', color: 'var(--vscode-foreground)', tasks: tasks.filter(t => t.priority === 'low') },
+        { id: 'none', label: 'No Priority', color: 'var(--vscode-descriptionForeground)', tasks: tasks.filter(t => !t.priority) }
+      ];
+    } else if (this._groupingMode === 'owner') {
+      // Group by Human Owner only
+      const humans = new Map<string, Task[]>();
+
+      tasks.forEach(t => {
+        let ownerName = 'Unassigned';
+
+        if (t.owner) {
+          if (t.owner.type === 'human') {
+            ownerName = t.owner.name;
+          } else if (t.owner.type === 'agent' && t.owner.developer) {
+            // Agent working on behalf of a developer
+            ownerName = t.owner.developer;
+          } else {
+            // Autonomous agent fallback
+            ownerName = 'Autonomous';
+          }
+        } else if (t.assignee) {
+          ownerName = t.assignee;
+        }
+
+        if (!humans.has(ownerName)) { humans.set(ownerName, []); }
+        humans.get(ownerName)?.push(t);
+      });
+
+      groups = Array.from(humans.entries()).map(([name, humanTasks]) => ({
+        id: name.toLowerCase().replace(/\s+/g, '-'),
+        label: name,
+        color: 'var(--vscode-foreground)', // Neutral color for owner headers
+        tasks: humanTasks
+      })).sort((a, b) => a.label.localeCompare(b.label));
+    } else {
+      // Default: Group by Status (Neutral headers, task borders have color)
+      groups = [
+        { id: 'blocked', label: 'Blocked', color: 'var(--vscode-foreground)', tasks: tasks.filter(t => t.status === 'blocked') },
+        { id: 'feedback', label: 'Needs Feedback', color: 'var(--vscode-foreground)', tasks: tasks.filter(t => t.status === 'needs_feedback') },
+        { id: 'in_progress', label: 'In Progress', color: 'var(--vscode-foreground)', tasks: tasks.filter(t => t.status === 'in_progress' || t.status === 'agent_active') },
+        { id: 'ready', label: 'Ready', color: 'var(--vscode-foreground)', tasks: tasks.filter(t => t.status === 'ready') },
+        { id: 'done', label: 'Done', color: 'var(--vscode-foreground)', tasks: tasks.filter(t => t.status === 'done') },
+      ];
+    }
 
     const groupsHtml = groups.map(g => `
-      <div class="group">
-        <div class="group-header">
-          <span class="dot" style="background:${g.color}"></span>
-          <span class="group-name">${g.label}</span>
+      <details class="group" open>
+        <summary class="group-summary">
+          <span class="group-name" style="color:${g.color}">${g.label}</span>
           <span class="count">${g.tasks.length}</span>
-        </div>
+        </summary>
         ${g.tasks.map(t => `
-          <div class="task" onclick="openTask('${t.id}')">
+          <div class="task" onclick="openTask('${t.id}')" data-status="${t.status || 'ready'}">
             <span class="task-title">${this._escapeHtml(t.title)}</span>
           </div>
         `).join('')}
-      </div>
+      </details>
     `).join('');
 
     return `<!DOCTYPE html>
@@ -415,7 +500,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
 <head>
   <meta charset="UTF-8">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
     body {
       font-family: var(--vscode-font-family);
       font-size: var(--vscode-font-size);
@@ -423,87 +508,251 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       background: var(--vscode-sideBar-background);
       padding: 12px;
     }
-    .group { margin-bottom: 12px; }
-    .group-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-    .dot { width: 10px; height: 10px; border-radius: 50%; }
-    .group-name { font-weight: 500; font-size: 12px; }
-    .count { font-size: 11px; opacity: 0.6; }
-    .task {
-      padding: 6px 8px; margin-left: 18px; margin-bottom: 4px;
-      background: var(--vscode-list-hoverBackground);
-      border-radius: 4px; cursor: pointer; font-size: 12px;
-    }
-    .task:hover { background: var(--vscode-list-activeSelectionBackground); }
-    
-    .dashboard-header {
+    .group { margin-bottom: 4px; } /* Reduced spacing between sections */
+    .group-summary {
+      list-style: none;
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 16px;
-      padding: 8px 0 16px 0;
-      min-height: 28px;
-      border-bottom: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
-    }
-    .open-board-btn {
-      flex: 1;
-      padding: 6px 12px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-weight: 600;
+      gap: 6px;
+      padding: 4px;
       cursor: pointer;
-      text-align: center;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease, opacity 0.2s ease;
-      font-family: inherit;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      font-size: 11px;
+      user-select: none;
+      opacity: 0.85;
+      transition: opacity 0.2s;
     }
-    .open-board-btn.disabled {
-      opacity: 0.5;
-      cursor: default;
-      box-shadow: none;
-      filter: grayscale(100%);
-      pointer-events: none;
+    .group-summary:hover { opacity: 1; background: var(--vscode-list-hoverBackground); }
+    /* Use VS Code native details marker (chevron) */
+    .group-summary { list-style: disclosure-closed inside; }
+    details[open] > .group-summary { list-style: disclosure-open inside; }
+    .count { 
+      font-size: 10px; 
+      opacity: 0.5; 
+      margin-left: auto;
     }
-    .open-board-btn:hover {
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
-      filter: brightness(1.1);
-      transform: translateY(-1px);
+    details { margin-bottom: 4px; } /* Reduced spacing */
+    .task {
+      padding: 8px 10px; margin-left: 12px; margin-bottom: 6px;
+      background: var(--vscode-editor-background, rgba(255, 255, 255, 0.04));
+      border: 1px solid var(--vscode-input-border, rgba(255, 255, 255, 0.08));
+      border-radius: 6px; cursor: pointer; font-size: 12px;
+      border-left: 2px solid #6b7280;
+      transition: transform 0.1s ease, border-color 0.1s ease, box-shadow 0.1s ease;
     }
-    .open-board-btn:active {
-      transform: translateY(0);
-    }
-    .prefs-btn {
-      padding: 6px 8px;
-      background: none;
-      border: 1px solid var(--vscode-input-border);
-      border-radius: 6px;
-      cursor: pointer;
-      color: var(--vscode-foreground);
-      font-size: 14px;
-      opacity: 0.7;
-      transition: opacity 0.1s ease, background 0.1s ease;
-    }
-    .prefs-btn:hover {
-      opacity: 1;
+    .task:hover {
       background: var(--vscode-list-hoverBackground);
+      transform: translateX(2px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
-  </style>
+    .task[data-status="ready"] { border-left-color: #3b82f6; }
+    .task[data-status="agent_active"] { border-left-color: #22c55e; } /* Kept for status mapping, displays as In Progress */
+    .task[data-status="in_progress"] { border-left-color: #22c55e; }
+    .task[data-status="needs_feedback"] { border-left-color: #f97316; }
+    .task[data-status="blocked"] { border-left-color: #ef4444; }
+    .task[data-status="done"] { border-left-color: #6b7280; }
+    
+      /* Header Styles */
+      .dashboard-header {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 8px;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
+      }
+
+      /* Custom dropdown - fully styled */
+      .custom-dropdown {
+        position: relative;
+        display: inline-block;
+      }
+      .dropdown-trigger {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        background: transparent;
+        color: var(--vscode-focusBorder);
+        border: none;
+        font-family: inherit;
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.1s ease;
+      }
+      .dropdown-trigger:hover {
+        background: var(--vscode-list-hoverBackground);
+      }
+      .dropdown-trigger::after {
+        content: '';
+        border: 4px solid transparent;
+        border-top-color: currentColor;
+        margin-left: 2px;
+        margin-top: 2px;
+      }
+      .dropdown-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        min-width: 100px;
+        background: var(--vscode-dropdown-background);
+        border: 1px solid var(--vscode-dropdown-border);
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        margin-top: 2px;
+        overflow: hidden;
+      }
+      .custom-dropdown.open .dropdown-menu {
+        display: block;
+      }
+      .dropdown-item {
+        display: block;
+        width: 100%;
+        padding: 6px 12px;
+        background: transparent;
+        color: var(--vscode-dropdown-foreground);
+        border: none;
+        font-family: inherit;
+        font-size: 11px;
+        text-align: left;
+        cursor: pointer;
+        transition: background 0.1s ease;
+      }
+      .dropdown-item:hover {
+        background: var(--vscode-list-hoverBackground);
+      }
+      .dropdown-item.active {
+        color: var(--vscode-focusBorder);
+        font-weight: 500;
+      }
+
+      
+      /* Icon Buttons - use VS Code standard hover */
+      .icon-btn {
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+        color: var(--vscode-foreground);
+        cursor: pointer;
+        transition: all 0.1s ease;
+        padding: 2px;
+        opacity: 0.7;
+        border-radius: 4px;
+      }
+      .icon-btn:hover {
+        opacity: 1;
+        background: var(--vscode-list-hoverBackground);
+      }
+      .icon-btn svg {
+        width: 14px;
+        height: 14px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      /* Group Headers with VS Code native chevrons */
+      .group-summary {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 0;
+        cursor: pointer;
+        user-select: none;
+        opacity: 0.9;
+        transition: opacity 0.2s, background 0.1s;
+        border-radius: 3px;
+        padding-left: 2px;
+        margin-left: -2px;
+      }
+      .group-summary:hover { 
+        opacity: 1; 
+        background: var(--vscode-list-hoverBackground);
+      }
+      /* Hide default marker, use custom chevron */
+      .group-summary::-webkit-details-marker { display: none; }
+      .group-summary::before {
+        content: '';
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23c5c5c5' d='M6 4v8l4-4-4-4z'/%3E%3C/svg%3E");
+        background-size: 16px 16px;
+        background-repeat: no-repeat;
+        flex-shrink: 0;
+        transition: transform 0.1s ease;
+      }
+      details[open] > .group-summary::before {
+        transform: rotate(90deg);
+      }
+      
+      .group-name { 
+        font-weight: 600; 
+        font-size: 10px; 
+        text-transform: uppercase; 
+        letter-spacing: 0.05em; 
+        color: var(--vscode-foreground);
+      }
+    </style>
 </head>
 <body>
   <div class="dashboard-header">
-    <button class="open-board-btn ${this._isBoardOpen ? 'disabled' : ''}" onclick="openBoard()" ${this._isBoardOpen ? 'disabled' : ''}>
-      ${this._isBoardOpen ? 'Board Active' : 'Open Board'}
+    <div class="custom-dropdown" id="groupingDropdown">
+      <button class="dropdown-trigger" id="dropdownTrigger">${this._groupingMode.charAt(0).toUpperCase() + this._groupingMode.slice(1)}</button>
+      <div class="dropdown-menu">
+        <button class="dropdown-item ${this._groupingMode === 'status' ? 'active' : ''}" data-value="status">Status</button>
+        <button class="dropdown-item ${this._groupingMode === 'phase' ? 'active' : ''}" data-value="phase">Phase</button>
+        <button class="dropdown-item ${this._groupingMode === 'priority' ? 'active' : ''}" data-value="priority">Priority</button>
+        <button class="dropdown-item ${this._groupingMode === 'owner' ? 'active' : ''}" data-value="owner">Owner</button>
+      </div>
+    </div>
+
+    <div style="flex: 1"></div>
+    
+    <button class="icon-btn" onclick="openBoard()" title="${this._isBoardOpen ? 'Board Active' : 'Open Board'}">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg>
     </button>
-    <button class="prefs-btn" onclick="openPrefs()" title="Preferences">⚙️</button>
+    <button class="icon-btn" onclick="openPrefs()" title="Preferences">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+    </button>
   </div>
   ${groupsHtml}
   <script>
     const vscode = acquireVsCodeApi();
+    
+    // Custom dropdown logic
+    const dropdown = document.getElementById('groupingDropdown');
+    const trigger = document.getElementById('dropdownTrigger');
+    const items = dropdown.querySelectorAll('.dropdown-item');
+    
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.classList.toggle('open');
+    });
+    
+    items.forEach(item => {
+      item.addEventListener('click', () => {
+        const value = item.dataset.value;
+        trigger.textContent = item.textContent;
+        dropdown.classList.remove('open');
+        vscode.postMessage({ type: 'setGrouping', mode: value });
+      });
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', () => {
+      dropdown.classList.remove('open');
+    });
+    
     function openTask(id) { vscode.postMessage({ type: 'openTask', taskId: id }); }
     function openBoard() { vscode.postMessage({ type: 'openBoard' }); }
     function openPrefs() { vscode.postMessage({ type: 'openPreferences' }); }
@@ -601,25 +850,30 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
 
     const initBoardSection = state.needsBoardInit ? `
       <div class="section">
-        <div class="section-title">Board</div>
+        <div class="section-title">Initialize Board</div>
         <div class="options">
           <button class="option-btn" onclick="initBoard('greenfield')">
-            <div class="option-title">🌱 Initialize Greenfield Board</div>
+            <span class="option-icon">🌱</span>
+            <div class="option-content">
+              <div class="option-title">Greenfield Project</div>
+              <div class="option-desc">Start fresh with a standard DevOps board structure</div>
+            </div>
           </button>
           <button class="option-btn" onclick="initBoard('brownfield')">
-            <div class="option-title">🏗️ Initialize Brownfield Board</div>
-          </button>
-          <button class="option-btn" onclick="initBoard('fresh')">
-            <div class="option-title">📋 Initialize Empty Board</div>
+            <span class="option-icon">🏗️</span>
+            <div class="option-content">
+              <div class="option-title">Brownfield Project</div>
+              <div class="option-desc">Analyze existing codebase and create tasks</div>
+            </div>
           </button>
         </div>
       </div>
     ` : `
       <div class="section">
-        <div class="section-title">Board</div>
-        <div class="info-box">
+        <div class="section-title">Status</div>
+        <div class="info-box success">
           <span class="info-icon">✅</span>
-          <span>Board initialized</span>
+          <span>Board is active and initialized.</span>
         </div>
       </div>
     `;
@@ -637,45 +891,115 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       background: var(--vscode-sideBar-background);
       padding: 16px;
     }
+    /* Neutral/Clean Header */
     .header { 
       display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 20px; padding-bottom: 12px;
-      border-bottom: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
+      margin-bottom: 24px; padding-bottom: 12px;
+      border-bottom: 1px solid var(--vscode-panel-border);
     }
-    .header h2 { font-size: 14px; font-weight: 600; }
+    .header h2 { 
+      font-size: 13px; font-weight: 600; 
+      text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--vscode-foreground);
+    }
     .back-btn {
       background: none; border: none; cursor: pointer;
-      color: var(--vscode-textLink-foreground);
-      font-size: 12px; padding: 4px 8px;
+      color: var(--vscode-descriptionForeground);
+      font-size: 11px; padding: 4px 8px;
+      display: flex; align-items: center; gap: 4px;
     }
-    .back-btn:hover { opacity: 0.8; }
-    .section { margin-bottom: 20px; }
-    .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; opacity: 0.6; margin-bottom: 10px; }
-    .info-box {
-      display: flex; align-items: center; gap: 8px; padding: 10px;
-      background: var(--vscode-textBlockQuote-background);
-      border-radius: 4px; font-size: 12px;
+    .back-btn:hover { color: var(--vscode-foreground); }
+    
+    .section { margin-bottom: 24px; }
+    .section-title { 
+      font-size: 11px; font-weight: 600; 
+      text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--vscode-descriptionForeground);
+      margin-bottom: 12px;
     }
-    .info-icon { font-size: 14px; }
-    .options { display: flex; flex-direction: column; gap: 6px; }
+    
+    /* Option Buttons (Cards) */
+    .options { display: flex; flex-direction: column; gap: 8px; }
     .option-btn {
-      width: 100%; padding: 10px; font-size: 12px;
+      width: 100%; padding: 12px;
       border: 1px solid var(--vscode-input-border);
+      background: var(--vscode-editor-background);
+      color: var(--vscode-foreground);
       border-radius: 6px; cursor: pointer;
-      background: var(--vscode-button-secondaryBackground);
-      color: var(--vscode-button-secondaryForeground);
+      display: flex; align-items: flex-start; gap: 10px;
       text-align: left;
+      transition: all 0.1s ease;
     }
-    .option-btn:hover { background: var(--vscode-list-hoverBackground); border-color: var(--vscode-focusBorder); }
-    .option-title { font-weight: 500; }
+    .option-btn:hover {
+      background: var(--vscode-list-hoverBackground);
+      border-color: var(--vscode-focusBorder);
+    }
+    .option-icon { font-size: 16px; line-height: 1.2; }
+    .option-content { flex: 1; }
+    .option-title { font-weight: 600; font-size: 12px; margin-bottom: 2px; }
+    .option-desc { font-size: 11px; color: var(--vscode-descriptionForeground); line-height: 1.3; }
+
+    /* Settings Toggles (Mockup) */
+    .setting-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--vscode-panel-border);
+    }
+    .setting-label { font-size: 12px; }
+    .toggle {
+      width: 32px; height: 18px;
+      background: var(--vscode-input-background);
+      border: 1px solid var(--vscode-input-border);
+      border-radius: 9px; position: relative;
+      cursor: not-allowed; opacity: 0.7;
+    }
+    .toggle::after {
+      content: ''; position: absolute; top: 2px; left: 2px;
+      width: 12px; height: 12px; border-radius: 50%;
+      background: var(--vscode-foreground);
+    }
+    .toggle.checked { background: #5b72e8; border-color: #5b72e8; }
+    .toggle.checked::after { left: 16px; background: #fff; }
+
+    .info-box {
+      display: flex; align-items: flex-start; gap: 8px; padding: 10px;
+      background: var(--vscode-editor-inactiveSelectionBackground);
+      border-radius: 4px; font-size: 11px; line-height: 1.4;
+      color: var(--vscode-descriptionForeground);
+    }
+    .info-box.success { border-left: 2px solid #22c55e; }
   </style>
 </head>
 <body>
   <div class="header">
-    <h2>⚙️ Preferences</h2>
-    <button class="back-btn" onclick="goBack()">← Back</button>
+    <h2>Preferences</h2>
+    <button class="back-btn" onclick="goBack()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back
+    </button>
   </div>
+
   ${initBoardSection}
+
+  <div class="section">
+    <div class="section-title">General Settings</div>
+    <div class="setting-row">
+      <span class="setting-label">Auto-open Board on Startup</span>
+      <div class="toggle checked" title="Managed by extension settings"></div>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Show Task Notifications</span>
+      <div class="toggle checked" title="Managed by extension settings"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">About</div>
+    <div class="info-box">
+      <span>DevOps Framework v0.0.2<br>By NunoMoura</span>
+    </div>
+  </div>
+
   <script>
     const vscode = acquireVsCodeApi();
     function goBack() { vscode.postMessage({ type: 'backToDashboard' }); }
@@ -683,6 +1007,17 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
   </script>
 </body>
 </html>`;
+  }
+
+
+
+  private _getStringColor(str: string): string {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+    return '#' + '00000'.substring(0, 6 - c.length) + c;
   }
 
   private _escapeHtml(text: string): string {

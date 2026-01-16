@@ -124,12 +124,195 @@
       "summary": "Understand current system architecture, technologies, and design patterns",
       "priority": "high",
       "columnId": "col-backlog",
-      "status": "ready",
+      "status": "agent_active",
       "tags": [
         "brownfield",
         "starter"
       ],
-      "updatedAt": "2026-01-08T21:10:33.768Z"
+      "updatedAt": "2026-01-15T04:19:39.895797Z",
+      "owner": {
+        "id": "agent-1768450779.895766",
+        "type": "agent",
+        "name": "Agent-Alpha",
+        "agent": "Agent-Alpha",
+        "developer": "unknown",
+        "model": "/tmp/tmppjkv6hmq",
+        "phase": "Backlog",
+        "startedAt": "2026-01-15T04:19:39.895790Z"
+      },
+      "agentHistory": [
+        {
+          "agentId": "session-123",
+          "sessionId": "session-123",
+          "agentName": "TestAgent",
+          "phase": "Backlog",
+          "startedAt": "2026-01-15T04:18:29.577753Z",
+          "endedAt": "2026-01-15T04:18:29.584726Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-001.md"
+        },
+        {
+          "agentId": "agent-1768450709.584776",
+          "sessionId": null,
+          "agentName": "Alice",
+          "phase": "Backlog",
+          "startedAt": "2026-01-15T04:18:29.585296Z",
+          "endedAt": "2026-01-15T04:18:29.591960Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-001.md"
+        },
+        {
+          "agentId": "agent-1768450709.592011",
+          "sessionId": null,
+          "agentName": "Agent1",
+          "phase": "Backlog",
+          "startedAt": "2026-01-15T04:18:29.592019Z",
+          "endedAt": "2026-01-15T04:18:29.596127Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-001.md"
+        },
+        {
+          "agentId": "session-1",
+          "sessionId": "session-1",
+          "agentName": "Agent1",
+          "phase": "Backlog",
+          "startedAt": "2026-01-15T04:18:29.596176Z",
+          "endedAt": "2026-01-15T04:18:29.596681Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-001.md"
+        },
+        {
+          "agentId": "session-2",
+          "sessionId": "session-2",
+          "agentName": "Agent2",
+          "phase": "Backlog",
+          "startedAt": "2026-01-15T04:18:29.596730Z",
+          "endedAt": "2026-01-15T04:18:29.603282Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-001.md"
+        },
+        {
+          "agentId": "agent-1768450709.603332",
+          "sessionId": null,
+          "agentName": "Agent",
+          "phase": "Backlog",
+          "startedAt": "2026-01-15T04:18:29.603339Z",
+          "endedAt": "2026-01-15T04:18:29.612990Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-001.md"
+        },
+        {
+          "agentId": "session-1",
+          "sessionId": "session-1",
+          "agentName": "Agent1",
+          "phase": "Backlog",
+          "startedAt": "2026-01-15T04:18:29.613050Z",
+          "endedAt": "2026-01-15T04:18:29.620181Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-001.md"
+        },
+        {
+          "agentId": "agent-1768450709.620243",
+          "sessionId": null,
+          "agentName": "Agent1",
+          "phase": "Backlog",
+          "startedAt": "2026-01-15T04:18:29.620251Z",
+          "endedAt": "2026-01-15T04:18:29.627394Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-001.md"
+        },
+        {
+          "agentId": "agent-1768450709.627475",
+          "sessionId": null,
+          "agentName": "Agent1",
+          "phase": "Backlog",
+          "startedAt": "2026-01-15T04:18:29.627484Z",
+          "endedAt": "2026-01-15T04:18:29.639984Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-001.md"
+        },
+        {
+          "agentId": "agent-1768450709.640042",
+          "sessionId": null,
+          "agentName": "Agent-Alpha",
+          "phase": "Backlog",
+          "startedAt": "2026-01-15T04:18:29.640049Z",
+          "endedAt": "2026-01-15T04:19:39.808750Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-001.md"
+        },
+        {
+          "agentId": "session-123",
+          "sessionId": "session-123",
+          "agentName": "TestAgent",
+          "phase": "Backlog",
+          "startedAt": "2026-01-15T04:19:39.808812Z",
+          "endedAt": "2026-01-15T04:19:39.831935Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-001.md"
+        },
+        {
+          "agentId": "agent-1768450779.83199",
+          "sessionId": null,
+          "agentName": "Alice",
+          "phase": "Backlog",
+          "startedAt": "2026-01-15T04:19:39.831999Z",
+          "endedAt": "2026-01-15T04:19:39.839295Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-001.md"
+        },
+        {
+          "agentId": "agent-1768450779.839367",
+          "sessionId": null,
+          "agentName": "Agent1",
+          "phase": "Backlog",
+          "startedAt": "2026-01-15T04:19:39.839378Z",
+          "endedAt": "2026-01-15T04:19:39.844904Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-001.md"
+        },
+        {
+          "agentId": "session-1",
+          "sessionId": "session-1",
+          "agentName": "Agent1",
+          "phase": "Backlog",
+          "startedAt": "2026-01-15T04:19:39.844970Z",
+          "endedAt": "2026-01-15T04:19:39.845854Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-001.md"
+        },
+        {
+          "agentId": "session-2",
+          "sessionId": "session-2",
+          "agentName": "Agent2",
+          "phase": "Backlog",
+          "startedAt": "2026-01-15T04:19:39.845932Z",
+          "endedAt": "2026-01-15T04:19:39.855328Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-001.md"
+        },
+        {
+          "agentId": "agent-1768450779.855383",
+          "sessionId": null,
+          "agentName": "Agent",
+          "phase": "Backlog",
+          "startedAt": "2026-01-15T04:19:39.855409Z",
+          "endedAt": "2026-01-15T04:19:39.863636Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-001.md"
+        },
+        {
+          "agentId": "session-1",
+          "sessionId": "session-1",
+          "agentName": "Agent1",
+          "phase": "Backlog",
+          "startedAt": "2026-01-15T04:19:39.863687Z",
+          "endedAt": "2026-01-15T04:19:39.872827Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-001.md"
+        },
+        {
+          "agentId": "agent-1768450779.87295",
+          "sessionId": null,
+          "agentName": "Agent1",
+          "phase": "Backlog",
+          "startedAt": "2026-01-15T04:19:39.872964Z",
+          "endedAt": "2026-01-15T04:19:39.881730Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-001.md"
+        },
+        {
+          "agentId": "agent-1768450779.881817",
+          "sessionId": null,
+          "agentName": "Agent1",
+          "phase": "Backlog",
+          "startedAt": "2026-01-15T04:19:39.881828Z",
+          "endedAt": "2026-01-15T04:19:39.895711Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-001.md"
+        }
+      ]
     },
     {
       "id": "TASK-002",
@@ -137,12 +320,69 @@
       "summary": "Identify internal and external dependencies, integrations, and data flows",
       "priority": "high",
       "columnId": "col-understand",
-      "status": "ready",
+      "status": "agent_active",
       "tags": [
         "brownfield",
         "starter"
       ],
-      "updatedAt": "2026-01-14T07:50:21.789Z"
+      "updatedAt": "2026-01-15T04:19:39.896610Z",
+      "owner": {
+        "id": "agent-1768450779.896595",
+        "type": "agent",
+        "name": "Agent-Beta",
+        "agent": "Agent-Beta",
+        "developer": "unknown",
+        "model": "/tmp/tmppjkv6hmq",
+        "phase": "Understand",
+        "startedAt": "2026-01-15T04:19:39.896603Z"
+      },
+      "agentHistory": [
+        {
+          "agentId": "agent-1768450709.620978",
+          "sessionId": null,
+          "agentName": "Agent2",
+          "phase": "Understand",
+          "startedAt": "2026-01-15T04:18:29.620982Z",
+          "endedAt": "2026-01-15T04:18:29.628125Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-002.md"
+        },
+        {
+          "agentId": "agent-1768450709.628177",
+          "sessionId": null,
+          "agentName": "Agent2",
+          "phase": "Understand",
+          "startedAt": "2026-01-15T04:18:29.628183Z",
+          "endedAt": "2026-01-15T04:18:29.640665Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-002.md"
+        },
+        {
+          "agentId": "agent-1768450709.640715",
+          "sessionId": null,
+          "agentName": "Agent-Beta",
+          "phase": "Understand",
+          "startedAt": "2026-01-15T04:18:29.640719Z",
+          "endedAt": "2026-01-15T04:19:39.873957Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-002.md"
+        },
+        {
+          "agentId": "agent-1768450779.874032",
+          "sessionId": null,
+          "agentName": "Agent2",
+          "phase": "Understand",
+          "startedAt": "2026-01-15T04:19:39.874042Z",
+          "endedAt": "2026-01-15T04:19:39.882935Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-002.md"
+        },
+        {
+          "agentId": "agent-1768450779.883005",
+          "sessionId": null,
+          "agentName": "Agent2",
+          "phase": "Understand",
+          "startedAt": "2026-01-15T04:19:39.883013Z",
+          "endedAt": "2026-01-15T04:19:39.896533Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-002.md"
+        }
+      ]
     },
     {
       "id": "TASK-003",
@@ -163,12 +403,33 @@
       "summary": "Identify areas of technical debt, outdated code, and improvement opportunities",
       "priority": "medium",
       "columnId": "col-backlog",
-      "status": "ready",
+      "status": "agent_active",
       "tags": [
         "brownfield",
         "starter"
       ],
-      "updatedAt": ""
+      "updatedAt": "2026-01-15T04:19:39.897372Z",
+      "owner": {
+        "id": "agent-1768450779.897361",
+        "type": "agent",
+        "name": "Agent-Gamma",
+        "agent": "Agent-Gamma",
+        "developer": "unknown",
+        "model": "/tmp/tmppjkv6hmq",
+        "phase": "Backlog",
+        "startedAt": "2026-01-15T04:19:39.897368Z"
+      },
+      "agentHistory": [
+        {
+          "agentId": "agent-1768450709.64142",
+          "sessionId": null,
+          "agentName": "Agent-Gamma",
+          "phase": "Backlog",
+          "startedAt": "2026-01-15T04:18:29.641425Z",
+          "endedAt": "2026-01-15T04:19:39.897309Z",
+          "traceFile": "/home/nunoc/projects/dev_ops/payload/activity/TASK-004.md"
+        }
+      ]
     },
     {
       "id": "TASK-005",

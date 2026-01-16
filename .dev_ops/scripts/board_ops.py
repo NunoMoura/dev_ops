@@ -789,7 +789,7 @@ def register_agent(
             # Owner is the Agent, but we explicitly link the Developer
             task["owner"] = {
                 "id": session_id or f"agent-{datetime.now(timezone.utc).timestamp()}",
-                "type": "agent",
+                "type": agent_type,
                 "name": name,  # Agent Name (e.g. Antigravity)
                 "agent": name,  # Explicit Agent Field
                 "developer": developer_name,  # The Developer supervising
@@ -805,7 +805,7 @@ def register_agent(
             if "assignee" in task:
                 del task["assignee"]
 
-            task["status"] = "agent_active"  # Explicit status for agent
+            task["status"] = "in_progress"  # Explicit status for agent
             task["updatedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
             save_board(board, project_root)

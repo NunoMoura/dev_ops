@@ -70,45 +70,53 @@ class TestOwnerModel(unittest.TestCase):
         board = load_board(self.test_dir)
         task = board["items"][0]
 
-        self.assertEqual(task["status"], "agent_active")
+        self.assertEqual(task["status"], "in_progress")
         self.assertEqual(task["owner"]["type"], "antigravity")
         self.assertEqual(task["owner"]["sessionId"], "session-123")
         self.assertEqual(task["owner"]["name"], "Gemini")
 
     def test_claim_task_as_agent(self):
+        """Test that claim_task sets up developer ownership correctly.
+
+        Note: For agent claims, use register_agent() instead.
+        claim_task() is for developers claiming tasks.
+        """
         task_id = create_task(title="Claim Task", project_root=self.test_dir)
 
-        success = claim_task(
-            task_id, force=True, agent_type="cursor", name="CursorAgent", project_root=self.test_dir
-        )
+        # claim_task is for developers, not agents
+        success = claim_task(task_id, force=True, name="CursorAgent", project_root=self.test_dir)
         self.assertTrue(success)
 
         board = load_board(self.test_dir)
         task = board["items"][0]
 
-        self.assertEqual(task["status"], "agent_active")
-        self.assertEqual(task["owner"]["type"], "cursor")
+        # claim_task sets status to in_progress (developer working)
+        self.assertEqual(task["status"], "in_progress")
+        self.assertEqual(task["owner"]["type"], "developer")
         self.assertEqual(task["owner"]["name"], "CursorAgent")
 
     def test_get_active_agents(self):
         # Create 2 active tasks
         t1 = create_task(title="Task 1", project_root=self.test_dir)
-        register_agent(t1, "antigravity", "sess-1", project_root=self.test_dir)
+        register_agent(t1, "antigravity", session_id="sess-1", project_root=self.test_dir)
 
         t2 = create_task(title="Task 2", project_root=self.test_dir)
-        claim_task(t2, force=True, agent_type="human", name="Dev", project_root=self.test_dir)
+        # For human/dev claims, use claim_task which sets in_progress status
+        claim_task(t2, force=True, name="Dev", project_root=self.test_dir)
 
         # Create 1 inactive task
         create_task(title="Task 3", project_root=self.test_dir)
 
         active = get_active_agents(self.test_dir)
+        # Only t1 should be active (in_progress status with agent owner)
+        # t2 uses in_progress from claim_task, which is also picked up
         self.assertEqual(len(active), 2)
 
         agent_task = next(a for a in active if a["owner"]["type"] == "antigravity")
-        human_task = next(a for a in active if a["owner"]["type"] == "human")
+        dev_task = next(a for a in active if a["owner"]["type"] == "developer")
 
         self.assertEqual(agent_task["task_id"], t1)
-        self.assertEqual(human_task["task_id"], t2)
+        self.assertEqual(dev_task["task_id"], t2)
 
     def test_unregister_agent(self):
         task_id = create_task(title="Task 1", project_root=self.test_dir)

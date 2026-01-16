@@ -68,7 +68,7 @@ class TestBoardOpsThorough:
         board = {
             "items": [
                 {"status": "ready", "priority": "high"},
-                {"status": "agent_active", "priority": "medium"},
+                {"status": "in_progress", "priority": "medium"},
                 {"status": "done", "priority": "low"},
                 {"status": "done", "priority": "high"},
             ]
@@ -129,7 +129,7 @@ class TestBoardOpsThorough:
         register_agent(task_id, "agent", name="test-agent", project_root=temp_project)
         board = load_board(temp_project)
         assert board["items"][0]["owner"]["name"] == "test-agent"
-        assert board["items"][0]["status"] == "agent_active"
+        assert board["items"][0]["status"] == "in_progress"
 
         # Active agents
         active = get_active_agents(project_root=temp_project)
@@ -189,7 +189,11 @@ class TestBoardOpsThorough:
 
         os.chdir(temp_project)
         success = mark_done(
-            task_id, outputs=["PR-123"], create_pr_flag=False, project_root=temp_project
+            task_id,
+            outputs=["PR-123"],
+            create_pr_flag=False,
+            archive=True,
+            project_root=temp_project,
         )
 
         assert success is True

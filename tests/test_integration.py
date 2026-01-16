@@ -64,7 +64,7 @@ class TestFullWorkflow:
         # Assert 2: Task still in Backlog (claim doesn't move columns, just sets status)
         backlog_tasks = get_tasks(project_root=str(tmp_path), column_id="col-backlog")
         assert len(backlog_tasks) == 1
-        assert backlog_tasks[0]["status"] == "agent_active"
+        assert backlog_tasks[0]["status"] == "in_progress"
 
         # Act 3: Complete task
         mark_done(task_id, project_root=str(tmp_path), create_pr_flag=False, archive=False)

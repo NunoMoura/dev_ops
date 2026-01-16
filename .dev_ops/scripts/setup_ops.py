@@ -384,15 +384,19 @@ def get_ide_paths(project_root: str, ide: str) -> tuple:
 
 
 def get_core_rules(core_rules_src: str) -> list:
-    """Get Core rules that should always be present.
-
-    Note: Phase-specific instructions are now in skills (.agent/skills/),
-    not rules. Only the core guide is installed as a rule.
-    """
+    """Get all Core rules that should always be present (phase rules and guide)."""
     proposed = []
-    # Core rules are in rules/ - only the guide now
+    # Core rules are in rules/
     core_files = [
         "dev_ops_guide.md",
+    ]
+    # Phase rules are in rules/development_phases/
+    phase_files = [
+        "1_backlog.md",
+        "2_understand.md",
+        "3_plan.md",
+        "4_build.md",
+        "5_verify.md",
     ]
     for file in core_files:
         src_path = os.path.join(core_rules_src, file)
@@ -403,6 +407,18 @@ def get_core_rules(core_rules_src: str) -> list:
                     "src": src_path,
                     "category": "Core",
                     "reason": "Essential DevOps guide",
+                    "replacements": {},
+                }
+            )
+    for file in phase_files:
+        src_path = os.path.join(core_rules_src, "development_phases", file)
+        if os.path.exists(src_path):
+            proposed.append(
+                {
+                    "name": file,
+                    "src": src_path,
+                    "category": "Core",
+                    "reason": "Development phase rule",
                     "replacements": {},
                 }
             )
@@ -423,76 +439,6 @@ def get_all_rules(core_rules_src: str, base_path: str, project_root: str):
     # Actual rules are generated via `project_ops.py generate-rules` during bootstrap.
 
     return sorted(core_rules, key=lambda x: (x["category"], x["name"]))
-
-
-def install_skills(skills_src: str, skills_dest: str) -> tuple:
-    """Install skills from source to destination directory.
-
-    Skills are directories containing SKILL.md and optional subdirectories
-    (examples/, scripts/, resources/).
-
-    Args:
-        skills_src: Source directory containing skill folders
-        skills_dest: Destination directory (.agent/skills/)
-
-    Returns:
-        Tuple of (installed_count, skipped_count)
-    """
-    print("\n📦 Installing Skills...")
-
-    if not os.path.exists(skills_src):
-        print(f"   ⚠️ Skills source directory not found: {skills_src}")
-        return (0, 0)
-
-    os.makedirs(skills_dest, exist_ok=True)
-    installed_count = 0
-    skipped_count = 0
-
-    # Each subdirectory in skills_src is a skill
-    for skill_name in os.listdir(skills_src):
-        skill_src_path = os.path.join(skills_src, skill_name)
-        if not os.path.isdir(skill_src_path):
-            continue
-
-        # Check for SKILL.md (required)
-        skill_md = os.path.join(skill_src_path, "SKILL.md")
-        if not os.path.exists(skill_md):
-            print(f"   ⚠️ Skipped {skill_name}/ (no SKILL.md)")
-            continue
-
-        skill_dest_path = os.path.join(skills_dest, skill_name)
-
-        # Copy entire skill directory
-        if os.path.exists(skill_dest_path):
-            # Update existing skill - copy all files, preserving structure
-            for root, dirs, files in os.walk(skill_src_path):
-                rel_dir = os.path.relpath(root, skill_src_path)
-                dest_dir = (
-                    os.path.join(skill_dest_path, rel_dir) if rel_dir != "." else skill_dest_path
-                )
-                os.makedirs(dest_dir, exist_ok=True)
-
-                for file in files:
-                    src_file = os.path.join(root, file)
-                    dest_file = os.path.join(dest_dir, file)
-                    if needs_update(src_file, dest_file):
-                        shutil.copy2(src_file, dest_file)
-                        installed_count += 1
-                    else:
-                        skipped_count += 1
-            print(f"   ✓ Updated {skill_name}/")
-        else:
-            # New skill - copy entire directory
-            shutil.copytree(skill_src_path, skill_dest_path)
-            # Count files for reporting
-            for root, dirs, files in os.walk(skill_dest_path):
-                installed_count += len(files)
-            print(f"   ✓ Installed {skill_name}/")
-
-    if skipped_count:
-        print(f"   ⏭️ {skipped_count} skill files already up-to-date")
-
-    return (installed_count, skipped_count)
 
 
 def install_rules(proposed_rules: list, rules_dest: str, ide: str = "antigravity"):
@@ -618,7 +564,6 @@ def bootstrap(target_dir: str, ide_override: Optional[str] = None, github_workfl
         GITHUB_SRC_DIR = os.path.join(
             ASSETS_ROOT, "github", "workflows"
         )  # payload/github/workflows/
-        SKILLS_SRC_DIR = os.path.join(ASSETS_ROOT, "skills")  # payload/skills/
         RULE_BASE_PATH = ASSETS_ROOT
         print(f"   📦 Running from extension context: {ASSETS_ROOT}")
         # Debug: verify paths exist
@@ -645,7 +590,6 @@ def bootstrap(target_dir: str, ide_override: Optional[str] = None, github_workfl
         SCRIPTS_SRC_DIR = os.path.join(FRAMEWORK_ROOT, "payload", "scripts")
         DOCS_TEMPLATES_DIR = os.path.join(FRAMEWORK_ROOT, "payload", "templates", "docs")
         GITHUB_SRC_DIR = os.path.join(FRAMEWORK_ROOT, "payload", "github", "workflows")
-        SKILLS_SRC_DIR = os.path.join(FRAMEWORK_ROOT, "payload", "skills")
 
     # Destination Paths - User project structure
     AGENT_DIR = os.path.join(PROJECT_ROOT, ".agent")
@@ -891,14 +835,6 @@ def bootstrap(target_dir: str, ide_override: Optional[str] = None, github_workfl
             print(f"   ⚠️ No workflow files found in {WORKFLOWS_SRC_DIR}")
     else:
         print(f"\n⚠️ Workflows source directory not found: {WORKFLOWS_SRC_DIR}")
-
-    # Install Skills (Antigravity only - .agent/skills/)
-    if detected_ide == "antigravity":
-        AGENT_SKILLS_DIR = os.path.join(AGENT_DIR, "skills")
-        print("[PROGRESS] Installing skills...")
-        install_skills(SKILLS_SRC_DIR, AGENT_SKILLS_DIR)
-    else:
-        print("\n   ℹ️ Skills are Antigravity-only, skipping for Cursor")
 
     # Install nonnegotiables.md template to .dev_ops/docs/ (referenced by dev_ops_guide.md rule)
     nonneg_src = os.path.join(DOCS_TEMPLATES_DIR, "nonnegotiables.md")

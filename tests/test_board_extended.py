@@ -44,7 +44,7 @@ class TestPickTask:
         create_task("High priority", priority="high", status="ready", project_root=temp_project)
         create_task("Medium priority", priority="medium", status="ready", project_root=temp_project)
 
-        picked = pick_task(temp_project)
+        picked = pick_task(project_root=temp_project)
 
         # Should pick highest priority
         board = load_board(temp_project)
@@ -56,13 +56,13 @@ class TestPickTask:
         # Create task that's already done
         _ = create_task("Done task", status="done", project_root=temp_project)
 
-        picked = pick_task(temp_project)
+        picked = pick_task(project_root=temp_project)
 
         assert picked is None
 
     def test_pick_empty_board(self, temp_project):
         """Test picking from empty board."""
-        picked = pick_task(temp_project)
+        picked = pick_task(project_root=temp_project)
 
         assert picked is None
 
