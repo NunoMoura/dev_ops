@@ -498,23 +498,34 @@ path: "{path}"
             });
         }
 
-        // 2. PRD (Vision - What it's supposed to be)
-        if (!docs.prd && !taskExists("Create PRD")) {
+        // 2. PRD (Vision - Review & Migrate)
+        if (!taskExists("Define Product Requirements")) {
             tasksToCreate.push({
-                title: "Create PRD",
-                summary: "Define product vision using template at .dev_ops/templates/docs/prd.md. Ensure distinct separation from UX artifacts (stories/personas).",
+                title: "Define Product Requirements",
+                summary: "Analyze the project to define Product Requirements.\n\nStrategy:\n1. Search for existing PRD-like documents (e.g., `requirements.md`, `specs/*.md`, or in `docs/`).\n2. Create a new `.dev_ops/docs/prd.md` using the template at `.dev_ops/templates/docs/prd.md`.\n   - If existing docs found: Migrate and structure relevant content into the new file.\n   - If no docs found: Create a draft based on codebase analysis and project intent.\n3. Request user review of the new PRD.\n4. Ask the user if they want to **delete** the original source files (if any). If NO, leave them untouched.",
                 priority: "high"
             });
         }
 
-        // 3. Non-negotiables (Constraints)
-        if (!docs.nonnegotiables && !taskExists("Create Non-Negotiables")) {
+        // 3. User Experience (Personas & Stories - Infer from PRD/Code)
+        if (!taskExists("Define User Personas & Stories") && !docs.prd) { // Only if PRD task is also being created (or exists), otherwise these follow
             tasksToCreate.push({
-                title: "Create Non-Negotiables",
-                summary: "Define non-negotiable requirements and constraints using template at .dev_ops/templates/docs/nonnegotiables.md.",
+                title: "Define User Personas & Stories",
+                summary: "Define the User Experience artifacts based on the PRD and Codebase.\n\nStrategy:\n1. Analyze the PRD (or draft) and existing codebase to identify user roles and key workflows.\n2. Create `.dev_ops/docs/user.md` (Personas) using the template.\n3. Create `.dev_ops/docs/story.md` (User Stories) using the template.\n4. Ensure stories trace back to PRD requirements.\n5. Request user review.",
                 priority: "high"
             });
         }
+
+        // 4. Non-negotiables (Constraints - Review & Migrate)
+        if (!taskExists("Define Non-Negotiables")) {
+            tasksToCreate.push({
+                title: "Define Non-Negotiables",
+                summary: "Define technical and product constraints.\n\nStrategy:\n1. Search for existing constraint docs (e.g., `constraints.md`, `guidelines.md`).\n2. Create `.dev_ops/docs/nonnegotiables.md` using the template.\n   - If existing docs found: Migrate content.\n   - If no docs found: define standard constraints based on the tech stack (detected earlier) and best practices.\n3. Request user review.\n4. Ask about deleting original files.",
+                priority: "high"
+            });
+        }
+
+        // 5. Rule Customization
 
         // 4. Rule Customization
         const agentRules = path.join(projectRoot, '.agent', 'rules');

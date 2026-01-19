@@ -27,9 +27,11 @@ Execute the bootstrap command to automatically detect stack, scaffold docs, and 
 The bootstrap process should have populated your board with tasks. **Do not execute these tasks now.**
 
 1. **Check the Board**: Verify that tasks have been created for:
-   - **Architecture Documentation**: A task to fill in the scaffolded `.dev_ops/docs/architecture/*.md` files.
-   - **Project Rules**: A task to review and customize the generated rules in `.agent/rules`.
-   - **Product Definition**: Tasks for "Create PRD" and "Create Non-Negotiables" (if missing).
+   - **Product Definition**: "Define Product Requirements" (Analyze & Migrate).
+   - **User Experience**: "Define User Personas & Stories" (Infer from PRD).
+   - **Project Constraints**: "Define Non-Negotiables".
+   - **Architecture**: "Document System Architecture".
+   - **Rules**: "Review and Customize Rules".
 
 2. **Understand the Plan**:
    - Review the generated backlog.
@@ -40,5 +42,5 @@ The bootstrap process should have populated your board with tasks. **Do not exec
 - [ ] Bootstrap command executed successfully
 - [ ] Architecture documentation scaffolded (empty placeholders created)
 - [ ] Rules generated for the detected stack
-- [ ] Backlog contains tasks for filling documentation and customizing rules
+- [ ] Backlog contains tasks for determining requirements, personas, stories, and architecture
 - [ ] **No code or documentation has been modified manually in this step** (Use the Board for that)
