@@ -22,44 +22,25 @@ Execute the bootstrap command to automatically detect stack, scaffold docs, and 
 2. **Scaffold** architecture documentation in `.dev_ops/docs/architecture`.
 3. **Generate** rules in `.agent/rules` (or `.cursor/rules`) for the detected stack.
 
-## Step 2: Understand the Project
+## Step 2: Verify Backlog Generation
 
-Based on the bootstrap output and generated docs:
+The bootstrap process should have populated your board with tasks. **Do not execute these tasks now.**
 
-### If Brownfield (existing code)
+1. **Check the Board**: Verify that tasks have been created for:
+   - **Product Definition**: "Define Product Requirements" (Analyze & Migrate).
+   - **User Experience**: "Define User Personas & Stories" (Infer from PRD).
+   - **Project Constraints**: "Define Non-Negotiables".
+   - **Architecture**: "Document System Architecture".
+   - **Rules**: "Review and Customize Rules".
 
-1. Review key entry points.
-2. Understand module structure.
-3. Note which documentation is missing.
-4. Check test coverage.
-5. Review scaffolded architecture docs in `.dev_ops/docs/architecture/` -> **Start filling them in.**
-
-### If Greenfield (new project)
-
-1. Note intended technologies.
-2. All docs will be missing — tasks will be created for them.
-
-## Step 3: Architecture Docs (Post-Bootstrap)
-
-The bootstrap command has already created the directory structure and placeholder files.
-
-**For each generated `.md` file in `.dev_ops/docs/architecture/`:**
-
-1. Analyze the corresponding codebase directory
-2. Fill in Purpose, Overview, Public Interface sections
-3. Document key files and dependencies
-
-## Step 4: Verify Rules
-
-The bootstrap command has already generated rules for your stack.
-
-**Review and customize** the generated rules in `.agent/rules/` (or `.cursor/rules/`) if needed.
+2. **Understand the Plan**:
+   - Review the generated backlog.
+   - Confirm that the detected technology stack matches the project (check generated rules).
 
 ## Exit Criteria
 
-- [ ] Detection completed
-- [ ] Architecture docs populated (or tasks created)
-- [ ] 5-10 context-aware tasks in backlog
-- [ ] PRD task included (if missing)
-- [ ] Non-Negotiables task included (if missing)
-- [ ] Rules generated for detected stack
+- [ ] Bootstrap command executed successfully
+- [ ] Architecture documentation scaffolded (empty placeholders created)
+- [ ] Rules generated for the detected stack
+- [ ] Backlog contains tasks for determining requirements, personas, stories, and architecture
+- [ ] **No code or documentation has been modified manually in this step** (Use the Board for that)
