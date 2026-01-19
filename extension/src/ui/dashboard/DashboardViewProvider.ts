@@ -20,6 +20,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
 
   private _isBoardOpen = false;
   private _groupingMode: 'status' | 'phase' | 'priority' | 'owner' = 'status';
+  private _bootstrapDismissed = false;
 
   constructor(private readonly _extensionUri: vscode.Uri) { }
 
@@ -75,6 +76,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       } else if (message.type === 'restartSetup') {
         vscode.commands.executeCommand('devops.onboard');
       } else if (message.type === 'checkBootstrap') {
+        this._bootstrapDismissed = true; // Allow user to proceed even if check fails
         this._updateContent();
         vscode.commands.executeCommand('devops.openBoard');
       } else if (message.type === 'runBootstrap') {
@@ -189,11 +191,13 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     }
 
     // Check if needs bootstrap (board empty and not fresh start)
+    // Only verify strictly if not dismissed by user
     let needsBootstrap = false;
     let isFresh = false;
 
     if (fs.existsSync(configPath)) {
       try {
+
         const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
         if (config.projectType === 'fresh' || config.projectType === 'skip') {
           isFresh = true;
@@ -201,7 +205,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       } catch { /* Ignore */ }
     }
 
-    if (boardExists && !isFresh) {
+    if (boardExists && !isFresh && !this._bootstrapDismissed) {
       try {
         const boardContent = fs.readFileSync(boardPath, 'utf-8');
         const board = JSON.parse(boardContent);
