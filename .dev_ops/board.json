@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "columns": [
+    {
+      "id": "col-backlog",
+      "title": "Backlog"
+    },
+    {
+      "id": "col-understand",
+      "title": "Understand"
+    },
+    {
+      "id": "col-plan",
+      "title": "Plan"
+    },
+    {
+      "id": "col-build",
+      "title": "Build"
+    },
+    {
+      "id": "col-verify",
+      "title": "Verify"
+    },
+    {
+      "id": "col-done",
+      "title": "Done"
+    }
+  ],
+  "items": []
+}
