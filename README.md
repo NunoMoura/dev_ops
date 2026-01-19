@@ -65,6 +65,7 @@ Every task moves through a **6-phase workflow**:
 
 > [!TIP]
 > **New**: Use `doc_ops.py scope` to navigate architecture docs using RLM principles.
+>
 > ```bash
 > python3 .dev_ops/scripts/doc_ops.py scope --query "auth"
 > ```
