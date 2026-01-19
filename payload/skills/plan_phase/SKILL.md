@@ -33,8 +33,8 @@ Internalize findings from RES-XXX:
 
 Identify what depends on the components you're modifying:
 
-1.  **Direct Search**: Search for imports/usages of your target components in the codebase.
-2.  **Architecture Check**: Review relevant architecture docs to see which other components list your target as a dependency.
+1. **Direct Search**: Search for imports/usages of your target components in the codebase.
+2. **Architecture Check**: Review relevant architecture docs to see which other components list your target as a dependency.
 
 Include all affected components in your plan. This prevents breaking downstream logic.
 

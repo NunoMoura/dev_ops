@@ -40,9 +40,9 @@ ls .dev_ops/docs/architecture/
 
 Analyze the architecture documentation to identify relevant components:
 
-1.  List docs: `ls .dev_ops/docs/architecture/`
-2.  Search docs for keywords: `grep -r "keyword" .dev_ops/docs/architecture/`
-3.  Recursively identify dependencies: Read the "Public Interface" or "Key Files" section in the matched docs to find transitive dependencies.
+1. List docs: `ls .dev_ops/docs/architecture/`
+2. Search docs for keywords: `grep -r "keyword" .dev_ops/docs/architecture/`
+3. Recursively identify dependencies: Read the "Public Interface" or "Key Files" section in the matched docs to find transitive dependencies.
 
 **Only explore paths identified in this step.** This dramatically reduces context usage and follows the RLM decomposition pattern.
 
