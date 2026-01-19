@@ -121,6 +121,7 @@ export async function activate(context: vscode.ExtensionContext) {
       if (result.completed && result.projectType !== 'skip') {
         // Run initialization with collected data
         await vscode.commands.executeCommand('devops.initialize', {
+          name: result.name,
           projectType: result.projectType,
           selectedIDEs: result.selectedIDEs,
           githubWorkflows: result.githubWorkflows,

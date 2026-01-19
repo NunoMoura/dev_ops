@@ -37,8 +37,9 @@ export function registerInitializeCommand(
 
     context.subscriptions.push(bootstrapDisposable);
 
-    return vscode.commands.registerCommand("devops.initialize", async (options?: { projectType?: 'greenfield' | 'brownfield' | 'fresh', silent?: boolean, githubWorkflows?: boolean, selectedIDEs?: string[] }) => {
+    return vscode.commands.registerCommand("devops.initialize", async (options?: { name?: string, projectType?: 'greenfield' | 'brownfield' | 'fresh', silent?: boolean, githubWorkflows?: boolean, selectedIDEs?: string[] }) => {
         // Handle legacy string argument if passed
+        let name: string | undefined;
         let projectType: 'greenfield' | 'brownfield' | 'fresh' | undefined;
         let silent = false;
         let githubWorkflows = false;
@@ -47,6 +48,7 @@ export function registerInitializeCommand(
         if (typeof options === 'string') {
             projectType = options as 'greenfield' | 'brownfield' | 'fresh';
         } else if (typeof options === 'object') {
+            name = options.name;
             projectType = options.projectType;
             silent = !!options.silent;
             githubWorkflows = !!options.githubWorkflows;
@@ -66,7 +68,34 @@ export function registerInitializeCommand(
         const workspaceRoot = workspaceFolders[0].uri.fsPath;
         const extensionPath = context.extensionPath;
 
-        // If no IDEs selected, fall back to auto-detection
+        // Save configuration to .dev_ops/config.json
+        try {
+            const devOpsDir = require('path').join(workspaceRoot, '.dev_ops');
+            if (!require('fs').existsSync(devOpsDir)) {
+                require('fs').mkdirSync(devOpsDir, { recursive: true });
+            }
+            const configPath = require('path').join(devOpsDir, 'config.json');
+
+            // Read existing or create new
+            let config: any = {};
+            if (require('fs').existsSync(configPath)) {
+                try {
+                    config = JSON.parse(require('fs').readFileSync(configPath, 'utf8'));
+                } catch { /* ignore */ }
+            }
+
+            if (name) { config.developer = { ...config.developer, name }; }
+            if (projectType) { config.projectType = projectType; }
+            if (githubWorkflows !== undefined) { config.githubWorkflowsEnabled = githubWorkflows; }
+            if (selectedIDEs.length > 0) { config.selectedIDEs = selectedIDEs; }
+
+            require('fs').writeFileSync(configPath, JSON.stringify(config, null, 2));
+            log(`[initialize] Saved config: name=${name}, projectType=${projectType}, ides=${selectedIDEs.join(',')}`);
+        } catch (e) {
+            logError(`[initialize] Failed to save config`, e);
+        }
+
+        // If no IDEs selected, fall back to auto-detection (and update config if needed, though we just saved it)
         if (selectedIDEs.length === 0) {
             selectedIDEs = [detectIDE()];
         }
