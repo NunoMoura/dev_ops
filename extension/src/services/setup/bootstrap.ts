@@ -516,6 +516,20 @@ path: "{path}"
             });
         }
 
+        // 4. Rule Customization
+        const agentRules = path.join(projectRoot, '.agent', 'rules');
+        const cursorRules = path.join(projectRoot, '.cursor', 'rules');
+        const hasRules = (fs.existsSync(agentRules) && fs.readdirSync(agentRules).length > 0) ||
+            (fs.existsSync(cursorRules) && fs.readdirSync(cursorRules).length > 0);
+
+        if (hasRules && !taskExists("Review and Customize Rules")) {
+            tasksToCreate.push({
+                title: "Review and Customize Rules",
+                summary: "Review the automatically generated rules in `.agent/rules` or `.cursor/rules`. Customize them to match project-specific coding standards and patterns.",
+                priority: "medium"
+            });
+        }
+
         // Create tasks sequentially
         for (const t of tasksToCreate) {
             await createTask(board, 'col-backlog', t.title, t.summary, t.priority);
