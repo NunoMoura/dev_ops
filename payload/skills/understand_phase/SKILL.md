@@ -38,17 +38,13 @@ ls .dev_ops/docs/architecture/
 > [!TIP]
 > Before searching code, narrow scope using architecture docs first.
 
-```bash
-python3 .dev_ops/scripts/doc_ops.py scope --query "relevant keywords"
-```
+Analyze the architecture documentation to identify relevant components:
 
-This returns JSON with:
+1.  List docs: `ls .dev_ops/docs/architecture/`
+2.  Search docs for keywords: `grep -r "keyword" .dev_ops/docs/architecture/`
+3.  Recursively identify dependencies: Read the "Public Interface" or "Key Files" section in the matched docs to find transitive dependencies.
 
-- `matched_docs`: Architecture docs matching your query
-- `code_paths`: Directories to explore
-- `transitive_deps`: Related components via dependency tables
-
-**Only explore paths returned by this command.** This dramatically reduces context usage.
+**Only explore paths identified in this step.** This dramatically reduces context usage and follows the RLM decomposition pattern.
 
 ## Step 2: Research
 

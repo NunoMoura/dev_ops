@@ -31,13 +31,12 @@ Internalize findings from RES-XXX:
 
 ## Step 1a: Analyze Impact
 
-Check what depends on components you'll modify:
+Identify what depends on the components you're modifying:
 
-```bash
-python3 .dev_ops/scripts/doc_ops.py reverse-deps src/component.md
-```
+1.  **Direct Search**: Search for imports/usages of your target components in the codebase.
+2.  **Architecture Check**: Review relevant architecture docs to see which other components list your target as a dependency.
 
-Include all returned components in your plan's affected files list. This ensures you don't miss downstream impact.
+Include all affected components in your plan. This prevents breaking downstream logic.
 
 ## Step 2: Create Implementation Plan
 
