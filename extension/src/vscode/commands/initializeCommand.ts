@@ -127,11 +127,7 @@ export function registerInitializeCommand(
 
             log(`[initialize] Total installed - Rules: ${totalRules}, Workflows: ${totalWorkflows}, Skills: ${totalSkills}`);
 
-            if (!silent) {
-                vscode.window.showInformationMessage(
-                    `✅ DevOps installed successfully.`
-                );
-            }
+
         };
 
         if (silent) {

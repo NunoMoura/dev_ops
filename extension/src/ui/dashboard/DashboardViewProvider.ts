@@ -260,14 +260,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
 <body>
   <div class="icon">🚀</div>
   <h2>Bootstrap Required</h2>
-  <p>Your project environment is ready.<br>Please run the bootstrap command to generate your task backlog and rules.</p>
-  <button onclick="runBootstrap()">Run /bootstrap</button>
-  <script>
-    const vscode = acquireVsCodeApi();
-    function runBootstrap() {
-      vscode.postMessage({ type: 'runBootstrap' });
-    }
-  </script>
+  <p>Your project environment is ready.<br>Please open the AI Chat and run <span class="code">/bootstrap</span> to generate your task backlog and rules.</p>
 </body>
 </html>`;
   }
