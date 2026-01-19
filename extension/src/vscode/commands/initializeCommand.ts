@@ -128,18 +128,9 @@ export function registerInitializeCommand(
             log(`[initialize] Total installed - Rules: ${totalRules}, Workflows: ${totalWorkflows}, Skills: ${totalSkills}`);
 
             if (!silent) {
-                const ideNames = selectedIDEs.map(i => i === 'antigravity' ? 'Antigravity (.agent)' : 'Cursor (.cursor)').join(' + ');
                 vscode.window.showInformationMessage(
-                    `✅ DevOps installed! IMPORTANT: Run /bootstrap to analyze your project and generate tasks.`,
-                    "Run Bootstrap",
-                    "Open Board"
-                ).then(sel => {
-                    if (sel === "Run Bootstrap") {
-                        vscode.commands.executeCommand('devops.bootstrap');
-                    } else if (sel === "Open Board") {
-                        vscode.commands.executeCommand('devops.openBoard');
-                    }
-                });
+                    `✅ DevOps installed successfully.`
+                );
             }
         };
 

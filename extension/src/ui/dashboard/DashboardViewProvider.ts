@@ -236,7 +236,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     }
     .icon { font-size: 48px; margin-bottom: 16px; }
     h2 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
-    p { font-size: 13px; opacity: 0.8; margin-bottom: 24px; }
+    p { font-size: 13px; opacity: 0.8; margin-bottom: 24px; line-height: 1.4; }
     button {
       padding: 8px 16px;
       background: var(--vscode-button-background);
@@ -244,15 +244,24 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       border: none;
       border-radius: 4px;
       cursor: pointer;
+      font-family: var(--vscode-font-family);
+      font-size: 13px;
     }
     button:hover { opacity: 0.9; }
+    .code {
+        font-family: var(--vscode-editor-font-family);
+        background: var(--vscode-textCodeBlock-background);
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-size: 0.9em;
+    }
   </style>
 </head>
 <body>
-  <div class="icon">🔍</div>
-  <h2>Analyze Project</h2>
-  <p>To generate your task plan and rules, we need to analyze your codebase.</p>
-  <button onclick="runBootstrap()">Run Analysis</button>
+  <div class="icon">🚀</div>
+  <h2>Bootstrap Required</h2>
+  <p>Your project environment is ready.<br>Please run the bootstrap command to generate your task backlog and rules.</p>
+  <button onclick="runBootstrap()">Run /bootstrap</button>
   <script>
     const vscode = acquireVsCodeApi();
     function runBootstrap() {
