@@ -74,6 +74,9 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
         vscode.commands.executeCommand('devops.openBoard');
       } else if (message.type === 'restartSetup') {
         vscode.commands.executeCommand('devops.onboard');
+      } else if (message.type === 'checkBootstrap') {
+        this._updateContent();
+        vscode.commands.executeCommand('devops.openBoard');
       } else if (message.type === 'runBootstrap') {
         vscode.commands.executeCommand('devops.bootstrap');
       } else if (message.type === 'setGrouping') {
@@ -83,10 +86,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     });
   }
 
-  private _getLogoUri(): vscode.Uri | string {
-    const uri = this._extensionUri.with({ path: this._extensionUri.path + '/resources/devops-logo.png' });
-    return this._view ? this._view.webview.asWebviewUri(uri) : uri;
-  }
+
 
   private _getBoardIconUri(): vscode.Uri | string {
     const uri = this._extensionUri.with({ path: this._extensionUri.path + '/resources/devops-logo.svg' });
@@ -110,6 +110,11 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
 
   private _getArrowDownSmUri(): vscode.Uri | string {
     const uri = this._extensionUri.with({ path: this._extensionUri.path + '/resources/arrow-down-sm.svg' });
+    return this._view ? this._view.webview.asWebviewUri(uri) : uri;
+  }
+
+  private _getLogoUri(): vscode.Uri | string {
+    const uri = this._extensionUri.with({ path: this._extensionUri.path + '/resources/devops-logo.svg' });
     return this._view ? this._view.webview.asWebviewUri(uri) : uri;
   }
 
@@ -258,9 +263,16 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
   </style>
 </head>
 <body>
-  <div class="icon">🚀</div>
+  <div class="icon"><img src="${this._getLogoUri()}" alt="DevOps Logo" style="width: 64px; height: 64px;"></div>
   <h2>Bootstrap Required</h2>
   <p>Your project environment is ready.<br>Please open the AI Chat and run <span class="code">/bootstrap</span> to generate your task backlog and rules.</p>
+  <button onclick="checkBootstrap()">Continue</button>
+  <script>
+    const vscode = acquireVsCodeApi();
+    function checkBootstrap() {
+      vscode.postMessage({ type: 'checkBootstrap' });
+    }
+  </script>
 </body>
 </html>`;
   }
