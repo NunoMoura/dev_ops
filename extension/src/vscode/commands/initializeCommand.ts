@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { log, error as logError } from "../../core";
 import { install, InstallerOptions } from "../services/installer";
-import { BootstrapService } from "../../services/bootstrap";
+import { BootstrapService } from "../../services/setup/bootstrap";
 
 /**
  * DevOps: Initialize command

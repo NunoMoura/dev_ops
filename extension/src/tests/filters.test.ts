@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert';
-import { applyFilters, columnMatchesFilters, parseTaskFilter } from '../domains/tasks';
+import { applyFilters, columnMatchesFilters, parseTaskFilter } from '../services/tasks';
 import { Column, Task } from '../core';
 
 suite('Task filters', () => {

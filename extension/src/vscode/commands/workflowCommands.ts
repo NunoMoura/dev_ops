@@ -4,7 +4,7 @@ import type { BoardTreeProvider, BoardNode } from '../../ui/board';
 import type { DevOpsCommandServices } from './types';
 import { registerDevOpsCommand, getTaskFromNode } from './utils';
 import { readBoard, getWorkspaceRoot, runBoardOps } from '../../data';
-import { promptForTask } from '../../domains/tasks';
+import { promptForTask } from '../../services/tasks';
 
 /**
  * Register all workflow-related commands

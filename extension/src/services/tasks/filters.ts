@@ -1,5 +1,5 @@
 import { Column, Task, FilterState, TaskFilter, FilterToken, COLUMN_FALLBACK_NAME, TaskStatus } from '../../core';
-import { isDefined } from '../../domains/tasks/taskUtils';
+import { isDefined } from '../../services/tasks/taskUtils';
 
 export function parseTaskFilter(raw?: string): TaskFilter | undefined {
   if (!raw || !raw.trim()) {

@@ -20,7 +20,7 @@ import {
   slugify,
   splitListValues,
   createId,
-} from '../../domains/tasks/taskUtils';
+} from '../../services/tasks/taskUtils';
 
 export async function ensurePlanDirectory(): Promise<string | undefined> {
   const root = getWorkspaceRoot();

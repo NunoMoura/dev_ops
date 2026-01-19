@@ -5,7 +5,7 @@ import {
   findOrCreateColumn,
   mergeLists,
   ensureStringArray,
-} from '../domains/planning';
+} from '../services/planning';
 import { Board } from '../core';
 
 suite('Plan import helpers', () => {

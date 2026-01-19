@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import { Board, Column, Task, COLUMN_FALLBACK_NAME } from '../../core';
 import { readBoard, writeBoard, getWorkspaceRoot } from '../../data';
-import { compareNumbers, compareTasks, isDefined } from '../../domains/tasks/taskUtils';
+import { compareNumbers, compareTasks, isDefined } from '../../services/tasks/taskUtils';
 import { formatError } from '../../core';
 import { buildTaskDescription } from './taskPresentation';
 

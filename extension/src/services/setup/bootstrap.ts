@@ -2,8 +2,8 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { log, warn, formatError } from '../core';
-import { createTask } from '../vscode/commands/taskCommands';
+import { log, warn, formatError } from '../../core';
+import { createTask } from '../../vscode/commands/taskCommands';
 
 /**
  * Bootstrap Service

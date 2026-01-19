@@ -2,9 +2,9 @@ import * as vscode from 'vscode';
 import { BoardViewSnapshot } from './BoardPanelView';
 import { Board, Column, Task, COLUMN_FALLBACK_NAME, FilterState } from '../../core';
 import { readBoard, writeBoard } from '../../data';
-import { applyFilters, columnMatchesFilters, parseTaskFilter } from '../../domains/tasks';
-import { compareNumbers, compareTasks, sortColumnsForManager } from '../../domains/tasks/taskUtils';
-import { buildTaskDescription, buildTaskTooltip } from '../../domains/tasks';
+import { applyFilters, columnMatchesFilters, parseTaskFilter } from '../../services/tasks';
+import { compareNumbers, compareTasks, sortColumnsForManager } from '../../services/tasks/taskUtils';
+import { buildTaskDescription, buildTaskTooltip } from '../../services/tasks';
 import { formatError } from '../../core';
 
 export type BoardColumnNode = { kind: 'column'; column: Column };

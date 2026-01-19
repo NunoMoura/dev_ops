@@ -4,8 +4,8 @@ import type { TaskDetailsPayload } from '../../ui/tasks';
 import type { MoveTasksRequest } from './types';
 import { readBoard, writeBoard, getWorkspaceRoot, runBoardOps } from '../../data';
 import { formatError, COLUMN_FALLBACK_NAME } from '../../core';
-import { moveTasksToColumn } from '../../domains/tasks';
-import { parseTags } from '../../domains/tasks/taskUtils';
+import { moveTasksToColumn } from '../../services/tasks';
+import { parseTags } from '../../services/tasks/taskUtils';
 
 
 /**

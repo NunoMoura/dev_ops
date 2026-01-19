@@ -34,7 +34,7 @@ import {
   findOrCreateColumn,
   upsertPlanTask,
   ensureTaskDocument,
-} from '../../domains/planning';
+} from '../../services/planning';
 
 /**
  * Register all DevOps board commands

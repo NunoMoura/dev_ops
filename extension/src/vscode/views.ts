@@ -8,7 +8,7 @@ import {
     handleArchiveSingle,
     handleBoardDeleteTasks
 } from './commands';
-import { showPhaseNotification } from '../domains/notifications';
+import { showPhaseNotification } from '../services/notifications';
 import { formatError } from '../core';
 
 export function bindDevOpsViews(

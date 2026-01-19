@@ -5,7 +5,7 @@ import { registerBoardWatchers } from './data';
 import { formatError, log, warn, error as logError } from './core';
 import { SessionBridge } from './integrations/sessionBridge';
 import { CursorBridge } from './integrations/cursorBridge';
-import { AgentManager, registerAgentManager, AntigravityAdapter, CursorAdapter } from './domains/agents';
+import { AgentManager, registerAgentManager, AntigravityAdapter, CursorAdapter } from './services/agents';
 import { registerCodeLensProvider } from './ui/shared';
 import { registerSCMDecorations } from './vscode/scm/scmDecorator';
 import { registerTestController } from './vscode/testing/testController';
@@ -112,17 +112,50 @@ export async function activate(context: vscode.ExtensionContext) {
       })
     );
 
-    // Focus sidebar on activation so onboarding is visible
+    // Register Onboarding Command
+    context.subscriptions.push(vscode.commands.registerCommand('devops.onboard', async () => {
+      const { OnboardingService } = require('./services/setup/onboardingService');
+      const onboarding = new OnboardingService(context);
+      const result = await onboarding.runOnboarding();
+
+      if (result.completed && result.projectType !== 'skip') {
+        // Run initialization with collected data
+        await vscode.commands.executeCommand('devops.initialize', {
+          projectType: result.projectType,
+          selectedIDEs: result.selectedIDEs,
+          githubWorkflows: result.githubWorkflows,
+          silent: false
+        });
+
+        // Refresh views after initialization
+        services.dashboard.refresh();
+      } else if (result.projectType === 'skip') {
+        // Just open board (which shows getting started)
+        await vscode.commands.executeCommand('devops.openBoard');
+      }
+    }));
+
+    // Focus sidebar on activation
     try {
-      // Focus the sidebar view first - this ensures onboarding is visible
       await vscode.commands.executeCommand('devopsStatusBoard.focus');
       log('DevOps sidebar focused');
 
-      // Also open board tab (will show onboarding if not initialized)
-      await vscode.commands.executeCommand('devops.openBoard');
-      log('Board automatically opened');
+      // Check if installed and run onboarding if needed
+      // Note: checkAndUpdateFramework runs above, but we need to check if we need to run first-time onboarding
+      const { isInstalled } = require('./vscode/services/installer');
+      const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
+      if (root && !isInstalled(root)) {
+        // Run progressive onboarding via command
+        await vscode.commands.executeCommand('devops.onboard');
+      } else {
+        // Already installed, just open board
+        await vscode.commands.executeCommand('devops.openBoard');
+      }
+
+      log('Onboarding/Startup flow complete');
     } catch (error) {
-      warn(`Sidebar/Board auto-open skipped: ${formatError(error)}`);
+      warn(`Startup flow error: ${formatError(error)}`);
     }
 
     log('DevOps extension activated successfully');

@@ -72,6 +72,8 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
         vscode.commands.executeCommand('devops.showTaskDetails', message.taskId);
       } else if (message.type === 'openBoard') {
         vscode.commands.executeCommand('devops.openBoard');
+      } else if (message.type === 'restartSetup') {
+        vscode.commands.executeCommand('devops.onboard');
       } else if (message.type === 'setGrouping') {
         this._groupingMode = message.mode;
         this._updateContent();
@@ -120,7 +122,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
 
     const state = await this._getOnboardingState();
     if (state.needsDeveloperName) {
-      this._view.webview.html = this._getOnboardingHtml(state);
+      this._view.webview.html = this._getSetupInProgressHtml();
     } else if (state.needsBoardInit) {
       this._view.webview.html = this._getGettingStartedHtml();
     } else {
@@ -131,17 +133,10 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
   /**
    * Get detailed onboarding state to show adaptive form.
    */
-  private async _getOnboardingState(): Promise<{
-    needsDeveloperName: boolean;
-    needsBoardInit: boolean;
-    projectExists: boolean;
-    savedName: string | null;
-    gitName: string | null;
-    detectedIDE: 'antigravity' | 'cursor' | 'vscode';
-  }> {
+  private async _getOnboardingState(): Promise<{ needsDeveloperName: boolean, needsBoardInit: boolean }> {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders || workspaceFolders.length === 0) {
-      return { needsDeveloperName: true, needsBoardInit: true, projectExists: false, savedName: null, gitName: null, detectedIDE: 'vscode' };
+      return { needsDeveloperName: true, needsBoardInit: true };
     }
 
     const workspaceRoot = workspaceFolders[0].uri.fsPath;
@@ -186,11 +181,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
 
     return {
       needsDeveloperName: !savedName,
-      needsBoardInit: !boardExists,
-      projectExists,
-      savedName,
-      gitName,
-      detectedIDE
+      needsBoardInit: !boardExists
     };
   }
 
@@ -261,81 +252,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     );
   }
 
-  private _getOnboardingHtml(state: {
-    projectExists: boolean;
-    savedName: string | null;
-    gitName: string | null;
-    detectedIDE: 'antigravity' | 'cursor' | 'vscode';
-  }): string {
-    const prefillName = state.savedName || state.gitName || '';
-    const projectExists = state.projectExists;
-    const detectedIDE = state.detectedIDE;
-
-    // If project has existing code, auto-select brownfield but still allow choice
-    const projectTypeSection = `
-      <div class="form-group">
-        <label>How would you like to start?</label>
-        <div class="radio-group">
-          <label class="radio-option ${!projectExists ? 'selected' : ''}" id="opt-greenfield">
-            <input type="radio" name="projectType" value="greenfield" ${!projectExists ? 'checked' : ''}>
-            <div class="radio-content">
-              <div class="radio-label">🌱 Greenfield</div>
-              <div class="radio-desc">New project starting from scratch</div>
-            </div>
-          </label>
-          <label class="radio-option ${projectExists ? 'selected' : ''}" id="opt-brownfield">
-            <input type="radio" name="projectType" value="brownfield" ${projectExists ? 'checked' : ''}>
-            <div class="radio-content">
-              <div class="radio-label">🏗️ Brownfield</div>
-              <div class="radio-desc">Existing codebase to understand & improve</div>
-            </div>
-          </label>
-          <label class="radio-option" id="opt-fresh">
-            <input type="radio" name="projectType" value="fresh">
-            <div class="radio-content">
-              <div class="radio-label">📋 Fresh Start</div>
-              <div class="radio-desc">Empty board, I know what I'm doing</div>
-            </div>
-          </label>
-          <label class="radio-option" id="opt-skip">
-            <input type="radio" name="projectType" value="skip">
-            <div class="radio-content">
-              <div class="radio-label">⏭️ Skip for Now</div>
-              <div class="radio-desc">Just install framework, setup board later</div>
-            </div>
-          </label>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="checkbox-option">
-          <input type="checkbox" id="githubWorkflows" name="githubWorkflows">
-          <span class="checkbox-content">
-            <span class="checkbox-label">🔄 Enable GitHub Workflows</span>
-            <span class="checkbox-desc">Install PR comment collector for feedback loop (recommended)</span>
-          </span>
-        </label>
-      </div>
-      <div class="form-group">
-        <label>Install for which IDEs?</label>
-        <div class="checkbox-group">
-          <label class="checkbox-option">
-            <input type="checkbox" id="ideAntigravity" name="ideAntigravity" ${detectedIDE === 'antigravity' || detectedIDE === 'vscode' ? 'checked' : ''}>
-            <span class="checkbox-content">
-              <span class="checkbox-label">🚀 Antigravity</span>
-              <span class="checkbox-desc">Install to .agent/ directory</span>
-            </span>
-          </label>
-          <label class="checkbox-option">
-            <input type="checkbox" id="ideCursor" name="ideCursor" ${detectedIDE === 'cursor' ? 'checked' : ''}>
-            <span class="checkbox-content">
-              <span class="checkbox-label">📝 Cursor</span>
-              <span class="checkbox-desc">Install to .cursor/ directory</span>
-            </span>
-          </label>
-        </div>
-      </div>
-    `;
-
+  private _getSetupInProgressHtml(): string {
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -349,104 +266,38 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       color: var(--vscode-foreground);
       background: var(--vscode-sideBar-background);
       padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
     }
-    .header { text-align: center; margin-bottom: 20px; }
-    .header h2 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
-    .header p { font-size: 12px; opacity: 0.8; }
-    .form-group { margin-bottom: 16px; }
-    label { display: block; font-size: 12px; font-weight: 500; margin-bottom: 6px; }
-    input[type="text"] {
-      width: 100%; padding: 8px 10px; font-size: 13px;
-      border: 1px solid var(--vscode-input-border);
-      background: var(--vscode-input-background);
-      color: var(--vscode-input-foreground);
-      border-radius: 4px; outline: none;
-    }
-    input[type="text"]:focus { border-color: var(--vscode-focusBorder); }
-    .info-box {
-      display: flex; align-items: center; gap: 8px; padding: 10px;
-      background: var(--vscode-textBlockQuote-background);
-      border-left: 3px solid var(--vscode-textLink-foreground);
-      border-radius: 4px; font-size: 12px;
-    }
-    .info-icon { font-size: 14px; }
-    .radio-group { display: flex; flex-direction: column; gap: 8px; }
-    .radio-option {
-      display: flex; align-items: flex-start; padding: 10px;
-      border: 1px solid var(--vscode-input-border);
-      border-radius: 6px; cursor: pointer;
-    }
-    .radio-option:hover { background: var(--vscode-list-hoverBackground); }
-    .radio-option.selected { border-color: var(--vscode-focusBorder); background: var(--vscode-list-activeSelectionBackground); }
-    .radio-option input { margin-right: 10px; margin-top: 2px; }
-    .radio-content { flex: 1; }
-    .radio-label { font-weight: 500; font-size: 13px; }
-    .radio-desc { font-size: 11px; opacity: 0.7; margin-top: 2px; }
-    .checkbox-option {
-      display: flex; align-items: flex-start; padding: 10px;
-      border: 1px solid var(--vscode-input-border);
-      border-radius: 6px; cursor: pointer;
-    }
-    .checkbox-option:hover { background: var(--vscode-list-hoverBackground); }
-    .checkbox-option input { margin-right: 10px; margin-top: 2px; }
-    .checkbox-content { flex: 1; }
-    .checkbox-label { font-weight: 500; font-size: 13px; }
-    .checkbox-desc { display: block; font-size: 11px; opacity: 0.7; margin-top: 2px; }
+    .icon { font-size: 48px; margin-bottom: 16px; animation: pulse 2s infinite; }
+    h2 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+    p { font-size: 13px; opacity: 0.8; margin-bottom: 24px; }
+    @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
     button {
-      width: 100%; padding: 10px; font-size: 13px; font-weight: 500;
-      border: none; border-radius: 4px; cursor: pointer;
+      padding: 8px 16px;
       background: var(--vscode-button-background);
       color: var(--vscode-button-foreground);
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
     }
     button:hover { opacity: 0.9; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .error { color: var(--vscode-errorForeground); font-size: 11px; margin-top: 4px; }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h2>🚀 Welcome to DevOps</h2>
-    <p>Quick setup to get you started</p>
-  </div>
-  <form id="onboardingForm">
-    <div class="form-group">
-      <label for="name">Your Name</label>
-      <input type="text" id="name" placeholder="e.g., Alice, Bob, Nuno" value="${this._escapeHtml(prefillName)}" required>
-      <div class="error" id="nameError"></div>
-    </div>
-    ${projectTypeSection}
-    <button type="submit">Continue</button>
-  </form>
+  <div class="icon">🚀</div>
+  <h2>Setting up DevOps...</h2>
+  <p>Please follow the prompts in the main window to configure your workspace.</p>
+  <button onclick="restartSetup()">Restart Setup</button>
   <script>
     const vscode = acquireVsCodeApi();
-    const form = document.getElementById('onboardingForm');
-    const nameInput = document.getElementById('name');
-    const nameError = document.getElementById('nameError');
-    
-    // Handle radio selection styling
-    document.querySelectorAll('.radio-option').forEach(opt => {
-      const radio = opt.querySelector('input');
-      if (radio.checked) opt.classList.add('selected');
-      radio.addEventListener('change', () => {
-        document.querySelectorAll('.radio-option').forEach(o => o.classList.remove('selected'));
-        opt.classList.add('selected');
-      });
-    });
-    
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const name = nameInput.value.trim();
-      if (!name) { nameError.textContent = 'Name is required'; return; }
-      const projectType = document.querySelector('input[name="projectType"]:checked').value;
-      const githubWorkflows = document.getElementById('githubWorkflows').checked;
-      // Collect selected IDEs
-      const selectedIDEs = [];
-      if (document.getElementById('ideAntigravity').checked) selectedIDEs.push('antigravity');
-      if (document.getElementById('ideCursor').checked) selectedIDEs.push('cursor');
-      if (selectedIDEs.length === 0) selectedIDEs.push('antigravity'); // Default fallback
-      vscode.postMessage({ type: 'submit', name, projectType, githubWorkflows, selectedIDEs });
-    });
-    nameInput.addEventListener('input', () => { nameError.textContent = ''; });
+    function restartSetup() {
+      vscode.postMessage({ type: 'restartSetup' });
+    }
   </script>
 </body>
 </html>`;

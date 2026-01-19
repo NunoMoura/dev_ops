@@ -7,7 +7,7 @@ import { handleCardDeleteMessage } from './sharedHandlers';
 import { readBoard, writeBoard, getWorkspaceRoot, runBoardOps } from '../../data';
 import type { Task, Column } from '../../core';
 import { COLUMN_FALLBACK_NAME, DEFAULT_COLUMN_NAME, formatError } from '../../core';
-import { compareTasks, isDefined, createTaskId } from '../../domains/tasks/taskUtils';
+import { compareTasks, isDefined, createTaskId } from '../../services/tasks/taskUtils';
 import {
     ensurePlanDirectory,
     listPlanFiles,
@@ -15,7 +15,7 @@ import {
     findOrCreateColumn,
     upsertPlanTask,
     ensureTaskDocument,
-} from '../../domains/planning';
+} from '../../services/planning';
 import {
     buildTaskDescription,
     buildTaskDetail,
@@ -25,7 +25,7 @@ import {
     appendTaskHistory,
     maybeOpenEntryPoints,
     openTaskContext,
-} from '../../domains/tasks';
+} from '../../services/tasks';
 
 /**
  * Register all task-related commands

@@ -1,6 +1,6 @@
 import { Board, Task, Column } from '../core';
 import { readBoard, writeBoard } from './boardStore';
-import { createTaskId } from '../domains/tasks/taskUtils';
+import { createTaskId } from '../services/tasks/taskUtils';
 
 /**
  * BoardService - Central service for all board.json operations

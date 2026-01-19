@@ -15,7 +15,7 @@ import {
     slugify,
     isDefined,
     createTaskId,
-} from '../domains/tasks/taskUtils';
+} from '../services/tasks/taskUtils';
 import { Board, Column, Task } from '../core';
 
 suite('boardData - getColumnRank', () => {

@@ -5,8 +5,8 @@ import { registerDevOpsCommand, getColumnFromAnyNode } from './utils';
 import { readBoard, writeBoard } from '../../data';
 import type { Column } from '../../core';
 import { COLUMN_FALLBACK_NAME } from '../../core';
-import { createId, getNextColumnPosition, sortColumnsForManager } from '../../domains/tasks/taskUtils';
-import { promptForColumn } from '../../domains/tasks';
+import { createId, getNextColumnPosition, sortColumnsForManager } from '../../services/tasks/taskUtils';
+import { promptForColumn } from '../../services/tasks';
 
 /**
  * Register all column-related commands
