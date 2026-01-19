@@ -196,18 +196,24 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
         // Show success message AFTER progress closes (not inside withProgress)
         if (installSuccess) {
             let successMessage: string;
+            let actionButton: string;
             if (isFirstInstall) {
-                successMessage = `✅ DevOps Framework Installed!\n\nInstalled to your project:\n• Rules → .agent/rules/\n• Workflows → .agent/workflows/\n• Scripts → .dev_ops/scripts/\n\n💡 Run /bootstrap in chat to customize rules for your project.`;
+                successMessage = `✅ DevOps Framework Installed!\n\n📌 NEXT STEP: Run /bootstrap in your AI chat to analyze your project and generate custom rules.\n\nThis will detect your stack and create tailored guidelines for your codebase.`;
+                actionButton = 'Open Chat';
             } else {
                 successMessage = `✅ DevOps Framework Updated!\n\nScripts and workflows updated to v${bundledVersion}.\nYour customized rules were preserved.`;
+                actionButton = 'Open Board';
             }
 
             const successAction = await vscode.window.showInformationMessage(
                 successMessage,
-                'Open Board'
+                actionButton
             );
 
-            if (successAction === 'Open Board') {
+            if (successAction === 'Open Chat') {
+                // Open the AI chat panel (works for both Antigravity and Cursor)
+                vscode.commands.executeCommand('workbench.action.chat.open');
+            } else if (successAction === 'Open Board') {
                 vscode.commands.executeCommand('devops.openBoard');
             }
         }

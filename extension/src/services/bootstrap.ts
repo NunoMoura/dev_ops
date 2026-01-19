@@ -354,46 +354,59 @@ path: "{path}"
     // --- Rule Generation Primitives ---
 
     public async generateRules(projectRoot: string, stack: StackItem[]): Promise<void> {
-        // Detect IDE
-        let rulesDir = path.join(projectRoot, '.agent', 'rules');
-        let ide = 'antigravity';
-
-        if (fs.existsSync(path.join(projectRoot, '.cursor'))) {
-            rulesDir = path.join(projectRoot, '.cursor', 'rules');
-            ide = 'cursor';
-        } else if (fs.existsSync(path.join(projectRoot, '.agent'))) {
-            // Default
-        } else {
-            // No agent/cursor dir, maybe create .agent default
-            fs.mkdirSync(rulesDir, { recursive: true });
+        // Read selected IDEs from config (set during onboarding)
+        let selectedIDEs: string[] = ['antigravity']; // Default
+        const configPath = path.join(projectRoot, '.dev_ops', 'config.json');
+        if (fs.existsSync(configPath)) {
+            try {
+                const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+                if (config.selectedIDEs && Array.isArray(config.selectedIDEs) && config.selectedIDEs.length > 0) {
+                    selectedIDEs = config.selectedIDEs;
+                }
+            } catch { /* Use default */ }
         }
 
-        for (const item of stack) {
-            const templatePath = path.join(this.extensionPath, 'dist', 'assets', item.template);
-            let content = "";
-
-            if (fs.existsSync(templatePath)) {
-                content = fs.readFileSync(templatePath, 'utf8');
-            } else {
-                warn(`Template not found: ${templatePath}`);
-                continue;
-            }
-
-            // Replacements
-            for (const [key, value] of Object.entries(item.replacements)) {
-                content = content.replace(new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value);
-            }
-
-            // IDE Specifics
+        // Generate rules for each selected IDE
+        for (const ide of selectedIDEs) {
+            let rulesDir: string;
             if (ide === 'cursor') {
-                content = this.convertToCursorFormat(content, item.globs);
+                rulesDir = path.join(projectRoot, '.cursor', 'rules');
+            } else {
+                rulesDir = path.join(projectRoot, '.agent', 'rules');
             }
 
-            const destPath = path.join(rulesDir, ide === 'cursor' ? item.name.replace('.md', '.mdc') : item.name);
+            // Ensure directory exists
+            fs.mkdirSync(rulesDir, { recursive: true });
 
-            if (!fs.existsSync(destPath) || !fs.readFileSync(destPath, 'utf8').includes('<!-- dev-ops-customized -->')) {
-                fs.writeFileSync(destPath, content);
+            for (const item of stack) {
+                const templatePath = path.join(this.extensionPath, 'dist', 'assets', item.template);
+                let content = "";
+
+                if (fs.existsSync(templatePath)) {
+                    content = fs.readFileSync(templatePath, 'utf8');
+                } else {
+                    warn(`Template not found: ${templatePath}`);
+                    continue;
+                }
+
+                // Replacements
+                for (const [key, value] of Object.entries(item.replacements)) {
+                    content = content.replace(new RegExp(key.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&'), 'g'), value);
+                }
+
+                // IDE Specifics
+                if (ide === 'cursor') {
+                    content = this.convertToCursorFormat(content, item.globs);
+                }
+
+                const destPath = path.join(rulesDir, ide === 'cursor' ? item.name.replace('.md', '.mdc') : item.name);
+
+                if (!fs.existsSync(destPath) || !fs.readFileSync(destPath, 'utf8').includes('<!-- dev-ops-customized -->')) {
+                    fs.writeFileSync(destPath, content);
+                }
             }
+
+            log(`[Bootstrap] Generated rules for ${ide} in ${rulesDir}`);
         }
     }
 

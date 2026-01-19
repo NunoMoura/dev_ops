@@ -14,7 +14,7 @@ export function registerInitializeCommand(
     // Register Bootstrap Command
     const bootstrapDisposable = vscode.commands.registerCommand("devops.bootstrap", async () => {
         const workspaceFolders = vscode.workspace.workspaceFolders;
-        if (!workspaceFolders) {return;}
+        if (!workspaceFolders) { return; }
 
         const root = workspaceFolders[0].uri.fsPath;
         const service = new BootstrapService(context);
@@ -37,11 +37,12 @@ export function registerInitializeCommand(
 
     context.subscriptions.push(bootstrapDisposable);
 
-    return vscode.commands.registerCommand("devops.initialize", async (options?: { projectType?: 'greenfield' | 'brownfield' | 'fresh', silent?: boolean, githubWorkflows?: boolean }) => {
+    return vscode.commands.registerCommand("devops.initialize", async (options?: { projectType?: 'greenfield' | 'brownfield' | 'fresh', silent?: boolean, githubWorkflows?: boolean, selectedIDEs?: string[] }) => {
         // Handle legacy string argument if passed
         let projectType: 'greenfield' | 'brownfield' | 'fresh' | undefined;
         let silent = false;
         let githubWorkflows = false;
+        let selectedIDEs: string[] = [];
 
         if (typeof options === 'string') {
             projectType = options as 'greenfield' | 'brownfield' | 'fresh';
@@ -49,6 +50,7 @@ export function registerInitializeCommand(
             projectType = options.projectType;
             silent = !!options.silent;
             githubWorkflows = !!options.githubWorkflows;
+            selectedIDEs = options.selectedIDEs || [];
         }
 
         const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -63,29 +65,43 @@ export function registerInitializeCommand(
 
         const workspaceRoot = workspaceFolders[0].uri.fsPath;
         const extensionPath = context.extensionPath;
-        const ide = detectIDE();
 
-        // Function to run installation
+        // If no IDEs selected, fall back to auto-detection
+        if (selectedIDEs.length === 0) {
+            selectedIDEs = [detectIDE()];
+        }
+
+        // Function to run installation for each selected IDE
         const runInstall = async () => {
-            const installerOptions: InstallerOptions = {
-                projectRoot: workspaceRoot,
-                ide: ide as 'antigravity' | 'cursor',
-                projectType,
-                githubWorkflows
-            };
+            let totalRules = 0, totalWorkflows = 0, totalSkills = 0;
 
-            const result = await install(extensionPath, installerOptions);
+            for (const ide of selectedIDEs) {
+                const installerOptions: InstallerOptions = {
+                    projectRoot: workspaceRoot,
+                    ide: ide as 'antigravity' | 'cursor',
+                    projectType,
+                    githubWorkflows
+                };
 
-            if (!result.success) {
-                throw new Error(result.message);
+                const result = await install(extensionPath, installerOptions);
+
+                if (!result.success) {
+                    throw new Error(result.message);
+                }
+
+                totalRules += result.rulesInstalled;
+                totalWorkflows += result.workflowsInstalled;
+                totalSkills += result.skillsInstalled;
+
+                log(`[initialize] Installed for ${ide}: Rules: ${result.rulesInstalled}, Workflows: ${result.workflowsInstalled}, Skills: ${result.skillsInstalled}`);
             }
 
-            log(`[initialize] ${result.message}`);
-            log(`[initialize] Rules: ${result.rulesInstalled}, Workflows: ${result.workflowsInstalled}, Skills: ${result.skillsInstalled}`);
+            log(`[initialize] Total installed - Rules: ${totalRules}, Workflows: ${totalWorkflows}, Skills: ${totalSkills}`);
 
             if (!silent) {
+                const ideNames = selectedIDEs.map(i => i === 'antigravity' ? 'Antigravity (.agent)' : 'Cursor (.cursor)').join(' + ');
                 vscode.window.showInformationMessage(
-                    "✅ DevOps ready! Run /bootstrap to analyze your project and generate tasks.",
+                    `✅ DevOps ready for ${ideNames}! Run /bootstrap to analyze your project and generate tasks.`,
                     "Open Board"
                 ).then(sel => {
                     if (sel === "Open Board") {

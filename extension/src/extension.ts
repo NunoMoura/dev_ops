@@ -112,13 +112,17 @@ export async function activate(context: vscode.ExtensionContext) {
       })
     );
 
-    // Auto-open board tab when extension activates
+    // Focus sidebar on activation so onboarding is visible
     try {
-      // Note: Board will show onboarding if not initialized
+      // Focus the sidebar view first - this ensures onboarding is visible
+      await vscode.commands.executeCommand('devopsStatusBoard.focus');
+      log('DevOps sidebar focused');
+
+      // Also open board tab (will show onboarding if not initialized)
       await vscode.commands.executeCommand('devops.openBoard');
       log('Board automatically opened');
     } catch (error) {
-      warn(`Board auto-open skipped: ${formatError(error)}`);
+      warn(`Sidebar/Board auto-open skipped: ${formatError(error)}`);
     }
 
     log('DevOps extension activated successfully');

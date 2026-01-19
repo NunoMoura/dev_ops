@@ -47,11 +47,11 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     // Handle messages from webview
     webviewView.webview.onDidReceiveMessage(async (message) => {
       if (message.type === 'submit') {
-        const { name, projectType, githubWorkflows } = message;
-        await this._saveConfig(name, projectType, githubWorkflows);
+        const { name, projectType, githubWorkflows, selectedIDEs } = message;
+        await this._saveConfig(name, projectType, githubWorkflows, selectedIDEs);
         // Skip doesn't initialize board - just saves config
         if (projectType !== 'skip') {
-          await vscode.commands.executeCommand('devops.initialize', { projectType, githubWorkflows });
+          await vscode.commands.executeCommand('devops.initialize', { projectType, githubWorkflows, selectedIDEs });
         }
         this._onDidComplete.fire();
         this._updateContent();
@@ -137,10 +137,11 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     projectExists: boolean;
     savedName: string | null;
     gitName: string | null;
+    detectedIDE: 'antigravity' | 'cursor' | 'vscode';
   }> {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders || workspaceFolders.length === 0) {
-      return { needsDeveloperName: true, needsBoardInit: true, projectExists: false, savedName: null, gitName: null };
+      return { needsDeveloperName: true, needsBoardInit: true, projectExists: false, savedName: null, gitName: null, detectedIDE: 'vscode' };
     }
 
     const workspaceRoot = workspaceFolders[0].uri.fsPath;
@@ -174,12 +175,22 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       }).trim() || null;
     } catch { /* Ignore */ }
 
+    // Detect current IDE
+    let detectedIDE: 'antigravity' | 'cursor' | 'vscode' = 'vscode';
+    const appName = vscode.env.appName;
+    if (appName.includes('Cursor')) {
+      detectedIDE = 'cursor';
+    } else if (vscode.extensions.getExtension('google.antigravity')) {
+      detectedIDE = 'antigravity';
+    }
+
     return {
       needsDeveloperName: !savedName,
       needsBoardInit: !boardExists,
       projectExists,
       savedName,
-      gitName
+      gitName,
+      detectedIDE
     };
   }
 
@@ -216,7 +227,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     return false;
   }
 
-  private async _saveConfig(name: string, projectType: string, githubWorkflows?: boolean): Promise<void> {
+  private async _saveConfig(name: string, projectType: string, githubWorkflows?: boolean, selectedIDEs?: string[]): Promise<void> {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders || workspaceFolders.length === 0) {
       return;
@@ -240,9 +251,10 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     config.developer = { name: name.trim() };
     config.projectType = projectType;
     config.githubWorkflowsEnabled = githubWorkflows ?? false;
+    config.selectedIDEs = selectedIDEs ?? ['antigravity'];
 
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-    log(`Onboarding complete: ${name}, ${projectType}, github_workflows=${githubWorkflows}`);
+    log(`Onboarding complete: ${name}, ${projectType}, github_workflows=${githubWorkflows}, ides=${selectedIDEs?.join(',')}`);
 
     vscode.window.showInformationMessage(
       `✅ Welcome, ${name}! Your DevOps workspace is ready.`
@@ -253,9 +265,11 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     projectExists: boolean;
     savedName: string | null;
     gitName: string | null;
+    detectedIDE: 'antigravity' | 'cursor' | 'vscode';
   }): string {
     const prefillName = state.savedName || state.gitName || '';
     const projectExists = state.projectExists;
+    const detectedIDE = state.detectedIDE;
 
     // If project has existing code, auto-select brownfield but still allow choice
     const projectTypeSection = `
@@ -300,6 +314,25 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
             <span class="checkbox-desc">Install PR comment collector for feedback loop (recommended)</span>
           </span>
         </label>
+      </div>
+      <div class="form-group">
+        <label>Install for which IDEs?</label>
+        <div class="checkbox-group">
+          <label class="checkbox-option">
+            <input type="checkbox" id="ideAntigravity" name="ideAntigravity" ${detectedIDE === 'antigravity' || detectedIDE === 'vscode' ? 'checked' : ''}>
+            <span class="checkbox-content">
+              <span class="checkbox-label">🚀 Antigravity</span>
+              <span class="checkbox-desc">Install to .agent/ directory</span>
+            </span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" id="ideCursor" name="ideCursor" ${detectedIDE === 'cursor' ? 'checked' : ''}>
+            <span class="checkbox-content">
+              <span class="checkbox-label">📝 Cursor</span>
+              <span class="checkbox-desc">Install to .cursor/ directory</span>
+            </span>
+          </label>
+        </div>
       </div>
     `;
 
@@ -406,7 +439,12 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       if (!name) { nameError.textContent = 'Name is required'; return; }
       const projectType = document.querySelector('input[name="projectType"]:checked').value;
       const githubWorkflows = document.getElementById('githubWorkflows').checked;
-      vscode.postMessage({ type: 'submit', name, projectType, githubWorkflows });
+      // Collect selected IDEs
+      const selectedIDEs = [];
+      if (document.getElementById('ideAntigravity').checked) selectedIDEs.push('antigravity');
+      if (document.getElementById('ideCursor').checked) selectedIDEs.push('cursor');
+      if (selectedIDEs.length === 0) selectedIDEs.push('antigravity'); // Default fallback
+      vscode.postMessage({ type: 'submit', name, projectType, githubWorkflows, selectedIDEs });
     });
     nameInput.addEventListener('input', () => { nameError.textContent = ''; });
   </script>
