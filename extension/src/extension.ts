@@ -103,11 +103,26 @@ export async function activate(context: vscode.ExtensionContext) {
     // Listen for workspace folder changes and update framework
     context.subscriptions.push(
       vscode.workspace.onDidChangeWorkspaceFolders(async (event) => {
-        log('Workspace folders changed, checking framework status...');
-        // Re-check framework for each added folder
+        log('Workspace folders changed, refreshing services...');
+
+        // Update framework for new folders
         for (const folder of event.added) {
           log(`New workspace folder detected: ${folder.uri.fsPath}`);
           await checkAndUpdateFramework(context);
+        }
+
+        // Refresh all views to reflect new workspace state (e.g. new project loaded)
+        await services.provider.refresh();
+        services.dashboard.refresh();
+        services.metricsView.updateContent();
+
+        // Re-check onboarding state
+        const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        const { isInstalled } = require('./vscode/services/installer');
+        if (root && !isInstalled(root)) {
+          // Maybe switch sidebar to onboarding?
+          // Dashboard refresh() handles calling _getOnboardingState which will switch the HTML.
+          vscode.commands.executeCommand('devopsStatusBoard.focus');
         }
       })
     );
