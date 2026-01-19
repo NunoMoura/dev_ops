@@ -130,10 +130,13 @@ export function registerInitializeCommand(
             if (!silent) {
                 const ideNames = selectedIDEs.map(i => i === 'antigravity' ? 'Antigravity (.agent)' : 'Cursor (.cursor)').join(' + ');
                 vscode.window.showInformationMessage(
-                    `✅ DevOps ready for ${ideNames}! Run /bootstrap to analyze your project and generate tasks.`,
+                    `✅ DevOps installed! IMPORTANT: Run /bootstrap to analyze your project and generate tasks.`,
+                    "Run Bootstrap",
                     "Open Board"
                 ).then(sel => {
-                    if (sel === "Open Board") {
+                    if (sel === "Run Bootstrap") {
+                        vscode.commands.executeCommand('devops.bootstrap');
+                    } else if (sel === "Open Board") {
                         vscode.commands.executeCommand('devops.openBoard');
                     }
                 });

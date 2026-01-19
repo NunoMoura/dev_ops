@@ -74,6 +74,8 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
         vscode.commands.executeCommand('devops.openBoard');
       } else if (message.type === 'restartSetup') {
         vscode.commands.executeCommand('devops.onboard');
+      } else if (message.type === 'runBootstrap') {
+        vscode.commands.executeCommand('devops.bootstrap');
       } else if (message.type === 'setGrouping') {
         this._groupingMode = message.mode;
         this._updateContent();
@@ -125,6 +127,8 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       this._view.webview.html = this._getSetupInProgressHtml();
     } else if (state.needsBoardInit) {
       this._view.webview.html = this._getGettingStartedHtml();
+    } else if (state.needsBootstrap) {
+      this._view.webview.html = this._getBootstrapRequiredHtml();
     } else {
       this._view.webview.html = await this._getDashboardHtml();
     }
@@ -133,10 +137,10 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
   /**
    * Get detailed onboarding state to show adaptive form.
    */
-  private async _getOnboardingState(): Promise<{ needsDeveloperName: boolean, needsBoardInit: boolean }> {
+  private async _getOnboardingState(): Promise<{ needsDeveloperName: boolean, needsBoardInit: boolean, needsBootstrap: boolean }> {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders || workspaceFolders.length === 0) {
-      return { needsDeveloperName: true, needsBoardInit: true };
+      return { needsDeveloperName: true, needsBoardInit: true, needsBootstrap: false };
     }
 
     const workspaceRoot = workspaceFolders[0].uri.fsPath;
@@ -179,10 +183,84 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       detectedIDE = 'antigravity';
     }
 
+    // Check if needs bootstrap (board empty and not fresh start)
+    let needsBootstrap = false;
+    let isFresh = false;
+
+    if (fs.existsSync(configPath)) {
+      try {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        if (config.projectType === 'fresh' || config.projectType === 'skip') {
+          isFresh = true;
+        }
+      } catch { /* Ignore */ }
+    }
+
+    if (boardExists && !isFresh) {
+      try {
+        const boardContent = fs.readFileSync(boardPath, 'utf-8');
+        const board = JSON.parse(boardContent);
+        if (board.items && board.items.length === 0) {
+          needsBootstrap = true;
+        }
+      } catch { /* ignore */ }
+    }
+
     return {
       needsDeveloperName: !savedName,
-      needsBoardInit: !boardExists
+      needsBoardInit: !boardExists,
+      needsBootstrap
     };
+  }
+
+  private _getBootstrapRequiredHtml(): string {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--vscode-font-family);
+      font-size: var(--vscode-font-size);
+      color: var(--vscode-foreground);
+      background: var(--vscode-sideBar-background);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+    }
+    .icon { font-size: 48px; margin-bottom: 16px; }
+    h2 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+    p { font-size: 13px; opacity: 0.8; margin-bottom: 24px; }
+    button {
+      padding: 8px 16px;
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover { opacity: 0.9; }
+  </style>
+</head>
+<body>
+  <div class="icon">🔍</div>
+  <h2>Analyze Project</h2>
+  <p>To generate your task plan and rules, we need to analyze your codebase.</p>
+  <button onclick="runBootstrap()">Run Analysis</button>
+  <script>
+    const vscode = acquireVsCodeApi();
+    function runBootstrap() {
+      vscode.postMessage({ type: 'runBootstrap' });
+    }
+  </script>
+</body>
+</html>`;
   }
 
   /**
