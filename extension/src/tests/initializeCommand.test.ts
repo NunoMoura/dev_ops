@@ -16,17 +16,7 @@ suite('InitializeCommand - Python Detection', () => {
     });
 });
 
-suite('InitializeCommand - Script Path Construction', () => {
-    function buildScriptPath(extensionPath: string): string {
-        // Simulating path.join behavior
-        return `${extensionPath}/dist/assets/scripts/setup_ops.py`;
-    }
 
-    test('constructs correct path', () => {
-        const path = buildScriptPath('/home/user/.vscode/extensions/dev-ops');
-        assert.strictEqual(path, '/home/user/.vscode/extensions/dev-ops/dist/assets/scripts/setup_ops.py');
-    });
-});
 
 suite('InitializeCommand - Workspace Validation', () => {
     function validateWorkspace(folders: Array<{ uri: { fsPath: string } }> | undefined): string | null {

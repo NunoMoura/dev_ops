@@ -1,17 +1,42 @@
 import * as vscode from "vscode";
-import * as path from "path";
-import { spawn } from "child_process";
 import { log, error as logError } from "../../core";
+import { install, InstallerOptions } from "../services/installer";
+import { BootstrapService } from "../../services/bootstrap";
 
 /**
  * DevOps: Initialize command
  *
- * Invokes the Python setup_ops.py script to initialize the DevOps framework.
- * Python is the source of truth for initialization logic.
+ * Uses TypeScript installer to initialize the DevOps framework.
  */
 export function registerInitializeCommand(
     context: vscode.ExtensionContext
 ): vscode.Disposable {
+    // Register Bootstrap Command
+    const bootstrapDisposable = vscode.commands.registerCommand("devops.bootstrap", async () => {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) {return;}
+
+        const root = workspaceFolders[0].uri.fsPath;
+        const service = new BootstrapService(context);
+
+        await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: "DevOps: Bootstrapping...",
+            cancellable: false
+        }, async (progress) => {
+            try {
+                progress.report({ message: "Analyzing project..." });
+                await service.bootstrap(root);
+                vscode.window.showInformationMessage("✅ Project bootstrapped successfully!");
+            } catch (err) {
+                logError(`Bootstrap failed`, err);
+                vscode.window.showErrorMessage(`Bootstrap failed: ${err}`);
+            }
+        });
+    });
+
+    context.subscriptions.push(bootstrapDisposable);
+
     return vscode.commands.registerCommand("devops.initialize", async (options?: { projectType?: 'greenfield' | 'brownfield' | 'fresh', silent?: boolean, githubWorkflows?: boolean }) => {
         // Handle legacy string argument if passed
         let projectType: 'greenfield' | 'brownfield' | 'fresh' | undefined;
@@ -38,45 +63,25 @@ export function registerInitializeCommand(
 
         const workspaceRoot = workspaceFolders[0].uri.fsPath;
         const extensionPath = context.extensionPath;
+        const ide = detectIDE();
 
-        // Try to find setup_ops.py in extension assets or dev environment
-        let setupScript = path.join(extensionPath, "dist", "assets", "scripts", "setup_ops.py");
-        if (!require('fs').existsSync(setupScript)) {
-            // Fallback for development: check workspace root installer or scripts
-            const installerPath = path.join(workspaceRoot, "installer", "setup_ops.py");
-            if (require('fs').existsSync(installerPath)) {
-                setupScript = installerPath;
-            } else {
-                setupScript = path.join(workspaceRoot, "scripts", "setup_ops.py");
+        // Function to run installation
+        const runInstall = async () => {
+            const installerOptions: InstallerOptions = {
+                projectRoot: workspaceRoot,
+                ide: ide as 'antigravity' | 'cursor',
+                projectType,
+                githubWorkflows
+            };
+
+            const result = await install(extensionPath, installerOptions);
+
+            if (!result.success) {
+                throw new Error(result.message);
             }
-        }
 
-        if (!require('fs').existsSync(setupScript)) {
-            const msg = `DevOps: setup_ops.py not found. Expected at ${setupScript}`;
-            if (!silent) {
-                vscode.window.showErrorMessage(msg);
-            } else {
-                logError(msg);
-            }
-            return;
-        }
-
-        // Check for Python availability
-        const pythonCommand = await findPython();
-        if (!pythonCommand) {
-            const msg = "DevOps: Python 3 is required but not found. Please install Python 3 and try again.";
-            if (!silent) {
-                vscode.window.showErrorMessage(msg);
-            } else {
-                logError(msg);
-            }
-            return;
-        }
-
-        // Function to run setup
-        const runSetup = async () => {
-            const ide = detectIDE();
-            await runSetupScript(pythonCommand, setupScript, workspaceRoot, projectType, ide, githubWorkflows);
+            log(`[initialize] ${result.message}`);
+            log(`[initialize] Rules: ${result.rulesInstalled}, Workflows: ${result.workflowsInstalled}, Skills: ${result.skillsInstalled}`);
 
             if (!silent) {
                 vscode.window.showInformationMessage(
@@ -93,7 +98,7 @@ export function registerInitializeCommand(
         if (silent) {
             // Run without progress UI
             try {
-                await runSetup();
+                await runInstall();
             } catch (error) {
                 logError(`DevOps: Initialization failed: ${error}`);
                 throw error; // Re-throw so caller knows it failed
@@ -108,7 +113,7 @@ export function registerInitializeCommand(
                 },
                 async () => {
                     try {
-                        await runSetup();
+                        await runInstall();
                     } catch (error) {
                         vscode.window.showErrorMessage(
                             `DevOps: Initialization failed: ${error}`
@@ -117,109 +122,6 @@ export function registerInitializeCommand(
                 }
             );
         }
-    });
-}
-
-/**
- * Find a working Python 3 command
- */
-async function findPython(): Promise<string | null> {
-    const commands = ["python3", "python"];
-
-    for (const cmd of commands) {
-        try {
-            const result = await runCommand(cmd, ["--version"]);
-            if (result.includes("Python 3")) {
-                return cmd;
-            }
-        } catch {
-            // Try next command
-        }
-    }
-    return null;
-}
-
-/**
- * Run a command and return stdout
- */
-function runCommand(command: string, args: string[]): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const proc = spawn(command, args);
-        let stdout = "";
-        let stderr = "";
-
-        proc.stdout.on("data", (data) => {
-            stdout += data.toString();
-        });
-
-        proc.stderr.on("data", (data) => {
-            stderr += data.toString();
-        });
-
-        proc.on("close", (code) => {
-            if (code === 0) {
-                resolve(stdout);
-            } else {
-                reject(new Error(stderr || `Process exited with code ${code}`));
-            }
-        });
-
-        proc.on("error", (err) => {
-            reject(err);
-        });
-    });
-}
-
-/**
- * Run the setup_ops.py script
- */
-async function runSetupScript(
-    pythonCommand: string,
-    scriptPath: string,
-    targetDir: string,
-    projectType?: string,
-    ide?: string,
-    githubWorkflows?: boolean
-): Promise<void> {
-    return new Promise((resolve, reject) => {
-        const args = [scriptPath, "--target", targetDir];
-        if (projectType) {
-            args.push("--project-type", projectType);
-        }
-        if (ide) {
-            args.push("--ide", ide);
-        }
-        if (githubWorkflows) {
-            args.push("--github-workflows");
-        }
-
-        const proc = spawn(pythonCommand, args, {
-            cwd: targetDir,
-            env: { ...process.env, HEADLESS: "true" }, // Skip interactive prompts
-        });
-
-        let stderr = "";
-
-        proc.stdout.on("data", (data) => {
-            log(`[setup_ops.py] ${data.toString()}`);
-        });
-
-        proc.stderr.on("data", (data) => {
-            stderr += data.toString();
-            logError(`[setup_ops.py] ${data.toString()}`);
-        });
-
-        proc.on("close", (code) => {
-            if (code === 0) {
-                resolve();
-            } else {
-                reject(new Error(stderr || `setup_ops.py exited with code ${code}`));
-            }
-        });
-
-        proc.on("error", (err) => {
-            reject(err);
-        });
     });
 }
 

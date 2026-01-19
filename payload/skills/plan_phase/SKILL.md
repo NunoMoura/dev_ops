@@ -29,6 +29,16 @@ Internalize findings from RES-XXX:
 - Risks and edge cases
 - Recommended approach
 
+## Step 1a: Analyze Impact
+
+Check what depends on components you'll modify:
+
+```bash
+python3 .dev_ops/scripts/doc_ops.py reverse-deps src/component.md
+```
+
+Include all returned components in your plan's affected files list. This ensures you don't miss downstream impact.
+
 ## Step 2: Create Implementation Plan
 
 Create the plan artifact (use `--help` for options):

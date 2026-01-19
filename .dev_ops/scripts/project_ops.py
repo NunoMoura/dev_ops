@@ -7,7 +7,7 @@ import os
 import re
 import sys
 from collections import Counter
-from typing import Any, Optional
+from typing import Any
 
 
 def get_file_content(path: str) -> str:
@@ -462,7 +462,7 @@ def detect_stack(project_root: str) -> list[dict[str, Any]]:
 _EXCLUDED_DIRS = frozenset([".git", "node_modules", "venv", "__pycache__", "dist", "out"])
 
 
-def _check_triggers(root: str, triggers: list[str], content_search: Optional[str] = None) -> bool:
+def _check_triggers(root: str, triggers: list[str], content_search: str | None = None) -> bool:
     """Check if any trigger file or pattern matches in the project.
 
     Args:

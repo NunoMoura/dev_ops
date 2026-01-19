@@ -7,14 +7,13 @@ import pytest
 
 # Map script names to relative paths from repo root
 SCRIPT_LOCATIONS = {
-    "artifact_ops.py": "dev_ops/scripts",
-    "git_ops.py": "dev_ops/scripts",
-    "health_check.py": "dev_ops/scripts",
-    "setup_ops.py": "installer",
-    "sync_version.py": "dev_ops/scripts",
-    "board_ops.py": "dev_ops/scripts",
-    "doc_ops.py": "dev_ops/scripts",
-    "project_ops.py": "installer",
+    "artifact_ops.py": "payload/scripts",
+    "git_ops.py": "payload/scripts",
+    "health_check.py": "payload/scripts",
+    "sync_version.py": "payload/scripts",
+    "board_ops.py": "payload/scripts",
+    "doc_ops.py": "payload/scripts",
+    "project_ops.py": "payload/scripts",
 }
 
 

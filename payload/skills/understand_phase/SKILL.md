@@ -33,6 +33,23 @@ Check affected architecture docs:
 ls .dev_ops/docs/architecture/
 ```
 
+## Step 1a: Scope via Architecture Docs
+
+> [!TIP]
+> Before searching code, narrow scope using architecture docs first.
+
+```bash
+python3 .dev_ops/scripts/doc_ops.py scope --query "relevant keywords"
+```
+
+This returns JSON with:
+
+- `matched_docs`: Architecture docs matching your query
+- `code_paths`: Directories to explore
+- `transitive_deps`: Related components via dependency tables
+
+**Only explore paths returned by this command.** This dramatically reduces context usage.
+
 ## Step 2: Research
 
 ### Internal Research

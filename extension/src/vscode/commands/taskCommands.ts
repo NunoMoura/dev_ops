@@ -216,7 +216,35 @@ export function registerTaskCommands(
 }
 
 /**
- * Create a new task
+ * Create a new task (programmatic)
+ */
+export async function createTask(
+    board: any,
+    columnId: string,
+    title: string,
+    summary?: string,
+    priority?: 'low' | 'medium' | 'high'
+): Promise<Task> {
+    const taskId = createTaskId(board);
+
+    const task: Task = {
+        id: taskId,
+        columnId: columnId,
+        title: title,
+        summary: summary,
+        priority: priority,
+        status: 'ready',
+        updatedAt: new Date().toISOString(),
+    };
+    board.items.push(task);
+    await writeBoard(board);
+    await appendTaskHistory(task, `Created in column ${columnId}`);
+
+    return task;
+}
+
+/**
+ * Handle create task command (UI)
  */
 async function handleCreateTask(
     provider: BoardTreeProvider,
@@ -236,23 +264,12 @@ async function handleCreateTask(
             }
         }
 
-        // Use TASK-XXX format
-        const taskId = createTaskId(board);
-
-        const task: Task = {
-            id: taskId,
-            columnId: column.id,
-            title: 'New Task',
-            updatedAt: new Date().toISOString(),
-        };
-        board.items.push(task);
-        await writeBoard(board);
+        const task = await createTask(board, column.id, 'New Task');
         await provider.refresh();
-        await appendTaskHistory(task, `Created in column ${column.name || COLUMN_FALLBACK_NAME}`);
 
         // Open task in editor tab for immediate editing
         // Note: "task created" notification will show when user saves via Save & Close button
-        const uri = vscode.Uri.parse(`devops-task:/task/${taskId}.devops-task`);
+        const uri = vscode.Uri.parse(`devops-task:/task/${task.id}.devops-task`);
         await vscode.commands.executeCommand('vscode.openWith', uri, 'devops.taskEditor');
     } catch (error) {
         vscode.window.showErrorMessage(`Failed to create task: ${formatError(error)}`);

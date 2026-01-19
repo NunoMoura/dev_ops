@@ -6,7 +6,6 @@ import os
 import shutil
 import subprocess
 import sys
-from typing import Optional
 
 # Add current directory to sys.path (for project_ops)
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -538,7 +537,7 @@ def install_rules(proposed_rules: list, rules_dest: str, ide: str = "antigravity
 # ==========================================
 
 
-def bootstrap(target_dir: str, ide_override: Optional[str] = None, github_workflows: bool = False):
+def bootstrap(target_dir: str, ide_override: str | None = None, github_workflows: bool = False):
     PROJECT_ROOT = os.path.abspath(target_dir)
 
     # Locate Global Sources - detect context (extension vs framework repo)

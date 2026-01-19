@@ -13,7 +13,6 @@ import argparse
 import datetime
 import os
 import sys
-from typing import Optional
 
 # Add current directory to sys.path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -45,7 +44,7 @@ ARTIFACT_TYPES = {
 # ==========================================
 
 
-def get_template(artifact_type: str, project_root: Optional[str] = None) -> str:
+def get_template(artifact_type: str, project_root: str | None = None) -> str:
     """Load template from templates/artifacts/ directory."""
     try:
         dev_ops_root = get_dev_ops_root(project_root)
@@ -74,7 +73,7 @@ def create_artifact(
     title: str,
     priority: str = "medium",
     description: str = "",
-    project_root: Optional[str] = None,
+    project_root: str | None = None,
 ) -> str:
     """Create a new artifact in the flat .tmp/artifacts/ directory.
 
@@ -108,7 +107,7 @@ def create_artifact(
     return artifact_id
 
 
-def list_artifacts(artifact_type: str, project_root: Optional[str] = None) -> None:
+def list_artifacts(artifact_type: str, project_root: str | None = None) -> None:
     """List all artifacts of a given type from flat directory."""
     if artifact_type not in ARTIFACT_TYPES:
         print(f"❌ Unknown artifact type: {artifact_type}")

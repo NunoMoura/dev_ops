@@ -63,6 +63,12 @@ Every task moves through a **6-phase workflow**:
 | **Build** | TDD implementation | `build_phase` |
 | **Verify** | Test, document, PR | `verify_phase` |
 
+> [!TIP]
+> **New**: Use `doc_ops.py scope` to navigate architecture docs using RLM principles.
+> ```bash
+> python3 .dev_ops/scripts/doc_ops.py scope --query "auth"
+> ```
+
 ---
 
 ## Skills
@@ -101,7 +107,7 @@ view_file .agent/skills/understand_phase/SKILL.md
 
 Workflows are **slash commands** for common operations. Located in `.agent/workflows/`.
 
-### Available Workflows
+### Available User Slash Commands (Workflows)
 
 | Command | Description | Category |
 |---------|-------------|----------|

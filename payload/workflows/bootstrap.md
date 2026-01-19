@@ -6,109 +6,54 @@ description: Analyze project and generate tailored task backlog
 
 Initialize a project with context-aware tasks and rules.
 
-## Step 1: Run Detection
+## Step 1: Run Bootstrap
 
-Analyze the codebase (use `--help` for options):
-
-```bash
-python3 .dev_ops/scripts/project_ops.py detect --help
-```
+Execute the bootstrap command to automatically detect stack, scaffold docs, and generate rules:
 
 ```bash
-python3 .dev_ops/scripts/project_ops.py detect --target . --format json
+# As User: Run "DevOps: Bootstrap Project" from Command Palette
+# As Agent:
+<vscode_command>devops.bootstrap</vscode_command>
 ```
 
-**Read the output carefully.** It contains:
+**This command will:**
 
-- **stack**: Languages, frameworks, linters, databases
-- **docs**: Which DevOps docs exist (PRD, architecture, non-negotiables)
-- **tests**: Test framework, CI status
-- **patterns**: Common files and directories
+1. **Analyze** the codebase (stack, docs, tests, patterns).
+2. **Scaffold** architecture documentation in `.dev_ops/docs/architecture`.
+3. **Generate** rules in `.agent/rules` (or `.cursor/rules`) for the detected stack.
 
 ## Step 2: Understand the Project
 
-Based on detection results:
+Based on the bootstrap output and generated docs:
 
 ### If Brownfield (existing code)
 
-1. Review key entry points from `patterns.entry_points`
-2. Understand module structure from `patterns.common_dirs`
-3. Note which documentation is missing from `docs`
-4. Check test coverage from `tests`
-5. Review scaffolded architecture docs in `.dev_ops/docs/architecture/`
+1. Review key entry points.
+2. Understand module structure.
+3. Note which documentation is missing.
+4. Check test coverage.
+5. Review scaffolded architecture docs in `.dev_ops/docs/architecture/` -> **Start filling them in.**
 
 ### If Greenfield (new project)
 
-1. Note intended technologies from `stack`
-2. All docs will be missing — tasks will be created for them
+1. Note intended technologies.
+2. All docs will be missing — tasks will be created for them.
 
-## Step 3: Populate Architecture Docs
+## Step 3: Architecture Docs (Post-Bootstrap)
 
-The installer creates placeholder docs in `.dev_ops/docs/architecture/`.
+The bootstrap command has already created the directory structure and placeholder files.
 
-**For each generated `.md` file:**
+**For each generated `.md` file in `.dev_ops/docs/architecture/`:**
 
 1. Analyze the corresponding codebase directory
 2. Fill in Purpose, Overview, Public Interface sections
 3. Document key files and dependencies
 
-**If project is large (>10 components):**
+## Step 4: Verify Rules
 
-- Create tasks for documenting each major subsystem
-- Focus on high-level architecture first
+The bootstrap command has already generated rules for your stack.
 
-## Step 4: Generate Task Backlog
-
-Check `docs` from detection. Create tasks for missing items (use `--help` for options):
-
-```bash
-python3 .dev_ops/scripts/board_ops.py create_task --help
-```
-
-### Required Framework Tasks
-
-| Missing Doc | Task to Create | Template |
-|-------------|----------------|----------|
-| `docs.prd = null` | "Create PRD" | `.dev_ops/templates/docs/prd.md` |
-| `docs.nonnegotiables = null` | "Create Non-Negotiables" | `.dev_ops/templates/docs/nonnegotiables.md` |
-| `docs.architecture = null` | "Document Architecture" | `.dev_ops/templates/docs/architecture_doc.md` |
-
-Example:
-
-```bash
-python3 .dev_ops/scripts/board_ops.py create_task \
-  --title "Create PRD" \
-  --summary "Define product vision using template at .dev_ops/templates/docs/prd.md" \
-  --priority high \
-  --commit
-```
-
-### Project-Specific Tasks
-
-Based on audit, create 3-5 additional tasks:
-
-- "Document [undocumented module]"
-- "Add unit tests for [untested component]"
-- "Set up CI/CD pipeline" (if `tests.ci_configured = false`)
-
-## Step 5: Generate Rules
-
-Create rules for detected technologies (use `--help` for options):
-
-```bash
-python3 .dev_ops/scripts/project_ops.py generate-rules --help
-```
-
-```bash
-python3 .dev_ops/scripts/project_ops.py generate-rules --target .
-```
-
-This creates rules in `.agent/rules/` for:
-
-- Detected languages (e.g., `languages/python.md`)
-- Detected linters (e.g., `linters/ruff.md`)
-
-**Review and customize** the generated rules.
+**Review and customize** the generated rules in `.agent/rules/` (or `.cursor/rules/`) if needed.
 
 ## Exit Criteria
 

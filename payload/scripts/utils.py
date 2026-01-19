@@ -4,7 +4,6 @@ import os
 import re
 import subprocess
 import sys
-from typing import Optional
 
 # ==========================================
 # Exceptions
@@ -59,7 +58,7 @@ def get_project_root() -> str:
     return os.getcwd()
 
 
-def get_dev_ops_root(project_root: Optional[str] = None) -> str:
+def get_dev_ops_root(project_root: str | None = None) -> str:
     """Get the dev_ops payload directory.
 
     Returns:
@@ -100,7 +99,7 @@ def get_workspace_root() -> str:
     return get_project_root()
 
 
-def get_artifact_working_dir(project_root: Optional[str] = None) -> str:
+def get_artifact_working_dir(project_root: str | None = None) -> str:
     """Get the working directory for active (non-archived) artifacts.
 
     Args:
@@ -120,7 +119,7 @@ def get_artifact_working_dir(project_root: Optional[str] = None) -> str:
 # ==========================================
 
 
-def prompt_user(question: str, default: Optional[str] = None) -> str:
+def prompt_user(question: str, default: str | None = None) -> str:
     """Prompt the user for input, handling pipes and headless mode.
 
     Args:

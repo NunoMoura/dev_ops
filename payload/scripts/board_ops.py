@@ -16,7 +16,7 @@ import json
 import os
 import subprocess
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 # Valid priority values
 VALID_PRIORITIES = frozenset({"high", "medium", "low", "p0", "p1", "p2"})
@@ -74,19 +74,19 @@ def _load_default_columns() -> list[dict]:
 DEFAULT_COLUMNS = _load_default_columns()
 
 
-def get_board_path(project_root: Optional[str] = None) -> str:
+def get_board_path(project_root: str | None = None) -> str:
     """Get the path to the board JSON file at .dev_ops/board.json."""
     root = project_root or os.getcwd()
     return os.path.join(root, ".dev_ops", "board.json")
 
 
-def get_current_task_path(project_root: Optional[str] = None) -> str:
+def get_current_task_path(project_root: str | None = None) -> str:
     """Get the path to the .current_task file at .dev_ops/.current_task."""
     root = project_root or os.getcwd()
     return os.path.join(root, ".dev_ops", ".current_task")
 
 
-def get_current_task(project_root: Optional[str] = None) -> Optional[str]:
+def get_current_task(project_root: str | None = None) -> str | None:
     """Read the current task ID from .current_task file."""
     path = get_current_task_path(project_root)
     if os.path.exists(path):
@@ -95,7 +95,7 @@ def get_current_task(project_root: Optional[str] = None) -> Optional[str]:
     return None
 
 
-def set_current_task(task_id: Optional[str], project_root: Optional[str] = None) -> None:
+def set_current_task(task_id: str | None, project_root: str | None = None) -> None:
     """Write the current task ID to .current_task file."""
     path = get_current_task_path(project_root)
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -106,7 +106,7 @@ def set_current_task(task_id: Optional[str], project_root: Optional[str] = None)
         os.remove(path)
 
 
-def load_board(project_root: Optional[str] = None) -> dict:
+def load_board(project_root: str | None = None) -> dict:
     """Load the DevOps board from JSON file."""
     board_path = get_board_path(project_root)
     if not os.path.exists(board_path):
@@ -119,7 +119,7 @@ def load_board(project_root: Optional[str] = None) -> dict:
     return board
 
 
-def save_board(board: dict, project_root: Optional[str] = None) -> None:
+def save_board(board: dict, project_root: str | None = None) -> None:
     """Save the DevOps board to JSON file."""
     board_path = get_board_path(project_root)
     os.makedirs(os.path.dirname(board_path), exist_ok=True)
@@ -127,7 +127,7 @@ def save_board(board: dict, project_root: Optional[str] = None) -> None:
         json.dump(board, f, indent=2)
 
 
-def get_developer_config(project_root: Optional[str] = None) -> dict:
+def get_developer_config(project_root: str | None = None) -> dict:
     """Read developer configuration from .dev_ops/config.json.
 
     Returns dict with developer info, or empty dict if not configured.
@@ -199,9 +199,9 @@ def get_column_name(board: dict, column_id: str) -> str:
 
 
 def get_tasks(
-    project_root: Optional[str] = None,
-    column_id: Optional[str] = None,
-    status: Optional[str] = None,
+    project_root: str | None = None,
+    column_id: str | None = None,
+    status: str | None = None,
 ) -> list[dict[str, Any]]:
     """Get tasks from the board, optionally filtered by column or status."""
     board = load_board(project_root)
@@ -218,15 +218,15 @@ def get_tasks(
 def create_task(
     title: str,
     summary: str = "",
-    workflow: Optional[str] = None,
+    workflow: str | None = None,
     priority: str = "medium",
     status: str = "ready",
-    assignee: Optional[str] = None,
-    upstream: Optional[list[str]] = None,
-    downstream: Optional[list[str]] = None,
+    assignee: str | None = None,
+    upstream: list[str] | None = None,
+    downstream: list[str] | None = None,
     column_id: str = "col-backlog",
-    spawn_from: Optional[str] = None,
-    project_root: Optional[str] = None,
+    spawn_from: str | None = None,
+    project_root: str | None = None,
 ) -> str:
     """Create a new task on the DevOps board. Returns the task ID.
 
@@ -284,7 +284,7 @@ def create_task(
 def add_upstream(
     task_id: str,
     artifact_id: str,
-    project_root: Optional[str] = None,
+    project_root: str | None = None,
 ) -> bool:
     """Add an upstream dependency to a task."""
     board = load_board(project_root)
@@ -306,7 +306,7 @@ def add_upstream(
 def add_downstream(
     task_id: str,
     artifact_id: str,
-    project_root: Optional[str] = None,
+    project_root: str | None = None,
 ) -> bool:
     """Add a downstream dependency to a task."""
     board = load_board(project_root)
@@ -326,7 +326,7 @@ def add_downstream(
 
 
 def move_to_column(
-    task_id: str, column_id: str, project_root: Optional[str] = None, commit: bool = False
+    task_id: str, column_id: str, project_root: str | None = None, commit: bool = False
 ) -> bool:
     """Move a task to a specific column.
 
@@ -356,12 +356,12 @@ def move_to_column(
     return False
 
 
-def mark_build(task_id: str, project_root: Optional[str] = None) -> bool:
+def mark_build(task_id: str, project_root: str | None = None) -> bool:
     """Move a task to Build column."""
     return move_to_column(task_id, "col-build", project_root)
 
 
-def set_status(task_id: str, status: str, project_root: Optional[str] = None) -> bool:
+def set_status(task_id: str, status: str, project_root: str | None = None) -> bool:
     """Set the status of a task (ready, in_progress, needs_feedback, blocked, done)."""
     valid_statuses = {"ready", "in_progress", "needs_feedback", "blocked", "done"}
     if status not in valid_statuses:
@@ -380,7 +380,7 @@ def set_status(task_id: str, status: str, project_root: Optional[str] = None) ->
     return False
 
 
-def checklist_add(task_id: str, item: str, project_root: Optional[str] = None) -> bool:
+def checklist_add(task_id: str, item: str, project_root: str | None = None) -> bool:
     """Add a checklist item to a task."""
     board = load_board(project_root)
     for task in board.get("items", []):
@@ -396,7 +396,7 @@ def checklist_add(task_id: str, item: str, project_root: Optional[str] = None) -
     return False
 
 
-def checklist_complete(task_id: str, index: int, project_root: Optional[str] = None) -> bool:
+def checklist_complete(task_id: str, index: int, project_root: str | None = None) -> bool:
     """Mark a checklist item as complete by index (0-based)."""
     board = load_board(project_root)
     for task in board.get("items", []):
@@ -415,7 +415,7 @@ def checklist_complete(task_id: str, index: int, project_root: Optional[str] = N
     return False
 
 
-def checklist_list(task_id: str, project_root: Optional[str] = None) -> list:
+def checklist_list(task_id: str, project_root: str | None = None) -> list:
     """List all checklist items for a task."""
     board = load_board(project_root)
     for task in board.get("items", []):
@@ -435,7 +435,7 @@ def checklist_list(task_id: str, project_root: Optional[str] = None) -> list:
 def replace_task(
     task_id: str,
     new_titles: list[str],
-    project_root: Optional[str] = None,
+    project_root: str | None = None,
 ) -> list[str]:
     """Replace a task with multiple simpler tasks. Returns IDs of new tasks."""
     board = load_board(project_root)
@@ -489,10 +489,10 @@ def replace_task(
 
 def create_pr(
     task_id: str,
-    title: Optional[str] = None,
-    body: Optional[str] = None,
-    project_root: Optional[str] = None,
-) -> Optional[str]:
+    title: str | None = None,
+    body: str | None = None,
+    project_root: str | None = None,
+) -> str | None:
     """Create a Pull Request using GitHub CLI. Returns PR URL if successful."""
     import subprocess
 
@@ -557,7 +557,7 @@ def record_phase_session(
     task_id: str,
     phase_name: str,
     session_id: str,
-    project_root: Optional[str] = None,
+    project_root: str | None = None,
 ) -> bool:
     """Record the session ID for a completed phase.
 
@@ -582,11 +582,11 @@ def record_phase_session(
 
 def mark_done(
     task_id: str,
-    outputs: Optional[list] = None,
+    outputs: list | None = None,
     create_pr_flag: bool = False,
     capture_sha: bool = True,
     archive: bool = False,
-    project_root: Optional[str] = None,
+    project_root: str | None = None,
     commit: bool = False,
 ) -> bool:
     """Move a task to Done column, optionally add output artifacts, and archive.
@@ -654,7 +654,7 @@ def mark_done(
     return False
 
 
-def pick_task(task_id: Optional[str] = None, project_root: Optional[str] = None) -> Optional[dict]:
+def pick_task(task_id: str | None = None, project_root: str | None = None) -> dict | None:
     """Pick the next available task based on priority and column.
 
     Selection criteria:
@@ -693,7 +693,7 @@ def pick_task(task_id: Optional[str] = None, project_root: Optional[str] = None)
     return picked
 
 
-def check_prerequisites(task: dict, project_root: Optional[str] = None) -> tuple:
+def check_prerequisites(task: dict, project_root: str | None = None) -> tuple:
     """Check if task prerequisites are met. Returns (ok, missing)."""
     prereqs = task.get("prerequisites", {})
     missing = {"tasks": []}
@@ -712,7 +712,7 @@ def check_prerequisites(task: dict, project_root: Optional[str] = None) -> tuple
     return all_ok, missing
 
 
-def _init_activity_file(task_id: str, project_root: Optional[str] = None) -> str:
+def _init_activity_file(task_id: str, project_root: str | None = None) -> str:
     """Initialize the activity trace file for a task."""
     from utils import get_dev_ops_root
 
@@ -740,7 +740,7 @@ def _init_activity_file(task_id: str, project_root: Optional[str] = None) -> str
     return trace_path
 
 
-def _archive_current_owner(task: dict, project_root: Optional[str] = None) -> None:
+def _archive_current_owner(task: dict, project_root: str | None = None) -> None:
     """Move current owner to agentHistory."""
     owner = task.get("owner")
     if not owner:
@@ -766,10 +766,10 @@ def _archive_current_owner(task: dict, project_root: Optional[str] = None) -> No
 def register_agent(
     task_id: str,
     agent_type: str,
-    session_id: Optional[str] = None,
+    session_id: str | None = None,
     name: str = "antigravity",
-    model: Optional[str] = None,
-    project_root: Optional[str] = None,
+    model: str | None = None,
+    project_root: str | None = None,
 ) -> bool:
     """Register an agent working on a task. Returns True if successful."""
     board = load_board(project_root)
@@ -816,7 +816,7 @@ def register_agent(
     return False
 
 
-def unregister_agent(task_id: str, project_root: Optional[str] = None) -> bool:
+def unregister_agent(task_id: str, project_root: str | None = None) -> bool:
     """Remove agent from task (release ownership)."""
     board = load_board(project_root)
     for task in board.get("items", []):
@@ -831,7 +831,7 @@ def unregister_agent(task_id: str, project_root: Optional[str] = None) -> bool:
     return False
 
 
-def get_active_agents(project_root: Optional[str] = None) -> list[dict]:
+def get_active_agents(project_root: str | None = None) -> list[dict]:
     """Get all active agents (or humans) across all tasks."""
     board = load_board(project_root)
     active = []
@@ -850,11 +850,11 @@ def get_active_agents(project_root: Optional[str] = None) -> list[dict]:
 
 
 def claim_task(
-    task_id: Optional[str] = None,
+    task_id: str | None = None,
     force: bool = False,
-    session_id: Optional[str] = None,
-    name: Optional[str] = None,
-    project_root: Optional[str] = None,
+    session_id: str | None = None,
+    name: str | None = None,
+    project_root: str | None = None,
     commit: bool = False,
 ) -> bool:
     """Claim a task. Defaults to the Developer claiming it.
@@ -934,7 +934,7 @@ def claim_task(
 
 def revert_task(
     task_id: str,
-    project_root: Optional[str] = None,
+    project_root: str | None = None,
 ) -> bool:
     """Revert a completed task using its stored commit SHA.
 
@@ -996,7 +996,7 @@ def revert_task(
         return False
 
 
-def archive_task(task_id: str, project_root: Optional[str] = None) -> bool:
+def archive_task(task_id: str, project_root: str | None = None) -> bool:
     """Archive a completed task and its linked artifacts using archive_ops module.
 
     Creates .dev_ops/archive/TASK-XXX.tar.gz containing:
@@ -1076,7 +1076,7 @@ def calculate_metrics(board: dict) -> dict:
     }
 
 
-def gather_session_context(task: dict, session_dir: Optional[str] = None) -> dict:
+def gather_session_context(task: dict, session_dir: str | None = None) -> dict:
     """Gather context from the most recent Antigravity session.
 
     Looks for walkthrough.md and implementation_plan.md in the session directory.
@@ -1191,9 +1191,9 @@ def build_refinement_prompt(
 def refine_phase(
     task_id: str,
     feedback: str,
-    session_dir: Optional[str] = None,
-    project_root: Optional[str] = None,
-) -> Optional[str]:
+    session_dir: str | None = None,
+    project_root: str | None = None,
+) -> str | None:
     """Generate a refinement prompt with context from previous session.
 
     1. Loads task and previous session context
