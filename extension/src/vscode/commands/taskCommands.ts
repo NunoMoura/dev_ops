@@ -393,7 +393,7 @@ async function handleViewTaskHistory(node?: BoardNode): Promise<void> {
         vscode.window.showWarningMessage('No workspace folder open.');
         return;
     }
-    const historyPath = path.join(root, 'dev_ops', 'board', 'tasks', `${task.id}.md`);
+    const historyPath = path.join(root, '.dev_ops', 'board', 'tasks', `${task.id}.md`);
     try {
         const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(historyPath));
         await vscode.window.showTextDocument(doc, { preview: true });

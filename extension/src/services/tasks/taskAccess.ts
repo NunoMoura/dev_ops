@@ -53,7 +53,7 @@ export async function appendTaskHistory(task: Task, message: string): Promise<vo
   if (!root) {
     return;
   }
-  const historyDir = path.join(root, 'dev_ops', 'board', 'tasks');
+  const historyDir = path.join(root, '.dev_ops', 'board', 'tasks');
   await fs.mkdir(historyDir, { recursive: true });
   const entry = `- [${new Date().toISOString()}] ${message}\n`;
   await fs.appendFile(path.join(historyDir, `${task.id}.md`), entry, 'utf8');

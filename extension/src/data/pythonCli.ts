@@ -48,8 +48,8 @@ export async function findPython(): Promise<string | null> {
 function findScriptPath(cwd: string, scriptName: string): string {
     // Framework repo: scripts are in payload/scripts/
     const frameworkPath = path.join(cwd, "payload", "scripts", scriptName);
-    // Legacy: old dev_ops/scripts/ (backward compat)
-    const legacyPath = path.join(cwd, "dev_ops", "scripts", scriptName);
+    // Installed: .dev_ops/scripts/
+    const legacyPath = path.join(cwd, ".dev_ops", "scripts", scriptName);
 
     if (fs.existsSync(frameworkPath)) {
         return frameworkPath;

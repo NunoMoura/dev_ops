@@ -28,7 +28,7 @@ export async function ensurePlanDirectory(): Promise<string | undefined> {
     vscode.window.showWarningMessage('Open a workspace folder to import plans.');
     return undefined;
   }
-  const dir = path.join(root, 'dev_ops', 'plans');
+  const dir = path.join(root, '.dev_ops', 'plans');
   await fs.mkdir(dir, { recursive: true });
   return dir;
 }
