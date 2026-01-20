@@ -75,7 +75,11 @@ const GLOB_MAPPINGS: Record<string, string[]> = {
     "sqlite": ["**/*.db", "**/*.sqlite", "**/*.sqlite3"],
 };
 
-const EXCLUDED_DIRS = new Set([".git", "node_modules", "venv", "__pycache__", "dist", "out", ".dev_ops", ".agent", ".cursor"]);
+// Global exclusion list for cleaner scaffolding
+const EXCLUDED_DIRS = new Set([
+    ".git", "node_modules", "venv", "__pycache__", "dist", "out", ".dev_ops", ".agent", ".cursor",
+    "test", "tests", "spec", "specs", "scripts", "utils", "bin", "assets", "public", "static", "examples", "demos"
+]);
 
 export class BootstrapService {
     private extensionPath: string;
@@ -274,12 +278,12 @@ export class BootstrapService {
         const archDir = path.join(projectRoot, '.dev_ops', 'docs', 'architecture');
         fs.mkdirSync(archDir, { recursive: true });
 
+        // ... template loading ...
         const templatePath = path.join(this.extensionPath, 'dist', 'assets', 'templates', 'docs', 'architecture_doc.md');
         let templateContent = "";
         if (fs.existsSync(templatePath)) {
             templateContent = fs.readFileSync(templatePath, 'utf8');
         } else {
-            // Fallback template
             templateContent = `---
 title: "{title}"
 type: doc
@@ -301,25 +305,31 @@ path: "{path}"
 
         // Recursive walker
         const walk = (dir: string, depth: number) => {
-            if (depth > 4) { return; }
+            if (depth > 6) { return; } // Max depth
 
             const name = path.basename(dir);
             if (EXCLUDED_DIRS.has(name) || name.startsWith('.')) { return; }
 
-            // Check for code files
+            // Analyze directory contents
             let hasCode = false;
+            let hasSubdirs = false;
+
             try {
-                const files = fs.readdirSync(dir);
+                const files = fs.readdirSync(dir, { withFileTypes: true });
                 for (const f of files) {
-                    if (['.ts', '.js', '.py', '.go', '.rs'].includes(path.extname(f))) {
+                    if (f.isDirectory()) {
+                        if (!EXCLUDED_DIRS.has(f.name) && !f.name.startsWith('.')) {
+                            hasSubdirs = true;
+                        }
+                    } else if (['.ts', '.js', '.py', '.go', '.rs', '.java', '.cpp'].includes(path.extname(f.name))) {
                         hasCode = true;
-                        break;
                     }
                 }
 
-                // If directory has code, create doc
-                if (hasCode) {
+                // If LEAF folder (has code, no relevant subdirs), create doc
+                if (hasCode && !hasSubdirs) {
                     const relPath = path.relative(projectRoot, dir);
+                    // Avoid creating doc for root
                     if (relPath && !processed.has(relPath)) {
                         const docPath = path.join(archDir, `${relPath}.md`);
                         if (!fs.existsSync(docPath)) {
@@ -337,9 +347,8 @@ path: "{path}"
 
                 // Recurse
                 for (const f of files) {
-                    const fullPath = path.join(dir, f);
-                    if (fs.statSync(fullPath).isDirectory()) {
-                        walk(fullPath, depth + 1);
+                    if (f.isDirectory()) {
+                        walk(path.join(dir, f.name), depth + 1);
                     }
                 }
             } catch (e) {
