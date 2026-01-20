@@ -19,7 +19,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
   public readonly onDidComplete = this._onDidComplete.event;
 
   private _isBoardOpen = false;
-  private _groupingMode: 'status' | 'phase' | 'priority' | 'owner' = 'status';
+  private _groupingMode: 'status' | 'phase' | 'priority' | 'owner' = 'phase';
   private _bootstrapDismissed = false;
 
   constructor(private readonly _extensionUri: vscode.Uri) { }

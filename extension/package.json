@@ -236,7 +236,8 @@
           "id": "devopsMetricsView",
           "name": "METRICS",
           "icon": "$(graph)",
-          "type": "webview"
+          "type": "webview",
+          "visibility": "collapsed"
         }
       ]
     },
