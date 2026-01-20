@@ -3,27 +3,33 @@
   "columns": [
     {
       "id": "col-backlog",
-      "title": "Backlog"
+      "name": "Backlog",
+      "position": 1
     },
     {
       "id": "col-understand",
-      "title": "Understand"
+      "name": "Understand",
+      "position": 2
     },
     {
       "id": "col-plan",
-      "title": "Plan"
+      "name": "Plan",
+      "position": 3
     },
     {
       "id": "col-build",
-      "title": "Build"
+      "name": "Build",
+      "position": 4
     },
     {
       "id": "col-verify",
-      "title": "Verify"
+      "name": "Verify",
+      "position": 5
     },
     {
       "id": "col-done",
-      "title": "Done"
+      "name": "Done",
+      "position": 6
     }
   ],
   "items": []
