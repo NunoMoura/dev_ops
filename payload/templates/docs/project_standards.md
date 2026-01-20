@@ -1,13 +1,13 @@
 ---
-id: non-negotiables
-title: "Non-Negotiables"
-type: non-negotiables
+id: project-standards
+title: "Project Standards"
+type: project-standards
 date: "{{date}}"
 ---
 
-# Non-Negotiables
+# Project Standards
 
-Governing principles and constraints for the project.
+Governing principles and standards for the project.
 Checked during alignment phases.
 
 ---
@@ -22,7 +22,7 @@ Example: "A real-time collaboration tool for remote teams."
 
 ---
 
-## Non-Negotiables
+## Project Standards
 
 <!-- 
 Rules that CANNOT be violated under any circumstances.

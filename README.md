@@ -220,7 +220,7 @@ your-project/
 Analyzes your project:
 
 - Detects tech stack (languages, frameworks, linters)
-- Creates tasks for missing docs (PRD, Non-Negotiables)
+- Creates tasks for missing docs (PRD, Project Standards)
 - Generates rules for detected technologies
 - Scaffolds architecture documentation
 

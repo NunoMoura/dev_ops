@@ -20,7 +20,7 @@ Provide structured explanations of the project, components, or specific code.
 Read these files:
 
 - `README.md`
-- `.dev_ops/docs/nonnegotiables.md`
+Read- **Constraints**: Project Standards (`.dev_ops/docs/project_standards.md`)
 - `.dev_ops/docs/prd/*.md`
 - `.dev_ops/docs/architecture/*.md`
 - Key entry points (`main.py`, `index.ts`, etc.)

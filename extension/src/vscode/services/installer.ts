@@ -350,14 +350,6 @@ export async function install(
     const skillsInstalled = installSkills(skillsSrc, paths.skillsDir);
     log(`[installer] ${skillsInstalled} skill files installed to ${paths.skillsDir}`);
 
-    // Install nonnegotiables template
-    const nonnegSrc = path.join(docsTemplatesSrc, 'nonnegotiables.md');
-    const nonnegDest = path.join(devOpsDocsDir, 'nonnegotiables.md');
-    if (fs.existsSync(nonnegSrc) && !fs.existsSync(nonnegDest)) {
-        fs.copyFileSync(nonnegSrc, nonnegDest);
-        log('[installer] Nonnegotiables template installed');
-    }
-
     // Install GitHub workflows if requested
     if (githubWorkflows) {
         const prTriageSrc = path.join(templatesSrc, 'github', 'pr_triage.yml');
@@ -373,6 +365,11 @@ export async function install(
         }
     }
 
+    // Scaffold Architecture Docs (Deterministic mirroring of codebase)
+    log('[installer] Scaffolding architecture documentation...');
+    const scaffoldStats = scaffoldArchitecture(projectRoot, extensionPath);
+    log(`[installer] Scaffolded ${scaffoldStats.created} architecture placeholder docs`);
+
     return {
         success: true,
         rulesInstalled,
@@ -380,6 +377,99 @@ export async function install(
         skillsInstalled,
         message: 'DevOps framework installed successfully'
     };
+}
+
+// Global exclusion list for cleaner scaffolding
+const EXCLUDED_DIRS = new Set([
+    ".git", "node_modules", "venv", "__pycache__", "dist", "out", ".dev_ops", ".agent", ".cursor",
+    "test", "tests", "spec", "specs", "scripts", "utils", "bin", "assets", "public", "static", "examples", "demos"
+]);
+
+/**
+ * scaffoldArchitecture
+ * 
+ * Deterministically mirrors the project structure to create placeholder architecture docs.
+ */
+function scaffoldArchitecture(projectRoot: string, extensionPath: string): { created: number; files: string[] } {
+    const archDir = path.join(projectRoot, '.dev_ops', 'docs', 'architecture');
+    fs.mkdirSync(archDir, { recursive: true });
+
+    const templatePath = path.join(extensionPath, 'dist', 'assets', 'templates', 'docs', 'architecture_doc.md');
+    let templateContent = "";
+    if (fs.existsSync(templatePath)) {
+        templateContent = fs.readFileSync(templatePath, 'utf8');
+    } else {
+        templateContent = `---
+title: "{title}"
+type: doc
+path: "{path}"
+---
+# {title}
+
+## Purpose
+<!-- What does this component do? -->
+
+## Public Interface
+<!-- Key exports -->
+`;
+    }
+
+    let createdCount = 0;
+    const createdFiles: string[] = [];
+    const processed = new Set<string>();
+
+    const walk = (dir: string, depth: number) => {
+        if (depth > 6) { return; }
+
+        const name = path.basename(dir);
+        if (EXCLUDED_DIRS.has(name) || name.startsWith('.')) { return; }
+
+        let hasCode = false;
+        let hasSubdirs = false;
+
+        try {
+            const files = fs.readdirSync(dir, { withFileTypes: true });
+            for (const f of files) {
+                if (f.isDirectory()) {
+                    if (!EXCLUDED_DIRS.has(f.name) && !f.name.startsWith('.')) {
+                        hasSubdirs = true;
+                    }
+                } else if (['.ts', '.js', '.py', '.go', '.rs', '.java', '.cpp', '.php', '.rb'].includes(path.extname(f.name))) {
+                    hasCode = true;
+                }
+            }
+
+            // LEAF NODE strategy: If it has code and NO relevant subdirs, it's a component.
+            // Also, if it's the root, we generally skip unless we want a root doc (usually not needed in arch folder).
+            if (hasCode && !hasSubdirs) {
+                const relPath = path.relative(projectRoot, dir);
+                if (relPath && !processed.has(relPath)) {
+                    const docPath = path.join(archDir, `${relPath}.md`);
+                    if (!fs.existsSync(docPath)) {
+                        fs.mkdirSync(path.dirname(docPath), { recursive: true });
+                        let content = templateContent
+                            .replace(/{title}/g, name)
+                            .replace(/{path}/g, relPath);
+                        fs.writeFileSync(docPath, content);
+                        createdCount++;
+                        createdFiles.push(relPath);
+                    }
+                    processed.add(relPath);
+                }
+            }
+
+            for (const f of files) {
+                if (f.isDirectory()) {
+                    walk(path.join(dir, f.name), depth + 1);
+                }
+            }
+        } catch (e) {
+            // Ignore errors
+        }
+    };
+
+    walk(projectRoot, 0);
+    return { created: createdCount, files: createdFiles };
 }
 
 /**

@@ -29,7 +29,7 @@ The bootstrap process should have populated your board with tasks. **Do not exec
 1. **Check the Board**: Verify that tasks have been created for:
    - **Product Definition**: "Define Product Requirements" (Analyze & Migrate).
    - **User Experience**: "Define User Personas & Stories" (Infer from PRD).
-   - **Project Constraints**: "Define Non-Negotiables".
+   - **Project Constraints**: "Define Project Standards": Create technical and product constraints.
    - **Architecture**: "Document System Architecture".
      - **Note**: This task now includes instructions to **Review** the scaffolded folder structure and **Remove** any irrelevant files before filling them in.
    - **Rules**: "Review and Customize Rules".

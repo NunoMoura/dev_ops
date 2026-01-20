@@ -38,8 +38,8 @@ downstream: []         # Artifacts produced (e.g., DOC-XXX, PLN-XXX)
 
 ### Project Alignment
 
-<!-- Does proposed work align with non-negotiables? -->
-- [ ] Reviewed `nonnegotiables.md`
+<!-- Does proposed work align with Project Standards? -->
+- [ ] **Constraints**: Review Project Standards (`.dev_ops/docs/project_standards.md`)
 - Violations:
 
 ## Internal Research

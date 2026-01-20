@@ -77,9 +77,9 @@ Tasks reference docs (`trigger`, `upstream`), not duplicate them.
 | `bootstrap_project` | Initialize project and generate tasks |
 | `explain_codebase` | Explain code structure |
 
-## Non-Negotiables
+## Project Standards
 
-Before significant changes, check `.dev_ops/docs/nonnegotiables.md` for:
+Before significant changes, check `.dev_ops/docs/project_standards.md` for:
 
 - **Constraints**: Rules that cannot be violated
 - **Tech Stack**: Locked technology decisions

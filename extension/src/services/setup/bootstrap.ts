@@ -36,7 +36,7 @@ interface StackItem {
 
 interface DocStatus {
     prd: string | null;
-    nonnegotiables: string | null;
+    projectStandards: string | null;
     architecture: string | null;
     readme: 'comprehensive' | 'basic' | 'minimal' | null;
     contributing: string | null;
@@ -76,10 +76,7 @@ const GLOB_MAPPINGS: Record<string, string[]> = {
 };
 
 // Global exclusion list for cleaner scaffolding
-const EXCLUDED_DIRS = new Set([
-    ".git", "node_modules", "venv", "__pycache__", "dist", "out", ".dev_ops", ".agent", ".cursor",
-    "test", "tests", "spec", "specs", "scripts", "utils", "bin", "assets", "public", "static", "examples", "demos"
-]);
+// Global exclusion list removed (logic moved to installer)
 
 export class BootstrapService {
     private extensionPath: string;
@@ -99,9 +96,10 @@ export class BootstrapService {
         log(`[Bootstrap] Detected stack: ${detection.stack.map(s => s.name).join(', ')}`);
 
         // 2. Scout Architecture
-        log('[Bootstrap] Scaffolding architecture docs...');
-        const scaffoldStats = await this.scaffoldArchitecture(projectRoot);
-        log(`[Bootstrap] Created ${scaffoldStats.created} architecture docs`);
+        // 2. Scout Architecture
+        log('[Bootstrap] Verifying architecture scaffolding...');
+        const components = await this.identifyArchitectureComponents(projectRoot);
+        log(`[Bootstrap] Identified ${components.length} components`);
 
         // 3. Generate Rules
         log('[Bootstrap] Generating rules...');
@@ -110,7 +108,7 @@ export class BootstrapService {
 
         // 4. Create Tasks
         log('[Bootstrap] Creating tasks...');
-        await this.createBootstrapTasks(projectRoot, detection.docs, scaffoldStats.files);
+        await this.createBootstrapTasks(projectRoot, detection.docs, components);
         log('[Bootstrap] Tasks created.');
     }
 
@@ -215,7 +213,7 @@ export class BootstrapService {
     private async detectDocs(projectRoot: string): Promise<DocStatus> {
         const docs: DocStatus = {
             prd: null,
-            nonnegotiables: null,
+            projectStandards: null,
             architecture: null,
             readme: null,
             contributing: null,
@@ -229,6 +227,16 @@ export class BootstrapService {
             const matches = await vscode.workspace.findFiles(new vscode.RelativePattern(projectRoot, p), null, 1);
             if (matches.length > 0) {
                 docs.prd = path.relative(projectRoot, matches[0].fsPath);
+                break;
+            }
+        }
+
+        // Check Project Standards
+        const stdPatterns = ["docs/project_standards.md", "docs/standards.md", "standards.md", "project_standards.md"];
+        for (const p of stdPatterns) {
+            const matches = await vscode.workspace.findFiles(new vscode.RelativePattern(projectRoot, p), null, 1);
+            if (matches.length > 0) {
+                docs.projectStandards = path.relative(projectRoot, matches[0].fsPath);
                 break;
             }
         }
@@ -274,90 +282,25 @@ export class BootstrapService {
 
     // --- Scaffolding Primitives ---
 
-    public async scaffoldArchitecture(projectRoot: string): Promise<{ created: number; files: string[] }> {
+    public async identifyArchitectureComponents(projectRoot: string): Promise<string[]> {
         const archDir = path.join(projectRoot, '.dev_ops', 'docs', 'architecture');
-        fs.mkdirSync(archDir, { recursive: true });
+        if (!fs.existsSync(archDir)) { return []; }
 
-        // ... template loading ...
-        const templatePath = path.join(this.extensionPath, 'dist', 'assets', 'templates', 'docs', 'architecture_doc.md');
-        let templateContent = "";
-        if (fs.existsSync(templatePath)) {
-            templateContent = fs.readFileSync(templatePath, 'utf8');
-        } else {
-            templateContent = `---
-title: "{title}"
-type: doc
-path: "{path}"
----
-# {title}
-
-## Purpose
-<!-- What does this component do? -->
-
-## Public Interface
-<!-- Key exports -->
-`;
-        }
-
-        let createdCount = 0;
-        const createdFiles: string[] = [];
-        const processed = new Set<string>();
-
-        // Recursive walker
-        const walk = (dir: string, depth: number) => {
-            if (depth > 6) { return; } // Max depth
-
-            const name = path.basename(dir);
-            if (EXCLUDED_DIRS.has(name) || name.startsWith('.')) { return; }
-
-            // Analyze directory contents
-            let hasCode = false;
-            let hasSubdirs = false;
-
-            try {
-                const files = fs.readdirSync(dir, { withFileTypes: true });
-                for (const f of files) {
-                    if (f.isDirectory()) {
-                        if (!EXCLUDED_DIRS.has(f.name) && !f.name.startsWith('.')) {
-                            hasSubdirs = true;
-                        }
-                    } else if (['.ts', '.js', '.py', '.go', '.rs', '.java', '.cpp'].includes(path.extname(f.name))) {
-                        hasCode = true;
-                    }
+        const components: string[] = [];
+        const walk = (dir: string) => {
+            const files = fs.readdirSync(dir, { withFileTypes: true });
+            for (const f of files) {
+                if (f.isDirectory()) {
+                    walk(path.join(dir, f.name));
+                } else if (f.name.endsWith('.md')) {
+                    const relPath = path.relative(archDir, path.join(dir, f.name));
+                    components.push(relPath.replace(/\.md$/, ''));
                 }
-
-                // If LEAF folder (has code, no relevant subdirs), create doc
-                if (hasCode && !hasSubdirs) {
-                    const relPath = path.relative(projectRoot, dir);
-                    // Avoid creating doc for root
-                    if (relPath && !processed.has(relPath)) {
-                        const docPath = path.join(archDir, `${relPath}.md`);
-                        if (!fs.existsSync(docPath)) {
-                            fs.mkdirSync(path.dirname(docPath), { recursive: true });
-                            let content = templateContent
-                                .replace(/{title}/g, name)
-                                .replace(/{path}/g, relPath);
-                            fs.writeFileSync(docPath, content);
-                            createdCount++;
-                            createdFiles.push(relPath);
-                        }
-                        processed.add(relPath);
-                    }
-                }
-
-                // Recurse
-                for (const f of files) {
-                    if (f.isDirectory()) {
-                        walk(path.join(dir, f.name), depth + 1);
-                    }
-                }
-            } catch (e) {
-                // Ignore permission errors
             }
         };
 
-        walk(projectRoot, 0);
-        return { created: createdCount, files: createdFiles };
+        walk(archDir);
+        return components;
     }
 
     // --- Rule Generation Primitives ---
@@ -475,7 +418,7 @@ path: "{path}"
     }
     // --- Task Creation ---
 
-    public async createBootstrapTasks(projectRoot: string, docs: DocStatus, scaffoldedDocs: string[]): Promise<void> {
+    public async createBootstrapTasks(projectRoot: string, docs: DocStatus, components: string[]): Promise<void> {
         const boardPath = path.join(projectRoot, '.dev_ops', 'board.json');
         if (!fs.existsSync(boardPath)) {
             warn(`[Bootstrap] Board not found at ${boardPath}, skipping task creation.`);
@@ -499,10 +442,11 @@ path: "{path}"
 
         // 1. Architecture (Highest Priority - Understanding Current State)
         const archTitle = "Document System Architecture";
-        if (scaffoldedDocs.length > 0 && !taskExists(archTitle)) {
+        // Use detected components from installer, or empty if none found
+        if (components.length > 0 && !taskExists(archTitle)) {
             tasksToCreate.push({
                 title: archTitle,
-                summary: `Comprehensive documentation of the system architecture. \n\nTarget components:\n${scaffoldedDocs.map(d => `- ${d}`).join('\n')}\n\nStrategy:\n1. Analyze codebase to understand current state.\n2. Document component purposes, interfaces, and dependencies.\n3. Ensure accurate reflection of the code (RLM phase 1).`,
+                summary: `Comprehensive documentation of the system architecture. \n\nTarget components (pre-scaffolded in .dev_ops/docs/architecture/):\n${components.map(d => `- ${d}`).join('\n')}\n\nStrategy:\n1. Analyze codebase to understand current state.\n2. For each scaffolded file, fill in component purposes, interfaces, and dependencies.\n3. Ensure accurate reflection of the code (RLM phase 1).`,
                 priority: "high"
             });
         }
@@ -525,11 +469,11 @@ path: "{path}"
             });
         }
 
-        // 4. Non-negotiables (Constraints - Review & Migrate)
-        if (!taskExists("Define Non-Negotiables")) {
+        // 4. Project Standards (formerly Non-Negotiables)
+        if (!taskExists("Define Project Standards") && !docs.projectStandards) {
             tasksToCreate.push({
-                title: "Define Non-Negotiables",
-                summary: "Define technical and product constraints.\n\nStrategy:\n1. Search for existing constraint docs (e.g., `constraints.md`, `guidelines.md`).\n2. Create `.dev_ops/docs/nonnegotiables.md` using the template.\n   - If existing docs found: Migrate content.\n   - If no docs found: define standard constraints based on the tech stack (detected earlier) and best practices.\n3. Request user review.\n4. Ask about deleting original files.",
+                title: "Define Project Standards",
+                summary: "Define technical and product standards.\n\nStrategy:\n1. Search for existing constraint docs (e.g., `constraints.md`, `standards.md`).\n2. Create `.dev_ops/docs/project_standards.md` using the template at `.dev_ops/templates/docs/project_standards.md`.\n   - If existing docs found: Migrate content.\n   - If no docs found: define standard constraints based on the tech stack (detected earlier) and best practices.\n3. Request user review.",
                 priority: "high"
             });
         }
