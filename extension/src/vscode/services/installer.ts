@@ -15,12 +15,12 @@ const FRAMEWORK_VERSION = require('../../../package.json').version;
 
 // Default board columns
 const DEFAULT_COLUMNS = [
-    { id: 'col-backlog', title: 'Backlog' },
-    { id: 'col-understand', title: 'Understand' },
-    { id: 'col-plan', title: 'Plan' },
-    { id: 'col-build', title: 'Build' },
-    { id: 'col-verify', title: 'Verify' },
-    { id: 'col-done', title: 'Done' }
+    { id: 'col-backlog', name: 'Backlog' },
+    { id: 'col-understand', name: 'Understand' },
+    { id: 'col-plan', name: 'Plan' },
+    { id: 'col-build', name: 'Build' },
+    { id: 'col-verify', name: 'Verify' },
+    { id: 'col-done', name: 'Done' }
 ];
 
 export interface InstallerOptions {
