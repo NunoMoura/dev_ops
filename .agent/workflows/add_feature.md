@@ -7,30 +7,38 @@ category: guided
 
 Create FEAT-XXX and decompose into backlog tasks.
 
-> [!TIP]
-> Templates available:
->
-> - `.dev_ops/templates/docs/story.md` - User story format
-> - `.dev_ops/templates/docs/user.md` - User persona format
-> - `.dev_ops/templates/docs/mockup.md` - UI mockup documentation
+**Templates available:**
 
-## Steps
+- `.dev_ops/templates/docs/feature.md` - Feature specification
+- `.dev_ops/templates/docs/story.md` - User story format
+- `.dev_ops/templates/docs/persona.md` - User persona format
+- `.dev_ops/templates/docs/mockup.md` - UI mockup documentation
 
-1. **Create feature**:
+## Step 1: Create Feature Doc
 
-   ```bash
-   python3 scripts/artifact_ops.py create feature --title "{{user_input}}"
-   ```
+```bash
+cp .dev_ops/templates/docs/feature.md .dev_ops/docs/FEAT-XXX.md
+```
 
-2. **Fill sections**: Summary, User Stories, Acceptance Criteria, Technical Notes
+## Step 2: Fill Sections
 
-3. **Decompose to tasks** (one per acceptance criterion):
+Complete the feature document: Summary, User Stories, Acceptance Criteria, Technical Notes
 
-   ```bash
-   python3 scripts/board_ops.py create --title "Implement X" --trigger FEAT-XXX
-   ```
+## Step 3: Decompose to Tasks
+
+Create one task per acceptance criterion using the VS Code command:
+
+```xml
+<vscode_command>devops.createTask</vscode_command>
+```
+
+Reference the feature in the task summary:
+
+```markdown
+Trigger: FEAT-XXX
+```
 
 ## Outputs
 
-- `dev_ops/artifacts/features/FEAT-XXX.md`
+- `.dev_ops/docs/FEAT-XXX.md`
 - TASK-XXX items in Backlog

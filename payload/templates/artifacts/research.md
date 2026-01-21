@@ -32,7 +32,7 @@ downstream: []         # Artifacts produced (e.g., DOC-XXX, PLN-XXX)
 ### Technical Alignment
 
 <!-- Does existing code match architecture docs? -->
-- [ ] Reviewed relevant architecture docs
+- [ ] **Reviewed relevant SPEC.md files** (for component structure & constraints)
 - [ ] Checked codebase for drift from specs
 - Issues found:
 

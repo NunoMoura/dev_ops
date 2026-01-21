@@ -7,25 +7,34 @@ category: guided
 
 Create BUG-XXX artifact to track a bug.
 
-> [!TIP]
-> Template: `.dev_ops/templates/artifacts/bug.md`
+**Template:** `.dev_ops/templates/artifacts/bug.md`
 
-## Steps
+## Step 1: Check for Duplicates
 
-1. **Check for duplicates**:
+Use the DevOps board "Search Tasks" to check for existing bug reports:
 
+```xml
+<vscode_command>devops.filterTasks</vscode_command>
+```
+
+## Step 2: Create Bug Report
+
+1. Copy the bug template:
    ```bash
-   python3 scripts/artifact_ops.py list bug
+   cp .dev_ops/templates/artifacts/bug.md .dev_ops/docs/BUG-XXX.md
    ```
 
-2. **Create bug**:
+2. Fill in the bug report sections: Status (open), Symptoms, Steps to Reproduce, Expected vs Actual
 
-   ```bash
-   python3 scripts/artifact_ops.py create bug --title "{{user_input}}"
-   ```
+## Step 3: Create Task for Bug Fix
 
-3. **Fill sections**: Status (open), Symptoms, Steps to Reproduce, Expected vs Actual
+```xml
+<vscode_command>devops.createTask</vscode_command>
+```
+
+Reference the bug in the task summary: `Trigger: BUG-XXX`
 
 ## Outputs
 
-- `dev_ops/artifacts/bugs/BUG-XXX.md`
+- `.dev_ops/docs/BUG-XXX.md` (bug report)
+- TASK-XXX in Backlog (for fix)

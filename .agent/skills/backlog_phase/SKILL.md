@@ -21,23 +21,19 @@ The entry point for all work. Claim ownership of a task and understand the "why"
 
 ## Step 1: Claim a Task
 
-First, check what's available (use `--help` for all options):
+Use the `/claim` workflow or VS Code command to claim ownership:
 
-```bash
-python3 .dev_ops/scripts/board_ops.py claim --help
+```xml
+<vscode_command>devops.claimTask</vscode_command>
 ```
 
-To claim a specific task:
+Or use the workflow:
 
-```bash
-python3 .dev_ops/scripts/board_ops.py claim TASK-XXX --commit
+```markdown
+/claim TASK-XXX
 ```
 
-Or let the system pick the highest priority task:
-
-```bash
-python3 .dev_ops/scripts/board_ops.py claim --commit
-```
+The system will pick the highest priority task if no ID is specified.
 
 ## Step 2: Read the Trigger Doc
 
@@ -66,8 +62,10 @@ Add notes to the task if needed.
 
 ## Step 4: Move to Understand
 
-```bash
-python3 .dev_ops/scripts/board_ops.py move TASK-XXX col-understand --commit
+Use the VS Code command to move the task:
+
+```xml
+<vscode_command>devops.moveTask</vscode_command>
 ```
 
 ## Exit Criteria

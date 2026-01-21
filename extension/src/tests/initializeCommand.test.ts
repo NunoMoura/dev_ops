@@ -4,20 +4,6 @@ import { strict as assert } from 'assert';
 // The actual command requires VS Code APIs and subprocess calls,
 // so we test the pure logic patterns here.
 
-suite('InitializeCommand - Python Detection', () => {
-    test('python version string parsing', () => {
-        const version1 = 'Python 3.11.0';
-        const version2 = 'Python 2.7.18';
-        const version3 = 'Python 3.9.5';
-
-        assert.ok(version1.includes('Python 3'));
-        assert.ok(!version2.includes('Python 3'));
-        assert.ok(version3.includes('Python 3'));
-    });
-});
-
-
-
 suite('InitializeCommand - Workspace Validation', () => {
     function validateWorkspace(folders: Array<{ uri: { fsPath: string } }> | undefined): string | null {
         if (!folders || folders.length === 0) {

@@ -7,17 +7,19 @@ category: automated
 
 Generate structured prompt with context + PM feedback for agent refinement.
 
-## Steps
+## Step 1: Enter Feedback
 
-1. **Enter feedback** when prompted (or after command):
+Use the VS Code command:
 
-   ```bash
-   python3 .dev_ops/scripts/board_ops.py refine TASK-XXX --feedback "{{user_input}}"
-   ```
+```xml
+<vscode_command>devops.refinePhase</vscode_command>
+```
 
-   Or use VS Code: Click "Refine Phase" in Agent sidebar
+Or click "Refine Phase" in the DevOps sidebar.
 
-2. **Paste prompt** into new agent session
+## Step 2: Paste Prompt
+
+Copy the generated prompt into a new agent session.
 
 ## Outputs
 

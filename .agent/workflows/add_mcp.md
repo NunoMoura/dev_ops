@@ -14,9 +14,7 @@ Add an MCP (Model Context Protocol) server to enhance a development phase.
 
 Example: `/add_mcp context7`
 
-## Steps
-
-### 1. Research the MCP
+## Step 1: Research the MCP
 
 Search for the MCP by name:
 
@@ -24,7 +22,7 @@ Search for the MCP by name:
 - Understand what capabilities it provides
 - Note any authentication requirements
 
-### 2. Determine Best Phase
+## Step 2: Determine Best Phase
 
 Based on MCP capabilities, suggest the most appropriate skill/phase:
 
@@ -37,14 +35,14 @@ Based on MCP capabilities, suggest the most appropriate skill/phase:
 
 Ask user to confirm or choose different phase.
 
-### 3. Detect IDE
+## Step 3: Detect IDE
 
 Check which IDE is being used:
 
 - **Antigravity**: Config at `~/.gemini/antigravity/settings/mcp_config.json`
 - **Cursor**: Config at `.cursor/mcp.json` or `~/.cursor/mcp.json`
 
-### 4. Install MCP
+## Step 4: Install MCP
 
 Add the MCP configuration to the IDE's config file.
 
@@ -63,7 +61,7 @@ Add the MCP configuration to the IDE's config file.
 
 If config file exists, merge the new MCP. If not, create it.
 
-### 5. Test the MCP
+## Step 5: Test the MCP
 
 Verify the MCP is working:
 
@@ -71,7 +69,7 @@ Verify the MCP is working:
 - Try a simple operation if possible
 - Report any issues to user
 
-### 6. Create Capability File
+## Step 6: Create Capability File
 
 Create a capability file in the skill's `mcps/` folder:
 
@@ -101,7 +99,7 @@ description: {brief description of what it does}
 - {tool_name}: {description}
 ```
 
-### 7. Report Success
+## Step 7: Report Success
 
 Tell the user:
 
@@ -115,3 +113,8 @@ Tell the user:
 - If MCP not found: Suggest similar MCPs or ask for package name
 - If auth required: Guide user through token setup
 - If install fails: Show error and suggest manual installation
+
+## Outputs
+
+- MCP configuration added to IDE config file
+- Capability file in `.agent/skills/{phase}_phase/mcps/`

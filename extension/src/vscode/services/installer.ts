@@ -5,6 +5,7 @@
  * This is NOT called by agents - it runs once when the extension initializes.
  */
 
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
@@ -28,6 +29,7 @@ export interface InstallerOptions {
     ide: 'antigravity' | 'cursor';
     projectType?: 'greenfield' | 'brownfield' | 'fresh';
     githubWorkflows?: boolean;
+    force?: boolean;  // Force reinstall all files, ignoring hash checks
 }
 
 export interface InstallerResult {
@@ -35,31 +37,90 @@ export interface InstallerResult {
     rulesInstalled: number;
     workflowsInstalled: number;
     skillsInstalled: number;
+    filesUpdated: string[];  // List of files that were updated
+    filesSkipped: string[];  // List of files skipped (customized or unchanged)
+    wasUpgrade: boolean;     // True if this was a version upgrade
     message: string;
 }
 
 /**
- * Check if file needs updating (missing or different size)
+ * Get MD5 hash of file contents for comparison
  */
-function needsUpdate(srcPath: string, destPath: string): boolean {
-    if (!fs.existsSync(destPath)) {
-        return true;
-    }
-    const srcSize = fs.statSync(srcPath).size;
-    const destSize = fs.statSync(destPath).size;
-    return srcSize !== destSize;
+function getFileHash(filePath: string): string {
+    const content = fs.readFileSync(filePath);
+    return crypto.createHash('md5').update(content).digest('hex');
 }
 
 /**
- * Copy a directory recursively
+ * Check if file needs updating (missing or different content)
  */
-function copyDirRecursive(src: string, dest: string): { copied: number; skipped: number } {
+function needsUpdate(srcPath: string, destPath: string, force: boolean = false): boolean {
+    if (!fs.existsSync(destPath)) {
+        return true;
+    }
+    if (force) {
+        return true;
+    }
+    return getFileHash(srcPath) !== getFileHash(destPath);
+}
+
+/**
+ * Check if file has customization marker
+ */
+function isCustomized(filePath: string): boolean {
+    if (!fs.existsSync(filePath)) {
+        return false;
+    }
+    const content = fs.readFileSync(filePath, 'utf8');
+    return content.includes('<!-- dev-ops-customized -->');
+}
+
+/**
+ * Compare semantic versions (simple comparison)
+ */
+function isNewerVersion(current: string | null, target: string): boolean {
+    if (!current) {
+        return true;
+    }
+    const parse = (v: string) => v.split('.').map(n => parseInt(n, 10) || 0);
+    const [cMajor, cMinor, cPatch] = parse(current);
+    const [tMajor, tMinor, tPatch] = parse(target);
+    if (tMajor > cMajor) {
+        return true;
+    }
+    if (tMajor === cMajor && tMinor > cMinor) {
+        return true;
+    }
+    if (tMajor === cMajor && tMinor === cMinor && tPatch > cPatch) {
+        return true;
+    }
+    return false;
+}
+
+interface CopyResult {
+    copied: number;
+    skipped: number;
+    updatedFiles: string[];
+    skippedFiles: string[];
+}
+
+/**
+ * Copy a directory recursively with file tracking
+ */
+function copyDirRecursive(
+    src: string,
+    dest: string,
+    options: { force?: boolean; checkCustomization?: boolean; basePath?: string } = {}
+): CopyResult {
+    const { force = false, checkCustomization = false, basePath = dest } = options;
     let copied = 0;
     let skipped = 0;
+    const updatedFiles: string[] = [];
+    const skippedFiles: string[] = [];
 
     if (!fs.existsSync(src)) {
         log(`[installer] Skipping missing directory: ${src}`);
-        return { copied, skipped };
+        return { copied, skipped, updatedFiles, skippedFiles };
     }
 
     fs.mkdirSync(dest, { recursive: true });
@@ -68,22 +129,44 @@ function copyDirRecursive(src: string, dest: string): { copied: number; skipped:
     for (const entry of entries) {
         const srcPath = path.join(src, entry.name);
         const destPath = path.join(dest, entry.name);
+        const relativePath = path.relative(basePath, destPath);
 
         if (entry.isDirectory()) {
-            const result = copyDirRecursive(srcPath, destPath);
+            const result = copyDirRecursive(srcPath, destPath, { force, checkCustomization, basePath });
             copied += result.copied;
             skipped += result.skipped;
+            updatedFiles.push(...result.updatedFiles);
+            skippedFiles.push(...result.skippedFiles);
         } else {
-            if (needsUpdate(srcPath, destPath)) {
-                fs.copyFileSync(srcPath, destPath);
+            // Check customization if enabled
+            if (checkCustomization && isCustomized(destPath)) {
+                log(`[installer] Skipping customized: ${relativePath}`);
+                skipped++;
+                skippedFiles.push(relativePath);
+                continue;
+            }
+
+            if (needsUpdate(srcPath, destPath, force)) {
+                // Add customization marker to new files
+                if (checkCustomization && (entry.name.endsWith('.md') || entry.name.endsWith('.mdc'))) {
+                    let content = fs.readFileSync(srcPath, 'utf8');
+                    if (!content.includes('<!-- dev-ops-customized -->')) {
+                        content += "\n\n<!-- To prevent automatic updates, add '<!-- dev-ops-customized -->' to this file -->\n";
+                    }
+                    fs.writeFileSync(destPath, content);
+                } else {
+                    fs.copyFileSync(srcPath, destPath);
+                }
                 copied++;
+                updatedFiles.push(relativePath);
             } else {
                 skipped++;
+                skippedFiles.push(relativePath);
             }
         }
     }
 
-    return { copied, skipped };
+    return { copied, skipped, updatedFiles, skippedFiles };
 }
 
 /**
@@ -231,30 +314,28 @@ function installRules(
 }
 
 /**
- * Install workflows from assets to project
+ * Install workflows from assets to project (with customization protection)
  */
-function installWorkflows(srcDir: string, destDir: string): number {
+function installWorkflows(srcDir: string, destDir: string, force: boolean = false): CopyResult {
     if (!fs.existsSync(srcDir)) {
         logError(`[installer] Workflows source not found: ${srcDir}`);
-        return 0;
+        return { copied: 0, skipped: 0, updatedFiles: [], skippedFiles: [] };
     }
 
-    const result = copyDirRecursive(srcDir, destDir);
-    return result.copied;
+    return copyDirRecursive(srcDir, destDir, { force, checkCustomization: true });
 }
 
 /**
- * Install skills from assets to project
+ * Install skills from assets to project (with customization protection)
  * Works for both Antigravity (.agent/skills) and Cursor (.cursor/skills)
  */
-function installSkills(srcDir: string, destDir: string): number {
+function installSkills(srcDir: string, destDir: string, force: boolean = false): CopyResult {
     if (!fs.existsSync(srcDir)) {
         log(`[installer] Skills source not found: ${srcDir}`);
-        return 0;
+        return { copied: 0, skipped: 0, updatedFiles: [], skippedFiles: [] };
     }
 
-    const result = copyDirRecursive(srcDir, destDir);
-    return result.copied;
+    return copyDirRecursive(srcDir, destDir, { force, checkCustomization: true });
 }
 
 /**
@@ -264,10 +345,21 @@ export async function install(
     extensionPath: string,
     options: InstallerOptions
 ): Promise<InstallerResult> {
-    const { projectRoot, ide, githubWorkflows } = options;
+    const { projectRoot, ide, githubWorkflows, force = false } = options;
+
+    // Track all files for reporting
+    const allUpdatedFiles: string[] = [];
+    const allSkippedFiles: string[] = [];
 
     log(`[installer] Installing DevOps framework to ${projectRoot}`);
-    log(`[installer] IDE: ${ide}, Version: ${FRAMEWORK_VERSION}`);
+    log(`[installer] IDE: ${ide}, Version: ${FRAMEWORK_VERSION}, Force: ${force}`);
+
+    // Check if this is a version upgrade
+    const installedVersion = getInstalledVersion(projectRoot);
+    const wasUpgrade = isNewerVersion(installedVersion, FRAMEWORK_VERSION);
+    if (wasUpgrade) {
+        log(`[installer] Upgrading from ${installedVersion || 'none'} to ${FRAMEWORK_VERSION}`);
+    }
 
     // Locate assets directory
     const assetsDir = path.join(extensionPath, 'dist', 'assets');
@@ -277,6 +369,9 @@ export async function install(
             rulesInstalled: 0,
             workflowsInstalled: 0,
             skillsInstalled: 0,
+            filesUpdated: [],
+            filesSkipped: [],
+            wasUpgrade: false,
             message: `Assets directory not found: ${assetsDir}`
         };
     }
@@ -286,8 +381,6 @@ export async function install(
     const workflowsSrc = path.join(assetsDir, 'workflows');
     const skillsSrc = path.join(assetsDir, 'skills');
     const templatesSrc = path.join(assetsDir, 'templates');
-    const scriptsSrc = path.join(assetsDir, 'scripts');
-    const docsTemplatesSrc = path.join(templatesSrc, 'docs');
 
     // Get IDE-specific destination paths
     const paths = getIdePaths(projectRoot, ide);
@@ -296,11 +389,9 @@ export async function install(
     const devOpsDir = path.join(projectRoot, '.dev_ops');
     const devOpsDocsDir = path.join(devOpsDir, 'docs');
     const devOpsArchiveDir = path.join(devOpsDir, 'archive');
-    const devOpsScriptsDir = path.join(devOpsDir, 'scripts');
     const devOpsTemplatesDir = path.join(devOpsDir, 'templates');
 
-    // Create directories
-    fs.mkdirSync(path.join(devOpsDocsDir, 'architecture'), { recursive: true });
+    // Create directories (architecture docs are now co-located as SPEC.md in component folders)
     fs.mkdirSync(path.join(devOpsDocsDir, 'ux', 'personas'), { recursive: true });
     fs.mkdirSync(path.join(devOpsDocsDir, 'ux', 'stories'), { recursive: true });
     fs.mkdirSync(path.join(devOpsDocsDir, 'ux', 'mockups'), { recursive: true });
@@ -320,21 +411,11 @@ export async function install(
     // Initialize board
     initBoard(projectRoot);
 
-    // Install scripts
-    if (fs.existsSync(scriptsSrc)) {
-        copyDirRecursive(scriptsSrc, devOpsScriptsDir);
-
-        // Create __init__.py for imports
-        const initPath = path.join(devOpsScriptsDir, '__init__.py');
-        if (!fs.existsSync(initPath)) {
-            fs.writeFileSync(initPath, '"""DevOps framework scripts."""\n');
-        }
-        log('[installer] Scripts installed');
-    }
-
     // Install templates
     if (fs.existsSync(templatesSrc)) {
-        copyDirRecursive(templatesSrc, devOpsTemplatesDir);
+        const result = copyDirRecursive(templatesSrc, devOpsTemplatesDir, { force: force || wasUpgrade });
+        allUpdatedFiles.push(...result.updatedFiles.map(f => `templates/${f}`));
+        allSkippedFiles.push(...result.skippedFiles.map(f => `templates/${f}`));
         log('[installer] Templates installed');
     }
 
@@ -342,13 +423,17 @@ export async function install(
     const rulesInstalled = installRules(rulesSrc, paths.rulesDir, ide);
     log(`[installer] ${rulesInstalled} rules installed`);
 
-    // Install workflows
-    const workflowsInstalled = installWorkflows(workflowsSrc, paths.workflowsDir);
-    log(`[installer] ${workflowsInstalled} workflows installed`);
+    // Install workflows (with customization protection)
+    const workflowsResult = installWorkflows(workflowsSrc, paths.workflowsDir, force || wasUpgrade);
+    allUpdatedFiles.push(...workflowsResult.updatedFiles.map(f => `workflows/${f}`));
+    allSkippedFiles.push(...workflowsResult.skippedFiles.map(f => `workflows/${f}`));
+    log(`[installer] ${workflowsResult.copied} workflows installed`);
 
-    // Install skills (both Antigravity and Cursor support skills)
-    const skillsInstalled = installSkills(skillsSrc, paths.skillsDir);
-    log(`[installer] ${skillsInstalled} skill files installed to ${paths.skillsDir}`);
+    // Install skills (with customization protection)
+    const skillsResult = installSkills(skillsSrc, paths.skillsDir, force || wasUpgrade);
+    allUpdatedFiles.push(...skillsResult.updatedFiles.map(f => `skills/${f}`));
+    allSkippedFiles.push(...skillsResult.skippedFiles.map(f => `skills/${f}`));
+    log(`[installer] ${skillsResult.copied} skill files installed to ${paths.skillsDir}`);
 
     // Install GitHub workflows if requested
     if (githubWorkflows) {
@@ -360,22 +445,34 @@ export async function install(
 
             if (!fs.existsSync(prTriageDest)) {
                 fs.copyFileSync(prTriageSrc, prTriageDest);
+                allUpdatedFiles.push('.github/workflows/pr_triage.yml');
                 log('[installer] PR triage workflow installed');
             }
         }
     }
 
-    // Scaffold Architecture Docs (Deterministic mirroring of codebase)
-    log('[installer] Scaffolding architecture documentation...');
-    const scaffoldStats = scaffoldArchitecture(projectRoot, extensionPath);
-    log(`[installer] Scaffolded ${scaffoldStats.created} architecture placeholder docs`);
+    // Seed SPEC.md files in component folders (co-located documentation)
+    log('[installer] Seeding SPEC.md files in component folders...');
+    const seedStats = seedSpecs(projectRoot, extensionPath);
+    allUpdatedFiles.push(...seedStats.files.map(f => `${f}/SPEC.md`));
+    log(`[installer] Seeded ${seedStats.created} SPEC.md files`);
+
+    // Generate summary message
+    const updatedCount = allUpdatedFiles.length;
+    const skippedCount = allSkippedFiles.length;
+    const message = wasUpgrade
+        ? `Upgraded from ${installedVersion} to ${FRAMEWORK_VERSION}. Updated ${updatedCount} files.`
+        : `DevOps framework installed. Updated ${updatedCount} files, skipped ${skippedCount} unchanged.`;
 
     return {
         success: true,
         rulesInstalled,
-        workflowsInstalled,
-        skillsInstalled,
-        message: 'DevOps framework installed successfully'
+        workflowsInstalled: workflowsResult.copied,
+        skillsInstalled: skillsResult.copied,
+        filesUpdated: allUpdatedFiles,
+        filesSkipped: allSkippedFiles,
+        wasUpgrade,
+        message
     };
 }
 
@@ -386,31 +483,47 @@ const EXCLUDED_DIRS = new Set([
 ]);
 
 /**
- * scaffoldArchitecture
+ * seedSpecs
  * 
- * Deterministically mirrors the project structure to create placeholder architecture docs.
+ * Creates SPEC.md files in-place in component folders (co-located documentation).
+ * Follows RLM-optimized strategy: docs live with code, not in a separate folder.
  */
-function scaffoldArchitecture(projectRoot: string, extensionPath: string): { created: number; files: string[] } {
-    const archDir = path.join(projectRoot, '.dev_ops', 'docs', 'architecture');
-    fs.mkdirSync(archDir, { recursive: true });
-
-    const templatePath = path.join(extensionPath, 'dist', 'assets', 'templates', 'docs', 'architecture_doc.md');
-    let templateContent = "";
+function seedSpecs(projectRoot: string, extensionPath: string): { created: number; files: string[] } {
+    const templatePath = path.join(extensionPath, 'dist', 'assets', 'templates', 'docs', 'spec.md');
+    let templateContent = '';
     if (fs.existsSync(templatePath)) {
         templateContent = fs.readFileSync(templatePath, 'utf8');
     } else {
         templateContent = `---
-title: "{title}"
-type: doc
-path: "{path}"
+title: "{{title}}"
+type: spec
+path: "{{path}}"
+status: draft
 ---
-# {title}
 
-## Purpose
-<!-- What does this component do? -->
+# {{title}}
 
-## Public Interface
-<!-- Key exports -->
+### Structure
+| Name | Type | Purpose |
+|------|------|---------|
+| — | folder/file | — |
+
+### Key Exports
+
+<!-- What does this expose to other components? -->
+
+### ADRs
+| ID | Decision | Research |
+|----|----------|----------|
+| — | — | — |
+
+### Constraints
+
+<!-- Rules that cannot be violated -->
+
+### Dependencies
+
+<!-- Links to other SPEC.md files this depends on -->
 `;
     }
 
@@ -425,32 +538,26 @@ path: "{path}"
         if (EXCLUDED_DIRS.has(name) || name.startsWith('.')) { return; }
 
         let hasCode = false;
-        let hasSubdirs = false;
 
         try {
             const files = fs.readdirSync(dir, { withFileTypes: true });
             for (const f of files) {
-                if (f.isDirectory()) {
-                    if (!EXCLUDED_DIRS.has(f.name) && !f.name.startsWith('.')) {
-                        hasSubdirs = true;
-                    }
-                } else if (['.ts', '.js', '.py', '.go', '.rs', '.java', '.cpp', '.php', '.rb'].includes(path.extname(f.name))) {
+                if (!f.isDirectory() && ['.ts', '.js', '.py', '.go', '.rs', '.java', '.cpp', '.php', '.rb'].includes(path.extname(f.name))) {
                     hasCode = true;
+                    break;
                 }
             }
 
-            // LEAF NODE strategy: If it has code and NO relevant subdirs, it's a component.
-            // Also, if it's the root, we generally skip unless we want a root doc (usually not needed in arch folder).
-            if (hasCode && !hasSubdirs) {
+            // Create SPEC.md if folder has code files
+            if (hasCode) {
                 const relPath = path.relative(projectRoot, dir);
                 if (relPath && !processed.has(relPath)) {
-                    const docPath = path.join(archDir, `${relPath}.md`);
-                    if (!fs.existsSync(docPath)) {
-                        fs.mkdirSync(path.dirname(docPath), { recursive: true });
+                    const specPath = path.join(dir, 'SPEC.md');
+                    if (!fs.existsSync(specPath)) {
                         let content = templateContent
-                            .replace(/{title}/g, name)
-                            .replace(/{path}/g, relPath);
-                        fs.writeFileSync(docPath, content);
+                            .replace(/{{title}}/g, name)
+                            .replace(/{{path}}/g, relPath);
+                        fs.writeFileSync(specPath, content);
                         createdCount++;
                         createdFiles.push(relPath);
                     }
@@ -458,6 +565,7 @@ path: "{path}"
                 }
             }
 
+            // Recurse into subdirectories
             for (const f of files) {
                 if (f.isDirectory()) {
                     walk(path.join(dir, f.name), depth + 1);

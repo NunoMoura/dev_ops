@@ -32,8 +32,8 @@
 
 ### Project Alignment
 
-- [x] Reviewed `nonnegotiables.md`
-- Violations: None. Non-negotiables require "fail fast with clear errors."
+- [x] **Constraints**: Review Project Standards (`.dev_ops/docs/project_standards.md`)
+- Violations: None. Project Standards require "fail fast with clear errors."
 
 ## Internal Research
 

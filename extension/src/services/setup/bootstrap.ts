@@ -23,6 +23,7 @@ interface DetectResult {
         common_files: Record<string, number>;
         common_dirs: string[];
     };
+    specs: string[]; // List of component paths with SPEC.md
 }
 
 interface StackItem {
@@ -37,7 +38,6 @@ interface StackItem {
 interface DocStatus {
     prd: string | null;
     projectStandards: string | null;
-    architecture: string | null;
     readme: 'comprehensive' | 'basic' | 'minimal' | null;
     contributing: string | null;
     changelog: string | null;
@@ -95,11 +95,10 @@ export class BootstrapService {
         const detection = await this.detect(projectRoot);
         log(`[Bootstrap] Detected stack: ${detection.stack.map(s => s.name).join(', ')}`);
 
-        // 2. Scout Architecture
-        // 2. Scout Architecture
-        log('[Bootstrap] Verifying architecture scaffolding...');
-        const components = await this.identifyArchitectureComponents(projectRoot);
-        log(`[Bootstrap] Identified ${components.length} components`);
+        // 2. Scout Components (RLM)
+        log('[Bootstrap] Scanning for components...');
+        const specs = await this.findSpecs(projectRoot);
+        log(`[Bootstrap] Found ${specs.length} existing SPEC.md files`);
 
         // 3. Generate Rules
         log('[Bootstrap] Generating rules...');
@@ -108,7 +107,7 @@ export class BootstrapService {
 
         // 4. Create Tasks
         log('[Bootstrap] Creating tasks...');
-        await this.createBootstrapTasks(projectRoot, detection.docs, components);
+        await this.createBootstrapTasks(projectRoot, detection.docs, specs);
         log('[Bootstrap] Tasks created.');
     }
 
@@ -126,7 +125,7 @@ export class BootstrapService {
             common_dirs: []
         };
 
-        return { stack, docs, tests, patterns };
+        return { stack, docs, tests, patterns, specs: [] };
     }
 
     // --- Detection Primitives ---
@@ -214,7 +213,6 @@ export class BootstrapService {
         const docs: DocStatus = {
             prd: null,
             projectStandards: null,
-            architecture: null,
             readme: null,
             contributing: null,
             changelog: null,
@@ -282,25 +280,14 @@ export class BootstrapService {
 
     // --- Scaffolding Primitives ---
 
-    public async identifyArchitectureComponents(projectRoot: string): Promise<string[]> {
-        const archDir = path.join(projectRoot, '.dev_ops', 'docs', 'architecture');
-        if (!fs.existsSync(archDir)) { return []; }
-
-        const components: string[] = [];
-        const walk = (dir: string) => {
-            const files = fs.readdirSync(dir, { withFileTypes: true });
-            for (const f of files) {
-                if (f.isDirectory()) {
-                    walk(path.join(dir, f.name));
-                } else if (f.name.endsWith('.md')) {
-                    const relPath = path.relative(archDir, path.join(dir, f.name));
-                    components.push(relPath.replace(/\.md$/, ''));
-                }
-            }
-        };
-
-        walk(archDir);
-        return components;
+    public async findSpecs(projectRoot: string): Promise<string[]> {
+        const specs: string[] = [];
+        // Scan for existing SPEC.md files to inform the architecture task
+        const matches = await vscode.workspace.findFiles(new vscode.RelativePattern(projectRoot, '**\/SPEC.md'), '**/node_modules/**', 50);
+        for (const m of matches) {
+            specs.push(path.relative(projectRoot, m.fsPath));
+        }
+        return specs;
     }
 
     // --- Rule Generation Primitives ---
@@ -442,11 +429,15 @@ export class BootstrapService {
 
         // 1. Architecture (Highest Priority - Understanding Current State)
         const archTitle = "Document System Architecture";
-        // Use detected components from installer, or empty if none found
-        if (components.length > 0 && !taskExists(archTitle)) {
+        // Always create if not exists - critical for RLM
+        if (!taskExists(archTitle)) {
+            const existingSpecs = components.length > 0
+                ? `Found existing SPEC.md files:\n${components.map(s => `- ${s}`).join('\n')}`
+                : "No SPEC.md files found yet.";
+
             tasksToCreate.push({
                 title: archTitle,
-                summary: `Comprehensive documentation of the system architecture. \n\nTarget components (pre-scaffolded in .dev_ops/docs/architecture/):\n${components.map(d => `- ${d}`).join('\n')}\n\nStrategy:\n1. Analyze codebase to understand current state.\n2. For each scaffolded file, fill in component purposes, interfaces, and dependencies.\n3. Ensure accurate reflection of the code (RLM phase 1).`,
+                summary: `Comprehensive documentation of the system architecture.\n\nContext:\n${existingSpecs}\n\nStrategy (RLM Pattern):\n1. Key components should have co-located \`SPEC.md\` files.\n2. Review existing code structure.\n3. For each major component lacking a SPEC, create one using the template.\n4. Ensure \`SPEC.md\` files describe exports, dependencies, and constraints.`,
                 priority: "high"
             });
         }
@@ -479,8 +470,6 @@ export class BootstrapService {
         }
 
         // 5. Rule Customization
-
-        // 4. Rule Customization
         const agentRules = path.join(projectRoot, '.agent', 'rules');
         const cursorRules = path.join(projectRoot, '.cursor', 'rules');
         const hasRules = (fs.existsSync(agentRules) && fs.readdirSync(agentRules).length > 0) ||

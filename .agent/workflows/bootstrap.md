@@ -4,14 +4,14 @@ description: Analyze project and generate tailored task backlog
 
 # Bootstrap Workflow
 
-Initialize a project with context-aware tasks and rules.
+Initialize a project with context-aware tasks and SPEC.md documentation.
 
 ## Step 1: Run Bootstrap
 
-Execute the bootstrap command to automatically detect stack, scaffold docs, and generate rules:
+Execute the bootstrap command:
 
 ```bash
-# As User: Run "DevOps: Bootstrap Project" from Command Palette
+# As User: Run "DevOps: Bootstrap Project" from Command Palette or run /bootstrap in the chat
 # As Agent:
 <vscode_command>devops.bootstrap</vscode_command>
 ```
@@ -19,28 +19,51 @@ Execute the bootstrap command to automatically detect stack, scaffold docs, and 
 **This command will:**
 
 1. **Analyze** the codebase (stack, docs, tests, patterns).
-2. **Scaffold** architecture documentation in `.dev_ops/docs/architecture`.
-3. **Generate** rules in `.agent/rules` (or `.cursor/rules`) for the detected stack.
+2. **Create** SPEC.md files in component folders (co-located documentation).
+3. **Generate** rules for the detected stack.
 
-## Step 2: Verify Backlog Generation
+## Step 2: Verify SPEC.md Files
 
-The bootstrap process should have populated your board with tasks. **Do not execute these tasks now.**
+Check that SPEC.md files exist in code folders:
 
-1. **Check the Board**: Verify that tasks have been created for:
-   - **Product Definition**: "Define Product Requirements" (Analyze & Migrate).
-   - **User Experience**: "Define User Personas & Stories" (Infer from PRD).
-   - **Project Constraints**: "Define Non-Negotiables".
-   - **Architecture**: "Document System Architecture".
-   - **Rules**: "Review and Customize Rules".
+```bash
+find . -name SPEC.md
+```
 
-2. **Understand the Plan**:
-   - Review the generated backlog.
-   - Confirm that the detected technology stack matches the project (check generated rules).
+## Step 3: Review Generated Rules
+
+Rules are generated from templates based on detected stack. Templates are in:
+
+```markdown
+.dev_ops/templates/rules/
+├── languages.md   # Language-specific rules (Python, TypeScript, etc.)
+├── libraries.md   # Framework rules (React, FastAPI, etc.)
+├── databases.md   # Database rules (PostgreSQL, MongoDB, etc.)
+├── linters.md     # Linter configuration (ESLint, Ruff, etc.)
+```
+
+Generated rules are installed to:
+
+- Antigravity: `.agent/rules/`
+- Cursor: `.cursor/rules/`
+
+## Step 4: Verify Backlog Generation
+
+The bootstrap process should have populated your board with tasks:
+
+1. **Check the Board**: Verify tasks for:
+   - **Product Definition**: Define requirements
+   - **User Experience**: Define personas & stories
+   - **Project Constraints**: Define project standards
+   - **Architecture**: Review and fill SPEC.md files
+   - **Rules**: Review generated rules
+
+2. **Understand the Plan**: Confirm detected stack matches project.
 
 ## Exit Criteria
 
 - [ ] Bootstrap command executed successfully
-- [ ] Architecture documentation scaffolded (empty placeholders created)
-- [ ] Rules generated for the detected stack
-- [ ] Backlog contains tasks for determining requirements, personas, stories, and architecture
-- [ ] **No code or documentation has been modified manually in this step** (Use the Board for that)
+- [ ] SPEC.md files created in component folders
+- [ ] Rules generated for detected stack (check `.agent/rules/` or `.cursor/rules/`)
+- [ ] Backlog contains foundation tasks
+- [ ] **No code or documentation has been modified manually** (Use the Board for that)

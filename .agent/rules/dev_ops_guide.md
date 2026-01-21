@@ -5,7 +5,18 @@ description: Core DevOps behavioral invariants
 
 # DevOps Framework
 
-> **Quality over speed. Understand before you build.**
+> **Document-first. Quality over speed. Understand before you build.**
+
+## Core Philosophy
+
+SPEC.md files define requirements. Code matches specs. Verify confirms the match.
+
+| Phase | Works With | Code Access |
+|-------|------------|-------------|
+| Understand | SPEC.md + Research | ❌ None |
+| Plan | SPEC.md only | ❌ None |
+| Build | Code + SPEC.md | ✅ Write to match spec |
+| Verify | Tests + SPEC.md | ✅ Confirm match |
 
 ## Phase Flow
 
@@ -21,6 +32,27 @@ Backlog → Understand → Plan → Build → Verify → Done
 | Build | Would I be proud to ship this? | `build_phase` |
 | Verify | Have I proven correctness? | `verify_phase` |
 
+## SPEC.md Navigation (RLM Pattern)
+
+Use RLM-style decomposition when exploring code:
+
+1. **Discover**: `find . -name SPEC.md`
+2. **Filter**: `grep -r "keyword" */SPEC.md`
+3. **Drill**: Read specific SPEC.md for component details
+4. **Implement**: Only open code files when details are needed (Build phase)
+
+### Cross-SPEC Validation (Understand Phase)
+
+- Check that `### Dependencies` links point to existing SPECs
+- Verify interface compatibility (expected functions exist in dependent SPEC)
+
+### SPEC Maintenance (Build Phase)
+
+- If folder lacks SPEC.md, create from template
+- If adding folder/file, add row to `## Structure` table
+- If making decision, add ADR row
+- If adding key export, add to `## Key Exports`
+
 ## Phase Entry
 
 When entering a phase, **read the corresponding skill**:
@@ -29,13 +61,6 @@ When entering a phase, **read the corresponding skill**:
 # Skills are in .agent/skills/
 view_file .agent/skills/<phase>_phase/SKILL.md
 ```
-
-Each skill contains:
-
-- Detailed instructions for the phase
-- Commands to run
-- Examples in the `examples/` subdirectory
-- Exit criteria checklist
 
 ## Session Model
 
@@ -48,10 +73,6 @@ Each skill contains:
 - **Forward**: Complete exit criteria → next phase
 - **Backward**: Missing context or research → return to earlier phase
 - **Create task for blockers**: Unrelated issues become new tasks
-
-```bash
-python3 .dev_ops/scripts/board_ops.py move TASK-XXX col-understand --commit
-```
 
 ## Quality Standards
 
@@ -74,19 +95,14 @@ Tasks reference docs (`trigger`, `upstream`), not duplicate them.
 | `plan_phase` | Create implementation plan |
 | `build_phase` | TDD implementation |
 | `verify_phase` | Validation and PR creation |
-| `bootstrap_project` | Initialize project and generate tasks |
-| `explain_codebase` | Explain code structure |
 
-## Non-Negotiables
+## Project Standards
 
-Before significant changes, check `.dev_ops/docs/nonnegotiables.md` for:
+Before significant changes, check `.dev_ops/docs/project_standards.md` for:
 
 - **Constraints**: Rules that cannot be violated
 - **Tech Stack**: Locked technology decisions
 - **Patterns**: Required architectural patterns
 - **Anti-Patterns**: Explicitly forbidden practices
 
-If work would violate a non-negotiable, **stop and flag to user**.
-
-
-<!-- To prevent automatic updates, add '<!-- dev-ops-customized -->' to this file -->
+If work would violate a project standard, **stop and flag to user**.

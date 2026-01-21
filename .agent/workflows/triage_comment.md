@@ -7,25 +7,36 @@ category: manual
 
 Analyze PR comment and take appropriate action.
 
-## Steps
+## Step 1: Analyze Comment
 
-1. **Analyze comment** (`{{user_input}}`): Understand what's being reported
+Understand what's being reported in `{{user_input}}`.
 
-2. **Check relevant docs**: Architecture docs, ADRs, existing patterns
+## Step 2: Check Relevant Docs
 
-3. **Categorize and act**:
+Review Architecture docs, ADRs, and existing patterns.
 
-   | Category | Action |
-   |----------|--------|
-   | Bug | Create task in backlog |
-   | Feature | Create task in backlog |
-   | Quick Fix | Fix in current session |
-   | Dismiss | Explain in PR comment |
+## Step 3: Categorize
 
-4. **For Bug/Feature**:
+| Category | Action |
+|----------|--------|
+| Bug | Create task in backlog |
+| Feature | Create task in backlog |
+| Quick Fix | Fix in current session |
+| Dismiss | Explain in PR comment |
 
-   ```bash
-   python3 scripts/board_ops.py create --title "PR#XXX: <summary>"
-   ```
+## Step 4: Create Task (if needed)
 
-5. **Respond in PR** with action taken
+```xml
+<vscode_command>devops.createTask</vscode_command>
+```
+
+Include "PR#XXX: <summary>" as the title.
+
+## Step 5: Respond in PR
+
+Comment with action taken.
+
+## Outputs
+
+- PR comment with action taken
+- TASK-XXX in backlog (if bug/feature)

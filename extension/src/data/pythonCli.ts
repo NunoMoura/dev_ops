@@ -79,26 +79,7 @@ export async function runBoardOps(
     return runCommand(python, [scriptPath, ...args], cwd);
 }
 
-/**
- * Run doc_ops.py with the given arguments.
- * 
- * @param args - CLI arguments (e.g., ["create-user", "--title", "Project Manager"])
- * @param cwd - Working directory (project root)
- * @returns PythonResult with stdout, stderr, and exit code
- */
-export async function runDocOps(
-    args: string[],
-    cwd: string
-): Promise<PythonResult> {
-    const python = await findPython();
-    if (!python) {
-        throw new Error("Python 3 not found. Please install Python 3.");
-    }
 
-    // Script path: uses smart resolution (payload/scripts/ or dev_ops/scripts/)
-    const scriptPath = findScriptPath(cwd, "doc_ops.py");
-    return runCommand(python, [scriptPath, ...args], cwd);
-}
 
 /**
  * Run a command and capture output.

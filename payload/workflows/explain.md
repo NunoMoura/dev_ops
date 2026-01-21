@@ -1,5 +1,6 @@
 ---
 description: Explain project, component, or code structure
+category: guided
 ---
 
 # Explain Workflow
@@ -15,28 +16,30 @@ Provide structured explanations of the project, components, or specific code.
 | Folder path | Module/component |
 | Class/function name | Specific code |
 
-## For Project-Level Explanations
+## Step 1: Determine Scope
 
-Read these files:
+Based on input, identify what to explain (project, component, or code).
+
+## Step 2: Gather Context
+
+**For project-level explanations**, read:
 
 - `README.md`
-Read- **Constraints**: Project Standards (`.dev_ops/docs/project_standards.md`)
-- `.dev_ops/docs/prd/*.md`
+- `.dev_ops/docs/project_standards.md`
+- `.dev_ops/docs/prd.md`
 - `.dev_ops/docs/architecture/*.md`
 - Key entry points (`main.py`, `index.ts`, etc.)
 
-## For Component/Code Explanations
-
-Read:
+**For component/code explanations**, read:
 
 - Source code files
 - Related tests
 - Usage examples in codebase
 - Architecture docs for that component
 
-## Explanation Format
+## Step 3: Structure Explanation
 
-Structure all explanations like this:
+Use this format:
 
 ```markdown
 ## [Target Name]
@@ -58,13 +61,16 @@ Structure all explanations like this:
 - Internal: Other modules it depends on
 
 **Usage Example**
-
 ```
 
-## Best Practices
+## Step 4: Apply Best Practices
 
 - Start broad, then go deep if asked
 - Link to relevant files for context
 - Highlight non-obvious design decisions
 - Note technical debt or areas for improvement
 - Use diagrams when explaining complex relationships
+
+## Outputs
+
+- Structured explanation following the format above

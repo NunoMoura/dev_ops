@@ -7,9 +7,7 @@ category: automated
 
 Add a new task to the board following the task template structure.
 
-> [!IMPORTANT]
-> Task template: `.dev_ops/templates/artifacts/task.md`
-> Tasks must have proper fields for tracking and phase transitions.
+**Template:** `.dev_ops/templates/artifacts/task.md`
 
 ## Required Fields
 
@@ -19,27 +17,22 @@ Add a new task to the board following the task template structure.
 | **summary** | Clear scope of work | String |
 | **priority** | Urgency level | `high` \| `medium` \| `low` |
 
-## Create Task
+## Step 1: Create Task
 
-```bash
-python3 .dev_ops/scripts/board_ops.py create_task \
-  --title "{{title}}" \
-  --summary "{{summary}}" \
-  --priority {{priority}} \
-  --commit
+Run the VS Code command:
+
+```xml
+<vscode_command>devops.createTask</vscode_command>
 ```
 
-## Optional: Link to Trigger
+The command will prompt for title, summary, and priority.
 
-If task comes from a PRD, Story, or Bug:
+## Step 2: Link to Trigger (optional)
 
-```bash
-python3 .dev_ops/scripts/board_ops.py create_task \
-  --title "Implement {{feature}}" \
-  --summary "{{description}}" \
-  --priority high \
-  --trigger "{{PRD-XXX or STORY-XXX or BUG-XXX}}" \
-  --commit
+If task comes from a PRD, Story, or Bug, add the trigger reference in the task summary using format:
+
+```markdown
+Trigger: PRD-XXX (or STORY-XXX or BUG-XXX)
 ```
 
 ## Outputs
@@ -50,6 +43,7 @@ python3 .dev_ops/scripts/board_ops.py create_task \
 
 ## Next Steps
 
+After task creation:
 1. Review created task in board
 2. Claim task with `/claim TASK-XXX`
 3. Begin Backlog phase

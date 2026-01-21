@@ -37,13 +37,14 @@ export function registerInitializeCommand(
 
     context.subscriptions.push(bootstrapDisposable);
 
-    return vscode.commands.registerCommand("devops.initialize", async (options?: { name?: string, projectType?: 'greenfield' | 'brownfield' | 'fresh', silent?: boolean, githubWorkflows?: boolean, selectedIDEs?: string[] }) => {
+    return vscode.commands.registerCommand("devops.initialize", async (options?: { name?: string, projectType?: 'greenfield' | 'brownfield' | 'fresh', silent?: boolean, githubWorkflows?: boolean, selectedIDEs?: string[], force?: boolean }) => {
         // Handle legacy string argument if passed
         let name: string | undefined;
         let projectType: 'greenfield' | 'brownfield' | 'fresh' | undefined;
         let silent = false;
         let githubWorkflows = false;
         let selectedIDEs: string[] = [];
+        let force = false;
 
         if (typeof options === 'string') {
             projectType = options as 'greenfield' | 'brownfield' | 'fresh';
@@ -53,6 +54,7 @@ export function registerInitializeCommand(
             silent = !!options.silent;
             githubWorkflows = !!options.githubWorkflows;
             selectedIDEs = options.selectedIDEs || [];
+            force = !!options.force;
         }
 
         const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -109,7 +111,8 @@ export function registerInitializeCommand(
                     projectRoot: workspaceRoot,
                     ide: ide as 'antigravity' | 'cursor',
                     projectType,
-                    githubWorkflows
+                    githubWorkflows,
+                    force
                 };
 
                 const result = await install(extensionPath, installerOptions);

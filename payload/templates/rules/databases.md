@@ -6,10 +6,9 @@ description: Template for generating project-specific database rules during /boo
 
 # Database Rule Generator
 
-> [!IMPORTANT]
-> This is a **generation template**, not a static rule.
-> During `/bootstrap`, this template is used to create project-specific rules
-> in `.agent/rules/databases/` based on detected database configuration.
+<!-- This is a GENERATION TEMPLATE, not a static rule.
+During /bootstrap, this template is used to create project-specific rules
+in .agent/rules/databases/ based on detected database configuration. -->
 
 ## Auto-Detection
 

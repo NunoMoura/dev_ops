@@ -5,7 +5,7 @@ description: Validate, document proof, and ship via PR. Use when in the Verify p
 
 # Verify Phase
 
-> Prove it works. Document the proof.
+> Prove it works. Code matches what SPEC.md defines.
 
 ## When to Use This Skill
 
@@ -18,14 +18,19 @@ description: Validate, document proof, and ship via PR. Use when in the Verify p
 
 | Input | Output | Next Phase |
 |-------|--------|------------|
-| Code + tests | walkthrough.md, PR | Done |
+| Code + tests + SPEC.md | walkthrough.md, PR | Done |
+
+## Core Principle
+
+**Verify that code matches what SPEC.md defines.**
 
 ## Step 1: Validate
 
 Run the full test suite with coverage:
 
 ```bash
-pytest tests/ -v --cov
+pytest tests/ -v --cov  # Python
+npm test                # JavaScript/TypeScript
 ```
 
 Verify all acceptance criteria from PLN-XXX are met.
@@ -39,7 +44,16 @@ Read your code as if someone else wrote it:
 - Are there unnecessary comments?
 - Would a new team member understand this?
 
-## Step 3: Security Check
+## Step 3: SPEC.md Verification
+
+Check that SPEC.md accurately reflects what was built:
+
+- [ ] `## Structure` table lists all new folders/files
+- [ ] `## Key Exports` lists important exports
+- [ ] `## ADRs` table has any decisions made
+- [ ] `## Dependencies` links are valid
+
+## Step 4: Security Check
 
 - [ ] No secrets or credentials in code
 - [ ] All user inputs validated
@@ -47,52 +61,23 @@ Read your code as if someone else wrote it:
 - [ ] No XSS vulnerabilities (for web)
 - [ ] Sensitive data properly handled
 
-## Step 4: Update Documentation
-
-Ensure architecture docs match implementation:
-
-- Update `.dev_ops/docs/architecture/` if components changed
-- Add ADR if significant decisions were made
-- Update README if user-facing behavior changed
-
 ## Step 5: Create Walkthrough
 
-Document what you did (use `--help` for options):
-
-```bash
-python3 .dev_ops/scripts/artifact_ops.py create --help
-```
-
-```bash
-python3 .dev_ops/scripts/artifact_ops.py create validation \
-  --title "Walkthrough for TASK-XXX" \
-  --task TASK-XXX
-```
-
-Include:
+Document what you did:
 
 - **What was done**: Summary of changes
 - **Why**: Business/technical rationale
 - **Test results**: Output of test runs
 - **Screenshots**: If UI changes
 
-See `examples/walkthrough.md` for a complete example.
+See `.agent/skills/verify_phase/examples/walkthrough.md` for a complete example.
 
 ## Step 6: Create PR
 
-> [!TIP]
-> Template: `.dev_ops/templates/artifacts/pr.md`
-
-Use the PR template when creating pull requests:
+**Template:** `.dev_ops/templates/artifacts/pr.md`
 
 ```bash
 git push origin feature/TASK-XXX
-```
-
-## Step 7: Complete Task
-
-```bash
-python3 .dev_ops/scripts/board_ops.py move TASK-XXX col-done --commit
 ```
 
 ## Decision Tree
@@ -103,18 +88,13 @@ Stay in Verify, fix and re-test.
 
 ### If Significant Issues Found
 
-Move back to Build:
-
-```bash
-python3 .dev_ops/scripts/board_ops.py move TASK-XXX col-build --commit
-```
+Return to Build phase.
 
 ## Exit Criteria
 
 - [ ] All tests pass with coverage report
 - [ ] Self-review completed
+- [ ] SPEC.md matches implementation
 - [ ] Security checklist passed
-- [ ] Documentation updated
 - [ ] Walkthrough created with proof
 - [ ] PR created (or ready for review)
-- [ ] Task moved to Done column

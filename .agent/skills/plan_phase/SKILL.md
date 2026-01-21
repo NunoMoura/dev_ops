@@ -18,7 +18,11 @@ description: Create implementation plans before building. Use when in the Plan p
 
 | Input | Output | Next Phase |
 |-------|--------|------------|
-| RES-XXX + architecture docs | PLN-XXX implementation plan | Build |
+| RES-XXX + SPEC.md files | PLN-XXX implementation plan | Build |
+
+## Core Principle
+
+**Work only with SPEC.md files. Do NOT open code files.**
 
 ## Step 1: Review Research
 
@@ -29,28 +33,17 @@ Internalize findings from RES-XXX:
 - Risks and edge cases
 - Recommended approach
 
-## Step 1a: Analyze Impact
+## Step 2: Analyze Impact via SPEC.md
 
-Identify what depends on the components you're modifying:
+Identify what depends on components you're modifying:
 
-1. **Direct Search**: Search for imports/usages of your target components in the codebase.
-2. **Architecture Check**: Review relevant architecture docs to see which other components list your target as a dependency.
+1. **Read affected SPEC.md**: Check `## Dependencies` section
+2. **Check dependents**: `grep -r "your-component" */SPEC.md`
+3. **Validate interfaces**: Ensure your changes won't break dependent SPECs
 
-Include all affected components in your plan. This prevents breaking downstream logic.
+Include all affected components in your plan.
 
-## Step 2: Create Implementation Plan
-
-Create the plan artifact (use `--help` for options):
-
-```bash
-python3 .dev_ops/scripts/artifact_ops.py create --help
-```
-
-```bash
-python3 .dev_ops/scripts/artifact_ops.py create plan \
-  --title "Plan for TASK-XXX" \
-  --task TASK-XXX
-```
+## Step 3: Create Implementation Plan
 
 ### Plan Structure
 
@@ -60,7 +53,7 @@ High-level objective — what we're building and why.
 
 #### Checklist
 
-Ordered list of work items. Dependencies first. Tag each item:
+Ordered list of work items. Dependencies first:
 
 ```markdown
 - [ ] **[test]** Add unit tests for validation logic
@@ -71,7 +64,7 @@ Ordered list of work items. Dependencies first. Tag each item:
 
 #### Acceptance Criteria
 
-How we know we're done. Must be testable:
+How we know we're done (must be testable):
 
 ```markdown
 - All inputs validated before processing
@@ -83,32 +76,25 @@ How we know we're done. Must be testable:
 
 Commands to run, manual checks to perform.
 
-> [!TIP]
-> Template: `.dev_ops/templates/artifacts/plan.md`
+**Template:** `.dev_ops/templates/artifacts/plan.md`
 
-See `examples/implementation_plan.md` for a complete example.
+## Step 4: Add ADR if Making Decision
 
-## Step 3: Anticipate Problems
+If your plan involves architectural decisions, prepare ADR row for SPEC.md:
+
+```markdown
+| ADR-XXX | Decision summary | [Research link](...) |
+```
+
+This will be added to SPEC.md during Build phase.
+
+## Step 5: Anticipate Problems
 
 Document potential blockers:
 
 - External dependencies
 - Areas of uncertainty
 - Performance concerns
-
-## Step 4: Move to Build
-
-```bash
-python3 .dev_ops/scripts/board_ops.py move TASK-XXX col-build --commit
-```
-
-### If Research Gaps Found
-
-Move back to Understand:
-
-```bash
-python3 .dev_ops/scripts/board_ops.py move TASK-XXX col-understand --commit
-```
 
 ## Exit Criteria
 
@@ -118,5 +104,5 @@ python3 .dev_ops/scripts/board_ops.py move TASK-XXX col-understand --commit
 - [ ] Each item tagged as [test] or [code]
 - [ ] Acceptance criteria are testable
 - [ ] Verification steps defined
+- [ ] ADR prepared if needed
 - [ ] Another dev could execute without clarification
-- [ ] Task moved to Build column

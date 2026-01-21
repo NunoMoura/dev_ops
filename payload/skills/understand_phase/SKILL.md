@@ -12,13 +12,12 @@ description: Research deeply before planning. Use when in the Understand phase, 
 - Task is in Understand column
 - Need to research before planning
 - Scoping work or analyzing requirements
-- Checking if existing code matches architecture
 
 ## How It Works
 
 | Input | Output | Next Phase |
 |-------|--------|------------|
-| TASK + trigger + architecture docs | RES-XXX research doc | Plan |
+| TASK + trigger + SPEC.md files | RES-XXX research doc | Plan |
 
 ## Step 1: Define Scope
 
@@ -27,112 +26,69 @@ Document what's in and out of scope explicitly:
 **In Scope**: Components, files, and behaviors you will change
 **Out of Scope**: Related areas you explicitly won't touch
 
-Check affected architecture docs:
+## Step 2: Navigate SPEC.md Files (RLM Pattern)
+
+**Do NOT open code files in this phase.** Work only with SPEC.md files.
+
+### Discover Components
 
 ```bash
-ls .dev_ops/docs/architecture/
+find . -name SPEC.md
 ```
 
-## Step 1a: Scope via Architecture Docs
+### Filter by Keywords
 
-> [!TIP]
-> Before searching code, narrow scope using architecture docs first.
+```bash
+grep -r "keyword" */SPEC.md
+```
 
-Analyze the architecture documentation to identify relevant components:
+### Drill into Relevant SPECs
 
-1. List docs: `ls .dev_ops/docs/architecture/`
-2. Search docs for keywords: `grep -r "keyword" .dev_ops/docs/architecture/`
-3. Recursively identify dependencies: Read the "Public Interface" or "Key Files" section in the matched docs to find transitive dependencies.
+Read matched SPEC.md files to understand:
 
-**Only explore paths identified in this step.** This dramatically reduces context usage and follows the RLM decomposition pattern.
+- `## Structure`: Folder/file layout and purposes
+- `## Key Exports`: Important interfaces exposed to other components
+- `## Constraints`: Rules that cannot be violated
+- `## Dependencies`: Links to other SPEC.md files
 
-## Step 2: Research
+### Cross-SPEC Validation
 
-### Internal Research
+For each dependency in `## Dependencies`:
 
-- Search codebase for similar patterns
-- Review existing implementations
-- Check test coverage for affected components
-- Look for related ADRs (Architecture Decision Records)
+1. Verify linked SPEC.md exists
+2. Check that expected interfaces are defined
+3. Flag any mismatches
 
-### External Research
+## Step 3: External Research
 
 - Library/framework documentation
-- Best practices for the problem domain
+- Research papers, best practices
 - Known issues or edge cases
 
-### Edge Cases
-
-- What could go wrong?
-- What happens with invalid input?
-- What are the failure modes?
-
-## Step 3: Challenge Assumptions
-
-Question incomplete or unclear requirements:
+## Step 4: Challenge Assumptions
 
 - Is this the right approach?
 - Are there simpler alternatives?
 - What constraints aren't written down?
 
-## Step 4: Update Documentation
+## Step 5: Update SPEC.md if Needed
 
-If you discover drift between code and architecture docs, update them now.
-
-## Step 5: Decompose If Needed
-
-If task scope is too large, create sub-tasks (use `--help` for options):
-
-```bash
-python3 .dev_ops/scripts/board_ops.py create_task --help
-```
-
-```bash
-python3 .dev_ops/scripts/board_ops.py create_task \
-  --title "Sub-task title" \
-  --summary "Specific scope" \
-  --priority medium \
-  --commit
-```
+If you discover drift between SPECs and reality, update SPEC.md now.
 
 ## Step 6: Create Research Artifact
 
-Document findings (use `--help` for options):
+Document findings using the research template.
 
-```bash
-python3 .dev_ops/scripts/artifact_ops.py create --help
-```
+**Template:** `.dev_ops/templates/artifacts/research.md`
 
-```bash
-python3 .dev_ops/scripts/artifact_ops.py create research \
-  --title "Research for TASK-XXX" \
-  --task TASK-XXX
-```
-
-> [!TIP]
-> Template: `.dev_ops/templates/artifacts/research.md`
-
-See `examples/research_doc.md` for a complete example.
-
-## Step 7: Move to Plan
-
-```bash
-python3 .dev_ops/scripts/board_ops.py move TASK-XXX col-plan --commit
-```
-
-## Available MCPs
-
-Check `mcps/` folder for installed MCP capabilities that enhance research:
-
-- Use any available MCPs to fetch documentation, search APIs, or access external resources
-- Add new MCPs with `/add_mcp {name}`
+See `.agent/skills/understand_phase/examples/research_doc.md` for a complete example.
 
 ## Exit Criteria
 
 - [ ] Scope defined (explicit in/out)
-- [ ] Codebase researched
+- [ ] SPEC.md files reviewed (no code files opened)
+- [ ] Cross-SPEC dependencies validated
 - [ ] External resources reviewed
 - [ ] Risks and edge cases documented
 - [ ] RES-XXX artifact created
 - [ ] Can explain "what" and "why" to another dev
-- [ ] Task moved to Plan column

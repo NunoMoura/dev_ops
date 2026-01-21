@@ -1,6 +1,7 @@
 ---
+id: "{{id}}"               # PERSONA-XXX - auto-generated
 title: "{{title}}"         # Persona name (e.g., "Project Manager")
-type: user
+type: persona
 date: "{{date}}"           # Creation date (YYYY-MM-DD)
 status: Draft              # Draft | Active | Deprecated
 ---

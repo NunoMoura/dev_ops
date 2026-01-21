@@ -4,28 +4,31 @@
 
 # DevOps Framework
 
-**AI-native development with structured phases, skills, and workflows**
-
 [![CI](https://github.com/NunoMoura/dev_ops/actions/workflows/ci.yml/badge.svg)](https://github.com/NunoMoura/dev_ops/actions/workflows/ci.yml)
 
 ---
 
-## What is DevOps?
+## Why this Framework?
 
-A **lightweight framework** for developers using AI coding agents (Cursor, Antigravity). It provides:
+Most AI coding tools rely on **single-shot prompts** or **centralized specs** that quickly go out of date. This framework takes a different approach:
 
-- **Structured phases** for task progression (Backlog → Understand → Plan → Build → Verify → Done)
-- **Skills** that teach agents phase-specific behaviors
-- **Workflows** for common operations (slash commands)
-- **Templates** for consistent documentation
+### 1. Co-located Specs (vs Centralized)
 
-**Best for**: AI-assisted development with Cursor or Antigravity IDE.
+Unlike tools that force you to maintain a massive central design document (`spec_kit`), we place `SPEC.md` files **inside the component folders** they describe.
 
-<p align="center">
-  <img src="docs/images/board.png" alt="DevOps Board" width="700" />
-  <br />
-  <em>Task board with 6-phase workflow</em>
-</p>
+- **Benefit**: Documentation never drifts from code. Reliability increases as the codebase grows.
+- **Benefit**: Agents can "drill down" into specific components without loading the entire project context.
+
+### 2. Stateful Workflow (vs Stateless Chains)
+
+Instead of stateless agent loops, we track work on the **DevOps Board**.
+
+- **Benefit**: Work persists across sessions. You can pause, review, and resume complex tasks.
+- **Benefit**: Every task has a clear lifecycle: `Backlog` → `Plan` → `Build` → `Verify` → `Done`.
+
+### 3. Active Skills
+
+Agents don't just write code; they follow **Phase Skills**. A "Build" agent behaves differently from a "Plan" agent, ensuring focus and quality.
 
 ---
 
@@ -52,7 +55,7 @@ Every task moves through a **6-phase workflow**:
 ```markdown
 ┌─────────┬───────────┬──────┬───────┬────────┬──────┐
 │ Backlog │ Understand│ Plan │ Build │ Verify │ Done │
-└─────────┴───────────┴──────┴───────┴────────┴──────┘
+└─────────┴───────────┴─────────────┬────────┬──────┘
 ```
 
 | Phase | Purpose | Skill |
@@ -64,11 +67,7 @@ Every task moves through a **6-phase workflow**:
 | **Verify** | Test, document, PR | `verify_phase` |
 
 > [!TIP]
-> **New**: Use `doc_ops.py scope` to navigate architecture docs using RLM principles.
->
-> ```bash
-> python3 .dev_ops/scripts/doc_ops.py scope --query "auth"
-> ```
+> **New**: Use `find . -name SPEC.md` to navigate component specs.
 
 ---
 
@@ -280,10 +279,6 @@ python3 .dev_ops/scripts/board_ops.py list --column col-backlog
 # Artifact operations
 python3 .dev_ops/scripts/artifact_ops.py create research --title "..." --task TASK-001
 python3 .dev_ops/scripts/artifact_ops.py list
-
-# Project operations
-python3 .dev_ops/scripts/project_ops.py detect --target . --format json
-python3 .dev_ops/scripts/project_ops.py generate-rules --target .
 ```
 
 ---

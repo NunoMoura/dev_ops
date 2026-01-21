@@ -11,31 +11,25 @@ Claim ownership of a specific task, or automatically pick and claim the next hig
 
 - `input`: (Optional) Specific Task ID to claim (e.g., `TASK-123`). If left empty, the next highest priority task from the Backlog will be claimed.
 
-## Steps
+## Step 1: Claim Task
 
-1. **Claim Task**:
+Run the VS Code command to claim the task:
 
-   - **If `{input}` provided**:
-     Claims the specific task.
+```xml
+<vscode_command>devops.claimTask</vscode_command>
+```
 
-     ```bash
-     python3 .dev_ops/scripts/board_ops.py claim {{input}} --commit
-     ```
+The command will prompt for a task ID, or automatically pick the highest priority task if none specified.
 
-   - **If `{input}` empty**:
-     Automatically picks the next available task from the Backlog and claims it.
+## Step 2: Move to Understand
 
-     ```bash
-     python3 .dev_ops/scripts/board_ops.py claim --commit
-     ```
+If a new backlog task was picked, move it to the Understand phase to begin work.
 
-2. **Move to Understand** (if auto-picked):
-
-   If a new backlog task was picked, you may want to move it to the *Understand* phase to begin work.
-
-   > **Note**: Check the task status after claiming.
+```xml
+<vscode_command>devops.moveTask</vscode_command>
+```
 
 ## Outputs
 
-- Task claimed (`.current_task` updated)
-- Task owner set to current Developer
+- Task claimed (owner set)
+- Task status updated to `agent_active`

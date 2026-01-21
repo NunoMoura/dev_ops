@@ -5,7 +5,7 @@ description: Implement production-ready code with tests. Use when in the Build p
 
 # Build Phase
 
-> Code you'd be proud to ship.
+> Code you'd be proud to ship. Code matches what SPEC.md defines.
 
 ## When to Use This Skill
 
@@ -18,28 +18,27 @@ description: Implement production-ready code with tests. Use when in the Build p
 
 | Input | Output | Next Phase |
 |-------|--------|------------|
-| PLN-XXX implementation plan | Code + tests | Verify |
+| PLN-XXX implementation plan | Code + tests + updated SPEC.md | Verify |
 
-## TDD Workflow
+## Step 1: Review Plan and SPEC.md
 
-For each checklist item in PLN-XXX:
+**SPEC.md defines requirements. Code matches specs.**
 
-### 1. Test First
+Read the relevant SPEC.md files to understand:
 
-Write tests before code:
+- What files should exist
+- What functions should be implemented
+- What constraints must be followed
+
+## Step 2: Write Tests First
+
+For each checklist item in PLN-XXX, write tests before code:
 
 - Unit tests for behavior
 - Edge case tests
 - Error condition tests
 
-```python
-def test_validates_input():
-    """Test that invalid input raises ValidationError."""
-    with pytest.raises(ValidationError):
-        validate_input(None)
-```
-
-### 2. Code
+## Step 3: Implement Code
 
 Implement just enough to make tests pass:
 
@@ -47,7 +46,7 @@ Implement just enough to make tests pass:
 - Validate all inputs
 - Follow existing patterns in the codebase
 
-### 3. Refactor
+## Step 4: Refactor
 
 While tests still pass:
 
@@ -55,7 +54,18 @@ While tests still pass:
 - Extract reusable components
 - Improve naming
 
-### 4. Commit
+## Step 5: Update SPEC.md
+
+When modifying code, keep SPEC.md in sync:
+
+- **Adding folder/file**: Add row to `## Structure` table
+- **Adding export**: Add to `## Key Exports` section
+- **Making decision**: Add ADR row to `## ADRs` table
+- **New folder with code**: Create `SPEC.md` from template
+
+**Template:** `.dev_ops/templates/docs/spec.md`
+
+## Step 6: Commit
 
 Use conventional commits:
 
@@ -65,54 +75,23 @@ git commit -m "feat(<scope>): <what>
 Task: TASK-XXX"
 ```
 
-Commit types:
-
-- `feat`: New feature
-- `fix`: Bug fix
-- `refactor`: Code change (no new feature or fix)
-- `test`: Adding tests
-- `docs`: Documentation only
-
-See `examples/tdd_workflow.md` for a complete TDD example.
-
 ## Decision Tree
 
 ### If Plan Gaps Found
 
-Move back to Plan:
-
-```bash
-python3 .dev_ops/scripts/board_ops.py move TASK-XXX col-plan --commit
-```
+Return to Plan phase to update PLN-XXX.
 
 ### If Blocked by Unrelated Issue
 
-Create a new task (use `--help` for options):
-
-```bash
-python3 .dev_ops/scripts/board_ops.py create_task --help
-```
-
-```bash
-python3 .dev_ops/scripts/board_ops.py create_task \
-  --title "Fix blocking issue" \
-  --summary "Description of the blocker" \
-  --priority high \
-  --commit
-```
+Create a new task for the blocker.
 
 ## When Complete
 
 Run all tests:
 
 ```bash
-pytest tests/ -v
-```
-
-Move to Verify:
-
-```bash
-python3 .dev_ops/scripts/board_ops.py move TASK-XXX col-verify --commit
+pytest tests/ -v  # Python
+npm test          # JavaScript/TypeScript
 ```
 
 ## Exit Criteria
@@ -121,5 +100,5 @@ python3 .dev_ops/scripts/board_ops.py move TASK-XXX col-verify --commit
 - [ ] All tests pass
 - [ ] Lint passes
 - [ ] Code handles errors gracefully
+- [ ] SPEC.md updated (Structure, Key Exports)
 - [ ] Each change committed with proper message
-- [ ] Task moved to Verify column

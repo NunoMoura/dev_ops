@@ -6,10 +6,9 @@ description: Template for generating project-specific linter rules during /boots
 
 # Linter Rule Generator
 
-> [!IMPORTANT]
-> This is a **generation template**, not a static rule.
-> During `/bootstrap`, this template is used to create project-specific rules
-> in `.agent/rules/linters/` based on detected linter configuration.
+<!-- This is a GENERATION TEMPLATE, not a static rule.
+During /bootstrap, this template is used to create project-specific rules
+in .agent/rules/linters/ based on detected linter configuration. -->
 
 ## Auto-Detection
 

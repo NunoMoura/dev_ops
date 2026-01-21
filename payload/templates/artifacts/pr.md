@@ -11,9 +11,8 @@ trigger: "{{trigger}}" # What spawned the original task
 
 # {{id}} - {{title}}
 
-> [!IMPORTANT]
-> **PR is a minimal pointer to code changes.**
-> Reference the task's artifacts for full context.
+<!-- PR is a minimal pointer to code changes.
+Reference the task's artifacts for full context. -->
 
 ## Summary
 
