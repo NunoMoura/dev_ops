@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { log, warn, formatError } from '../../core';
 import { createTask } from '../../vscode/commands/taskCommands';
+import { readBoard } from '../../data/boardStore';
 
 /**
  * Bootstrap Service
@@ -406,18 +407,23 @@ export class BootstrapService {
     // --- Task Creation ---
 
     public async createBootstrapTasks(projectRoot: string, docs: DocStatus, components: string[]): Promise<void> {
-        const boardPath = path.join(projectRoot, '.dev_ops', 'board.json');
-        if (!fs.existsSync(boardPath)) {
-            warn(`[Bootstrap] Board not found at ${boardPath}, skipping task creation.`);
-            return;
-        }
-
+        // Use centralized board read to ensure consistency with VS Code workspace
         let board: any;
         try {
-            board = JSON.parse(fs.readFileSync(boardPath, 'utf8'));
+            board = await readBoard();
         } catch (e) {
-            warn(`[Bootstrap] Failed to parse board.json: ${e}`);
-            return;
+            // Fallback to direct file read if VS Code workspace not available
+            const boardPath = path.join(projectRoot, '.dev_ops', 'board.json');
+            if (!fs.existsSync(boardPath)) {
+                warn(`[Bootstrap] Board not found at ${boardPath}, skipping task creation.`);
+                return;
+            }
+            try {
+                board = JSON.parse(fs.readFileSync(boardPath, 'utf8'));
+            } catch (parseError) {
+                warn(`[Bootstrap] Failed to parse board.json: ${parseError}`);
+                return;
+            }
         }
 
         // Helper to check duplicates
