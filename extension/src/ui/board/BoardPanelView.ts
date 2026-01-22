@@ -394,22 +394,6 @@ function getBoardHtml(panelMode = false): string {
         padding: 1px 6px;
         border-radius: 999px;
       }
-      .column-add-button {
-        border: 1px solid var(--vscode-focusBorder);
-        background: transparent;
-        color: var(--vscode-focusBorder);
-        border-radius: 4px;
-        width: 24px;
-        height: 24px;
-        font-size: 16px;
-        line-height: 1;
-        padding: 0;
-        cursor: pointer;
-      }
-      .column-add-button:hover {
-        background: var(--vscode-focusBorder);
-        color: var(--vscode-sideBar-background);
-      }
       .task-list {
         display: flex;
         flex-direction: column;
@@ -910,13 +894,6 @@ function getBoardHtml(panelMode = false): string {
              <span class="codicon codicon-search"></span>
               <input type="text" id="search-input" placeholder="Search tasks..." />
             </div>
-            <select id="priority-filter">
-              <option value="">All Priorities</option>
-              <option value="High">High</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
-            </select>
-           <span class="separator"></span>
             <button id="addTaskBtn" class="add-task-button" type="button" title="Create Task">
              <span class="codicon codicon-plus"></span> New Task
             </button>
@@ -982,7 +959,6 @@ function getBoardHtml(panelMode = false): string {
         
         // Header Controls
         const searchInput = document.getElementById('search-input');
-        const priorityFilter = document.getElementById('priority-filter');
 
         // Modal Elements
         const modal = document.getElementById('edit-modal');
@@ -999,8 +975,7 @@ function getBoardHtml(panelMode = false): string {
           filteredTasks: [],
           selection: new Set(Array.isArray(savedState.selection) ? savedState.selection : []),
           dragTaskIds: [],
-          filterText: '',
-          filterPriority: ''
+          filterText: ''
         };
 
         function persistState() {
@@ -1017,15 +992,13 @@ function getBoardHtml(panelMode = false): string {
 
         function applyFilters() {
           const text = state.filterText.toLowerCase();
-          const priority = state.filterPriority;
           
           state.filteredTasks = state.tasks.filter(task => {
             const matchesText = !text || 
                                 task.title.toLowerCase().includes(text) || 
                                 (task.summary && task.summary.toLowerCase().includes(text)) ||
                                 (task.owner && task.owner.developer && task.owner.developer.toLowerCase().includes(text));
-            const matchesPriority = !priority || task.priority === priority;
-            return matchesText && matchesPriority;
+            return matchesText;
           });
         }
 
@@ -1102,10 +1075,6 @@ function getBoardHtml(panelMode = false): string {
             headerContent.appendChild(count);
             
             header.appendChild(headerContent);
-            
-            // Add button in header
-            const addBtn = createColumnAddButton(column.id);
-            header.appendChild(addBtn);
 
             columnEl.appendChild(header);
 
@@ -1323,19 +1292,7 @@ function getBoardHtml(panelMode = false): string {
           return card;
         }
 
-        function createColumnAddButton(columnId) {
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.className = 'column-add-button';
-          button.title = 'Create Task';
-          button.textContent = '+';
-          button.addEventListener('click', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            vscode.postMessage({ type: 'createTask', columnId });
-          });
-          return button;
-        }
+
 
         function createChip(text, extraClass) {
           const chip = document.createElement('span');
@@ -1441,10 +1398,7 @@ function getBoardHtml(panelMode = false): string {
            updateBoard({ columns: state.columns, tasks: state.tasks }); // Trigger re-filter
         });
         
-        priorityFilter?.addEventListener('change', (e) => {
-           state.filterPriority = e.target.value;
-           updateBoard({ columns: state.columns, tasks: state.tasks }); // Trigger re-filter
-        });
+
 
         // --- Modal Logic ---
         function openEditModal(taskId) {
