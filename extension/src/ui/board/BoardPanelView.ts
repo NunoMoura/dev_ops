@@ -104,7 +104,10 @@ export class BoardPanelManager {
       }
     );
 
-    this.panel.webview.html = getBoardHtml(true); // true = panel mode (full width)
+    const logoUri = this.panel.webview.asWebviewUri(
+      vscode.Uri.joinPath(this.extensionUri, 'resources', 'devops-logo.svg')
+    );
+    this.panel.webview.html = getBoardHtml(true, logoUri.toString()); // true = panel mode (full width)
 
     this.panel.onDidDispose(() => {
       this.panel = undefined;
@@ -223,7 +226,7 @@ export function createBoardPanelManager(context: vscode.ExtensionContext): Board
   return manager;
 }
 
-function getBoardHtml(panelMode = false): string {
+function getBoardHtml(panelMode = false, logoUri = ''): string {
   // Use shared design system
   const cspMeta = getCSPMeta();
   const fontLink = getFontLink();
@@ -879,6 +882,13 @@ function getBoardHtml(panelMode = false): string {
       .empty-state .cta-button:hover {
         background: var(--vscode-button-hoverBackground);
       }
+      .empty-state .code {
+        font-family: var(--vscode-editor-font-family);
+        background: var(--vscode-textCodeBlock-background);
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 0.9em;
+      }
     </style>
   `;
 
@@ -951,6 +961,7 @@ function getBoardHtml(panelMode = false): string {
     <script>
       (function () {
         const vscode = acquireVsCodeApi();
+        const logoUri = '${logoUri}';
         const boardEl = document.getElementById('board');
         const emptyState = document.getElementById('empty-state');
         const selectionBanner = document.getElementById('selectionBanner');
@@ -1036,10 +1047,9 @@ function getBoardHtml(panelMode = false): string {
           } else if (state.tasks.length === 0) {
              emptyState.classList.remove('hidden');
              emptyState.innerHTML = 
-                '<div class="icon">📋</div>' +
-                '<h3>Welcome to DevOps Board</h3>' +
-                '<p>Track your agent tasks, decisions, and progress in one place.</p>' +
-                '<button class="cta-button cta-create"><span class="codicon codicon-plus"></span> Create First Task</button>';
+                '<div class="icon"><img src="' + logoUri + '" alt="DevOps Logo" style="width: 64px; height: 64px;"></div>' +
+                '<h3>Ready to Get Started</h3>' +
+                '<p>Open the AI Chat and run <span class="code">/bootstrap</span> to analyze your codebase and generate tasks.</p>';
           } else {
              emptyState.classList.add('hidden');
           }
