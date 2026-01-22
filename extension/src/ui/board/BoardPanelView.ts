@@ -134,7 +134,7 @@ export class BoardPanelManager {
         this.onOpenEmitter.fire(message.taskId);
       } else if (message.type === 'createTask') {
         this.onCreateEmitter.fire({ columnId: message.columnId });
-      } else if (message.type === 'deleteTasks' && Array.isArray(message.taskIds) && message.taskIds.length >0) {
+      } else if (message.type === 'deleteTasks' && Array.isArray(message.taskIds) && message.taskIds.length > 0) {
         this.onDeleteEmitter.fire(message.taskIds);
       } else if (message.type === 'archiveTasks') {
         // Handle archive all request
@@ -1049,27 +1049,24 @@ function getBoardHtml(panelMode = false): string {
           
           if (!state.columns.length) {
             emptyState.classList.remove('hidden');
-            emptyState.innerHTML = `
-    <div class="icon">⚠️</div>
-      <h3>No Board Configuration </h3>
-        <p>The board configuration could not be loaded.</p>
-          `;
-          } else if (state.tasks.length >0 && displayTasks.length === 0) {
+            emptyState.innerHTML = 
+                '<div class="icon">⚠️</div>' +
+                '<h3>No Board Configuration</h3>' +
+                '<p>The board configuration could not be loaded.</p>';
+          } else if (state.tasks.length > 0 && displayTasks.length === 0) {
              emptyState.classList.remove('hidden');
-             emptyState.innerHTML = `
-          <div class="icon">🔍</div>
-            <h3>No Matches Found </h3>
-              <p>Try adjusting your search or priority filters.</p>
-                <button class="cta-button cta-clear">Clear Filters </button>
-                  `;
+             emptyState.innerHTML = 
+                '<div class="icon">🔍</div>' +
+                '<h3>No Matches Found</h3>' +
+                '<p>Try adjusting your search or priority filters.</p>' +
+                '<button class="cta-button cta-clear">Clear Filters</button>';
           } else if (state.tasks.length === 0) {
              emptyState.classList.remove('hidden');
-             emptyState.innerHTML = `
-                  <div class="icon">📋</div>
-                    <h3>Welcome to DevOps Board </h3>
-                      <p>Track your agent tasks, decisions, and progress in one place.</p>
-                        <button class="cta-button cta-create"><span class="codicon codicon-plus"></span> Create First Task</button >
-                          `;
+             emptyState.innerHTML = 
+                '<div class="icon">📋</div>' +
+                '<h3>Welcome to DevOps Board</h3>' +
+                '<p>Track your agent tasks, decisions, and progress in one place.</p>' +
+                '<button class="cta-button cta-create"><span class="codicon codicon-plus"></span> Create First Task</button>';
           } else {
              emptyState.classList.add('hidden');
           }
@@ -1453,7 +1450,7 @@ function getBoardHtml(panelMode = false): string {
         function openEditModal(taskId) {
            currentEditingTaskId = taskId;
            const task = state.tasks.find(t => t.id === taskId);
-           modalTitle.textContent = task ? `Edit Task: ${ task.title } ` : 'Edit Task';
+           modalTitle.textContent = task ? 'Edit Task: ' + task.title : 'Edit Task';
            modalContextEditor.value = 'Loading context...';
            
            modal.showModal();

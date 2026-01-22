@@ -1,0 +1,642 @@
+973:  const script = /* HTML */ `
+974-    <script>
+975-      (function () {
+976-        const vscode = acquireVsCodeApi();
+977-        const boardEl = document.getElementById('board');
+978-        const emptyState = document.getElementById('empty-state');
+979-        const selectionBanner = document.getElementById('selectionBanner');
+980-        const selectionCount = document.getElementById('selectionCount');
+981-        const clearSelectionBtn = document.getElementById('clearSelection');
+982-        
+983-        // Header Controls
+984-        const searchInput = document.getElementById('search-input');
+985-        const priorityFilter = document.getElementById('priority-filter');
+986-
+987-        // Modal Elements
+988-        const modal = document.getElementById('edit-modal');
+989-        const modalTitle = document.getElementById('modal-title');
+990-        const modalClose = document.getElementById('modal-close');
+991-        const modalContextEditor = document.getElementById('modal-context-editor');
+992-        const modalSave = document.getElementById('modal-save');
+993-        let currentEditingTaskId = null;
+994-
+995-        const savedState = vscode.getState() || {};
+996-        const state = {
+997-          columns: [],
+998-          tasks: [],
+999-          filteredTasks: [],
+1000-          selection: new Set(Array.isArray(savedState.selection) ? savedState.selection : []),
+1001-          dragTaskIds: [],
+1002-          filterText: '',
+1003-          filterPriority: ''
+1004-        };
+1005-
+1006-        function persistState() {
+1007-          vscode.setState({ selection: Array.from(state.selection) });
+1008-        }
+1009-
+1010-        function updateBoard(snapshot) {
+1011-          state.columns = Array.isArray(snapshot?.columns) ? snapshot.columns : [];
+1012-          state.tasks = Array.isArray(snapshot?.tasks) ? snapshot.tasks : [];
+1013-          applyFilters();
+1014-          pruneSelection();
+1015-          renderBoard();
+1016-        }
+1017-
+1018-        function applyFilters() {
+1019-          const text = state.filterText.toLowerCase();
+1020-          const priority = state.filterPriority;
+1021-          
+1022-          state.filteredTasks = state.tasks.filter(task => {
+1023-            const matchesText = !text || 
+1024-                                task.title.toLowerCase().includes(text) || 
+1025-                                (task.summary && task.summary.toLowerCase().includes(text)) ||
+1026-                                (task.owner && task.owner.developer && task.owner.developer.toLowerCase().includes(text));
+1027-            const matchesPriority = !priority || task.priority === priority;
+1028-            return matchesText && matchesPriority;
+1029-          });
+1030-        }
+1031-
+1032-        function pruneSelection() {
+1033-          const knownIds = new Set(state.tasks.map((task) => task.id));
+1034-          let changed = false;
+1035-          state.selection.forEach((id) => {
+1036-            if (!knownIds.has(id)) {
+1037-              state.selection.delete(id);
+1038-              changed = true;
+1039-            }
+1040-          });
+1041-          if (changed) {
+1042-            persistState();
+1043-          }
+1044-        }
+1045-
+1046-        function renderBoard() {
+1047-          boardEl.innerHTML = '';
+1048-          const displayTasks = state.filteredTasks;
+1049-          
+1050-          if (!state.columns.length) {
+1051-            emptyState.classList.remove('hidden');
+1052-            emptyState.innerHTML = `
+1053-    <div class="icon">⚠️</div>
+1054-      <h3>No Board Configuration </h3>
+1055-        <p>The board configuration could not be loaded.</p>
+1056-          `;
+1057-          } else if (state.tasks.length >0 && displayTasks.length === 0) {
+1058-             emptyState.classList.remove('hidden');
+1059-             emptyState.innerHTML = `
+1060-          <div class="icon">🔍</div>
+1061-            <h3>No Matches Found </h3>
+1062-              <p>Try adjusting your search or priority filters.</p>
+1063-                <button class="cta-button cta-clear">Clear Filters </button>
+1064-                  `;
+1065-          } else if (state.tasks.length === 0) {
+1066-             emptyState.classList.remove('hidden');
+1067-             emptyState.innerHTML = `
+1068-                  <div class="icon">📋</div>
+1069-                    <h3>Welcome to DevOps Board </h3>
+1070-                      <p>Track your agent tasks, decisions, and progress in one place.</p>
+1071-                        <button class="cta-button cta-create"><span class="codicon codicon-plus"></span> Create First Task</button >
+1072-                          `;
+1073-          } else {
+1074-             emptyState.classList.add('hidden');
+1075-          }
+1076-
+1077-          const sortedColumns = [...state.columns].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+1078-          sortedColumns.forEach((column) => {
+1079-            const columnEl = document.createElement('section');
+1080-            columnEl.className = 'board-column';
+1081-            columnEl.dataset.columnId = column.id;
+1082-            columnEl.addEventListener('dragover', (event) => handleDragOver(event, columnEl));
+1083-            columnEl.addEventListener('dragleave', () => columnEl.classList.remove('drop-target'));
+1084-            columnEl.addEventListener('drop', (event) => handleDrop(event, column.id, columnEl));
+1085-
+1086-            const header = document.createElement('div');
+1087-            header.className = 'column-header';
+1088-            
+1089-            // Header Content
+1090-            const headerContent = document.createElement('div');
+1091-            headerContent.style.flex = '1';
+1092-            headerContent.style.display = 'flex';
+1093-            headerContent.style.alignItems = 'center';
+1094-
+1095-            const title = document.createElement('span');
+1096-            title.className = 'column-title';
+1097-            title.textContent = column.name;
+1098-            headerContent.appendChild(title);
+1099-            
+1100-            const columnTasks = displayTasks.filter(t => t.columnId === column.id);
+1101-            
+1102-            const count = document.createElement('span');
+1103-            count.className = 'column-count';
+1104-            count.textContent = String(columnTasks.length);
+1105-            headerContent.appendChild(count);
+1106-            
+1107-            header.appendChild(headerContent);
+1108-            
+1109-            // Add button in header
+1110-            const addBtn = createColumnAddButton(column.id);
+1111-            header.appendChild(addBtn);
+1112-
+1113-            columnEl.appendChild(header);
+1114-
+1115-            const list = document.createElement('div');
+1116-            list.className = 'task-list';
+1117-            list.addEventListener('dragover', (event) => handleDragOver(event, columnEl));
+1118-            list.addEventListener('drop', (event) => handleDrop(event, column.id, columnEl));
+1119-            
+1120-            columnTasks.forEach((task) => {
+1121-              const card = renderTaskCard(task, column.id);
+1122-              list.appendChild(card);
+1123-            });
+1124-            
+1125-            // Add Archive All button after cards in Done column
+1126-            if (column.id === 'col-done' && columnTasks.length >0) {
+1127-                const archiveAllBtn = document.createElement('button');
+1128-                archiveAllBtn.className = 'archive-all-button';
+1129-                archiveAllBtn.textContent = 'Archive All';
+1130-                archiveAllBtn.onclick = () => {
+1131-                    vscode.postMessage({ type: 'archiveTasks' });
+1132-                };
+1133-                list.appendChild(archiveAllBtn);
+1134-            }
+1135-            
+1136-            columnEl.appendChild(list);
+1137-            boardEl.appendChild(columnEl);
+1138-          });
+1139-          updateSelectionBanner();
+1140-        }
+1141-
+1142-        function renderTaskCard(task, columnId) {
+1143-          const card = document.createElement('article');
+1144-          card.className = 'task-card';
+1145-          card.draggable = true;
+1146-          card.dataset.taskId = task.id;
+1147-          card.dataset.status = task.status || 'ready';
+1148-          if (state.selection.has(task.id)) {
+1149-            card.classList.add('selected');
+1150-          }
+1151-          // Single click selects
+1152-          card.addEventListener('click', (event) => handleCardClick(event, task.id));
+1153-          // Context menu opens Edit Modal (Custom)
+1154-          card.addEventListener('contextmenu', (event) => {
+1155-             showContextMenu(event, task.id);
+1156-          });
+1157-          // Double click opens task in editor (Standard)
+1158-          card.addEventListener('dblclick', () => {
+1159-             vscode.postMessage({ type: 'openTask', taskId: task.id });
+1160-          });
+1161-          
+1162-          card.addEventListener('dragstart', (event) => handleDragStart(event, task.id, card));
+1163-          card.addEventListener('dragend', () => handleDragEnd(card));
+1164-
+1165-          // Title
+1166-          const title = document.createElement('div');
+1167-          title.className = 'task-title';
+1168-          title.textContent = task.title;
+1169-          card.appendChild(title);
+1170-
+1171-          // Summary
+1172-          if (task.summary) {
+1173-            const summary = document.createElement('div');
+1174-            summary.className = 'task-summary';
+1175-            summary.textContent = task.summary;
+1176-            card.appendChild(summary);
+1177-          }
+1178-
+1179-          // Artifact links (upstream and downstream)
+1180-          const hasUpstream = task.upstream?.length >0;
+1181-          const hasDownstream = task.downstream?.length >0;
+1182-          if (hasUpstream || hasDownstream) {
+1183-            const artifactLinks = document.createElement('div');
+1184-            artifactLinks.className = 'artifact-links';
+1185-            if (hasUpstream) {
+1186-              task.upstream.forEach(artifact => {
+1187-                const badge = document.createElement('span');
+1188-                badge.className = 'artifact-badge upstream';
+1189-                badge.textContent = artifact;
+1190-                badge.title = 'Upstream: ' + artifact;
+1191-                artifactLinks.appendChild(badge);
+1192-              });
+1193-            }
+1194-            if (hasDownstream) {
+1195-              task.downstream.forEach(artifact => {
+1196-                const badge = document.createElement('span');
+1197-                badge.className = 'artifact-badge downstream';
+1198-                badge.textContent = artifact;
+1199-                badge.title = 'Downstream: ' + artifact;
+1200-                artifactLinks.appendChild(badge);
+1201-              });
+1202-            }
+1203-            card.appendChild(artifactLinks);
+1204-          }
+1205-
+1206-          // Progress bar (if checklist exists)
+1207-          const total = task.checklistTotal || 0;
+1208-          const done = task.checklistDone || 0;
+1209-          if (total >0) {
+1210-            const progressContainer = document.createElement('div');
+1211-            progressContainer.className = 'progress-container';
+1212-            const progressBar = document.createElement('div');
+1213-            progressBar.className = 'progress-bar';
+1214-            const progressFill = document.createElement('div');
+1215-            progressFill.className = 'progress-fill';
+1216-            progressFill.style.width = Math.round((done / total) * 100) + '%';
+1217-            progressBar.appendChild(progressFill);
+1218-            progressContainer.appendChild(progressBar);
+1219-            const progressText = document.createElement('span');
+1220-            progressText.className = 'progress-text';
+1221-            progressText.textContent = done + '/' + total;
+1222-            progressContainer.appendChild(progressText);
+1223-            card.appendChild(progressContainer);
+1224-          }
+1225-
+1226-          // Footer: Priority, Owner, Date on left; Status on right
+1227-          const status = task.status || 'ready';
+1228-          const hasStatus = status !== 'ready';
+1229-          const hasPriority = !!task.priority;
+1230-          const hasDate = !!task.updatedAt;
+1231-          const hasOwner = !!(task.owner && task.owner.developer);
+1232-
+1233-          if (hasStatus || hasPriority || hasDate || hasOwner) {
+1234-            const footer = document.createElement('div');
+1235-            footer.className = 'card-footer';
+1236-            
+1237-            // Left side
+1238-            const footerLeft = document.createElement('div');
+1239-            footerLeft.className = 'card-footer-left';
+1240-            
+1241-            // Priority
+1242-            if (hasPriority) {
+1243-              const prioritySpan = document.createElement('span');
+1244-              prioritySpan.className = 'priority priority-' + (task.priority.toLowerCase() || 'medium');
+1245-              prioritySpan.textContent = task.priority;
+1246-              footerLeft.appendChild(prioritySpan);
+1247-            }
+1248-
+1249-            // Separator 1
+1250-            if (hasPriority && (hasOwner || hasDate)) {
+1251-               const sep = document.createElement('span');
+1252-               sep.className = 'separator';
+1253-               sep.textContent = '·';
+1254-               footerLeft.appendChild(sep);
+1255-            }
+1256-
+1257-            // Owner
+1258-            if (hasOwner) {
+1259-                const ownerBadge = document.createElement('span');
+1260-                ownerBadge.className = 'owner-badge';
+1261-                ownerBadge.title = 'Developer: ' + task.owner.developer;
+1262-                ownerBadge.textContent = '👤 ' + task.owner.developer;
+1263-                footerLeft.appendChild(ownerBadge);
+1264-
+1265-                // Agent
+1266-                if (task.owner.agent) {
+1267-                    const agentBadge = document.createElement('span');
+1268-                    agentBadge.className = 'owner-badge agent-badge';
+1269-                    agentBadge.title = 'Agent Activity: ' + task.owner.agent;
+1270-                    agentBadge.textContent = '🤖'; // Minimal badge
+1271-                    footerLeft.appendChild(agentBadge);
+1272-                }
+1273-            }
+1274-
+1275-            // Separator 2
+1276-            if (hasOwner && hasDate) {
+1277-               const sep = document.createElement('span');
+1278-               sep.className = 'separator';
+1279-               sep.textContent = '·';
+1280-               footerLeft.appendChild(sep);
+1281-            }
+1282-            
+1283-            // Date
+1284-            if (hasDate) {
+1285-              const dateSpan = document.createElement('span');
+1286-              dateSpan.className = 'date';
+1287-              const date = new Date(task.updatedAt);
+1288-              dateSpan.textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+1289-              footerLeft.appendChild(dateSpan);
+1290-            }
+1291-            
+1292-            footer.appendChild(footerLeft);
+1293-            
+1294-            // Right side: status
+1295-            if (hasStatus) {
+1296-              const statusSpan = document.createElement('span');
+1297-              statusSpan.className = 'card-footer-right status-' + status;
+1298-              const statusLabels = {
+1299-                'ready': 'Ready',
+1300-                'agent_active': 'In Progress',
+1301-                'needs_feedback': 'Feedback',
+1302-                'blocked': 'Blocked',
+1303-                'done': 'Done'
+1304-              };
+1305-              statusSpan.textContent = statusLabels[status] || status;
+1306-              footer.appendChild(statusSpan);
+1307-            }
+1308-            
+1309-            card.appendChild(footer);
+1310-          }
+1311-          // Actions row for Done tasks
+1312-          if (columnId === 'col-done') {
+1313-            const actionsRow = document.createElement('div');
+1314-            actionsRow.className = 'card-actions';
+1315-            const archiveBtn = document.createElement('button');
+1316-            archiveBtn.className = 'card-archive-button';
+1317-            archiveBtn.textContent = 'Archive';
+1318-            archiveBtn.onclick = (e) => {
+1319-              e.stopPropagation();
+1320-              vscode.postMessage({ type: 'archiveTask', taskId: task.id });
+1321-            };
+1322-            actionsRow.appendChild(archiveBtn);
+1323-            card.appendChild(actionsRow);
+1324-          }
+1325-
+1326-          return card;
+1327-        }
+1328-
+1329-        function createColumnAddButton(columnId) {
+1330-          const button = document.createElement('button');
+1331-          button.type = 'button';
+1332-          button.className = 'column-add-button';
+1333-          button.title = 'Create Task';
+1334-          button.textContent = '+';
+1335-          button.addEventListener('click', (event) => {
+1336-            event.preventDefault();
+1337-            event.stopPropagation();
+1338-            vscode.postMessage({ type: 'createTask', columnId });
+1339-          });
+1340-          return button;
+1341-        }
+1342-
+1343-        function createChip(text, extraClass) {
+1344-          const chip = document.createElement('span');
+1345-          chip.className = 'task-chip' + (extraClass ? ' ' + extraClass : '');
+1346-          chip.textContent = text;
+1347-          return chip;
+1348-        }
+1349-
+1350-        function handleCardClick(event, taskId) {
+1351-          event.stopPropagation();
+1352-          const multi = event.shiftKey || event.metaKey || event.ctrlKey;
+1353-          if (multi) {
+1354-            if (state.selection.has(taskId)) {
+1355-              state.selection.delete(taskId);
+1356-            } else {
+1357-              state.selection.add(taskId);
+1358-            }
+1359-          } else if (!state.selection.has(taskId) || state.selection.size >1) {
+1360-            state.selection.clear();
+1361-            state.selection.add(taskId);
+1362-          }
+1363-          persistState();
+1364-          renderBoard();
+1365-        }
+1366-
+1367-        function handleDragStart(event, taskId, card) {
+1368-          const dragIds = state.selection.has(taskId) ? Array.from(state.selection) : [taskId];
+1369-          state.dragTaskIds = dragIds;
+1370-          card.classList.add('dragging');
+1371-          if (!state.selection.has(taskId)) {
+1372-            state.selection.clear();
+1373-            state.selection.add(taskId);
+1374-            persistState();
+1375-            renderBoard();
+1376-          }
+1377-          if (event.dataTransfer) {
+1378-            event.dataTransfer.effectAllowed = 'move';
+1379-            event.dataTransfer.setData('text/plain', dragIds.join(','));
+1380-            const preview = createDragPreview(dragIds.length);
+1381-            event.dataTransfer.setDragImage(preview, -10, -10);
+1382-            setTimeout(() => preview.remove(), 0);
+1383-          }
+1384-        }
+1385-
+1386-        function createDragPreview(count) {
+1387-          const preview = document.createElement('div');
+1388-          preview.className = 'drag-preview';
+1389-          preview.textContent = count === 1 ? 'Moving 1 task' : 'Moving ' + count + ' tasks';
+1390-          document.body.appendChild(preview);
+1391-          return preview;
+1392-        }
+1393-
+1394-        function handleDragEnd(card) {
+1395-          card.classList.remove('dragging');
+1396-          state.dragTaskIds = [];
+1397-        }
+1398-
+1399-        function handleDragOver(event, columnEl) {
+1400-          event.preventDefault();
+1401-          event.dataTransfer && (event.dataTransfer.dropEffect = 'move');
+1402-          columnEl.classList.add('drop-target');
+1403-        }
+1404-
+1405-        function handleDrop(event, columnId, columnEl) {
+1406-          event.preventDefault();
+1407-          columnEl.classList.remove('drop-target');
+1408-          if (!state.dragTaskIds.length) {
+1409-            const payload = event.dataTransfer?.getData('text/plain');
+1410-            if (payload) {
+1411-              state.dragTaskIds = payload.split(',').filter(Boolean);
+1412-            }
+1413-          }
+1414-          const taskIds = state.dragTaskIds.filter(Boolean);
+1415-          state.dragTaskIds = [];
+1416-          if (!taskIds.length) {
+1417-            return;
+1418-          }
+1419-          vscode.postMessage({ type: 'moveTasks', taskIds, columnId });
+1420-        }
+1421-
+1422-        function updateSelectionBanner() {
+1423-          if (!state.selection.size) {
+1424-            selectionBanner.classList.add('hidden');
+1425-            return;
+1426-          }
+1427-          selectionBanner.classList.remove('hidden');
+1428-          selectionCount.textContent =
+1429-            state.selection.size === 1 ? '1 task selected' : state.selection.size + ' tasks selected';
+1430-        }
+1431-
+1432-        function clearSelection() {
+1433-          if (!state.selection.size) {
+1434-            return;
+1435-          }
+1436-          state.selection.clear();
+1437-          persistState();
+1438-          renderBoard();
+1439-        }
+1440-
+1441-        // --- Filter Listeners ---
+1442-        searchInput?.addEventListener('input', (e) => {
+1443-           state.filterText = e.target.value;
+1444-           updateBoard({ columns: state.columns, tasks: state.tasks }); // Trigger re-filter
+1445-        });
+1446-        
+1447-        priorityFilter?.addEventListener('change', (e) => {
+1448-           state.filterPriority = e.target.value;
+1449-           updateBoard({ columns: state.columns, tasks: state.tasks }); // Trigger re-filter
+1450-        });
+1451-
+1452-        // --- Modal Logic ---
+1453-        function openEditModal(taskId) {
+1454-           currentEditingTaskId = taskId;
+1455-           const task = state.tasks.find(t => t.id === taskId);
+1456-           modalTitle.textContent = task ? `Edit Task: ${ task.title } ` : 'Edit Task';
+1457-           modalContextEditor.value = 'Loading context...';
+1458-           
+1459-           modal.showModal();
+1460-           
+1461-           // Fetch Context
+1462-           vscode.postMessage({ type: 'getTaskContext', taskId });
+1463-        }
+1464-        
+1465-        function closeEditModal() {
+1466-           modal.close();
+1467-           currentEditingTaskId = null;
+1468-        }
+1469-        
+1470-        function saveContext() {
+1471-           if (currentEditingTaskId) {
+1472-              const content = modalContextEditor.value;
+1473-              vscode.postMessage({ type: 'saveTaskContext', taskId: currentEditingTaskId, content });
+1474-              closeEditModal();
+1475-           }
+1476-        }
+1477-        
+1478-        modalClose?.addEventListener('click', closeEditModal);
+1479-        modalSave?.addEventListener('click', (e) => {
+1480-           e.preventDefault();
+1481-           saveContext();
+1482-        });
+1483-        
+1484-        // --- Event Listeners ---
+1485-
+1486-        boardEl?.addEventListener('click', (event) => {
+1487-          if (event.target === boardEl) {
+1488-            clearSelection();
+1489-          }
+1490-        });
+1491-        clearSelectionBtn?.addEventListener('click', clearSelection);
+1492-        
+1493-        // Add task button - triggers column selection
+1494-        const addTaskBtn = document.getElementById('addTaskBtn');
+1495-        addTaskBtn?.addEventListener('click', () => {
+1496-          vscode.postMessage({ type: 'createTask' });
+1497-        });
+1498-        
+1499-        document.addEventListener('keydown', (event) => {
+1500-          if (event.key === 'Escape') {
+1501-            if (modal.open) {
+1502-                closeEditModal();
+1503-            } else {
+1504-                clearSelection();
+1505-            }
+1506-          }
+1507-          // Delete selected tasks with Delete or Backspace key
+1508-          if ((event.key === 'Delete' || event.key === 'Backspace') && state.selection.size >0 && !modal.open) {
+1509-            const taskIds = Array.from(state.selection);
+1510-            vscode.postMessage({ type: 'deleteTasks', taskIds });
+1511-          }
+1512-        });
+1513-
+1514-        window.addEventListener('message', (event) => {
+1515-          if (event?.data?.type === 'board') {
+1516-            updateBoard(event.data.data);
+1517-          } else if (event?.data?.type === 'taskContext') {
+1518-             // Handle context load
+1519-             if (currentEditingTaskId === event.data.taskId && modal.open) {
+1520-                 modalContextEditor.value = event.data.content || '';
+1521-             }
+1522-          }
+1523-        });
+1524-
+1525-        // --- Context Menu Logic ---
+1526-        const contextMenu = document.getElementById('context-menu');
+1527-        const ctxEdit = document.getElementById('ctx-edit');
+1528-        const ctxArchive = document.getElementById('ctx-archive');
+1529-        let contextTask = null;
+1530-
+1531-        function showContextMenu(event, taskId) {
+1532-           event.preventDefault();
+1533-           contextTask = taskId;
+1534-           
+1535-           // Position
+1536-           const { clientX: mouseX, clientY: mouseY } = event;
+1537-           contextMenu.style.top = mouseY + 'px';
+1538-           contextMenu.style.left = mouseX + 'px';
+1539-           contextMenu.classList.remove('hidden');
+1540-           
+1541-           // Adjust if out of bounds (basic)
+1542-           const rect = contextMenu.getBoundingClientRect();
+1543-           if (rect.right >window.innerWidth) {
+1544-               contextMenu.style.left = (window.innerWidth - rect.width - 10) + 'px';
+1545-           }
+1546-           if (rect.bottom >window.innerHeight) {
+1547-               contextMenu.style.top = (window.innerHeight - rect.height - 10) + 'px';
+1548-           }
+1549-        }
+1550-
+1551-        function hideContextMenu() {
+1552-           contextMenu.classList.add('hidden');
+1553-           contextTask = null;
+1554-        }
+1555-
+1556-        document.addEventListener('click', (e) => {
+1557-            if (!contextMenu.contains(e.target)) {
+1558-                hideContextMenu();
+1559-            }
+1560-        });
+1561-
+1562-        document.addEventListener('contextmenu', (e) => {
+1563-            if (!contextMenu.contains(e.target)) {
+1564-                 hideContextMenu();
+1565-            }
+1566-        });
+1567-        
+1568-        ctxEdit?.addEventListener('click', () => {
+1569-             if(contextTask) openEditModal(contextTask);
+1570-             hideContextMenu();
+1571-        });
+1572-        
+1573-        ctxArchive?.addEventListener('click', () => {
+1574-             if(contextTask) vscode.postMessage({ type: 'archiveTask', taskId: contextTask });
+1575-             hideContextMenu();
+1576-        });
+1577-
+1578-        // Priority Handlers
+1579-        ['high', 'medium', 'low'].forEach(p => {
+1580-             const el = document.getElementById('ctx-priority-' + p);
+1581-             el?.addEventListener('click', () => {
+1582-                 if(contextTask) {
+1583-                     vscode.postMessage({ 
+1584-                        type: 'updateTask', 
+1585-                        taskId: contextTask, 
+1586-                        updates: { priority: p.charAt(0).toUpperCase() + p.slice(1) } 
+1587-                     });
+1588-                 }
+1589-                 hideContextMenu();
+1590-             });
+1591-        });
+1592-
+1593-        // Empty State Handler
+1594-        emptyState?.addEventListener('click', (e) => {
+1595-            const target = e.target;
+1596-            if (target.closest('.cta-create')) {
+1597-                vscode.postMessage({ type: 'createTask' });
+1598-            }
+1599-            if (target.closest('.cta-clear')) {
+1600-                 if(searchInput) searchInput.value = '';
+1601-                 if(priorityFilter) priorityFilter.value = '';
+1602-                 state.filterText = '';
+1603-                 state.filterPriority = '';
+1604-                 updateBoard({ columns: state.columns, tasks: state.tasks });
+1605-            }
+1606-        });
+1607-
+1608-        vscode.postMessage({ type: 'ready' });
+1609-      })();
+1610-    </script>
+1611-  `;
+1612-
+1613-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" />${cspMeta}${fontLink}${sharedStyles}${styles}<style>${layoutStyles}</style></head>${body}${script}</html>`;
+1614-}
