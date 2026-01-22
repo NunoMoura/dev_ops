@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { runBoardOps } from '../data';
+import { boardService } from '../data';
 import { log, warn, error as logError } from '../core';
 
 /**
@@ -8,7 +8,7 @@ import { log, warn, error as logError } from '../core';
  * 
  * - Detects session start (implementation_plan.md creation)
  * - Detects session completion (walkthrough.md creation) 
- * - Updates task status and agent registry via board_ops.py
+ * - Updates task status and agent registry via BoardService
  */
 export class SessionBridge {
     private watcher: vscode.FileSystemWatcher | undefined;
@@ -20,27 +20,6 @@ export class SessionBridge {
 
     public activate() {
         log('SessionBridge: Activating watchers...');
-
-        // We need to watch the global Antigravity brain directory
-        // Since it's outside the workspace, we might need a specific pattern
-        // Ideally, we watch the user's home .gemini dir if possible, 
-        // or just rely on the fact that if they open the brain folder we catch it.
-        // BUT, "local" Antigravity usually means we are editing files IN the workspace
-        // while the artifacts are stored in .gemini.
-
-        // WARNING: `vscode.workspace.createFileSystemWatcher` with a relative pattern
-        // requires a workspace folder. With a glob pattern, it watches within the workspace.
-        // To watch external files, we need to ensure we have access.
-        // However, if the user is running Antigravity, the artifacts are written to `~/.gemini/...`
-        // which might NOT be in the current VS Code workspace.
-
-        // Strategy: 
-        // If we can't easily watch external paths, we might need to rely on 
-        // the fact that we (the agent) are creating these files.
-        // But this bridge is for the USER's VS Code extension to see what the AGENT is doing.
-
-        // Let's try watching a specific absolute path pattern if possible.
-        // VS Code API says GlobPattern can be a string (file path).
 
         const homeDir = process.env.HOME || process.env.USERPROFILE;
         if (!homeDir) {
@@ -71,34 +50,21 @@ export class SessionBridge {
 
     private async onPlanCreated(uri: vscode.Uri) {
         log(`SessionBridge: Detected new plan at ${uri.fsPath}`);
-        // Session Started
-        // 1. Parse session ID from path (.../brain/{APP_ID}/{SESSION_ID}/implementation_plan.md)
-        // Actually typically: .../brain/{SESSION_ID}/implementation_plan.md
 
         const sessionId = this.extractSessionId(uri);
         if (!sessionId) { return; }
 
-        // 2. Identify which task this session belongs to.
-        // We can check if there's a claimed status or if we can read the plan to find a task ID?
-        // Or we simply check what is the ".current_task" in the project and register this session to it.
-
-        const cwd = this.getWorkspaceRoot();
-        if (!cwd) { return; }
-
         try {
             // Get current task ID
-            const taskIdResult = await runBoardOps(['current-task'], cwd);
-            const taskId = taskIdResult.stdout.trim();
+            const taskId = await boardService.getCurrentTask();
 
-            if (taskId && taskId !== 'No current task') {
-                // Register agent on this task
-                await runBoardOps([
-                    'register',
-                    taskId,
-                    '--type', 'antigravity',
-                    '--session-id', sessionId,
-                    '--name', 'Antigravity' // Could be dynamic
-                ], cwd);
+            if (taskId) {
+                // Claim task with session info
+                await boardService.claimTask(taskId, {
+                    type: 'agent',
+                    name: 'Antigravity',
+                    sessionId: sessionId,
+                });
 
                 vscode.window.showInformationMessage(`🤖 Antigravity session started for ${taskId}`);
             }
@@ -109,34 +75,16 @@ export class SessionBridge {
 
     private async onWalkthroughCreated(uri: vscode.Uri) {
         log(`SessionBridge: Detected new walkthrough at ${uri.fsPath}`);
-        // Session Complete
 
         const sessionId = this.extractSessionId(uri);
         if (!sessionId) { return; }
 
-        const cwd = this.getWorkspaceRoot();
-        if (!cwd) { return; }
-
         try {
-            // We need to find which task has this session ID?
-            // Or just unregister the current task's agent?
-            // Let's rely on finding the task that owns this session.
-            // But `unregister_agent` just takes a taskId. 
-            // We'll assume the currently active task is the one finishing.
-            // A more robust way would be to search board for this sessionId.
-            // For now, let's unregister from current task if it matches.
+            const taskId = await boardService.getCurrentTask();
 
-            const taskIdResult = await runBoardOps(['current-task'], cwd);
-            const taskId = taskIdResult.stdout.trim();
-
-            if (taskId && taskId !== 'No current task') {
-                // Optionally verified session ID matches?
-                // For now, just unregister
-                await runBoardOps(['unregister', taskId], cwd);
-
-                // Also record phase session?
-                // We don't verify which phase it was, assume it matches what the task was in.
-                // await runBoardOps(['record-phase', taskId, ...], cwd);
+            if (taskId) {
+                // Unclaim the task (session completed)
+                await boardService.unclaimTask(taskId);
 
                 vscode.window.showInformationMessage(`✅ Antigravity session completed for ${taskId}`);
             }
@@ -158,3 +106,4 @@ export class SessionBridge {
         return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     }
 }
+

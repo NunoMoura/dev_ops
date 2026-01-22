@@ -59,9 +59,18 @@ export async function activate(context: vscode.ExtensionContext) {
     await registerBoardWatchers(services.provider, context);
     // Also watch for updates to refresh dashboard and metrics
     context.subscriptions.push(
-      services.provider.onDidUpdateBoardView(() => {
+      services.provider.onDidUpdateBoardView(async () => {
         services.dashboard.refresh();
         services.metricsView.updateContent();
+
+        // Push real-time update to Webview
+        try {
+          const { readBoard } = require('./data');
+          const board = await readBoard();
+          if (services.boardPanelManager.isPanelOpen()) {
+            services.boardPanelManager.updateFromBoard(board);
+          }
+        } catch (e) { }
       })
     );
 

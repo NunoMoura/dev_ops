@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import { BoardApi, Task } from '../../data';
+import { boardService } from '../../data';
+import type { Task } from '../../core';
 
 /**
  * CodeLens provider for DevOps task references.
@@ -50,7 +51,7 @@ export class DevOpsCodeLensProvider implements vscode.CodeLensProvider {
         // Create CodeLens for each unique task reference
         for (const taskId of taskIds) {
             try {
-                const task = await BoardApi.getTask(taskId, this.workspaceRoot);
+                const task = await boardService.getTask(taskId);
                 if (task) {
                     // Find all occurrences of this task ID
                     const regex = new RegExp(taskId, 'g');

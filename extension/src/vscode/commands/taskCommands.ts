@@ -4,7 +4,7 @@ import type { BoardTreeProvider, BoardNode } from '../../ui/board';
 import type { DevOpsCommandServices } from './types';
 import { registerDevOpsCommand, getTaskFromNode } from './utils';
 import { handleCardDeleteMessage } from './sharedHandlers';
-import { readBoard, writeBoard, getWorkspaceRoot, runBoardOps } from '../../data';
+import { readBoard, writeBoard, getWorkspaceRoot, boardService } from '../../data';
 import type { Task, Column } from '../../core';
 import { COLUMN_FALLBACK_NAME, DEFAULT_COLUMN_NAME, formatError } from '../../core';
 import { compareTasks, isDefined, createTaskId } from '../../services/tasks/taskUtils';
@@ -170,7 +170,7 @@ export function registerTaskCommands(
             const statuses = ['ready', 'agent_active', 'needs_feedback', 'blocked', 'done'];
             const picked = await vscode.window.showQuickPick(statuses, { placeHolder: 'Select new status' });
             if (picked) {
-                await handleSetStatusViaPython(picked, `Set to ${picked}`, provider, node);
+                await handleSetStatus(picked, `Set to ${picked}`, provider, node);
             }
         },
         'Unable to set status',
@@ -180,7 +180,7 @@ export function registerTaskCommands(
         context,
         'devops.markTaskInProgress',
         async (node?: BoardNode) => {
-            await handleSetStatusViaPython('agent_active', 'Marked Agent Active', provider, node);
+            await handleSetStatus('agent_active', 'Marked Agent Active', provider, node);
         },
         'Unable to update status',
     );
@@ -189,7 +189,7 @@ export function registerTaskCommands(
         context,
         'devops.markTaskBlocked',
         async (node?: BoardNode) => {
-            await handleSetStatusViaPython('blocked', 'Marked Blocked', provider, node);
+            await handleSetStatus('blocked', 'Marked Blocked', provider, node);
         },
         'Unable to update status',
     );
@@ -198,7 +198,7 @@ export function registerTaskCommands(
         context,
         'devops.markTaskDone',
         async (node?: BoardNode) => {
-            await handleMarkDoneViaPython(provider, node);
+            await handleMarkDone(provider, node);
         },
         'Unable to update status',
     );
@@ -209,7 +209,7 @@ export function registerTaskCommands(
         'devops.claimTask',
         async (node?: BoardNode) => {
             // If node provided, claim that task. If not, auto-claim next (optional ID).
-            await handleClaimTaskViaPython(provider, node);
+            await handleClaimTask(provider, node);
         },
         'Unable to claim task',
     );
@@ -450,10 +450,9 @@ async function handleGenerateCodexPrompt(provider: BoardTreeProvider, node?: Boa
 }
 
 /**
- * Set task status using Python CLI (board_ops.py status)
- * This is the correct approach - status is a field, not a column.
+ * Set task status using BoardService
  */
-async function handleSetStatusViaPython(
+async function handleSetStatus(
     status: string,
     successMessage: string,
     provider: BoardTreeProvider,
@@ -464,25 +463,17 @@ async function handleSetStatusViaPython(
     if (!task) {
         return;
     }
-    const cwd = getWorkspaceRoot();
-    if (!cwd) {
-        throw new Error('No workspace folder open');
-    }
 
-    const result = await runBoardOps(['status', task.id, status], cwd);
-    if (result.code !== 0) {
-        throw new Error(result.stderr || `Failed to set status: exit code ${result.code}`);
-    }
+    await boardService.setTaskStatus(task.id, status as any);
 
     await provider.refresh();
     vscode.window.showInformationMessage(`${task.title} — ${successMessage}`);
 }
 
 /**
- * Mark a task as done using Python CLI
- * Wraps: board_ops.py done TASK_ID
+ * Mark a task as done using BoardService
  */
-async function handleMarkDoneViaPython(
+async function handleMarkDone(
     provider: BoardTreeProvider,
     node?: BoardNode,
 ): Promise<void> {
@@ -491,74 +482,48 @@ async function handleMarkDoneViaPython(
     if (!task) {
         return;
     }
-    const cwd = getWorkspaceRoot();
-    if (!cwd) {
-        throw new Error('No workspace folder open');
-    }
 
-    const result = await runBoardOps(['done', task.id], cwd);
-    if (result.code !== 0) {
-        throw new Error(result.stderr || `Failed to mark done: exit code ${result.code}`);
-    }
+    await boardService.markDone(task.id);
 
     await provider.refresh();
-    vscode.window.showInformationMessage(`✅ ${task.id} marked done and archived`);
+    vscode.window.showInformationMessage(`✅ ${task.id} marked done`);
 }
 
 /**
- * Claim a task (Specific or Next)
- * Wraps: board_ops.py claim [TASK_ID]
+ * Claim a task using BoardService
  */
-async function handleClaimTaskViaPython(
+async function handleClaimTask(
     provider: BoardTreeProvider,
     node?: BoardNode,
 ): Promise<void> {
-    const cwd = getWorkspaceRoot();
-    if (!cwd) {
-        throw new Error('No workspace folder open');
-    }
-
     let taskId: string | undefined;
 
     // If invoked from context menu or tree item
     if (node && node.kind === 'item') {
         taskId = node.item.id;
     }
-    // If invoked from command palette with no context, verify if user wants specific task or next
+    // If invoked from command palette with no context, prompt for task
     else {
         const board = await readBoard();
         const task = await promptForTask(board);
         if (task) {
             taskId = task.id;
         } else {
-            // User cancelled selection, maybe they want "next"?
-            // Let's explicitly ask or default to next.
-            // For now, let's assume if they don't pick one, we try to claim next IF they selected "Claim Next" command, 
-            // but this is a generic claim command.
-
-            // Allow "Claim Next" behavior if no task selected?
-            // Let's support a separate invocation or just pass no ID to python to let it decide.
-            // But promptForTask returns undefined on escape.
+            // User cancelled - try to pick next task automatically
+            taskId = await boardService.pickNextTask() || undefined;
+            if (!taskId) {
+                vscode.window.showInformationMessage('No tasks available to claim');
+                return;
+            }
         }
     }
 
-    const args = ['claim'];
-    if (taskId) {
-        args.push(taskId);
+    if (!taskId) {
+        return;
     }
 
-    // Auto-commit board state
-    args.push('--commit');
-
-    const result = await runBoardOps(args, cwd);
-    if (result.code !== 0) {
-        throw new Error(result.stderr || `Failed to claim task: exit code ${result.code}`);
-    }
+    await boardService.claimTask(taskId, { name: 'User' });
 
     await provider.refresh();
-    // Parse output for task ID if it was auto-picked
-    const match = result.stdout.match(/Claimed (TASK-\d+)/);
-    const claimedId = match ? match[1] : (taskId || 'task');
-
-    vscode.window.showInformationMessage(`✅ Claimed ${claimedId}`);
+    vscode.window.showInformationMessage(`✅ Claimed ${taskId}`);
 }

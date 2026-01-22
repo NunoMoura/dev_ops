@@ -241,10 +241,12 @@ export function registerTestController(context: vscode.ExtensionContext): void {
                 'Yes', 'No'
             ).then(async (choice) => {
                 if (choice === 'Yes') {
-                    // Create bug task via Python
-                    const terminal = vscode.window.createTerminal('DevOps');
-                    terminal.sendText(`python scripts/board_ops.py create --title "${bugTitle}" --priority high --column col-backlog`);
-                    terminal.show();
+                    // Create bug task via VS Code command
+                    await vscode.commands.executeCommand('devops.createTask', {
+                        title: bugTitle,
+                        priority: 'high',
+                        columnId: 'col-backlog'
+                    });
                 }
             });
         })

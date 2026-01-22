@@ -7,8 +7,8 @@
  * - Python CLI wrapper (pythonCli)
  */
 
-// Python CLI wrapper
-export * from './pythonCli';
+// Python CLI wrapper (Deprecated/Removed)
+// export * from './pythonCli';
 
 // Board storage (file I/O)
 export * from './boardStore';

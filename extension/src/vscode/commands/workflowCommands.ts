@@ -3,7 +3,7 @@ import * as path from 'path';
 import type { BoardTreeProvider, BoardNode } from '../../ui/board';
 import type { DevOpsCommandServices } from './types';
 import { registerDevOpsCommand, getTaskFromNode } from './utils';
-import { readBoard, getWorkspaceRoot, runBoardOps } from '../../data';
+import { readBoard, getWorkspaceRoot, boardService } from '../../data';
 import { promptForTask } from '../../services/tasks';
 
 /**
@@ -59,25 +59,17 @@ export function registerWorkflowCommands(
 
 /**
  * Pick and claim the next highest priority task from Backlog
- * Wraps: board_ops.py pick --claim
  */
 async function handleSpawnAgent(provider: BoardTreeProvider): Promise<void> {
-    const cwd = getWorkspaceRoot();
-    if (!cwd) {
-        throw new Error('No workspace folder open');
-    }
+    const taskId = await boardService.pickAndClaimTask({ name: 'Agent' });
 
-    const result = await runBoardOps(['pick', '--claim'], cwd);
-    if (result.code !== 0) {
-        if (result.stdout?.includes('No tasks available')) {
-            vscode.window.showInformationMessage('ℹ️ No tasks available in Backlog');
-            return;
-        }
-        throw new Error(result.stderr || `Failed to pick task: exit code ${result.code}`);
+    if (!taskId) {
+        vscode.window.showInformationMessage('ℹ️ No tasks available in Backlog');
+        return;
     }
 
     await provider.refresh();
-    vscode.window.showInformationMessage(`▶ Task claimed! ${result.stdout.trim()}`);
+    vscode.window.showInformationMessage(`▶ Task claimed: ${taskId}`);
 }
 
 /**
@@ -109,15 +101,8 @@ async function handleNextPhase(
     }
 
     const nextColumn = sortedColumns[currentIndex + 1];
-    const cwd = getWorkspaceRoot();
-    if (!cwd) {
-        throw new Error('No workspace folder open');
-    }
 
-    const result = await runBoardOps(['move', task.id, nextColumn.id], cwd);
-    if (result.code !== 0) {
-        throw new Error(result.stderr || `Failed to move task: exit code ${result.code}`);
-    }
+    await boardService.moveTask(task.id, nextColumn.id);
 
     await provider.refresh();
     vscode.window.showInformationMessage(`→ ${task.id} moved to ${nextColumn.name}`);
@@ -125,22 +110,23 @@ async function handleNextPhase(
 
 /**
  * Generate a refinement prompt with PM feedback
- * Prompts for feedback, calls CLI, and copies result to clipboard.
+ * Simplified to just prompt for feedback and generate a prompt locally.
  */
 async function handleRefinePhase(
     provider: BoardTreeProvider,
 ): Promise<void> {
-    const cwd = getWorkspaceRoot();
-    if (!cwd) {
-        throw new Error('No workspace folder open');
+    // Get current task
+    const currentTaskId = await boardService.getCurrentTask();
+
+    if (!currentTaskId) {
+        vscode.window.showWarningMessage('No active task. Use "Spawn Agent" first to claim a task.');
+        return;
     }
 
-    // Get current task
-    const currentTaskResult = await runBoardOps(['current-task'], cwd);
-    const currentTaskId = currentTaskResult.stdout.trim();
-
-    if (!currentTaskId || currentTaskId === 'No current task') {
-        vscode.window.showWarningMessage('No active task. Use "Spawn Agent" first to claim a task.');
+    // Get task details
+    const task = await boardService.getTask(currentTaskId);
+    if (!task) {
+        vscode.window.showWarningMessage('Current task not found on board.');
         return;
     }
 
@@ -155,24 +141,24 @@ async function handleRefinePhase(
         return;
     }
 
-    // Call CLI to generate prompt
-    const result = await runBoardOps(['refine', currentTaskId, '--feedback', feedback], cwd);
+    // Generate refinement prompt locally
+    const prompt = `# Refinement Request for ${task.id}
 
-    if (result.code !== 0) {
-        throw new Error(result.stderr || `Failed to generate refinement prompt: exit code ${result.code}`);
-    }
+## Task: ${task.title}
 
-    // Extract prompt from output (between markers)
-    const startMarker = '---PROMPT_START---';
-    const endMarker = '---PROMPT_END---';
-    const startIndex = result.stdout.indexOf(startMarker);
-    const endIndex = result.stdout.indexOf(endMarker);
+${task.summary || ''}
 
-    if (startIndex === -1 || endIndex === -1) {
-        throw new Error('Failed to parse refinement prompt from CLI output');
-    }
+## Feedback from PM
 
-    const prompt = result.stdout.substring(startIndex + startMarker.length, endIndex).trim();
+${feedback}
+
+## Instructions
+
+Please review the feedback above and refine your approach. Consider:
+1. Address the specific points mentioned in the feedback
+2. Review your previous artifacts and update them if needed
+3. Continue with the current phase incorporating this guidance
+`;
 
     // Copy to clipboard
     await vscode.env.clipboard.writeText(prompt);
@@ -205,3 +191,4 @@ async function handleOpenWorkflow(workflowName: string): Promise<void> {
     const uri = vscode.Uri.file(workflowPath);
     await vscode.commands.executeCommand('vscode.open', uri);
 }
+

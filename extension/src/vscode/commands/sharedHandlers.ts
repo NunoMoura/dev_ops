@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import type { BoardTreeProvider } from '../../ui/board';
 import type { TaskDetailsPayload } from '../../ui/tasks';
 import type { MoveTasksRequest } from './types';
-import { readBoard, writeBoard, getWorkspaceRoot, runBoardOps } from '../../data';
+import { readBoard, writeBoard, getWorkspaceRoot, boardService } from '../../data';
 import { formatError, COLUMN_FALLBACK_NAME } from '../../core';
 import { moveTasksToColumn } from '../../services/tasks';
 import { parseTags } from '../../services/tasks/taskUtils';
@@ -149,10 +149,6 @@ export async function handleCardDeleteMessage(
  * Used by: BoardPanelManager in extension.ts
  */
 export async function handleArchiveAll(provider: BoardTreeProvider): Promise<void> {
-    const root = getWorkspaceRoot();
-    if (!root) {
-        return;
-    }
     const confirmed = await vscode.window.showWarningMessage(
         'Archive all tasks in Done column?',
         { modal: true },
@@ -163,12 +159,13 @@ export async function handleArchiveAll(provider: BoardTreeProvider): Promise<voi
     }
 
     try {
-        const result = await runBoardOps(['archive', '--all-done'], root);
-        if (result.code !== 0) {
-            throw new Error(result.stderr);
-        }
+        const result = await boardService.archiveAllDone();
         await provider.refresh();
-        vscode.window.showInformationMessage(result.stdout.trim() || 'Archived Done tasks.');
+        vscode.window.showInformationMessage(
+            result.count > 0
+                ? `Archived ${result.count} task${result.count > 1 ? 's' : ''}.`
+                : 'No done tasks to archive.'
+        );
     } catch (error) {
         vscode.window.showErrorMessage(`Unable to archive tasks: ${formatError(error)}`);
     }
@@ -180,16 +177,8 @@ export async function handleArchiveAll(provider: BoardTreeProvider): Promise<voi
  * Used by: BoardPanelManager in extension.ts
  */
 export async function handleArchiveSingle(taskId: string, provider: BoardTreeProvider): Promise<void> {
-    const root = getWorkspaceRoot();
-    if (!root) {
-        return;
-    }
-
     try {
-        const result = await runBoardOps(['archive', '--task-id', taskId], root);
-        if (result.code !== 0) {
-            throw new Error(result.stderr);
-        }
+        await boardService.archiveTask(taskId);
         await provider.refresh();
         vscode.window.showInformationMessage(`Archived task ${taskId}`);
     } catch (error) {

@@ -153,3 +153,103 @@ export async function backupCorruptBoardFile(filePath: string, contents: string)
   await fs.writeFile(backupPath, contents, 'utf8');
   return backupPath;
 }
+
+/**
+ * Read current task ID.
+ */
+export async function readCurrentTask(): Promise<string | null> {
+  const boardPath = await getBoardPath();
+  if (!boardPath) { return null; }
+
+  const devOpsDir = path.dirname(boardPath);
+  const currentTaskPath = path.join(devOpsDir, '.current_task');
+
+  try {
+    const content = await fs.readFile(currentTaskPath, 'utf8');
+    return content.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Write current task ID.
+ */
+export async function writeCurrentTask(taskId: string): Promise<void> {
+  const boardPath = await getBoardPath();
+  if (!boardPath) { throw new Error('No workspace folder open'); }
+
+  const devOpsDir = path.dirname(boardPath);
+  const currentTaskPath = path.join(devOpsDir, '.current_task');
+  await fs.writeFile(currentTaskPath, taskId, 'utf8');
+}
+
+/**
+ * Clear current task ID.
+ */
+export async function clearCurrentTask(): Promise<void> {
+  const boardPath = await getBoardPath();
+  if (!boardPath) { return; }
+
+  const devOpsDir = path.dirname(boardPath);
+  const currentTaskPath = path.join(devOpsDir, '.current_task');
+  try {
+    await fs.unlink(currentTaskPath);
+  } catch {
+    // Ignore if missing
+  }
+}
+
+/**
+ * Archive a task to a file.
+ */
+export async function archiveTaskFile(taskId: string, content: string): Promise<string> {
+  const boardPath = await getBoardPath();
+  if (!boardPath) { throw new Error('No workspace folder open'); }
+
+  const devOpsDir = path.dirname(boardPath);
+  const archiveDir = path.join(devOpsDir, 'archive');
+  await fs.mkdir(archiveDir, { recursive: true });
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const archiveFileName = `${taskId}-${timestamp}.json`;
+  const archivePath = path.join(archiveDir, archiveFileName);
+
+  await fs.writeFile(archivePath, content, 'utf8');
+  return archivePath;
+}
+
+/**
+ * Read logic context/decisions for a task.
+ */
+export async function readTaskContext(taskId: string): Promise<string> {
+  const boardPath = await getBoardPath();
+  if (!boardPath) { return ''; }
+
+  const devOpsDir = path.dirname(boardPath);
+  const contextPath = path.join(devOpsDir, 'context', `${taskId}.md`);
+
+  try {
+    return await fs.readFile(contextPath, 'utf8');
+  } catch (error: any) {
+    if (error?.code === 'ENOENT') {
+      return ''; // No context yet
+    }
+    throw error;
+  }
+}
+
+/**
+ * Write logic context/decisions for a task.
+ */
+export async function writeTaskContext(taskId: string, content: string): Promise<void> {
+  const boardPath = await getBoardPath();
+  if (!boardPath) { throw new Error('No workspace folder open'); }
+
+  const devOpsDir = path.dirname(boardPath);
+  const contextDir = path.join(devOpsDir, 'context');
+  await fs.mkdir(contextDir, { recursive: true });
+
+  const contextPath = path.join(contextDir, `${taskId}.md`);
+  await fs.writeFile(contextPath, content, 'utf8');
+}

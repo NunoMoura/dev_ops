@@ -137,7 +137,7 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
         } else {
             // Build descriptive message for user
             const itemDescriptions: string[] = [];
-            if (itemsToUpdate.includes('scripts')) { itemDescriptions.push('• Scripts (Python automation tools)'); }
+            if (itemsToUpdate.includes('scripts')) { itemDescriptions.push('• Scripts (Automation tools)'); }
             if (itemsToUpdate.includes('rules')) { itemDescriptions.push('• Rules (AI assistant guidelines)'); }
             if (itemsToUpdate.includes('workflows') || itemsToUpdate.includes('commands')) {
                 itemDescriptions.push('• Workflows (slash commands for your IDE)');

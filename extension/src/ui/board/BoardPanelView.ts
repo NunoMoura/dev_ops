@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import { getFontLink, getSharedStyles, getCSPMeta } from '../shared/styles';
+import { Board } from '../../core';
+import { readTaskContext, writeTaskContext, boardService } from '../../data';
 
 export type BoardViewColumn = {
   id: string;
@@ -12,22 +14,20 @@ export type BoardViewTask = {
   columnId: string;
   title: string;
   summary?: string;
-  columnName?: string;           // Column display name
+  columnName?: string;
   priority?: string;
-  status?: string;               // Autonomy state: ready, agent_active, needs_feedback, blocked, done
+  status?: string;
   tags?: string[];
   updatedAt?: string;
-  owner?: {                      // Task Ownership
+  owner?: {
     developer?: string;
     agent?: string;
     type?: string;
   };
-  // Artifact linking
-  upstream?: string[];           // Artifacts this task reads from
-  downstream?: string[];         // Artifacts this task produces
-  // Progress tracking
-  checklistTotal?: number;       // Total checklist items
-  checklistDone?: number;        // Completed checklist items
+  upstream?: string[];
+  downstream?: string[];
+  checklistTotal?: number;
+  checklistDone?: number;
 };
 
 export type BoardViewSnapshot = {
@@ -44,9 +44,14 @@ type WebviewMessage =
   | { type: 'archiveTasks' }
   | { type: 'archiveTask'; taskId: string }
   | { type: 'copyHandoffCommand'; taskId: string }
-  | { type: 'viewWalkthrough'; taskId: string };
+  | { type: 'viewWalkthrough'; taskId: string }
+  | { type: 'getTaskContext'; taskId: string }
+  | { type: 'saveTaskContext'; taskId: string; content: string }
+  | { type: 'updateTask'; taskId: string; updates: any };
 
-type WebviewEvent = { type: 'board'; data: BoardViewSnapshot };
+type WebviewEvent =
+  | { type: 'board'; data: BoardViewSnapshot }
+  | { type: 'taskContext'; taskId: string; content: string };
 
 export class BoardPanelManager {
   private panel: vscode.WebviewPanel | undefined;
@@ -65,6 +70,12 @@ export class BoardPanelManager {
 
   private readonly onViewStateChangeEmitter = new vscode.EventEmitter<boolean>();
   readonly onDidViewStateChange = this.onViewStateChangeEmitter.event;
+
+  private readonly onArchiveEmitter = new vscode.EventEmitter<void>();
+  readonly onDidRequestArchiveTasks = this.onArchiveEmitter.event;
+
+  private readonly onArchiveSingleEmitter = new vscode.EventEmitter<string>();
+  readonly onDidRequestArchiveTask = this.onArchiveSingleEmitter.event;
 
   public isPanelOpen(): boolean {
     return !!this.panel;
@@ -104,13 +115,15 @@ export class BoardPanelManager {
     // Notify listeners that panel is open
     this.onViewStateChangeEmitter.fire(true);
 
-    this.panel.webview.onDidReceiveMessage((message: WebviewMessage) => {
+    this.panel.webview.onDidReceiveMessage(async (message: WebviewMessage) => {
       if (!message) {
         return;
       }
       if (message.type === 'ready') {
         this.webviewReady = true;
         this.postBoard();
+      } else if (message.type === 'updateTask' && typeof message.taskId === 'string' && message.updates) {
+        await boardService.updateTask(message.taskId, message.updates);
       } else if (
         message.type === 'moveTasks' &&
         Array.isArray(message.taskIds) &&
@@ -121,7 +134,7 @@ export class BoardPanelManager {
         this.onOpenEmitter.fire(message.taskId);
       } else if (message.type === 'createTask') {
         this.onCreateEmitter.fire({ columnId: message.columnId });
-      } else if (message.type === 'deleteTasks' && Array.isArray(message.taskIds) && message.taskIds.length > 0) {
+      } else if (message.type === 'deleteTasks' && Array.isArray(message.taskIds) && message.taskIds.length >0) {
         this.onDeleteEmitter.fire(message.taskIds);
       } else if (message.type === 'archiveTasks') {
         // Handle archive all request
@@ -137,6 +150,11 @@ export class BoardPanelManager {
       } else if (message.type === 'viewWalkthrough' && typeof message.taskId === 'string') {
         // Open walkthrough for task
         vscode.commands.executeCommand('devops.viewWalkthrough', message.taskId);
+      } else if (message.type === 'getTaskContext' && typeof message.taskId === 'string') {
+        const content = await readTaskContext(message.taskId);
+        this.panel?.webview.postMessage({ type: 'taskContext', taskId: message.taskId, content });
+      } else if (message.type === 'saveTaskContext' && typeof message.taskId === 'string' && typeof message.content === 'string') {
+        await writeTaskContext(message.taskId, message.content);
       }
     });
 
@@ -147,15 +165,36 @@ export class BoardPanelManager {
     this.onArchiveEmitter.fire();
   }
 
-  private readonly onArchiveEmitter = new vscode.EventEmitter<void>();
-  readonly onDidRequestArchiveTasks = this.onArchiveEmitter.event;
-
-  private readonly onArchiveSingleEmitter = new vscode.EventEmitter<string>();
-  readonly onDidRequestArchiveTask = this.onArchiveSingleEmitter.event;
-
   setBoard(board: BoardViewSnapshot | undefined): void {
     this.latestBoard = board ?? { columns: [], tasks: [] };
     this.postBoard();
+  }
+
+  public updateFromBoard(board: Board): void {
+    const snapshot: BoardViewSnapshot = {
+      columns: board.columns.map(c => ({
+        id: c.id,
+        name: c.name,
+        position: c.position
+      })),
+      tasks: board.items.map(t => ({
+        id: t.id,
+        columnId: t.columnId,
+        title: t.title,
+        summary: t.summary,
+        columnName: board.columns.find(c => c.id === t.columnId)?.name,
+        priority: t.priority,
+        status: t.status,
+        tags: t.tags,
+        updatedAt: t.updatedAt,
+        owner: t.owner, // Assumes type compatibility
+        upstream: t.upstream,
+        downstream: t.downstream,
+        checklistTotal: t.checklist?.length,
+        checklistDone: t.checklist?.filter(i => i.done).length
+      }))
+    };
+    this.setBoard(snapshot);
   }
 
   private postBoard(): void {
@@ -247,6 +286,39 @@ function getBoardHtml(panelMode = false): string {
       .board-column {
         flex: 1;
         min-height: 200px;
+      }
+
+      .context-menu {
+        position: fixed;
+        background: var(--vscode-menu-background);
+        color: var(--vscode-menu-foreground);
+        border: 1px solid var(--vscode-menu-border);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+        border-radius: 4px;
+        z-index: 1000;
+        padding: 4px 0;
+        min-width: 180px;
+        font-family: var(--vscode-font-family);
+        font-size: var(--vscode-font-size);
+      }
+      .context-menu.hidden {
+        display: none;
+      }
+      .menu-item {
+        padding: 6px 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .menu-item:hover {
+        background: var(--vscode-menu-selectionBackground);
+        color: var(--vscode-menu-selectionForeground);
+      }
+      .menu-separator {
+        height: 1px;
+        background: var(--vscode-menu-separatorBackground);
+        margin: 4px 0;
       }
     `;
 
@@ -637,6 +709,192 @@ function getBoardHtml(panelMode = false): string {
       .add-task-button:hover {
         background: var(--vscode-button-hoverBackground);
       }
+      
+      /* Header Controls */
+      .header-controls {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .search-box {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+      .search-box input {
+        background: var(--vscode-input-background);
+        color: var(--vscode-input-foreground);
+        border: 1px solid var(--vscode-input-border);
+        border-radius: 4px;
+        padding: 4px 8px 4px 24px;
+        font-family: inherit;
+        font-size: 11px;
+        width: 180px;
+        outline: none;
+      }
+      .search-box input:focus {
+        border-color: var(--vscode-focusBorder);
+      }
+      .search-box .codicon-search {
+        position: absolute;
+        left: 6px;
+        font-size: 12px;
+        color: var(--vscode-input-placeholderForeground);
+        pointer-events: none;
+      }
+      select {
+        background: var(--vscode-dropdown-background);
+        color: var(--vscode-dropdown-foreground);
+        border: 1px solid var(--vscode-dropdown-border);
+        border-radius: 4px;
+        padding: 4px;
+        font-family: inherit;
+        font-size: 11px;
+        outline: none;
+      }
+      
+      /* Modal */
+      dialog {
+        background: var(--vscode-editor-background);
+        color: var(--vscode-editor-foreground);
+        border: 1px solid var(--vscode-panel-border);
+        border-radius: 6px;
+        padding: 0;
+        max-width: 600px;
+        width: 100%;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+      }
+      dialog::backdrop {
+        background: rgba(0,0,0,0.5);
+      }
+      .modal-content {
+        display: flex;
+        flex-direction: column;
+        height: 60vh;
+      }
+      .modal-header {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--vscode-panel-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .modal-header h3 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .icon-button {
+        background: transparent;
+        border: none;
+        color: var(--vscode-descriptionForeground);
+        cursor: pointer;
+        padding: 4px;
+        font-size: 14px;
+      }
+      .icon-button:hover {
+        color: var(--vscode-foreground);
+      }
+      .modal-body {
+        flex: 1;
+        padding: 16px;
+        overflow-y: auto;
+      }
+      .modal-section label {
+        display: block;
+        font-weight: 600;
+        font-size: 11px;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        color: var(--vscode-descriptionForeground);
+      }
+      .markdown-editor-container {
+        height: 300px;
+        border: 1px solid var(--vscode-input-border);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      textarea {
+        width: 100%;
+        height: 100%;
+        background: var(--vscode-input-background);
+        color: var(--vscode-input-foreground);
+        border: none;
+        padding: 8px;
+        font-family: var(--vscode-editor-font-family);
+        font-size: var(--vscode-editor-font-size);
+        resize: none;
+        outline: none;
+      }
+      .modal-actions {
+        padding: 12px 16px;
+        border-top: 1px solid var(--vscode-panel-border);
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+      .primary-button {
+        background: var(--vscode-button-background);
+        color: var(--vscode-button-foreground);
+        border: none;
+        padding: 6px 12px;
+        border-radius: 2px;
+        cursor: pointer;
+      }
+      .primary-button:hover {
+        background: var(--vscode-button-hoverBackground);
+      }
+      .modal-hint {
+        margin-top: 6px;
+        font-size: 11px;
+        color: var(--vscode-descriptionForeground);
+        opacity: 0.8;
+      }
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        color: var(--vscode-descriptionForeground);
+        text-align: center;
+        height: 100%;
+        min-height: 300px;
+      }
+      .empty-state .icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+        line-height: 1;
+      }
+      .empty-state h3 {
+        margin: 0 0 8px 0;
+        font-size: 18px;
+        color: var(--vscode-foreground);
+        font-weight: 500;
+      }
+      .empty-state p {
+        margin: 0 0 24px 0;
+        max-width: 400px;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      .empty-state .cta-button {
+        padding: 8px 16px;
+        background: var(--vscode-button-background);
+        color: var(--vscode-button-foreground);
+        border: none;
+        border-radius: 2px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .empty-state .cta-button:hover {
+        background: var(--vscode-button-hoverBackground);
+      }
     </style>
   `;
 
@@ -644,8 +902,25 @@ function getBoardHtml(panelMode = false): string {
     <body>
       <div class="board-wrapper">
         <div class="board-header">
-          <span style="flex:1"></span>
-          <button id="addTaskBtn" class="add-task-button" type="button" title="Create Task">New Task</button>
+          <div class="header-left">
+             <h2 class="board-title">DevOps Board</h2>
+          </div>
+          <div class="header-controls">
+            <div class="search-box">
+             <span class="codicon codicon-search"></span>
+              <input type="text" id="search-input" placeholder="Search tasks..." />
+            </div>
+            <select id="priority-filter">
+              <option value="">All Priorities</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+           <span class="separator"></span>
+            <button id="addTaskBtn" class="add-task-button" type="button" title="Create Task">
+             <span class="codicon codicon-plus"></span> New Task
+            </button>
+          </div>
         </div>
         <div id="selectionBanner" class="selection-banner hidden">
           <div>
@@ -657,7 +932,40 @@ function getBoardHtml(panelMode = false): string {
           </div>
         </div>
         <div id="board"></div>
-        <div id="empty-state" class="hint">No tasks to display. Import a plan or add a task to get started.</div>
+        <div id="empty-state" class="empty-state hidden"></div>
+        
+        <!-- Edit Task Modal -->
+        <dialog id="edit-modal">
+          <form method="dialog" class="modal-content">
+            <div class="modal-header">
+              <h3 id="modal-title">Edit Task</h3>
+              <button id="modal-close" class="icon-button">✕</button>
+            </div>
+            <div class="modal-body">
+              <div class="modal-section">
+                <label>Context & Decisions</label>
+                <div class="markdown-editor-container">
+                  <textarea id="modal-context-editor" placeholder="Record design decisions, context, and notes here... (Markdown supported)"></textarea>
+                </div>
+                <div class="modal-hint">Changes are saved automatically when you close or click Save.</div>
+              </div>
+            </div>
+            <div class="modal-actions">
+               <button id="modal-save" type="submit" class="primary-button">Save & Close</button>
+            </div>
+          </form>
+        </dialog>
+
+        <!-- Context Menu -->
+        <div id="context-menu" class="context-menu hidden">
+          <div class="menu-item" id="ctx-edit">Edit Task...</div>
+          <div class="menu-separator"></div>
+          <div class="menu-item" id="ctx-priority-high">Set Priority: High</div>
+          <div class="menu-item" id="ctx-priority-medium">Set Priority: Medium</div>
+          <div class="menu-item" id="ctx-priority-low">Set Priority: Low</div>
+          <div class="menu-separator"></div>
+          <div class="menu-item" id="ctx-archive">Archive</div>
+        </div>
       </div>
     </body>
   `;
@@ -671,13 +979,28 @@ function getBoardHtml(panelMode = false): string {
         const selectionBanner = document.getElementById('selectionBanner');
         const selectionCount = document.getElementById('selectionCount');
         const clearSelectionBtn = document.getElementById('clearSelection');
+        
+        // Header Controls
+        const searchInput = document.getElementById('search-input');
+        const priorityFilter = document.getElementById('priority-filter');
+
+        // Modal Elements
+        const modal = document.getElementById('edit-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalClose = document.getElementById('modal-close');
+        const modalContextEditor = document.getElementById('modal-context-editor');
+        const modalSave = document.getElementById('modal-save');
+        let currentEditingTaskId = null;
 
         const savedState = vscode.getState() || {};
         const state = {
           columns: [],
           tasks: [],
+          filteredTasks: [],
           selection: new Set(Array.isArray(savedState.selection) ? savedState.selection : []),
           dragTaskIds: [],
+          filterText: '',
+          filterPriority: ''
         };
 
         function persistState() {
@@ -687,8 +1010,23 @@ function getBoardHtml(panelMode = false): string {
         function updateBoard(snapshot) {
           state.columns = Array.isArray(snapshot?.columns) ? snapshot.columns : [];
           state.tasks = Array.isArray(snapshot?.tasks) ? snapshot.tasks : [];
+          applyFilters();
           pruneSelection();
           renderBoard();
+        }
+
+        function applyFilters() {
+          const text = state.filterText.toLowerCase();
+          const priority = state.filterPriority;
+          
+          state.filteredTasks = state.tasks.filter(task => {
+            const matchesText = !text || 
+                                task.title.toLowerCase().includes(text) || 
+                                (task.summary && task.summary.toLowerCase().includes(text)) ||
+                                (task.owner && task.owner.developer && task.owner.developer.toLowerCase().includes(text));
+            const matchesPriority = !priority || task.priority === priority;
+            return matchesText && matchesPriority;
+          });
         }
 
         function pruneSelection() {
@@ -707,11 +1045,35 @@ function getBoardHtml(panelMode = false): string {
 
         function renderBoard() {
           boardEl.innerHTML = '';
+          const displayTasks = state.filteredTasks;
+          
           if (!state.columns.length) {
             emptyState.classList.remove('hidden');
+            emptyState.innerHTML = `
+    <div class="icon">⚠️</div>
+      <h3>No Board Configuration </h3>
+        <p>The board configuration could not be loaded.</p>
+          `;
+          } else if (state.tasks.length >0 && displayTasks.length === 0) {
+             emptyState.classList.remove('hidden');
+             emptyState.innerHTML = `
+          <div class="icon">🔍</div>
+            <h3>No Matches Found </h3>
+              <p>Try adjusting your search or priority filters.</p>
+                <button class="cta-button cta-clear">Clear Filters </button>
+                  `;
+          } else if (state.tasks.length === 0) {
+             emptyState.classList.remove('hidden');
+             emptyState.innerHTML = `
+                  <div class="icon">📋</div>
+                    <h3>Welcome to DevOps Board </h3>
+                      <p>Track your agent tasks, decisions, and progress in one place.</p>
+                        <button class="cta-button cta-create"><span class="codicon codicon-plus"></span> Create First Task</button >
+                          `;
           } else {
-            emptyState.classList.add('hidden');
+             emptyState.classList.add('hidden');
           }
+
           const sortedColumns = [...state.columns].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
           sortedColumns.forEach((column) => {
             const columnEl = document.createElement('section');
@@ -723,28 +1085,45 @@ function getBoardHtml(panelMode = false): string {
 
             const header = document.createElement('div');
             header.className = 'column-header';
+            
+            // Header Content
+            const headerContent = document.createElement('div');
+            headerContent.style.flex = '1';
+            headerContent.style.display = 'flex';
+            headerContent.style.alignItems = 'center';
+
             const title = document.createElement('span');
             title.className = 'column-title';
             title.textContent = column.name;
-            header.appendChild(title);
+            headerContent.appendChild(title);
+            
+            const columnTasks = displayTasks.filter(t => t.columnId === column.id);
+            
             const count = document.createElement('span');
             count.className = 'column-count';
-            const tasks = getTasksForColumn(column.id);
-            count.textContent = String(tasks.length);
-            header.appendChild(count);
+            count.textContent = String(columnTasks.length);
+            headerContent.appendChild(count);
+            
+            header.appendChild(headerContent);
+            
+            // Add button in header
+            const addBtn = createColumnAddButton(column.id);
+            header.appendChild(addBtn);
+
             columnEl.appendChild(header);
 
             const list = document.createElement('div');
             list.className = 'task-list';
             list.addEventListener('dragover', (event) => handleDragOver(event, columnEl));
             list.addEventListener('drop', (event) => handleDrop(event, column.id, columnEl));
-            tasks.forEach((task) => {
+            
+            columnTasks.forEach((task) => {
               const card = renderTaskCard(task, column.id);
               list.appendChild(card);
             });
             
             // Add Archive All button after cards in Done column
-            if (column.id === 'col-done' && tasks.length > 0) {
+            if (column.id === 'col-done' && columnTasks.length >0) {
                 const archiveAllBtn = document.createElement('button');
                 archiveAllBtn.className = 'archive-all-button';
                 archiveAllBtn.textContent = 'Archive All';
@@ -760,10 +1139,6 @@ function getBoardHtml(panelMode = false): string {
           updateSelectionBanner();
         }
 
-        function getTasksForColumn(columnId) {
-          return state.tasks.filter((task) => task.columnId === columnId);
-        }
-
         function renderTaskCard(task, columnId) {
           const card = document.createElement('article');
           card.className = 'task-card';
@@ -773,11 +1148,19 @@ function getBoardHtml(panelMode = false): string {
           if (state.selection.has(task.id)) {
             card.classList.add('selected');
           }
+          // Single click selects
           card.addEventListener('click', (event) => handleCardClick(event, task.id));
-          card.addEventListener('dblclick', () => openTask(task.id));
+          // Context menu opens Edit Modal (Custom)
+          card.addEventListener('contextmenu', (event) => {
+             showContextMenu(event, task.id);
+          });
+          // Double click opens task in editor (Standard)
+          card.addEventListener('dblclick', () => {
+             vscode.postMessage({ type: 'openTask', taskId: task.id });
+          });
+          
           card.addEventListener('dragstart', (event) => handleDragStart(event, task.id, card));
           card.addEventListener('dragend', () => handleDragEnd(card));
-          card.addEventListener('contextmenu', (event) => showContextMenu(event, task.id));
 
           // Title
           const title = document.createElement('div');
@@ -794,8 +1177,8 @@ function getBoardHtml(panelMode = false): string {
           }
 
           // Artifact links (upstream and downstream)
-          const hasUpstream = task.upstream?.length > 0;
-          const hasDownstream = task.downstream?.length > 0;
+          const hasUpstream = task.upstream?.length >0;
+          const hasDownstream = task.downstream?.length >0;
           if (hasUpstream || hasDownstream) {
             const artifactLinks = document.createElement('div');
             artifactLinks.className = 'artifact-links';
@@ -823,7 +1206,7 @@ function getBoardHtml(panelMode = false): string {
           // Progress bar (if checklist exists)
           const total = task.checklistTotal || 0;
           const done = task.checklistDone || 0;
-          if (total > 0) {
+          if (total >0) {
             const progressContainer = document.createElement('div');
             progressContainer.className = 'progress-container';
             const progressBar = document.createElement('div');
@@ -841,8 +1224,6 @@ function getBoardHtml(panelMode = false): string {
           }
 
           // Footer: Priority, Owner, Date on left; Status on right
-          
-          // Check what we need to show
           const status = task.status || 'ready';
           const hasStatus = status !== 'ready';
           const hasPriority = !!task.priority;
@@ -945,21 +1326,6 @@ function getBoardHtml(panelMode = false): string {
           return card;
         }
 
-        function buildChips(task) {
-          const chips = [];
-          if (task.priority) {
-            const priorityChip = createChip(task.priority, 'priority-' + task.priority);
-            chips.push(priorityChip);
-          }
-          if (task.updatedAt) {
-            const date = new Date(task.updatedAt);
-            if (!isNaN(date.valueOf())) {
-              chips.push(createChip(date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })));
-            }
-          }
-          return chips;
-        }
-
         function createColumnAddButton(columnId) {
           const button = document.createElement('button');
           button.type = 'button';
@@ -990,7 +1356,7 @@ function getBoardHtml(panelMode = false): string {
             } else {
               state.selection.add(taskId);
             }
-          } else if (!state.selection.has(taskId) || state.selection.size > 1) {
+          } else if (!state.selection.has(taskId) || state.selection.size >1) {
             state.selection.clear();
             state.selection.add(taskId);
           }
@@ -1072,9 +1438,50 @@ function getBoardHtml(panelMode = false): string {
           renderBoard();
         }
 
-        function openTask(taskId) {
-          vscode.postMessage({ type: 'openTask', taskId });
+        // --- Filter Listeners ---
+        searchInput?.addEventListener('input', (e) => {
+           state.filterText = e.target.value;
+           updateBoard({ columns: state.columns, tasks: state.tasks }); // Trigger re-filter
+        });
+        
+        priorityFilter?.addEventListener('change', (e) => {
+           state.filterPriority = e.target.value;
+           updateBoard({ columns: state.columns, tasks: state.tasks }); // Trigger re-filter
+        });
+
+        // --- Modal Logic ---
+        function openEditModal(taskId) {
+           currentEditingTaskId = taskId;
+           const task = state.tasks.find(t => t.id === taskId);
+           modalTitle.textContent = task ? `Edit Task: ${ task.title } ` : 'Edit Task';
+           modalContextEditor.value = 'Loading context...';
+           
+           modal.showModal();
+           
+           // Fetch Context
+           vscode.postMessage({ type: 'getTaskContext', taskId });
         }
+        
+        function closeEditModal() {
+           modal.close();
+           currentEditingTaskId = null;
+        }
+        
+        function saveContext() {
+           if (currentEditingTaskId) {
+              const content = modalContextEditor.value;
+              vscode.postMessage({ type: 'saveTaskContext', taskId: currentEditingTaskId, content });
+              closeEditModal();
+           }
+        }
+        
+        modalClose?.addEventListener('click', closeEditModal);
+        modalSave?.addEventListener('click', (e) => {
+           e.preventDefault();
+           saveContext();
+        });
+        
+        // --- Event Listeners ---
 
         boardEl?.addEventListener('click', (event) => {
           if (event.target === boardEl) {
@@ -1091,10 +1498,14 @@ function getBoardHtml(panelMode = false): string {
         
         document.addEventListener('keydown', (event) => {
           if (event.key === 'Escape') {
-            clearSelection();
+            if (modal.open) {
+                closeEditModal();
+            } else {
+                clearSelection();
+            }
           }
           // Delete selected tasks with Delete or Backspace key
-          if ((event.key === 'Delete' || event.key === 'Backspace') && state.selection.size > 0) {
+          if ((event.key === 'Delete' || event.key === 'Backspace') && state.selection.size >0 && !modal.open) {
             const taskIds = Array.from(state.selection);
             vscode.postMessage({ type: 'deleteTasks', taskIds });
           }
@@ -1103,7 +1514,95 @@ function getBoardHtml(panelMode = false): string {
         window.addEventListener('message', (event) => {
           if (event?.data?.type === 'board') {
             updateBoard(event.data.data);
+          } else if (event?.data?.type === 'taskContext') {
+             // Handle context load
+             if (currentEditingTaskId === event.data.taskId && modal.open) {
+                 modalContextEditor.value = event.data.content || '';
+             }
           }
+        });
+
+        // --- Context Menu Logic ---
+        const contextMenu = document.getElementById('context-menu');
+        const ctxEdit = document.getElementById('ctx-edit');
+        const ctxArchive = document.getElementById('ctx-archive');
+        let contextTask = null;
+
+        function showContextMenu(event, taskId) {
+           event.preventDefault();
+           contextTask = taskId;
+           
+           // Position
+           const { clientX: mouseX, clientY: mouseY } = event;
+           contextMenu.style.top = mouseY + 'px';
+           contextMenu.style.left = mouseX + 'px';
+           contextMenu.classList.remove('hidden');
+           
+           // Adjust if out of bounds (basic)
+           const rect = contextMenu.getBoundingClientRect();
+           if (rect.right >window.innerWidth) {
+               contextMenu.style.left = (window.innerWidth - rect.width - 10) + 'px';
+           }
+           if (rect.bottom >window.innerHeight) {
+               contextMenu.style.top = (window.innerHeight - rect.height - 10) + 'px';
+           }
+        }
+
+        function hideContextMenu() {
+           contextMenu.classList.add('hidden');
+           contextTask = null;
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!contextMenu.contains(e.target)) {
+                hideContextMenu();
+            }
+        });
+
+        document.addEventListener('contextmenu', (e) => {
+            if (!contextMenu.contains(e.target)) {
+                 hideContextMenu();
+            }
+        });
+        
+        ctxEdit?.addEventListener('click', () => {
+             if(contextTask) openEditModal(contextTask);
+             hideContextMenu();
+        });
+        
+        ctxArchive?.addEventListener('click', () => {
+             if(contextTask) vscode.postMessage({ type: 'archiveTask', taskId: contextTask });
+             hideContextMenu();
+        });
+
+        // Priority Handlers
+        ['high', 'medium', 'low'].forEach(p => {
+             const el = document.getElementById('ctx-priority-' + p);
+             el?.addEventListener('click', () => {
+                 if(contextTask) {
+                     vscode.postMessage({ 
+                        type: 'updateTask', 
+                        taskId: contextTask, 
+                        updates: { priority: p.charAt(0).toUpperCase() + p.slice(1) } 
+                     });
+                 }
+                 hideContextMenu();
+             });
+        });
+
+        // Empty State Handler
+        emptyState?.addEventListener('click', (e) => {
+            const target = e.target;
+            if (target.closest('.cta-create')) {
+                vscode.postMessage({ type: 'createTask' });
+            }
+            if (target.closest('.cta-clear')) {
+                 if(searchInput) searchInput.value = '';
+                 if(priorityFilter) priorityFilter.value = '';
+                 state.filterText = '';
+                 state.filterPriority = '';
+                 updateBoard({ columns: state.columns, tasks: state.tasks });
+            }
         });
 
         vscode.postMessage({ type: 'ready' });

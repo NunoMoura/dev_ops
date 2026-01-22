@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { registerDevOpsCommand } from './utils';
-import { getWorkspaceRoot, runBoardOps } from '../../data';
+import { getWorkspaceRoot } from '../../data';
 
 /**
  * Register all documentation-related commands

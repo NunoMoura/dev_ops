@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { runBoardOps } from '../data';
 import { log, error as logError } from '../core';
 
 /**
@@ -43,17 +42,12 @@ export class CursorBridge {
         }
 
         try {
-            // 1. Get task details
-            // We'll use board_ops to get the task state if needed, but for now just basic "Start work"
-            // In a real scenario, we'd fetch full context.
-
-            // 2. Create task file content
-            // This spec is hypothetical based on "Cursor Background Tasks" research
-            // Assuming a JSON format that Cursor might respect or that an Agent inside Cursor reads.
+            // Create task file content
+            // Using VS Code command format instead of Python CLI
             const taskContent = {
                 id: taskId,
                 phase: phase,
-                command: `python3 scripts/board_ops.py claim ${taskId} --type agent --name cursor`,
+                command: `vscode:devops.claimTask?${encodeURIComponent(JSON.stringify({ taskId }))}`,
                 context: `Please work on task ${taskId} in phase ${phase}. Check board.json for details.`,
                 status: 'pending',
                 created: new Date().toISOString()
@@ -63,11 +57,6 @@ export class CursorBridge {
             const filePath = path.join(root, this.TASKS_DIR, fileName);
 
             fs.writeFileSync(filePath, JSON.stringify(taskContent, null, 2));
-
-            // 3. Register the agent on the board too?
-            // Ideally Cursor's agent does this when it picks it up.
-            // But we can "pre-announce" it if we want.
-            // For now, let Cursor claim it.
 
             vscode.window.showInformationMessage(`Cursor Task spawned: ${fileName}`);
             return filePath;
@@ -83,3 +72,4 @@ export class CursorBridge {
         return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     }
 }
+
