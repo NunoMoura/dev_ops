@@ -11,8 +11,7 @@ description: Implement production-ready code with tests. Use when in the Build p
 
 - Task is in Build column
 - Implementing features or fixes
-- Writing tests
-- Following TDD workflow
+- Writing tests (TDD workflow)
 
 ## How It Works
 
@@ -20,17 +19,19 @@ description: Implement production-ready code with tests. Use when in the Build p
 |-------|--------|------------|
 | PLN-XXX implementation plan | Code + tests + updated SPEC.md | Verify |
 
+---
+
 ## Step 1: Review Plan and SPEC.md
 
 **SPEC.md defines requirements. Code matches specs.**
 
-Read the relevant SPEC.md files to understand:
+Read relevant SPEC.md files to understand:
 
 - What files should exist
 - What functions should be implemented
 - What constraints must be followed
 
-## Step 2: Write Tests First
+## Step 2: Write Tests First (TDD)
 
 For each checklist item in PLN-XXX, write tests before code:
 
@@ -44,7 +45,7 @@ Implement just enough to make tests pass:
 
 - Handle errors gracefully
 - Validate all inputs
-- Follow existing patterns in the codebase
+- Follow existing patterns
 
 ## Step 4: Refactor
 
@@ -56,14 +57,11 @@ While tests still pass:
 
 ## Step 5: Update SPEC.md
 
-When modifying code, keep SPEC.md in sync:
+Keep SPEC.md in sync with code changes:
 
 - **Adding folder/file**: Add row to `## Structure` table
 - **Adding export**: Add to `## Key Exports` section
 - **Making decision**: Add ADR row to `## ADRs` table
-- **New folder with code**: Create `SPEC.md` from template
-
-**Template:** `.dev_ops/templates/docs/spec.md`
 
 ## Step 6: Commit
 
@@ -75,30 +73,56 @@ git commit -m "feat(<scope>): <what>
 Task: TASK-XXX"
 ```
 
-## Decision Tree
+---
 
-### If Plan Gaps Found
+## Ralf Wiggum Loop
 
-Return to Plan phase to update PLN-XXX.
+Iterate autonomously until exit criteria are met:
 
-### If Blocked by Unrelated Issue
+1. **Check**: Are all exit criteria satisfied?
+2. **If No**: Identify what's failing, fix it, repeat
+3. **If Yes**: Proceed to Phase Completion
 
-Create a new task for the blocker.
+### When to Iterate
 
-## When Complete
+- Tests fail → fix code, re-run tests
+- Lint errors → fix style issues
+- Checklist item incomplete → finish implementation
+- SPEC.md outdated → update it
 
-Run all tests:
+**Test failures are iteration triggers, not phase failures.**
 
-```bash
-pytest tests/ -v  # Python
-npm test          # JavaScript/TypeScript
-```
+---
 
-## Exit Criteria
+## Exit Criteria (Self-Check)
 
-- [ ] All checklist items in PLN-XXX complete
-- [ ] All tests pass
+Before notifying user, verify:
+
+- [ ] All checklist items in PLN-XXX marked done
+- [ ] All tests pass (`npm test` / `pytest`)
 - [ ] Lint passes
-- [ ] Code handles errors gracefully
-- [ ] SPEC.md updated (Structure, Key Exports)
-- [ ] Each change committed with proper message
+- [ ] SPEC.md updated if structure changed
+- [ ] Changes committed with proper message
+
+---
+
+## Out-of-Scope Discoveries
+
+If you find bugs, features, or tech debt unrelated to current task:
+→ Use `/create_task` workflow, then continue building
+
+---
+
+## Phase Completion
+
+When exit criteria are met:
+
+1. Set task status to `ready-for-review`:
+
+   ```bash
+   node .dev_ops/scripts/devops.js update-task --id <TASK_ID> --status ready-for-review
+   ```
+
+2. Notify user: "Build complete. All tests pass. Ready for your review."
+
+3. **Stop.** User will review, then open new chat and `/claim TASK-XXX` to start Verify phase.

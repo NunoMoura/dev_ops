@@ -1,5 +1,6 @@
 ---
 description: Analyze project and generate tailored task backlog
+category: automated
 ---
 
 # Bootstrap Workflow

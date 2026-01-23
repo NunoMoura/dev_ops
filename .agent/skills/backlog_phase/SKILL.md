@@ -23,8 +23,8 @@ The entry point for all work. Claim ownership of a task and understand the "why"
 
 Use the `/claim` workflow or VS Code command to claim ownership:
 
-```xml
-<vscode_command>devops.claimTask</vscode_command>
+```bash
+node .dev_ops/scripts/devops.js claim-task --id <TASK_ID> --column col-understand
 ```
 
 Or use the workflow:
@@ -62,10 +62,10 @@ Add notes to the task if needed.
 
 ## Step 4: Move to Understand
 
-Use the VS Code command to move the task:
+Run the CLI command to move the task:
 
-```xml
-<vscode_command>devops.moveTask</vscode_command>
+```bash
+node .dev_ops/scripts/devops.js move-task --id <TASK_ID> --column col-understand
 ```
 
 ## Exit Criteria

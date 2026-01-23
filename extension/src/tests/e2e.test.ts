@@ -88,7 +88,7 @@ suite('DevOps Extension E2E Tests', () => {
         assert.ok(contributes.configuration, 'Extension should contribute configuration');
 
         const properties = contributes.configuration.properties;
-        assert.ok(properties['devops.pythonPath'], 'pythonPath setting should exist');
+
         assert.ok(properties['devops.autoOpenBoard'], 'autoOpenBoard setting should exist');
         assert.ok(properties['devops.enableCodeLens'], 'enableCodeLens setting should exist');
     });

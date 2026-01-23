@@ -21,8 +21,10 @@ Add a new task to the board following the task template structure.
 
 Run the VS Code command:
 
-```xml
-<vscode_command>devops.createTask</vscode_command>
+```bash
+# As User: Run "DevOps: Create Task" from Command Palette or run /create_task in chat
+# As Agent: Execute the bundled CLI script
+node .dev_ops/scripts/devops.js create-task --title "My Task Title" --summary "Description of work" --priority medium --column col-backlog
 ```
 
 The command will prompt for title, summary, and priority.

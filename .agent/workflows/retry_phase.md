@@ -7,19 +7,19 @@ category: manual
 
 Start new agent with same prompt. Previous artifacts preserved.
 
-## Step 1: Check Current Task
+## Step 1: Identify Task
 
-Use the board to see in-progress tasks:
+Identify the current in-progress task from the board.
 
-```xml
-<vscode_command>devops.filterTasks</vscode_command>
+## Step 2: Reset State (Optional)
+
+If you need to restart the phase from scratch, move the task back to the previous column using the CLI:
+
+```bash
+node .dev_ops/scripts/devops.js move-task --id <TASK_ID> --column col-plan
 ```
 
-Or use:
-
-```xml
-<vscode_command>devops.retryPhase</vscode_command>
-```
+Then move it back to `col-build` (or current phase) to restart the timer/state if needed.
 
 ## Step 2: Start New Agent
 

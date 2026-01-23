@@ -7,22 +7,34 @@ category: automated
 
 Generate structured prompt with context + PM feedback for agent refinement.
 
-## Step 1: Enter Feedback
+## Step 1: Request Feedback
 
-Use the VS Code command:
+Ask the user for specific feedback on the current phase.
 
-```xml
-<vscode_command>devops.refinePhase</vscode_command>
+```text
+"I am ready to refine the current phase. Please provide your feedback on what needs improvement (e.g., 'Focus more on error handling', 'Add edge case tests')."
 ```
 
-Or click "Refine Phase" in the DevOps sidebar.
+## Step 2: Generate Refinement Prompt
 
-## Step 2: Paste Prompt
+Using the user's feedback, generate a new prompt for yourself (or the next agent) using this template:
 
-Copy the generated prompt into a new agent session.
+```markdown
+# Refinement Request for [Task ID]
 
-## Outputs
+## Task: [Task Title]
+[Task Summary]
 
-- Structured prompt (copied to clipboard)
-- Task `refinementCount` incremented
-- Feedback stored in `refinementHistory`
+## Feedback
+[User Feedback]
+
+## Instructions
+1. Address the specific points mentioned in the feedback.
+2. Review previous artifacts and update them if needed.
+3. Continue with the current phase incorporating this guidance.
+```
+
+## Outpus
+
+- Feedback incorporated into plan/code
+- Task `refinementCount` incremented (track internally or in task comments)

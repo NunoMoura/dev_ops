@@ -11,11 +11,7 @@ Create BUG-XXX artifact to track a bug.
 
 ## Step 1: Check for Duplicates
 
-Use the DevOps board "Search Tasks" to check for existing bug reports:
-
-```xml
-<vscode_command>devops.filterTasks</vscode_command>
-```
+Search the existing tasks in `.dev_ops/board.json` to ensure this bug hasn't already been reported.
 
 ## Step 2: Create Bug Report
 
@@ -28,8 +24,8 @@ Use the DevOps board "Search Tasks" to check for existing bug reports:
 
 ## Step 3: Create Task for Bug Fix
 
-```xml
-<vscode_command>devops.createTask</vscode_command>
+```bash
+node .dev_ops/scripts/devops.js create-task --title "Bug: <Title>" --priority high --column col-backlog
 ```
 
 Reference the bug in the task summary: `Trigger: BUG-XXX`

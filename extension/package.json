@@ -193,11 +193,6 @@
     "configuration": {
       "title": "DevOps Framework",
       "properties": {
-        "devops.pythonPath": {
-          "type": "string",
-          "default": "python3",
-          "description": "Path to Python executable for running framework scripts"
-        },
         "devops.autoOpenBoard": {
           "type": "boolean",
           "default": false,
@@ -283,8 +278,10 @@
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.7.1",
     "c8": "^9.1.0",
+    "commander": "^14.0.2",
     "esbuild": "^0.27.0",
     "eslint": "^9.39.1",
+    "fast-glob": "^3.3.3",
     "npm-run-all": "^4.1.5",
     "sharp": "^0.34.5",
     "sinon": "^17.0.1",

@@ -32,12 +32,18 @@ importers:
       c8:
         specifier: ^9.1.0
         version: 9.1.0
+      commander:
+        specifier: ^14.0.2
+        version: 14.0.2
       esbuild:
         specifier: ^0.27.0
         version: 0.27.0
       eslint:
         specifier: ^9.39.1
         version: 9.39.1
+      fast-glob:
+        specifier: ^3.3.3
+        version: 3.3.3
       npm-run-all:
         specifier: ^4.1.5
         version: 4.1.5
@@ -971,6 +977,10 @@ packages:
   commander@12.1.0:
     resolution: {integrity: sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA==}
     engines: {node: '>=18'}
+
+  commander@14.0.2:
+    resolution: {integrity: sha512-TywoWNNRbhoD0BXs1P3ZEScW8W5iKrnbithIl0YH+uCmBd0QpPOA8yc82DS3BIE5Ma6FnBVUsJ7wVUDz4dvOWQ==}
+    engines: {node: '>=20'}
 
   concat-map@0.0.1:
     resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
@@ -3623,6 +3633,8 @@ snapshots:
       delayed-stream: 1.0.0
 
   commander@12.1.0: {}
+
+  commander@14.0.2: {}
 
   concat-map@0.0.1: {}
 

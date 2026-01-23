@@ -12,7 +12,6 @@ description: Create implementation plans before building. Use when in the Plan p
 - Task is in Plan column
 - Designing a solution
 - Breaking down work into implementable steps
-- Creating acceptance criteria
 
 ## How It Works
 
@@ -20,9 +19,7 @@ description: Create implementation plans before building. Use when in the Plan p
 |-------|--------|------------|
 | RES-XXX + SPEC.md files | PLN-XXX implementation plan | Build |
 
-## Core Principle
-
-**Work only with SPEC.md files. Do NOT open code files.**
+---
 
 ## Step 1: Review Research
 
@@ -35,58 +32,30 @@ Internalize findings from RES-XXX:
 
 ## Step 2: Analyze Impact via SPEC.md
 
-Identify what depends on components you're modifying:
+**Work only with SPEC.md files. Do NOT open code files.**
 
-1. **Read affected SPEC.md**: Check `## Dependencies` section
-2. **Check dependents**: `grep -r "your-component" */SPEC.md`
-3. **Validate interfaces**: Ensure your changes won't break dependent SPECs
-
-Include all affected components in your plan.
+1. Read affected SPEC.md: Check `## Dependencies` section
+2. Check dependents: `grep -r "your-component" */SPEC.md`
+3. Validate interfaces: Ensure changes won't break dependent SPECs
 
 ## Step 3: Create Implementation Plan
 
-### Plan Structure
+Create PLN-XXX using template: `.dev_ops/templates/artifacts/plan.md`
 
-#### Goal
+Required sections:
 
-High-level objective — what we're building and why.
-
-#### Checklist
-
-Ordered list of work items. Dependencies first:
-
-```markdown
-- [ ] **[test]** Add unit tests for validation logic
-  - Files: `tests/test_validation.py`
-- [ ] **[code]** Implement input validation
-  - Files: `src/validation.py`
-```
-
-#### Acceptance Criteria
-
-How we know we're done (must be testable):
-
-```markdown
-- All inputs validated before processing
-- Invalid inputs return 400 with descriptive error
-- Test coverage ≥ 90% for new code
-```
-
-#### Verification
-
-Commands to run, manual checks to perform.
-
-**Template:** `.dev_ops/templates/artifacts/plan.md`
+- **Goal**: High-level objective
+- **Checklist**: Ordered work items, dependencies first, each tagged `[test]` or `[code]`
+- **Acceptance Criteria**: Testable success conditions
+- **Verification**: Commands and manual checks
 
 ## Step 4: Add ADR if Making Decision
 
-If your plan involves architectural decisions, prepare ADR row for SPEC.md:
+If plan involves architectural decisions, prepare ADR row for SPEC.md:
 
 ```markdown
 | ADR-XXX | Decision summary | [Research link](...) |
 ```
-
-This will be added to SPEC.md during Build phase.
 
 ## Step 5: Anticipate Problems
 
@@ -96,13 +65,54 @@ Document potential blockers:
 - Areas of uncertainty
 - Performance concerns
 
-## Exit Criteria
+---
 
-- [ ] PLN-XXX artifact created
-- [ ] Goal clearly stated
-- [ ] Checklist ordered with dependencies first
-- [ ] Each item tagged as [test] or [code]
-- [ ] Acceptance criteria are testable
-- [ ] Verification steps defined
-- [ ] ADR prepared if needed
+## Ralf Wiggum Loop
+
+Iterate autonomously until exit criteria are met:
+
+1. **Check**: Are all exit criteria satisfied?
+2. **If No**: Identify what's missing, refine plan, repeat
+3. **If Yes**: Proceed to Phase Completion
+
+### When to Iterate
+
+- Checklist incomplete → add missing items
+- Acceptance criteria vague → make them testable
+- Dependencies unclear → review SPEC.md again
+
+---
+
+## Exit Criteria (Self-Check)
+
+Before notifying user, verify:
+
+- [ ] PLN-XXX artifact file exists
+- [ ] `## Goal` section is clear and specific
+- [ ] `## Checklist` has ordered items with `[test]`/`[code]` tags
+- [ ] `## Acceptance Criteria` are testable
+- [ ] `## Verification` steps defined
 - [ ] Another dev could execute without clarification
+
+---
+
+## Out-of-Scope Discoveries
+
+If you find bugs, features, or tech debt unrelated to current task:
+→ Use `/create_task` workflow, then continue planning
+
+---
+
+## Phase Completion
+
+When exit criteria are met:
+
+1. Set task status to `ready-for-review`:
+
+   ```bash
+   node .dev_ops/scripts/devops.js update-task --id <TASK_ID> --status ready-for-review
+   ```
+
+2. Notify user: "Plan complete. PLN-XXX created. Ready for your review."
+
+3. **Stop.** User will review, then open new chat and `/claim TASK-XXX` to start Build phase.

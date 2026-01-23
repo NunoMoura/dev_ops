@@ -381,6 +381,7 @@ export async function install(
     const workflowsSrc = path.join(assetsDir, 'workflows');
     const skillsSrc = path.join(assetsDir, 'skills');
     const templatesSrc = path.join(assetsDir, 'templates');
+    const scriptsSrc = path.join(assetsDir, 'scripts');
 
     // Get IDE-specific destination paths
     const paths = getIdePaths(projectRoot, ide);
@@ -434,6 +435,16 @@ export async function install(
     allUpdatedFiles.push(...skillsResult.updatedFiles.map(f => `skills/${f}`));
     allSkippedFiles.push(...skillsResult.skippedFiles.map(f => `skills/${f}`));
     log(`[installer] ${skillsResult.copied} skill files installed to ${paths.skillsDir}`);
+
+    // Install CLI scripts
+    if (fs.existsSync(scriptsSrc)) {
+        // Scripts go to .dev_ops/scripts for both IDEs
+        const scriptsDest = path.join(devOpsDir, 'scripts');
+        // Always force update scripts on upgrade
+        const result = copyDirRecursive(scriptsSrc, scriptsDest, { force: true });
+        allUpdatedFiles.push(...result.updatedFiles.map(f => `scripts/${f}`));
+        log(`[installer] Scripts installed to ${scriptsDest}`);
+    }
 
     // Install GitHub workflows if requested
     if (githubWorkflows) {

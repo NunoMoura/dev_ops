@@ -1,5 +1,6 @@
 ---
 description: Add an MCP server to a skill phase. Usage: /add_mcp {mcp_name}
+category: guided
 ---
 
 # Add MCP Workflow
@@ -39,7 +40,7 @@ Ask user to confirm or choose different phase.
 
 Check which IDE is being used:
 
-- **Antigravity**: Config at `~/.gemini/antigravity/settings/mcp_config.json`
+- **Antigravity**: Config at `~/.gemini/antigravity/mcp_config.json`
 - **Cursor**: Config at `.cursor/mcp.json` or `~/.cursor/mcp.json`
 
 ## Step 4: Install MCP

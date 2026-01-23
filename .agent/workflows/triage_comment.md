@@ -26,8 +26,8 @@ Review Architecture docs, ADRs, and existing patterns.
 
 ## Step 4: Create Task (if needed)
 
-```xml
-<vscode_command>devops.createTask</vscode_command>
+```bash
+node .dev_ops/scripts/devops.js create-task --title "<Pull Request Title>" --summary "Address PR feedback: <Comment Link>" --priority medium --column col-plan
 ```
 
 Include "PR#XXX: <summary>" as the title.

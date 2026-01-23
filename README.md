@@ -60,7 +60,6 @@ Every task moves through a **6-phase workflow**:
 
 | Phase | Purpose | Skill |
 |-------|---------|-------|
-| **Backlog** | Claim task, read context | `backlog_phase` |
 | **Understand** | Research, scope, align | `understand_phase` |
 | **Plan** | Create implementation plan | `plan_phase` |
 | **Build** | TDD implementation | `build_phase` |
@@ -79,7 +78,6 @@ Skills are **detailed instructions** that guide agents through each phase. Locat
 
 | Skill | Description | Key Output |
 |-------|-------------|------------|
-| `backlog_phase` | Claim a task from backlog and understand context | Task ownership |
 | `understand_phase` | Deep research before planning | RES-XXX research doc |
 | `plan_phase` | Create detailed implementation plan | PLN-XXX plan doc |
 | `build_phase` | TDD implementation with tests first | Production-ready code |
@@ -117,8 +115,6 @@ Workflows are **slash commands** for common operations. Located in `.agent/workf
 | `/add_feature` | Create feature spec and decompose to tasks | Planning |
 | `/report_bug` | Create bug report | Planning |
 | `/explain` | Explain project, component, or code | Research |
-| `/refine_phase` | Generate refinement prompt with feedback | Iteration |
-| `/retry_phase` | Re-run phase with same context | Iteration |
 | `/triage_comment` | Analyze and act on PR comment | Review |
 | `/add_mcp` | Add MCP server to skill phase | Extension |
 
@@ -138,13 +134,6 @@ Workflows are **slash commands** for common operations. Located in `.agent/workf
 /add_feature "User dashboard"  # Creates FEAT-XXX, decomposes to tasks
 /report_bug "Login timeout"    # Creates BUG-XXX for tracking
 /create_task "Refactor auth"   # Direct task creation
-```
-
-**Iterate on agent work:**
-
-```bash
-/refine_phase "Also handle edge case X"  # Add feedback to current work
-/retry_phase                              # Restart phase with same context
 ```
 
 ---
@@ -186,7 +175,6 @@ your-project/
 │   ├── rules/                 # Always-on behavioral rules
 │   │   └── dev_ops_guide.md   # Core framework guide
 │   ├── skills/                # Phase-specific instructions
-│   │   ├── backlog_phase/
 │   │   ├── understand_phase/
 │   │   ├── plan_phase/
 │   │   ├── build_phase/
@@ -231,21 +219,12 @@ Analyzes your project:
 
 Agent follows phase flow:
 
-1. **Backlog** → Read trigger doc, understand context
-2. **Understand** → Research, create RES-XXX
-3. **Plan** → Design solution, create PLN-XXX
-4. **Build** → TDD implementation
-5. **Verify** → Test, create walkthrough, PR
+1. **Understand** → Research, create RES-XXX
+2. **Plan** → Design solution, create PLN-XXX
+3. **Build** → TDD implementation
+4. **Verify** → Test, create walkthrough, PR
 
-### 3. Iterate
-
-```bash
-/refine_phase "Add error handling for edge case"
-```
-
-Agent updates work based on feedback.
-
-### 4. Review & Merge
+### 3. Review & Merge
 
 Agent creates PR with:
 
@@ -268,33 +247,20 @@ The framework enforces key principles via `.agent/rules/dev_ops_guide.md`:
 
 ## CLI Reference
 
-All operations available via Python CLI:
+Agents use the bundled Node.js CLI to interact with the framework:
 
 ```bash
 # Task operations
-python3 .dev_ops/scripts/board_ops.py create_task --title "..." --priority high --commit
-python3 .dev_ops/scripts/board_ops.py move TASK-001 col-plan --commit
-python3 .dev_ops/scripts/board_ops.py list --column col-backlog
+node .dev_ops/scripts/devops.js create-task --title "..." --priority high --column col-backlog
+node .dev_ops/scripts/devops.js bootstrap
 
-# Artifact operations
-python3 .dev_ops/scripts/artifact_ops.py create research --title "..." --task TASK-001
-python3 .dev_ops/scripts/artifact_ops.py list
+# Help
+node .dev_ops/scripts/devops.js --help
 ```
 
 ---
 
-## Configuration
-
-### Settings
-
-```json
-{
-  "devops.pythonPath": "/usr/local/bin/python3",
-  "devops.autoOpenBoard": true
-}
-```
-
-### Custom Rules
+## Custom Rules
 
 Add project-specific rules to `.agent/rules/`:
 
@@ -327,8 +293,6 @@ npm run package         # Production VSIX
 ### Run Tests
 
 ```bash
-# Python
-pytest tests/ --cov=scripts
 
 # TypeScript
 cd extension && npm test

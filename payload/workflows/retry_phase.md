@@ -1,38 +1,37 @@
 ---
-description: Re-run phase with identical context
-category: manual
+description: Reset the current phase and start over (Ralph Wiggum Loop)
+category: Maintenance
 ---
 
-# Retry Phase
+# Retry Phase Workflow
 
-Start new agent with same prompt. Previous artifacts preserved.
+This workflow enables the "Ralph Wiggum Loop" - a mechanism to reset the current phase's progress and try again from a clean state.
 
-## Step 1: Check Current Task
+## Step 1: Identify Failure
 
-Use the board to see in-progress tasks:
+Determine the reason for the need to retry.
 
-```xml
-<vscode_command>devops.filterTasks</vscode_command>
-```
+- **Input**: Error message, test failure, or user instruction.
+- **Context**: Current phase (e.g., Build, Verify).
 
-Or use:
+## Step 2: Clean Up
 
-```xml
-<vscode_command>devops.retryPhase</vscode_command>
-```
+Remove artifacts or changes specific to the failed attempt.
 
-## Step 2: Start New Agent
+- Revert uncommitted changes in git.
+- Reset `task.md` status for the current phase items.
+- Archive or clear the current `implementation_plan.md` if it was the source of failure.
 
-Launch new agent session with identical phase rule prompt.
+## Step 3: Re-Contextualize
 
-## Step 3: Compare Outputs
+Re-read the `SPEC.md` and input requirements to ensure a fresh understanding.
 
-Keep best artifacts or merge results from both attempts.
+## Step 4: Plan Again
 
-## Outputs
+Restart the phase workflow from the beginning.
 
-- New agent session with identical context
-- Separate artifacts from each attempt (RES-001, RES-002)
-- Best output selected or merged
+- **Action**: Call the `devops.startAgentSession` or manually trigger the phase skill.
 
-**Note:** Use `/refine_phase` for directed feedback instead.
+## Step 5: Execute
+
+Begin the phase execution again with the corrected approach.

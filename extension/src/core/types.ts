@@ -17,6 +17,24 @@ export type Column = {
   position: number;
 };
 
+// ============================================================================
+// Abstraction Interfaces
+// ============================================================================
+
+export interface IProgress {
+  report(value: { message?: string; increment?: number }): void;
+}
+
+export interface IWorkspace {
+  root: string;
+  findFiles(pattern: string, exclude?: string | null, maxResults?: number): Promise<string[]>;
+  readFile(path: string): Promise<string>;
+  writeFile(path: string, content: string): Promise<void>;
+  exists(path: string): Promise<boolean>;
+  mkdir(path: string): Promise<void>;
+}
+
+
 export type TaskStatus = 'ready' | 'agent_active' | 'in_progress' | 'needs_feedback' | 'blocked' | 'done';
 
 /**

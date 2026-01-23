@@ -26,7 +26,46 @@ Document what's in and out of scope explicitly:
 **In Scope**: Components, files, and behaviors you will change
 **Out of Scope**: Related areas you explicitly won't touch
 
-## Step 2: Navigate SPEC.md Files (RLM Pattern)
+## Step 2: Analysis via REPL (RLM Pattern)
+
+**Goal**: Understand large codebases without reading every file.
+
+Instead of just `view_file` on many files, write and execute Python scripts to analyze the codebase programmatically.
+
+### 1. Setup
+Create a temporary analysis script:
+```bash
+touch analysis.py
+```
+
+### 2. Import Tools
+Use the provided helper library for common tasks:
+```python
+import sys
+sys.path.append("/home/nunoc/projects/dev_ops/.agent/skills/understand_phase/scripts")
+from analysis_utils import find_definitions, get_imports, grep_context, detect_stack
+
+# 1. Detect Stack (Always do this first)
+stack = detect_stack()
+print("Stack Detection:", stack)
+
+# 2. Find specific code elements
+# Example: Find all classes inheriting from 'BaseController'
+matches = grep_context("class .*\(BaseController\):", "src")
+for m in matches:
+    print(f"Found controller: {m['file']}:{m['line']}")
+```
+
+### 3. Execute
+Run your script and observe the output:
+```bash
+python3 analysis.py
+```
+
+### 4. Iterate
+Refine your script based on findings. "Fold" the context by keeping only the relevant insights in your script/output.
+
+## Step 3: Navigate SPEC.md Files
 
 **Do NOT open code files in this phase.** Work only with SPEC.md files.
 

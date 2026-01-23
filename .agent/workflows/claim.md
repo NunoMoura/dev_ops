@@ -15,19 +15,17 @@ Claim ownership of a specific task, or automatically pick and claim the next hig
 
 Run the VS Code command to claim the task:
 
-```xml
-<vscode_command>devops.claimTask</vscode_command>
+```bash
+# As User: Run "DevOps: Claim Task" from Command Palette or run /claim in chat
+# As Agent: Execute the bundled CLI script
+# NOTE: If no ID is provided, this command will claim the highest priority task? (Actually script errors currently if no ID)
+# TODO: Update script to support auto-pick or agent must find task first.
+# For now, let's assume agent finds task ID first or we update script later.
+# Correct usage:
+node .dev_ops/scripts/devops.js claim-task --id <TASK_ID> --column col-understand
 ```
 
-The command will prompt for a task ID, or automatically pick the highest priority task if none specified.
-
-## Step 2: Move to Understand
-
-If a new backlog task was picked, move it to the Understand phase to begin work.
-
-```xml
-<vscode_command>devops.moveTask</vscode_command>
-```
+The command will move the task to the "Understand" column.
 
 ## Outputs
 

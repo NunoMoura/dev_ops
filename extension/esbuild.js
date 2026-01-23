@@ -114,6 +114,15 @@ function copyAssets() {
 	console.log(`[assets] Generated version.json (v${packageJson.version}) from package.json`);
 
 	console.log('[assets] Assets copied successfully');
+
+	// Copy built CLI script if it exists
+	const cliSrc = path.join(__dirname, 'dist', 'cli', 'devops.js');
+	if (fs.existsSync(cliSrc)) {
+		const scriptsDir = path.join(assetsDir, 'scripts');
+		fs.mkdirSync(scriptsDir, { recursive: true });
+		fs.copyFileSync(cliSrc, path.join(scriptsDir, 'devops.js'));
+		console.log('[assets] Copied devops.js CLI to assets/scripts');
+	}
 }
 
 /**
@@ -139,13 +148,14 @@ const esbuildProblemMatcherPlugin = {
 };
 
 async function main() {
+	// Extension Build
 	const ctx = await esbuild.context({
 		entryPoints: [
 			'src/extension.ts'
 		],
 		bundle: true,
 		format: 'cjs',
-		minify: false,  // Disabled to preserve design system functions
+		minify: false,
 		sourcemap: !production,
 		sourcesContent: false,
 		platform: 'node',
@@ -153,15 +163,28 @@ async function main() {
 		external: ['vscode'],
 		logLevel: 'silent',
 		plugins: [
-			/* add to the end of plugins array */
 			esbuildProblemMatcherPlugin,
 		],
 	});
+
+	// CLI Build
+	const cliCtx = await esbuild.context({
+		entryPoints: ['src/cli/devops.ts'],
+		bundle: true,
+		platform: 'node',
+		outfile: 'dist/cli/devops.js', // Output to separate dir to avoid wipe
+		external: ['vscode'], // Ensure vscode is not bundled (should not be imported anyway)
+		logLevel: 'silent',
+		plugins: [
+			esbuildProblemMatcherPlugin,
+		],
+	});
+
 	if (watch) {
-		await ctx.watch();
+		await Promise.all([ctx.watch(), cliCtx.watch()]);
 	} else {
-		await ctx.rebuild();
-		await ctx.dispose();
+		await Promise.all([ctx.rebuild(), cliCtx.rebuild()]);
+		await Promise.all([ctx.dispose(), cliCtx.dispose()]);
 	}
 }
 

@@ -1,28 +1,39 @@
 ---
-description: Generate refinement prompt with PM feedback
-category: automated
+description: Iteratively improve work based on feedback (Ralph Wiggum Loop)
+category: Maintenance
 ---
 
-# Refine Phase
+# Refine Phase Workflow
 
-Generate structured prompt with context + PM feedback for agent refinement.
+This workflow enables the "Ralph Wiggum Loop" - an iterative process where the agent refines its work based on feedback or self-reflection without changing the overall phase.
 
-## Step 1: Enter Feedback
+## Step 1: Analyze Feedback
 
-Use the VS Code command:
+If provided with user feedback or a specific instruction, analyze it against the current state of the task.
 
-```xml
-<vscode_command>devops.refinePhase</vscode_command>
-```
+- **Input**: Feedback string or file path.
+- **Context**: Current `task.md`, `implementation_plan.md`, or codebase state.
 
-Or click "Refine Phase" in the DevOps sidebar.
+## Step 2: Update Artifacts
 
-## Step 2: Paste Prompt
+Refine the relevant artifacts to reflect the feedback.
 
-Copy the generated prompt into a new agent session.
+- If the plan is flawed, update `implementation_plan.md`.
+- If the code is incorrect, update the source files.
+- If the task list is incomplete, update `task.md`.
 
-## Outputs
+## Step 3: Verify Refinements
 
-- Structured prompt (copied to clipboard)
-- Task `refinementCount` incremented
-- Feedback stored in `refinementHistory`
+Run necessary verifications (tests, linters) to ensure the refinements didn't break existing functionality.
+
+## Step 4: Report Status
+
+Notify the user of the refinements made.
+
+- **Summary**: Concise list of changes.
+- **Status**: Updated status of the task.
+
+## Step 5: Loop or Exit
+
+- If more refinement is needed, stay in the current phase.
+- If satisfied, wait for user confirmation or proceed to the next phase.

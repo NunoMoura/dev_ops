@@ -21,16 +21,21 @@ SPEC.md files define requirements. Code matches specs. Verify confirms the match
 ## Phase Flow
 
 ```text
-Backlog → Understand → Plan → Build → Verify → Done
+Understand → Plan → Build → Verify → Done
 ```
 
 | Phase | Key Question | Skill |
 |-------|--------------|-------|
-| Backlog | Have I claimed and read the trigger? | `backlog_phase` |
 | Understand | Do I fully grasp the problem? | `understand_phase` |
 | Plan | Could another dev build this from my plan? | `plan_phase` |
 | Build | Would I be proud to ship this? | `build_phase` |
 | Verify | Have I proven correctness? | `verify_phase` |
+
+### Utility Workflow
+
+| Workflow | Purpose | When to Use |
+|----------|---------|-------------|
+| `/create_task` | Create tasks for future work | When you discover bugs, features, or issues during any phase |
 
 ## SPEC.md Navigation (RLM Pattern)
 
@@ -62,11 +67,12 @@ When entering a phase, **read the corresponding skill**:
 view_file .agent/skills/<phase>_phase/SKILL.md
 ```
 
-## Session Model
+## Session Model (User-as-PM)
 
-- One session = one phase
-- End with `notify_user` at exit criteria
-- User triggers `/next_phase` or `/retry_phase`
+- One agent session = one phase
+- Agent iterates autonomously (Ralf Wiggum loop) until exit criteria met
+- End with `notify_user` when phase complete
+- User reviews, then opens new chat + `/claim TASK-XXX` for next phase
 
 ## Movement Rules
 
@@ -90,7 +96,6 @@ Tasks reference docs (`trigger`, `upstream`), not duplicate them.
 
 | Skill | Purpose |
 |-------|---------|
-| `backlog_phase` | Claim task and read trigger |
 | `understand_phase` | Deep research and scope definition |
 | `plan_phase` | Create implementation plan |
 | `build_phase` | TDD implementation |
