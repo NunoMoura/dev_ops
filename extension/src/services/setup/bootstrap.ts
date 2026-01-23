@@ -101,14 +101,9 @@ export class BootstrapService {
         const specs = await this.findSpecs(projectRoot);
         log(`[Bootstrap] Found ${specs.length} existing SPEC.md files`);
 
-        // 3. Generate Rules
-        log('[Bootstrap] Generating rules...');
-        await this.generateRules(projectRoot, detection.stack);
-        log('[Bootstrap] Rules generated.');
-
-        // 4. Create Tasks
+        // 3. Create Tasks
         log('[Bootstrap] Creating tasks...');
-        await this.createBootstrapTasks(projectRoot, detection.docs, specs);
+        await this.createBootstrapTasks(projectRoot, detection);
         log('[Bootstrap] Tasks created.');
     }
 
@@ -291,64 +286,6 @@ export class BootstrapService {
         return specs;
     }
 
-    // --- Rule Generation Primitives ---
-
-    public async generateRules(projectRoot: string, stack: StackItem[]): Promise<void> {
-        // Read selected IDEs from config (set during onboarding)
-        let selectedIDEs: string[] = ['antigravity']; // Default
-        const configPath = path.join(projectRoot, '.dev_ops', 'config.json');
-        if (fs.existsSync(configPath)) {
-            try {
-                const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-                if (config.selectedIDEs && Array.isArray(config.selectedIDEs) && config.selectedIDEs.length > 0) {
-                    selectedIDEs = config.selectedIDEs;
-                }
-            } catch { /* Use default */ }
-        }
-
-        // Generate rules for each selected IDE
-        for (const ide of selectedIDEs) {
-            let rulesDir: string;
-            if (ide === 'cursor') {
-                rulesDir = path.join(projectRoot, '.cursor', 'rules');
-            } else {
-                rulesDir = path.join(projectRoot, '.agent', 'rules');
-            }
-
-            // Ensure directory exists
-            fs.mkdirSync(rulesDir, { recursive: true });
-
-            for (const item of stack) {
-                const templatePath = path.join(this.extensionPath, 'dist', 'assets', item.template);
-                let content = "";
-
-                if (fs.existsSync(templatePath)) {
-                    content = fs.readFileSync(templatePath, 'utf8');
-                } else {
-                    warn(`Template not found: ${templatePath}`);
-                    continue;
-                }
-
-                // Replacements
-                for (const [key, value] of Object.entries(item.replacements)) {
-                    content = content.replace(new RegExp(key.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&'), 'g'), value);
-                }
-
-                // IDE Specifics
-                if (ide === 'cursor') {
-                    content = this.convertToCursorFormat(content, item.globs);
-                }
-
-                const destPath = path.join(rulesDir, ide === 'cursor' ? item.name.replace('.md', '.mdc') : item.name);
-
-                if (!fs.existsSync(destPath) || !fs.readFileSync(destPath, 'utf8').includes('<!-- dev-ops-customized -->')) {
-                    fs.writeFileSync(destPath, content);
-                }
-            }
-
-            log(`[Bootstrap] Generated rules for ${ide} in ${rulesDir}`);
-        }
-    }
 
     // --- Helpers ---
 
@@ -406,7 +343,7 @@ export class BootstrapService {
     }
     // --- Task Creation ---
 
-    public async createBootstrapTasks(projectRoot: string, docs: DocStatus, components: string[]): Promise<void> {
+    public async createBootstrapTasks(projectRoot: string, detection: DetectResult): Promise<void> {
         // Use centralized board read to ensure consistency with VS Code workspace
         let board: any;
         try {
@@ -437,8 +374,8 @@ export class BootstrapService {
         const archTitle = "Document System Architecture";
         // Always create if not exists - critical for RLM
         if (!taskExists(archTitle)) {
-            const existingSpecs = components.length > 0
-                ? `Found existing SPEC.md files:\n${components.map(s => `- ${s}`).join('\n')}`
+            const existingSpecs = detection.specs.length > 0
+                ? `Found existing SPEC.md files:\n${detection.specs.map(s => `- ${s}`).join('\n')}`
                 : "No SPEC.md files found yet.";
 
             tasksToCreate.push({
@@ -458,7 +395,7 @@ export class BootstrapService {
         }
 
         // 3. User Experience (Personas & Stories - Infer from PRD/Code)
-        if (!taskExists("Define User Personas & Stories") && !docs.prd) { // Only if PRD task is also being created (or exists), otherwise these follow
+        if (!taskExists("Define User Personas & Stories") && !detection.docs.prd) { // Only if PRD task is also being created (or exists), otherwise these follow
             tasksToCreate.push({
                 title: "Define User Personas & Stories",
                 summary: "Define the User Experience artifacts based on the PRD and Codebase.\n\nStrategy:\n1. Analyze the PRD (or draft) and existing codebase to identify user roles and key workflows.\n2. Create `.dev_ops/docs/user.md` (Personas) using the template.\n3. Create `.dev_ops/docs/story.md` (User Stories) using the template.\n4. Ensure stories trace back to PRD requirements.\n5. Request user review.",
@@ -467,7 +404,7 @@ export class BootstrapService {
         }
 
         // 4. Project Standards (formerly Non-Negotiables)
-        if (!taskExists("Define Project Standards") && !docs.projectStandards) {
+        if (!taskExists("Define Project Standards") && !detection.docs.projectStandards) {
             tasksToCreate.push({
                 title: "Define Project Standards",
                 summary: "Define technical and product standards.\n\nStrategy:\n1. Search for existing constraint docs (e.g., `constraints.md`, `standards.md`).\n2. Create `.dev_ops/docs/project_standards.md` using the template at `.dev_ops/templates/docs/project_standards.md`.\n   - If existing docs found: Migrate content.\n   - If no docs found: define standard constraints based on the tech stack (detected earlier) and best practices.\n3. Request user review.",
@@ -475,17 +412,13 @@ export class BootstrapService {
             });
         }
 
-        // 5. Rule Customization
-        const agentRules = path.join(projectRoot, '.agent', 'rules');
-        const cursorRules = path.join(projectRoot, '.cursor', 'rules');
-        const hasRules = (fs.existsSync(agentRules) && fs.readdirSync(agentRules).length > 0) ||
-            (fs.existsSync(cursorRules) && fs.readdirSync(cursorRules).length > 0);
-
-        if (hasRules && !taskExists("Review and Customize Rules")) {
+        // 5. Configure Rules (Task instead of Auto-gen)
+        if (!taskExists("Configure Project Rules")) {
+            const detectedStack = detection.stack.map(s => `- ${s.name} (${s.category})`).join('\n');
             tasksToCreate.push({
-                title: "Review and Customize Rules",
-                summary: "Review the automatically generated rules in `.agent/rules` or `.cursor/rules`. Customize them to match project-specific coding standards and patterns.",
-                priority: "medium"
+                title: "Configure Project Rules",
+                summary: `Configure agent rules for the detected technology stack.\n\nDetected Stack:\n${detectedStack}\n\nStrategy:\n1. Review the detected stack above.\n2. For each relevant item, use the templates in \`.dev_ops/templates/rules/\` to create rules in \`.agent/rules/\` (or \`.cursor/rules/\`).\n3. Customize the rules to match project conventions (naming, patterns, etc.).`,
+                priority: "high"
             });
         }
 
