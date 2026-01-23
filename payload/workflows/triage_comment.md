@@ -26,8 +26,12 @@ Review Architecture docs, ADRs, and existing patterns.
 
 ## Step 4: Create Task (if needed)
 
-```xml
-<vscode_command>devops.createTask</vscode_command>
+```bash
+node .dev_ops/scripts/devops.js create-task \
+  --title "PR#XXX: <summary>" \
+  --summary "From PR comment: {{user_input}}" \
+  --priority medium \
+  --column col-backlog
 ```
 
 Include "PR#XXX: <summary>" as the title.

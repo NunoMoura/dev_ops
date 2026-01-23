@@ -14,7 +14,7 @@ Execute the bootstrap command:
 ```bash
 # As User: Run "DevOps: Bootstrap Project" from Command Palette or run /bootstrap in the chat
 # As Agent:
-<vscode_command>devops.bootstrap</vscode_command>
+node .dev_ops/scripts/devops.js bootstrap
 ```
 
 **This command will:**

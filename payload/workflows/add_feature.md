@@ -28,8 +28,12 @@ Complete the feature document: Summary, User Stories, Acceptance Criteria, Techn
 
 Create one task per acceptance criterion using the VS Code command:
 
-```xml
-<vscode_command>devops.createTask</vscode_command>
+```bash
+node .dev_ops/scripts/devops.js create-task \
+  --title "<Criterion>" \
+  --summary "Trigger: FEAT-XXX\nUser Story: ..." \
+  --priority medium \
+  --column col-backlog
 ```
 
 Reference the feature in the task summary:

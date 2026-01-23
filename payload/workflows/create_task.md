@@ -23,15 +23,9 @@ Run the CLI command:
 ```bash
 node .dev_ops/scripts/devops.js create-task \
   --title "<Brief description>" \
-  --type <BUG|FEATURE|TECH_DEBT|SPIKE> \
-  --priority <LOW|MEDIUM|HIGH> \
-  --summary "<What you discovered and why it matters>"
-```
-
-Or use the VS Code command:
-
-```xml
-<vscode_command>devops.createTask</vscode_command>
+  --summary "<What you discovered and why it matters>" \
+  --priority <medium|high|low> \
+  --column col-backlog
 ```
 
 ## Step 2: Add Context

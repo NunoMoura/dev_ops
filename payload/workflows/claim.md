@@ -27,12 +27,6 @@ Run the command:
 node .dev_ops/scripts/devops.js claim-task --id <TASK_ID>
 ```
 
-Or use VS Code command:
-
-```xml
-<vscode_command>devops.claimTask</vscode_command>
-```
-
 ## Step 2: Read Skill
 
 The agent should read the appropriate phase skill:
