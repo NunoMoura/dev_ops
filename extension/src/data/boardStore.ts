@@ -60,37 +60,6 @@ export async function ensureBoardInitialized(): Promise<void> {
 
   // Ensure tasks directory if board exists (implied we might need it)
   await fs.mkdir(tasksDir, { recursive: true });
-
-  let boardContent: string;
-  try {
-    boardContent = await fs.readFile(boardPath, 'utf8');
-  } catch {
-    // Missing board.json - Do NOT initialize fresh automatically.
-    return;
-  }
-
-  // Auto-Migration: Extract items if present
-  try {
-    const board = JSON.parse(boardContent) as Board;
-    if (board.items && board.items.length > 0) {
-      console.log(`Migrating ${board.items.length} tasks to ${TASKS_DIR}...`);
-
-      await Promise.all(board.items.map(task => {
-        return fs.writeFile(
-          path.join(tasksDir, `${task.id}.json`),
-          JSON.stringify(task, null, 2),
-          'utf8'
-        );
-      }));
-
-      // Clear items from board.json to finalize migration
-      board.items = [];
-      await fs.writeFile(boardPath, JSON.stringify(board, null, 2), 'utf8');
-      vscode.window.showInformationMessage('Project migrated to File-Based Persistence.');
-    }
-  } catch (error) {
-    console.error('Migration check failed', error);
-  }
 }
 
 /**
@@ -113,7 +82,7 @@ export async function readBoard(): Promise<Board> {
   }
 
   // Hydrate Items
-  const items: Task[] = [...(layout.items || [])];
+  const items: Task[] = [];
   const tasksDir = getTasksDir();
 
   if (tasksDir) {
@@ -128,21 +97,7 @@ export async function readBoard(): Promise<Board> {
         } catch { return null; }
       }));
 
-      // Merge strategies:
-      // If task exists in both, prefer the one from tasksDir (newer architecture)
-      // or check timestamps (more complex).
-      // Since migration clears board.json items, duplicates should be rare unless
-      // external modification happened. We'll simply dedupe by ID, preferring loaded.
-      const loadedItems = loaded.filter((t): t is Task => t !== null);
-
-      for (const loadedItem of loadedItems) {
-        const index = items.findIndex(t => t.id === loadedItem.id);
-        if (index !== -1) {
-          items[index] = loadedItem;
-        } else {
-          items.push(loadedItem);
-        }
-      }
+      items.push(...loaded.filter((t): t is Task => t !== null));
     } catch {
       // Ignore if dir missing
     }
