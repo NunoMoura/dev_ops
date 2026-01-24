@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
 import type { BoardTreeProvider, BoardNode } from '../../ui/board';
 import type { DevOpsCommandServices } from './types';
 import { registerDevOpsCommand, getTaskFromNode } from './utils';
@@ -49,6 +51,15 @@ export function registerWorkflowCommands(
             await handleRetryPhase();
         },
         'Unable to retry phase',
+    );
+
+    registerDevOpsCommand(
+        context,
+        'devops.openPhaseSkill',
+        async () => {
+            await handleOpenPhaseSkill();
+        },
+        'Unable to open phase skill',
     );
 }
 
@@ -111,7 +122,7 @@ async function handleRefinePhase(): Promise<void> {
         return;
     }
     const rootUri = vscode.Uri.file(rootPath);
-    const uri = vscode.Uri.joinPath(rootUri, 'payload', 'workflows', 'refine_phase.md');
+    const uri = vscode.Uri.joinPath(rootUri, 'payload', 'workflows', 'refine.md');
     await vscode.commands.executeCommand('markdown.showPreview', uri);
     vscode.window.showInformationMessage('Ralph Wiggum Loop: Refine Phase Initiated');
 }
@@ -123,7 +134,49 @@ async function handleRetryPhase(): Promise<void> {
         return;
     }
     const rootUri = vscode.Uri.file(rootPath);
-    const uri = vscode.Uri.joinPath(rootUri, 'payload', 'workflows', 'retry_phase.md');
+    const uri = vscode.Uri.joinPath(rootUri, 'payload', 'workflows', 'retry.md');
     await vscode.commands.executeCommand('markdown.showPreview', uri);
     vscode.window.showInformationMessage('Ralph Wiggum Loop: Retry Phase Initiated');
+}
+
+/**
+ * Open the Skill definition for a specific phase
+ */
+async function handleOpenPhaseSkill(): Promise<void> {
+    const rootPath = getWorkspaceRoot();
+    if (!rootPath) {
+        vscode.window.showErrorMessage('No workspace open');
+        return;
+    }
+
+    const phases = ['Bootstrap', 'Understand', 'Plan', 'Build', 'Verify', 'Release'];
+    const selected = await vscode.window.showQuickPick(phases, {
+        placeHolder: 'Select phase to view skill instructions'
+    });
+
+    if (!selected) { return; }
+
+    const skillName = selected.toLowerCase();
+
+    // Check .agent/skills (Antigravity) then .cursor/skills (Cursor)
+    const agentSkillPath = path.join(rootPath, '.agent', 'skills', skillName, 'SKILL.md');
+    const cursorSkillPath = path.join(rootPath, '.cursor', 'skills', skillName, 'SKILL.md');
+
+    let uri: vscode.Uri | undefined;
+
+    if (fs.existsSync(agentSkillPath)) {
+        uri = vscode.Uri.file(agentSkillPath);
+    } else if (fs.existsSync(cursorSkillPath)) {
+        uri = vscode.Uri.file(cursorSkillPath);
+    } else {
+        // Fallback to checking extension assets if not in project? 
+        // Or specific locations.
+        // For now, warn if not found.
+        vscode.window.showWarningMessage(`SKILL.md not found for ${selected} in .agent/skills or .cursor/skills`);
+        return;
+    }
+
+    await vscode.workspace.openTextDocument(uri).then(doc => {
+        vscode.window.showTextDocument(doc);
+    });
 }
