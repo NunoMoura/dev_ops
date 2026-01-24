@@ -10,20 +10,56 @@ export class CoreTaskService {
 
     public async readBoard(): Promise<Board> {
         const boardPath = await this.getBoardPath();
+        let board: Board;
+
+        // 1. Read Layout
         try {
             if (!await this.workspace.exists(boardPath)) {
-                return this.createEmptyBoard();
+                board = this.createEmptyBoard();
+            } else {
+                const content = await this.workspace.readFile(boardPath);
+                board = JSON.parse(content) as Board;
             }
-            const content = await this.workspace.readFile(boardPath);
-            return JSON.parse(content) as Board;
         } catch (error) {
-            // If file doesn't exist or is corrupt, return empty board or throw
-            // For now, consistent with extension logic, return empty if not found
+            // Fallback
             if (!await this.workspace.exists(boardPath)) {
-                return this.createEmptyBoard();
+                board = this.createEmptyBoard();
+            } else {
+                throw error;
             }
-            throw error;
         }
+
+        // 2. Hydrate Items from .dev_ops/tasks/*.json
+        const tasksDir = path.join(path.dirname(boardPath), 'tasks');
+        const items: Task[] = [];
+
+        if (await this.workspace.exists(tasksDir)) {
+            try {
+                // Note: workspace.findFiles behavior depends on implementation (glob vs recursive).
+                // NodeWorkspace (used by CLI) uses fast-glob.
+                const files = await this.workspace.findFiles('tasks/*.json', null);
+                // But wait, findFiles returns absolute paths or relative?
+                // NodeWorkspace.findFiles in devops.ts uses absolute:true.
+                // So we get absolute paths.
+
+                for (const file of files) {
+                    try {
+                        const content = await this.workspace.readFile(file);
+                        const task = JSON.parse(content) as Task;
+                        if (task && task.id) {
+                            items.push(task);
+                        }
+                    } catch (e) {
+                        // Ignore corrupt task files
+                    }
+                }
+            } catch (e) {
+                // Ignore if findFiles fails
+            }
+        }
+
+        board.items = items;
+        return board;
     }
 
     public async writeBoard(board: Board): Promise<void> {
