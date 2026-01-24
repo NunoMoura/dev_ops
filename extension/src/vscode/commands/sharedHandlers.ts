@@ -31,6 +31,24 @@ export async function handleBoardMoveTasks(request: MoveTasksRequest, provider: 
         const count = result.movedTaskIds.length;
         const suffix = count === 1 ? '' : 's';
         vscode.window.showInformationMessage(`Moved ${count} task${suffix} to ${result.columnName}.`);
+
+        // Auto-trigger agent session if moving to an active phase (not Backlog or Done)
+        const columnName = result.columnName || request.columnId;
+        const isBacklog = request.columnId === 'col-backlog' || columnName.toLowerCase() === 'backlog';
+        const isDone = request.columnId === 'col-done' || columnName.toLowerCase() === 'done';
+
+        if (!isBacklog && !isDone && request.taskIds.length > 0) {
+            // Trigger startAgentSession for the primary task
+            // We pass phase name as context
+            void vscode.commands.executeCommand('devops.startAgentSession', undefined, {
+                taskId: request.taskIds[0],
+                phase: columnName
+            });
+
+            if (count === 1) {
+                vscode.window.showInformationMessage(`Agent Session ready for ${columnName}.`);
+            }
+        }
     } catch (error) {
         vscode.window.showErrorMessage(`Unable to move tasks: ${formatError(error)}`);
     }

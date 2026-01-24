@@ -7,24 +7,21 @@ category: manual
 
 Analyze PR comment and take appropriate action.
 
-## Step 1: Analyze Comment
+## Step 1: Analyze
 
-Understand what's being reported in `{{user_input}}`.
+Understand `{{user_input}}`. Review Architecture docs and ADRs.
 
-## Step 2: Check Relevant Docs
-
-Review Architecture docs, ADRs, and existing patterns.
-
-## Step 3: Categorize
+## Step 2: Categorize
 
 | Category | Action |
 |----------|--------|
-| Bug | Create task in backlog |
-| Feature | Create task in backlog |
-| Quick Fix | Fix in current session |
-| Dismiss | Explain in PR comment |
+| Bug/Feature | Create task |
+| Quick Fix | Fix now |
+| Dismiss | Reply & Close |
 
-## Step 4: Create Task (if needed)
+## Step 3: Action
+
+### Option A: Create Task
 
 ```bash
 node .dev_ops/scripts/devops.js create-task \
@@ -34,13 +31,6 @@ node .dev_ops/scripts/devops.js create-task \
   --column col-backlog
 ```
 
-Include "PR#XXX: <summary>" as the title.
+### Option B: Respond
 
-## Step 5: Respond in PR
-
-Comment with action taken.
-
-## Outputs
-
-- PR comment with action taken
-- TASK-XXX in backlog (if bug/feature)
+Reply in PR with action taken.

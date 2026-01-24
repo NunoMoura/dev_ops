@@ -114,7 +114,7 @@ Workflows are **slash commands** for common operations. Located in `.agent/workf
 | `/create_task` | Create a new task | Task |
 | `/add_feature` | Create feature spec and decompose to tasks | Planning |
 | `/report_bug` | Create bug report | Planning |
-| `/explain` | Explain project, component, or code | Research |
+
 | `/triage_comment` | Analyze and act on PR comment | Review |
 | `/add_mcp` | Add MCP server to skill phase | Extension |
 

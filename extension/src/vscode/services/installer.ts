@@ -8,8 +8,10 @@
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as vscode from 'vscode';
 import { log, error as logError } from '../../core';
+import { ProjectAuditService } from '../../core/services/projectAuditService';
+import { IWorkspace } from '../../core/types';
+import fg from 'fast-glob';
 
 // Framework version from package.json
 const FRAMEWORK_VERSION = require('../../../package.json').version;
@@ -42,6 +44,43 @@ export interface InstallerResult {
     wasUpgrade: boolean;     // True if this was a version upgrade
     message: string;
 }
+
+/**
+ * Simple Workspace implementation for Installer (Node.js/FS based)
+ */
+class InstallerWorkspace implements IWorkspace {
+    constructor(public root: string) { }
+
+    async findFiles(pattern: string, exclude?: string | null, maxResults?: number): Promise<string[]> {
+        const ignore = exclude ? [exclude] : ['**/node_modules/**'];
+        const entries = await fg(pattern, {
+            ignore,
+            cwd: this.root,
+            absolute: true
+        });
+        if (maxResults && entries.length > maxResults) {
+            return entries.slice(0, maxResults);
+        }
+        return entries;
+    }
+
+    async readFile(path: string): Promise<string> {
+        return fs.promises.readFile(path, 'utf8');
+    }
+
+    async writeFile(path: string, content: string): Promise<void> {
+        await fs.promises.writeFile(path, content, 'utf8');
+    }
+
+    async exists(path: string): Promise<boolean> {
+        return fs.existsSync(path);
+    }
+
+    async mkdir(path: string): Promise<void> {
+        await fs.promises.mkdir(path, { recursive: true });
+    }
+}
+
 
 /**
  * Get MD5 hash of file contents for comparison
@@ -462,18 +501,41 @@ export async function install(
         }
     }
 
-    // Seed SPEC.md files in component folders (co-located documentation)
-    log('[installer] Seeding SPEC.md files in component folders...');
-    const seedStats = seedSpecs(projectRoot, extensionPath);
-    allUpdatedFiles.push(...seedStats.files.map(f => `${f}/SPEC.md`));
-    log(`[installer] Seeded ${seedStats.created} SPEC.md files`);
-
     // Generate summary message
     const updatedCount = allUpdatedFiles.length;
     const skippedCount = allSkippedFiles.length;
     const message = wasUpgrade
         ? `Upgraded from ${installedVersion} to ${FRAMEWORK_VERSION}. Updated ${updatedCount} files.`
         : `DevOps framework installed. Updated ${updatedCount} files, skipped ${skippedCount} unchanged.`;
+
+    // -------------------------------------------------------------------------
+    // Run Bootstrapping Detection (Context Capture)
+    // -------------------------------------------------------------------------
+    try {
+        log('[installer] Running project detection...');
+
+        // 1. Setup minimal services
+        const workspace = new InstallerWorkspace(projectRoot);
+        // CoreTaskService is no longer needed for pure audit
+
+        // 2. Audit Project
+        const auditService = new ProjectAuditService(workspace);
+        const detectionContext = await auditService.audit();
+
+        // 3. Save to .dev_ops/.tmp/context.json
+        const tmpDir = path.join(devOpsDir, '.tmp');
+        if (!fs.existsSync(tmpDir)) {
+            fs.mkdirSync(tmpDir, { recursive: true });
+        }
+
+        const contextPath = path.join(tmpDir, 'context.json');
+        fs.writeFileSync(contextPath, JSON.stringify(detectionContext, null, 2));
+        log(`[installer] Context saved to ${contextPath}`);
+
+    } catch (error) {
+        logError('[installer] Failed to run detection', error);
+        // We don't fail the install, just log it. Bootstrap will fallback to fresh detection.
+    }
 
     return {
         success: true,
@@ -487,109 +549,7 @@ export async function install(
     };
 }
 
-// Global exclusion list for cleaner scaffolding
-const EXCLUDED_DIRS = new Set([
-    ".git", "node_modules", "venv", "__pycache__", "dist", "out", ".dev_ops", ".agent", ".cursor",
-    "test", "tests", "spec", "specs", "scripts", "utils", "bin", "assets", "public", "static", "examples", "demos"
-]);
 
-/**
- * seedSpecs
- * 
- * Creates SPEC.md files in-place in component folders (co-located documentation).
- * Follows RLM-optimized strategy: docs live with code, not in a separate folder.
- */
-function seedSpecs(projectRoot: string, extensionPath: string): { created: number; files: string[] } {
-    const templatePath = path.join(extensionPath, 'dist', 'assets', 'templates', 'docs', 'spec.md');
-    let templateContent = '';
-    if (fs.existsSync(templatePath)) {
-        templateContent = fs.readFileSync(templatePath, 'utf8');
-    } else {
-        templateContent = `---
-title: "{{title}}"
-type: spec
-path: "{{path}}"
-status: draft
----
-
-# {{title}}
-
-### Structure
-| Name | Type | Purpose |
-|------|------|---------|
-| — | folder/file | — |
-
-### Key Exports
-
-<!-- What does this expose to other components? -->
-
-### ADRs
-| ID | Decision | Research |
-|----|----------|----------|
-| — | — | — |
-
-### Constraints
-
-<!-- Rules that cannot be violated -->
-
-### Dependencies
-
-<!-- Links to other SPEC.md files this depends on -->
-`;
-    }
-
-    let createdCount = 0;
-    const createdFiles: string[] = [];
-    const processed = new Set<string>();
-
-    const walk = (dir: string, depth: number) => {
-        if (depth > 6) { return; }
-
-        const name = path.basename(dir);
-        if (EXCLUDED_DIRS.has(name) || name.startsWith('.')) { return; }
-
-        let hasCode = false;
-
-        try {
-            const files = fs.readdirSync(dir, { withFileTypes: true });
-            for (const f of files) {
-                if (!f.isDirectory() && ['.ts', '.js', '.py', '.go', '.rs', '.java', '.cpp', '.php', '.rb'].includes(path.extname(f.name))) {
-                    hasCode = true;
-                    break;
-                }
-            }
-
-            // Create SPEC.md if folder has code files
-            if (hasCode) {
-                const relPath = path.relative(projectRoot, dir);
-                if (relPath && !processed.has(relPath)) {
-                    const specPath = path.join(dir, 'SPEC.md');
-                    if (!fs.existsSync(specPath)) {
-                        let content = templateContent
-                            .replace(/{{title}}/g, name)
-                            .replace(/{{path}}/g, relPath);
-                        fs.writeFileSync(specPath, content);
-                        createdCount++;
-                        createdFiles.push(relPath);
-                    }
-                    processed.add(relPath);
-                }
-            }
-
-            // Recurse into subdirectories
-            for (const f of files) {
-                if (f.isDirectory()) {
-                    walk(path.join(dir, f.name), depth + 1);
-                }
-            }
-        } catch (e) {
-            // Ignore errors
-        }
-    };
-
-    walk(projectRoot, 0);
-    return { created: createdCount, files: createdFiles };
-}
 
 /**
  * Check if framework is already installed

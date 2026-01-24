@@ -167,7 +167,7 @@ export function registerTaskCommands(
         context,
         'devops.setStatus',
         async (node?: BoardNode) => {
-            const statuses = ['ready', 'agent_active', 'needs_feedback', 'blocked', 'done'];
+            const statuses = ['todo', 'in_progress', 'needs_feedback', 'blocked'];
             const picked = await vscode.window.showQuickPick(statuses, { placeHolder: 'Select new status' });
             if (picked) {
                 await handleSetStatus(picked, `Set to ${picked}`, provider, node);
@@ -180,7 +180,7 @@ export function registerTaskCommands(
         context,
         'devops.markTaskInProgress',
         async (node?: BoardNode) => {
-            await handleSetStatus('agent_active', 'Marked Agent Active', provider, node);
+            await handleSetStatus('in_progress', 'Marked Agent Active', provider, node);
         },
         'Unable to update status',
     );
@@ -207,9 +207,25 @@ export function registerTaskCommands(
     registerDevOpsCommand(
         context,
         'devops.claimTask',
-        async (node?: BoardNode) => {
-            // If node provided, claim that task. If not, auto-claim next (optional ID).
-            await handleClaimTask(provider, node);
+        async (arg1?: any, arg2?: any) => {
+            // Arg handling: 
+            // 1. Context Menu: arg1 = BoardNode
+            // 2. Command Palette with JSON input: arg1 = { taskId: ... }
+
+            let node: BoardNode | undefined;
+            let params: { taskId?: string; phase?: string } | undefined;
+
+            if (arg1 && typeof arg1 === 'object' && 'kind' in arg1) {
+                node = arg1;
+            } else if (arg1) {
+                params = arg1;
+            }
+
+            if (arg2 && !params) {
+                params = arg2;
+            }
+
+            await handleClaimTask(provider, node, params);
         },
         'Unable to claim task',
     );
@@ -233,7 +249,7 @@ export async function createTask(
         title: title,
         summary: summary,
         priority: priority,
-        status: 'ready',
+        status: 'todo',
         updatedAt: new Date().toISOString(),
     };
     board.items.push(task);
@@ -316,6 +332,20 @@ async function handleMoveTask(
     await provider.refresh();
     await appendTaskHistory(task, `Moved to column ${targetColumn.name || COLUMN_FALLBACK_NAME}`);
     await provider.revealTask(task.id, view);
+
+    // Auto-trigger agent session if moving to an active phase (not Backlog or Done)
+    const isBacklog = targetColumn.id === 'col-backlog' || targetColumn.name.toLowerCase() === 'backlog';
+    const isDone = targetColumn.id === 'col-done' || targetColumn.name.toLowerCase() === 'done';
+
+    if (!isBacklog && !isDone) {
+        // Trigger startAgentSession
+        // We pass phase name as context
+        await vscode.commands.executeCommand('devops.startAgentSession', undefined, {
+            taskId: task.id,
+            phase: targetColumn.name
+        });
+        vscode.window.showInformationMessage(`Task moved to ${targetColumn.name}. copy/paste context to agent to start.`);
+    }
 }
 
 /**
@@ -495,23 +525,71 @@ async function handleMarkDone(
 async function handleClaimTask(
     provider: BoardTreeProvider,
     node?: BoardNode,
+    args?: { taskId?: string; phase?: string }, // Support args from command palette / slash command
 ): Promise<void> {
-    let taskId: string | undefined;
+    let taskId: string | undefined = args?.taskId;
+    const specifiedPhase = args?.phase;
 
-    // If invoked from context menu or tree item
-    if (node && node.kind === 'item') {
+    const board = await readBoard();
+
+    // 1. If explicit Task ID provided (via args), use it
+    if (taskId) {
+        // Validation check happens in claimTask
+    }
+    // 2. If invoked from context menu or tree item
+    else if (node && node.kind === 'item') {
         taskId = node.item.id;
     }
-    // If invoked from command palette with no context, prompt for task
-    else {
-        const board = await readBoard();
-        const task = await promptForTask(board);
-        if (task) {
-            taskId = task.id;
+    // 3. If Phase specified, pick highest priority from that phase
+    else if (specifiedPhase) {
+        const targetColumn = board.columns.find(c => c.name.toLowerCase() === specifiedPhase.toLowerCase());
+        if (!targetColumn) {
+            vscode.window.showErrorMessage(`Phase '${specifiedPhase}' not found.`);
+            return;
+        }
+
+        // Find tasks in this column, sort by priority
+        const phaseTasks = board.items.filter(t => t.columnId === targetColumn.id).sort(compareTasks);
+        if (phaseTasks.length > 0) {
+            taskId = phaseTasks[0].id;
         } else {
-            // User cancelled - try to pick next task automatically
+            vscode.window.showInformationMessage(`No tasks found in phase '${specifiedPhase}'.`);
+            return;
+        }
+    }
+    // 4. Default: Pick from Backlog and Move to Understand
+    else {
+        // Find Backlog
+        const backlogCol = board.columns.find(c => c.id === 'col-backlog' || c.name.toLowerCase() === 'backlog');
+        const understandCol = board.columns.find(c => c.id === 'col-understand' || c.name.toLowerCase() === 'understand' || c.name.toLowerCase() === 'understanding');
+
+        if (!backlogCol || !understandCol) {
+            // Fallback to simple picking if columns missing
             taskId = await boardService.pickNextTask() || undefined;
-            if (!taskId) {
+        } else {
+            // Pick from Backlog
+            const backlogTasks = board.items
+                .filter(t => t.columnId === backlogCol.id && (!t.owner))
+                .sort(compareTasks);
+
+            if (backlogTasks.length > 0) {
+                const task = backlogTasks[0];
+                // Move to Understand
+                task.columnId = understandCol.id;
+                task.updatedAt = new Date().toISOString();
+                await writeBoard(board);
+                await provider.refresh();
+                taskId = task.id;
+                vscode.window.showInformationMessage(`Promoted ${task.title} to Understand.`);
+            }
+        }
+
+        if (!taskId) {
+            // Use UI prompt as last resort
+            const task = await promptForTask(board);
+            if (task) {
+                taskId = task.id;
+            } else {
                 vscode.window.showInformationMessage('No tasks available to claim');
                 return;
             }

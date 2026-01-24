@@ -1,5 +1,5 @@
 import { Board, Task, Column, TaskOwner, TaskStatus } from '../core';
-import { readBoard, writeBoard, getBoardPath, readCurrentTask, writeCurrentTask, clearCurrentTask, archiveTaskFile } from './boardStore';
+import { readBoard, writeBoard, saveTask, getBoardPath, readCurrentTask, writeCurrentTask, clearCurrentTask, archiveTaskFile } from './boardStore';
 import { createTaskId, compareTasks } from '../services/tasks/taskUtils';
 
 /**
@@ -14,6 +14,7 @@ import { createTaskId, compareTasks } from '../services/tasks/taskUtils';
 export interface IBoardStore {
     readBoard(): Promise<Board>;
     writeBoard(board: Board): Promise<void>;
+    saveTask(task: Task): Promise<void>;
     getBoardPath(): Promise<string | undefined>;
     readCurrentTask(): Promise<string | null>;
     writeCurrentTask(taskId: string): Promise<void>;
@@ -25,7 +26,8 @@ export interface IBoardStore {
 const defaultStore: IBoardStore = {
     readBoard,
     writeBoard,
-    getBoardPath,
+    saveTask,
+    getBoardPath: async () => getBoardPath(),
     readCurrentTask,
     writeCurrentTask,
     clearCurrentTask,
@@ -68,7 +70,7 @@ export class BoardService {
         Object.assign(task, updates);
         task.updatedAt = new Date().toISOString();
 
-        await this.store.writeBoard(board);
+        await this.saveTask(task);
     }
 
     /**
@@ -99,6 +101,13 @@ export class BoardService {
      */
     async setTaskStatus(taskId: string, status: Task['status']): Promise<void> {
         await this.updateTask(taskId, { status });
+    }
+
+    /**
+     * Save a single task (updates metadata file).
+     */
+    async saveTask(task: Task): Promise<void> {
+        await this.store.saveTask(task);
     }
 
     /**
@@ -227,7 +236,8 @@ export class BoardService {
         };
 
         task.owner = owner;
-        task.status = 'agent_active';
+        task.owner = owner;
+        task.status = 'in_progress';
         task.updatedAt = new Date().toISOString();
 
         await this.store.writeBoard(board);
@@ -263,7 +273,7 @@ export class BoardService {
         }
 
         task.owner = undefined;
-        task.status = 'ready';
+        task.status = 'todo';
         task.updatedAt = new Date().toISOString();
 
         await this.store.writeBoard(board);
@@ -277,7 +287,7 @@ export class BoardService {
 
     /**
      * Mark a task as done.
-     * Sets status to 'done' and moves to Done column.
+     * Sets status to 'todo' (neutral) and moves to Done column.
      */
     async markDone(taskId: string): Promise<void> {
         const board = await this.store.readBoard();
@@ -292,7 +302,7 @@ export class BoardService {
             c.id === 'col-done' || c.name.toLowerCase() === 'done'
         );
 
-        task.status = 'done';
+        task.status = 'todo'; // Neutral state for done items
         if (doneColumn) {
             task.columnId = doneColumn.id;
         }
@@ -323,10 +333,6 @@ export class BoardService {
         }
     }
 
-    /**
-     * Archive a single task.
-     * Creates a tarball in .dev_ops/archive/ and removes from board.
-     */
     async archiveTask(taskId: string): Promise<string> {
         const board = await this.store.readBoard();
         const task = board.items.find(t => t.id === taskId);
@@ -335,23 +341,35 @@ export class BoardService {
             throw new Error(`Task ${taskId} not found`);
         }
 
-        // Create archive using store
+        task.status = 'archived' as any; // Ensure status is set in the archive
+        task.updatedAt = new Date().toISOString();
+
+        // Physically archive (Zip and Delete)
         const archivePath = await this.store.archiveTaskFile(taskId, JSON.stringify(task, null, 2));
 
-        // Remove from board
+        // Remove from memory
         board.items = board.items.filter(t => t.id !== taskId);
+
+        // Update layout (just in case, though items are decoupled now)
         await this.store.writeBoard(board);
 
         return archivePath;
     }
 
     /**
-     * Archive all tasks with status 'done'.
+     * Archive all tasks with status 'done' (checking column or just archival).
+     * Actually 'done' is no longer a status, we check the column.
      * Returns the count of archived tasks.
      */
     async archiveAllDone(): Promise<{ count: number; paths: string[] }> {
         const board = await this.store.readBoard();
-        const doneTasks = board.items.filter(t => t.status === 'done');
+        // Check for tasks in Done column
+        const doneColumn = board.columns.find(c => c.id === 'col-done' || c.name.toLowerCase() === 'done');
+        if (!doneColumn) {
+            return { count: 0, paths: [] };
+        }
+
+        const doneTasks = board.items.filter(t => t.columnId === doneColumn.id || t.columnId.includes('done'));
 
         const paths: string[] = [];
         for (const task of doneTasks) {
@@ -379,7 +397,7 @@ export class BoardService {
 
         for (const task of board.items) {
             // Status counts
-            const status = task.status || 'ready';
+            const status = task.status || 'todo';
             statusCounts[status] = (statusCounts[status] || 0) + 1;
 
             // Priority counts
@@ -460,10 +478,10 @@ export class BoardService {
     async pickNextTask(): Promise<string | null> {
         const board = await this.store.readBoard();
 
-        // Filter tasks in Backlog with status 'ready'
+        // Filter tasks in Backlog with status 'todo'
         const backlogTasks = board.items.filter(t =>
             t.columnId === 'col-backlog' &&
-            (!t.status || t.status === 'ready') &&
+            (!t.status || t.status === 'todo') &&
             !t.owner
         );
 

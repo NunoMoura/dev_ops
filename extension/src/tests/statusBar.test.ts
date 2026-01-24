@@ -59,7 +59,7 @@ suite('StatusBar - Board Statistics', () => {
             columns: [],
             items: [
                 { id: '1', columnId: 'col-backlog', title: 'A', status: 'blocked' },
-                { id: '2', columnId: 'col-build', title: 'B', status: 'agent_active' },
+                { id: '2', columnId: 'col-build', title: 'B', status: 'in_progress' },
                 { id: '3', columnId: 'col-build', title: 'C', status: 'blocked' },
             ],
         };

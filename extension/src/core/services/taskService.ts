@@ -69,7 +69,7 @@ export class CoreTaskService {
             summary,
             priority,
             updatedAt: new Date().toISOString(),
-            status: 'ready'
+            status: 'todo'
         };
 
         board.items.push(newTask);

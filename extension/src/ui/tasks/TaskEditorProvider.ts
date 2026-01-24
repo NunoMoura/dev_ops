@@ -151,13 +151,13 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
   private getEditorHtml(task: Task, columns: Array<{ id: string; name: string }>, traceMarkdown: string): string {
     const statusLabel = {
-      ready: 'Ready',
-      agent_active: 'Active',
+      todo: 'Todo',
       in_progress: 'In Progress',
-      needs_feedback: 'Feedback',
+      needs_feedback: 'Needs Feedback',
       blocked: 'Blocked',
-      done: 'Done'
-    }[task.status || 'ready'] || task.status;
+      done: 'Done',
+      archived: 'Archived'
+    }[task.status || 'todo'] || task.status;
 
     const currentColumn = columns.find(c => c.id === task.columnId)?.name || COLUMN_FALLBACK_NAME;
 
@@ -166,13 +166,12 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
     // Get status color for left border
     const statusColors: Record<string, string> = {
-      ready: '#3b82f6',
-      agent_active: '#22c55e',
-      needs_feedback: '#f97316',
-      blocked: '#ef4444',
-      done: '#6b7280'
+      todo: '#6b7280',
+      in_progress: '#22c55e',
+      needs_feedback: '#eab308',
+      blocked: '#ef4444'
     };
-    const statusColor = statusColors[task.status || 'ready'] || statusColors.ready;
+    const statusColor = statusColors[task.status || 'todo'] || statusColors.todo;
 
     // Page-specific styles
     const pageStyles = `<style>
@@ -361,7 +360,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
   }
 
   private renderStatusOptions(current?: string): string {
-    const statuses = ['ready', 'agent_active', 'in_progress', 'needs_feedback', 'blocked', 'done'];
+    const statuses = ['todo', 'in_progress', 'needs_feedback', 'blocked'];
     return statuses.map(s => {
       const label = s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
       return `<option value="${s}" ${s === current ? 'selected' : ''}>${label}</option>`;

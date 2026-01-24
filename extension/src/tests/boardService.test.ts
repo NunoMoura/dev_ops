@@ -24,6 +24,7 @@ suite('BoardService', () => {
         mockStore = {
             readBoard: async () => JSON.parse(JSON.stringify(mockBoard)),
             writeBoard: async (b) => { mockBoard = b; },
+            saveTask: async (t) => { /* mock */ },
             getBoardPath: async () => '/mock/path/board.json',
             readCurrentTask: async () => currentTask,
             writeCurrentTask: async (id) => { currentTask = id; },

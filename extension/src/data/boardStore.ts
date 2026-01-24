@@ -1,77 +1,214 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { Board, Column, DEFAULT_COLUMN_BLUEPRINTS } from '../core';
+import * as zlib from 'zlib';
+import { promisify } from 'util';
+import { Board, Column, Task, DEFAULT_COLUMN_BLUEPRINTS } from '../core';
 
-export async function ensureBoardUri(): Promise<vscode.Uri> {
-  const boardPath = await getBoardPath();
-  if (!boardPath) {
-    throw new Error('Open a workspace folder to load .dev_ops/board.json.');
-  }
-  try {
-    await fs.stat(boardPath);
-  } catch (error: any) {
-    if (error?.code === 'ENOENT') {
-      // Do nothing, initialization will handle it
-    } else {
-      throw error;
-    }
-  }
-  return vscode.Uri.file(boardPath);
-}
+const gzip = promisify(zlib.gzip);
 
-export async function isProjectInitialized(): Promise<boolean> {
-  const boardPath = await getBoardPath();
-  if (!boardPath) {
-    return false;
-  }
-  try {
-    await fs.stat(boardPath);
-    return true;
-  } catch {
-    return false;
-  }
-}
+const TASKS_DIR = 'tasks';
+const BOARD_FILE = 'board.json';
+
+// --- Paths ---
 
 export function getWorkspaceRoot(): string | undefined {
   return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 }
 
-export async function getBoardPath(): Promise<string | undefined> {
+export function getDevOpsDir(): string | undefined {
   const root = getWorkspaceRoot();
-  if (!root) {
-    return undefined;
-  }
-  return path.join(root, '.dev_ops', 'board.json');
+  if (!root) { return undefined; }
+  return path.join(root, '.dev_ops');
 }
 
-export async function readBoard(): Promise<Board> {
-  const p = await getBoardPath();
-  if (!p) {
-    throw new Error('Open a workspace folder to use DevOps Board.');
-  }
-  let raw: string | undefined;
+export function getTasksDir(): string | undefined {
+  const dir = getDevOpsDir();
+  return dir ? path.join(dir, TASKS_DIR) : undefined;
+}
+
+export function getBoardPath(): string | undefined {
+  const dir = getDevOpsDir();
+  return dir ? path.join(dir, BOARD_FILE) : undefined;
+}
+
+export async function ensureBoardUri(): Promise<vscode.Uri> {
+  const p = getBoardPath();
+  if (!p) { throw new Error('No workspace'); }
+  return vscode.Uri.file(p);
+}
+
+// --- Public API ---
+
+/**
+ * Ensures the board is initialized.
+ * Performs one-way migration: If board.json has items, explode them to tasks/ and clear board.json items.
+ */
+export async function ensureBoardInitialized(): Promise<void> {
+  const boardPath = getBoardPath();
+  const tasksDir = getTasksDir();
+  if (!boardPath || !tasksDir) { return; }
+
+  // Ensure directories
+  await fs.mkdir(tasksDir, { recursive: true });
+
+  let boardContent: string;
   try {
-    raw = await fs.readFile(p, 'utf8');
-    return JSON.parse(raw) as Board;
-  } catch (error: any) {
-    if (error?.code === 'ENOENT') {
-      return createEmptyBoard();
+    boardContent = await fs.readFile(boardPath, 'utf8');
+  } catch {
+    // Missing board.json, initialize fresh
+    await initializeFreshBoard();
+    return;
+  }
+
+  // Auto-Migration: Extract items if present
+  try {
+    const board = JSON.parse(boardContent) as Board;
+    if (board.items && board.items.length > 0) {
+      console.log(`Migrating ${board.items.length} tasks to ${TASKS_DIR}...`);
+
+      await Promise.all(board.items.map(task => {
+        return fs.writeFile(
+          path.join(tasksDir, `${task.id}.json`),
+          JSON.stringify(task, null, 2),
+          'utf8'
+        );
+      }));
+
+      // Clear items from board.json to finalize migration
+      board.items = [];
+      await fs.writeFile(boardPath, JSON.stringify(board, null, 2), 'utf8');
+      vscode.window.showInformationMessage('Project migrated to File-Based Persistence.');
     }
-    if (raw !== undefined && error instanceof SyntaxError) {
-      return handleCorruptBoardFile(p, raw);
-    }
-    throw error;
+  } catch (error) {
+    console.error('Migration check failed', error);
   }
 }
 
-export async function writeBoard(board: Board): Promise<void> {
-  const p = await getBoardPath();
-  if (!p) {
-    throw new Error('Open a workspace folder to use DevOps Board.');
+/**
+ * Reads the full Board object.
+ * Hybrids: Layout from board.json + Items from tasks/*.json
+ */
+export async function readBoard(): Promise<Board> {
+  await ensureBoardInitialized();
+
+  const boardPath = getBoardPath();
+  if (!boardPath) { throw new Error('No workspace open'); }
+
+  let layout: Board;
+  try {
+    const raw = await fs.readFile(boardPath, 'utf8');
+    layout = JSON.parse(raw);
+  } catch (e) {
+    return createEmptyBoard();
   }
+
+  // Hydrate Items
+  const items: Task[] = [];
+  const tasksDir = getTasksDir();
+
+  if (tasksDir) {
+    try {
+      const files = await fs.readdir(tasksDir);
+      const jsonFiles = files.filter(f => f.endsWith('.json'));
+
+      const loaded = await Promise.all(jsonFiles.map(async file => {
+        try {
+          const raw = await fs.readFile(path.join(tasksDir, file), 'utf8');
+          return JSON.parse(raw) as Task;
+        } catch { return null; }
+      }));
+
+      items.push(...loaded.filter((t): t is Task => t !== null));
+    } catch {
+      // Ignore if dir missing
+    }
+  }
+
+  return {
+    version: layout.version || 1,
+    columns: layout.columns || createDefaultColumns(),
+    items: items
+  };
+}
+
+/**
+ * Writes the Board Layout (Columns only).
+ * Does NOT write items. Items are managed via saveTask.
+ */
+export async function writeBoard(board: Board): Promise<void> {
+  const boardPath = getBoardPath();
+  if (!boardPath) { throw new Error('No workspace open'); }
+
+  // Strip items
+  const persistenceObject = {
+    version: board.version,
+    columns: board.columns,
+    items: []
+  };
+
+  await fs.mkdir(path.dirname(boardPath), { recursive: true });
+  await fs.writeFile(boardPath, JSON.stringify(persistenceObject, null, 2), 'utf8');
+}
+
+/**
+ * Saves a single task to disk.
+ */
+export async function saveTask(task: Task): Promise<void> {
+  const tasksDir = getTasksDir();
+  if (!tasksDir) { throw new Error('No workspace open'); }
+
+  await fs.mkdir(tasksDir, { recursive: true });
+  const filePath = path.join(tasksDir, `${task.id}.json`);
+
+  // Update timestamp
+  task.updatedAt = new Date().toISOString();
+
+  await fs.writeFile(filePath, JSON.stringify(task, null, 2), 'utf8');
+}
+
+/**
+ * Archive a task (Compress and Remove).
+ * Moves TASK-ID.json -> archive/TASK-ID.gz (JSON content zipped)
+ */
+export async function archiveTaskFile(taskId: string, content: string): Promise<string> {
+  const dir = getDevOpsDir();
+  if (!dir) { throw new Error('No workspace'); }
+
+  const archiveDir = path.join(dir, 'archive');
+  const tasksDir = path.join(dir, TASKS_DIR);
+  const taskFile = path.join(tasksDir, `${taskId}.json`);
+
+  await fs.mkdir(archiveDir, { recursive: true });
+
+  // 1. Compress content
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const archiveName = `${taskId}_${timestamp}.json.gz`;
+  const archivePath = path.join(archiveDir, archiveName);
+
+  const buffer = Buffer.from(content, 'utf8');
+  const compressed = await gzip(buffer);
+
+  await fs.writeFile(archivePath, compressed);
+
+  // 2. Delete source file
+  try {
+    await fs.unlink(taskFile);
+  } catch {
+    // Ignore if already gone
+  }
+
+  return archivePath;
+}
+
+// --- Helper Functions ---
+
+async function initializeFreshBoard(): Promise<void> {
+  const p = getBoardPath();
+  if (!p) { return; }
+  const empty = createEmptyBoard();
   await fs.mkdir(path.dirname(p), { recursive: true });
-  await fs.writeFile(p, JSON.stringify(board, null, 2), 'utf8');
+  await fs.writeFile(p, JSON.stringify(empty, null, 2), 'utf8');
 }
 
 export function createEmptyBoard(): Board {
@@ -82,174 +219,94 @@ export function createDefaultColumns(): Column[] {
   return DEFAULT_COLUMN_BLUEPRINTS.map((column) => ({ ...column }));
 }
 
+export async function isProjectInitialized(): Promise<boolean> {
+  const boardPath = getBoardPath();
+  if (!boardPath) { return false; }
+  try {
+    await fs.stat(boardPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// --- Handling Corruption (Backwards Compat Stub) ---
+export async function handleCorruptBoardFile(filePath: string, contents: string): Promise<Board> {
+  const backupPath = filePath + '.bak';
+  await fs.writeFile(backupPath, contents, 'utf8');
+  vscode.window.showErrorMessage(`Corrupt board file detected. Backed up to ${path.basename(backupPath)} and reset.`);
+  return createEmptyBoard();
+}
+
+export async function backupCorruptBoardFile(filePath: string, contents: string): Promise<string> {
+  const backupPath = filePath + '.bak';
+  await fs.writeFile(backupPath, contents, 'utf8');
+  return backupPath;
+}
+
+// --- Context & Meta ---
+
+export async function readCurrentTask(): Promise<string | null> {
+  const dir = getDevOpsDir();
+  if (!dir) { return null; }
+  try {
+    return (await fs.readFile(path.join(dir, '.current_task'), 'utf8')).trim() || null;
+  } catch { return null; }
+}
+
+export async function writeCurrentTask(taskId: string): Promise<void> {
+  const dir = getDevOpsDir();
+  if (!dir) { throw new Error('No workspace'); }
+  await fs.writeFile(path.join(dir, '.current_task'), taskId, 'utf8');
+}
+
+export async function clearCurrentTask(): Promise<void> {
+  const dir = getDevOpsDir();
+  if (dir) { await fs.unlink(path.join(dir, '.current_task')).catch(() => { }); }
+}
+
+export async function readTaskContext(taskId: string): Promise<string> {
+  const dir = getDevOpsDir();
+  if (!dir) { return ''; }
+  try {
+    return await fs.readFile(path.join(dir, 'context', `${taskId}.md`), 'utf8');
+  } catch { return ''; }
+}
+
+export async function writeTaskContext(taskId: string, content: string): Promise<void> {
+  const dir = getDevOpsDir();
+  if (!dir) { return; }
+  const ctxDir = path.join(dir, 'context');
+  await fs.mkdir(ctxDir, { recursive: true });
+  await fs.writeFile(path.join(ctxDir, `${taskId}.md`), content, 'utf8');
+}
+
 export async function registerBoardWatchers(
   provider: { refresh(): Promise<void> },
   context: vscode.ExtensionContext,
 ): Promise<void> {
   const folder = vscode.workspace.workspaceFolders?.[0];
-  if (!folder) {
-    return;
-  }
-  let refreshHandle: NodeJS.Timeout | undefined;
-  const scheduleRefresh = () => {
-    if (refreshHandle) {
-      clearTimeout(refreshHandle);
-    }
-    refreshHandle = setTimeout(() => {
-      refreshHandle = undefined;
-      provider.refresh().catch((error) => console.error('Board refresh failed', error));
-    }, 200);
-  };
+  if (!folder) { return; }
+
   const patterns = [
     '.dev_ops/board.json',
-    '.dev_ops/.tmp/artifacts/*.md',  // Active artifacts (flat structure)
-    '.dev_ops/docs/**/*.md',          // All documentation
-    '.dev_ops/archive/*.tar.gz',      // Archived tasks
+    '.dev_ops/tasks/*.json'
   ];
+
+  let refreshHandle: NodeJS.Timeout | undefined;
+  const scheduleRefresh = () => {
+    if (refreshHandle) { clearTimeout(refreshHandle); }
+    refreshHandle = setTimeout(() => {
+      refreshHandle = undefined;
+      provider.refresh().catch(e => console.error('Refresh failed', e));
+    }, 200);
+  };
+
   for (const glob of patterns) {
     const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, glob));
-    watcher.onDidCreate(scheduleRefresh, undefined, context.subscriptions);
-    watcher.onDidChange(scheduleRefresh, undefined, context.subscriptions);
-    watcher.onDidDelete(scheduleRefresh, undefined, context.subscriptions);
+    watcher.onDidCreate(scheduleRefresh);
+    watcher.onDidChange(scheduleRefresh);
+    watcher.onDidDelete(scheduleRefresh);
     context.subscriptions.push(watcher);
   }
-  context.subscriptions.push(
-    new vscode.Disposable(() => {
-      if (refreshHandle) {
-        clearTimeout(refreshHandle);
-      }
-    }),
-  );
-}
-
-export async function handleCorruptBoardFile(filePath: string, contents: string): Promise<Board> {
-  const repairOption = 'Repair DevOps board';
-  const openOption = 'Open file';
-  const selection = await vscode.window.showErrorMessage(
-    'DevOps Board cannot read .dev_ops/board.json because it is not valid JSON.',
-    repairOption,
-    openOption,
-  );
-  if (selection === repairOption) {
-    const backupPath = await backupCorruptBoardFile(filePath, contents);
-    const repairedBoard = createEmptyBoard();
-    await fs.mkdir(path.dirname(filePath), { recursive: true });
-    await fs.writeFile(filePath, JSON.stringify(repairedBoard, null, 2), 'utf8');
-    void vscode.window.showInformationMessage(`Board file repaired. Backup stored at ${path.basename(backupPath)}.`);
-    return repairedBoard;
-  }
-  if (selection === openOption) {
-    const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
-    await vscode.window.showTextDocument(doc, { preview: false });
-  }
-  throw new Error('.dev_ops/board.json is invalid. Repair or fix it, then refresh DevOps Board.');
-}
-
-export async function backupCorruptBoardFile(filePath: string, contents: string): Promise<string> {
-  const dir = path.dirname(filePath);
-  await fs.mkdir(dir, { recursive: true });
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const backupPath = path.join(dir, `board.json.corrupt-${timestamp}.bak`);
-  await fs.writeFile(backupPath, contents, 'utf8');
-  return backupPath;
-}
-
-/**
- * Read current task ID.
- */
-export async function readCurrentTask(): Promise<string | null> {
-  const boardPath = await getBoardPath();
-  if (!boardPath) { return null; }
-
-  const devOpsDir = path.dirname(boardPath);
-  const currentTaskPath = path.join(devOpsDir, '.current_task');
-
-  try {
-    const content = await fs.readFile(currentTaskPath, 'utf8');
-    return content.trim() || null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Write current task ID.
- */
-export async function writeCurrentTask(taskId: string): Promise<void> {
-  const boardPath = await getBoardPath();
-  if (!boardPath) { throw new Error('No workspace folder open'); }
-
-  const devOpsDir = path.dirname(boardPath);
-  const currentTaskPath = path.join(devOpsDir, '.current_task');
-  await fs.writeFile(currentTaskPath, taskId, 'utf8');
-}
-
-/**
- * Clear current task ID.
- */
-export async function clearCurrentTask(): Promise<void> {
-  const boardPath = await getBoardPath();
-  if (!boardPath) { return; }
-
-  const devOpsDir = path.dirname(boardPath);
-  const currentTaskPath = path.join(devOpsDir, '.current_task');
-  try {
-    await fs.unlink(currentTaskPath);
-  } catch {
-    // Ignore if missing
-  }
-}
-
-/**
- * Archive a task to a file.
- */
-export async function archiveTaskFile(taskId: string, content: string): Promise<string> {
-  const boardPath = await getBoardPath();
-  if (!boardPath) { throw new Error('No workspace folder open'); }
-
-  const devOpsDir = path.dirname(boardPath);
-  const archiveDir = path.join(devOpsDir, 'archive');
-  await fs.mkdir(archiveDir, { recursive: true });
-
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const archiveFileName = `${taskId}-${timestamp}.json`;
-  const archivePath = path.join(archiveDir, archiveFileName);
-
-  await fs.writeFile(archivePath, content, 'utf8');
-  return archivePath;
-}
-
-/**
- * Read logic context/decisions for a task.
- */
-export async function readTaskContext(taskId: string): Promise<string> {
-  const boardPath = await getBoardPath();
-  if (!boardPath) { return ''; }
-
-  const devOpsDir = path.dirname(boardPath);
-  const contextPath = path.join(devOpsDir, 'context', `${taskId}.md`);
-
-  try {
-    return await fs.readFile(contextPath, 'utf8');
-  } catch (error: any) {
-    if (error?.code === 'ENOENT') {
-      return ''; // No context yet
-    }
-    throw error;
-  }
-}
-
-/**
- * Write logic context/decisions for a task.
- */
-export async function writeTaskContext(taskId: string, content: string): Promise<void> {
-  const boardPath = await getBoardPath();
-  if (!boardPath) { throw new Error('No workspace folder open'); }
-
-  const devOpsDir = path.dirname(boardPath);
-  const contextDir = path.join(devOpsDir, 'context');
-  await fs.mkdir(contextDir, { recursive: true });
-
-  const contextPath = path.join(contextDir, `${taskId}.md`);
-  await fs.writeFile(contextPath, content, 'utf8');
 }

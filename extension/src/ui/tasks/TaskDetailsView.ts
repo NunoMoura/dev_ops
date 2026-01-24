@@ -29,6 +29,7 @@ type WebviewMessage =
   | { type: 'update'; task: TaskDetailsPayload }
   | { type: 'delete'; id: string }
   | { type: 'claim'; id: string }
+  | { type: 'openChat'; id: string }
   | { type: 'task'; task: TaskDetailsPayload }
   | { type: 'empty' };
 
@@ -64,6 +65,9 @@ export class BoardTaskDetailsViewProvider implements vscode.WebviewViewProvider 
         this.onDeleteEmitter.fire(message.id);
       } else if (message.type === 'claim' && typeof message.id === 'string') {
         this.onClaimEmitter.fire(message.id);
+      } else if (message.type === 'openChat' && typeof message.id === 'string') {
+        const phase = this.pendingTask?.column || 'Unknown';
+        vscode.commands.executeCommand('devops.startAgentSession', undefined, { taskId: message.id, phase });
       }
     });
     if (this.pendingTask) {
@@ -351,30 +355,25 @@ function getCardHtml(): string {
         margin-bottom: var(--space-lg);
         border-left: 4px solid var(--border-subtle);
       }
-      .status-indicator[data-status="ready"] {
+      .status-indicator[data-status="todo"] {
         border-left-color: var(--status-ready);
-        background: rgba(59, 130, 246, 0.08);
+        background: rgba(107, 114, 128, 0.08); /* Grey */
         color: var(--status-ready);
       }
-      .status-indicator[data-status="agent_active"] {
+      .status-indicator[data-status="in_progress"] {
         border-left-color: var(--status-agent-active);
-        background: rgba(34, 197, 94, 0.08);
+        background: rgba(34, 197, 94, 0.08); /* Green */
         color: var(--status-agent-active);
       }
       .status-indicator[data-status="needs_feedback"] {
         border-left-color: var(--status-needs-feedback);
-        background: rgba(249, 115, 22, 0.08);
+        background: rgba(249, 115, 22, 0.08); /* Orange */
         color: var(--status-needs-feedback);
       }
       .status-indicator[data-status="blocked"] {
         border-left-color: var(--status-blocked);
-        background: rgba(239, 68, 68, 0.08);
+        background: rgba(239, 68, 68, 0.08); /* Red */
         color: var(--status-blocked);
-      }
-      .status-indicator[data-status="done"] {
-        border-left-color: var(--status-done);
-        background: rgba(107, 114, 128, 0.08);
-        color: var(--status-done);
       }
     \u003c/style\u003e
   `;
@@ -433,8 +432,8 @@ function getCardHtml(): string {
       const ITEM_STATUS_OPTIONS = [
         { value: 'todo', label: 'Todo' },
         { value: 'in_progress', label: 'In Progress' },
+        { value: 'needs_feedback', label: 'Needs Feedback' },
         { value: 'blocked', label: 'Blocked' },
-        { value: 'review', label: 'In Review' },
         { value: 'done', label: 'Done' },
       ];
 
@@ -664,10 +663,25 @@ function getCardHtml(): string {
                   ownerHtml += \` <span class="agent-active">⚡ \${message.task.owner.agent} Active</span>\`;
               }
               ownerNameEl.innerHTML = ownerHtml;
+              
               claimBtn.textContent = "Re-Claim Task";
+              
+              // Agent Chat Button
+              const agentBtn = document.getElementById('openChatBtn');
+              if (agentBtn) agentBtn.classList.remove('hidden');
           } else {
               ownerContainer.classList.add('hidden');
-              claimBtn.textContent = "Claim Task";
+              claimBtn.textContent = "Start Task";
+              const agentBtn = document.getElementById('openChatBtn');
+              if (agentBtn) agentBtn.classList.add('hidden');
+          }
+
+          // Feedback Banner
+          const banner = document.getElementById('feedbackBanner');
+          if (message.task.status === 'needs_feedback') {
+             banner.classList.remove('hidden');
+          } else {
+             banner.classList.add('hidden');
           }
 
           featureTasks = cloneFeatureTasks(message.task.featureTasks);
@@ -743,6 +757,11 @@ function getCardHtml(): string {
         }
         vscode.postMessage({ type: 'claim', id: currentTaskId });
       });
+
+      document.getElementById('openChatBtn')?.addEventListener('click', () => {
+          if(!currentTaskId) return;
+          vscode.postMessage({ type: 'openChat', id: currentTaskId });
+      });
     </script>
   `;
 
@@ -756,11 +775,16 @@ function getCardHtml(): string {
           style="margin-bottom: 8px; font-size: 12px; color: var(--vscode-descriptionForeground);"
         ></div>
         
+        <div id="feedbackBanner" class="selection-banner hidden" style="background: rgba(234, 179, 8, 0.15); border-color: #eab308; margin-bottom: 12px;">
+            <span style="color: #eab308; font-size: 11px;">⚠️ Needs Feedback - Check Agent Inbox</span>
+        </div>
+
         <div id="ownerContainer" class="owner-section hidden">
             <div class="owner-info">
                 <span class="owner-label">Current Owner</span>
                 <span id="ownerName" class="owner-name"></span>
             </div>
+            <button id="openChatBtn" class="ghost hidden" type="button" style="font-size:10px;">Open Chat</button>
         </div>
 
         <label for="title">Title</label>
@@ -785,11 +809,10 @@ function getCardHtml(): string {
         <div>
             <label for="status">Status</label>
             <select id="status">
-              <option value="ready">▶ Ready</option>
-              <option value="agent_active">⚡ Agent Active</option>
-              <option value="needs_feedback">💬 Needs Feedback</option>
-              <option value="blocked">⛔ Blocked</option>
-              <option value="done">✓ Done</option>
+              <option value="todo">Start</option>
+              <option value="in_progress">In Progress</option>
+              <option value="needs_feedback">Needs Feedback</option>
+              <option value="blocked">Blocked</option>
             </select>
           </div>
         </div>

@@ -460,8 +460,8 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       groups = [
         { id: 'blocked', label: 'Blocked', color: 'var(--vscode-foreground)', tasks: tasks.filter(t => t.status === 'blocked') },
         { id: 'feedback', label: 'Needs Feedback', color: 'var(--vscode-foreground)', tasks: tasks.filter(t => t.status === 'needs_feedback') },
-        { id: 'in_progress', label: 'In Progress', color: 'var(--vscode-foreground)', tasks: tasks.filter(t => t.status === 'in_progress' || t.status === 'agent_active') },
-        { id: 'ready', label: 'Ready', color: 'var(--vscode-foreground)', tasks: tasks.filter(t => t.status === 'ready') },
+        { id: 'in_progress', label: 'In Progress', color: 'var(--vscode-foreground)', tasks: tasks.filter(t => t.status === 'in_progress') },
+        { id: 'todo', label: 'Todo', color: 'var(--vscode-foreground)', tasks: tasks.filter(t => t.status === 'todo') },
         { id: 'done', label: 'Done', color: 'var(--vscode-foreground)', tasks: tasks.filter(t => t.status === 'done') },
       ];
     }

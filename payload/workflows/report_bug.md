@@ -7,29 +7,23 @@ category: guided
 
 Create BUG-XXX artifact to track a bug.
 
-**Template:** `.dev_ops/templates/artifacts/bug.md`
-
-## Step 1: Check for Duplicates
-
-Use the DevOps board "Search Tasks" to check for existing bug reports:
-
-Check tasks using the CLI or reviewing `board.json`:
+## Step 1: Check Duplicates
 
 ```bash
 node .dev_ops/scripts/devops.js detect
 ```
 
-## Step 2: Create Bug Report
+Check `board.json` output for similar issues.
 
-1. Copy the bug template:
+## Step 2: Create Report
 
-   ```bash
-   cp .dev_ops/templates/artifacts/bug.md .dev_ops/docs/BUG-XXX.md
-   ```
+```bash
+cp .dev_ops/templates/artifacts/bug.md .dev_ops/docs/BUG-XXX.md
+```
 
-2. Fill in the bug report sections: Status (open), Symptoms, Steps to Reproduce, Expected vs Actual
+Fill sections: Status, Symptoms, Steps, Expected vs Actual.
 
-## Step 3: Create Task for Bug Fix
+## Step 3: Create Task
 
 ```bash
 node .dev_ops/scripts/devops.js create-task \
@@ -39,9 +33,7 @@ node .dev_ops/scripts/devops.js create-task \
   --column col-backlog
 ```
 
-Reference the bug in the task summary: `Trigger: BUG-XXX`
-
 ## Outputs
 
-- `.dev_ops/docs/BUG-XXX.md` (bug report)
-- TASK-XXX in Backlog (for fix)
+- `.dev_ops/docs/BUG-XXX.md`
+- TASK-XXX in Backlog

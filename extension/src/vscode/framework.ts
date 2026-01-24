@@ -128,13 +128,14 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
             }
         }
 
-        let title = '📦 DevOps Framework Update Required';
+        let title = '';
         let message = '';
 
         if (updateType === 'outdated') {
             title = '📦 DevOps Framework Update Available';
             message = `A new version of the DevOps framework is available (${bundledVersion}).\n\nThis will update your scripts, workflows, and core rules (preserving customizations).`;
         } else {
+            title = '⚠️ Missing DevOps Components';
             // Build descriptive message for user
             const itemDescriptions: string[] = [];
             if (itemsToUpdate.includes('scripts')) { itemDescriptions.push('• Scripts (Automation tools)'); }
@@ -142,7 +143,7 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
             if (itemsToUpdate.includes('workflows') || itemsToUpdate.includes('commands')) {
                 itemDescriptions.push('• Workflows (slash commands for your IDE)');
             }
-            message = `The following components need to be installed:\n${itemDescriptions.join('\n')}`;
+            message = `The following components are missing from this project:\n${itemDescriptions.join('\n')}\n\nDo you want to install them?`;
         }
 
         // Ask for user authorization

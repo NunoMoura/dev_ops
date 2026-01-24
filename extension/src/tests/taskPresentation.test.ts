@@ -46,7 +46,7 @@ suite('taskPresentation - buildTaskDescription', () => {
     });
 
     test('joins parts with bullet separator', () => {
-        const task = createTask({ priority: 'high', status: 'ready' });
+        const task = createTask({ priority: 'high', status: 'todo' });
         const desc = buildTaskDescription(task);
         assert.ok(desc?.includes(' • '));
     });
@@ -132,7 +132,7 @@ suite('taskPresentation - buildCardPayload', () => {
             summary: 'Summary text',
             tags: ['tag1', 'tag2'],
             priority: 'high',
-            status: 'agent_active',
+            status: 'in_progress',
             workflow: 'feature',
             upstream: ['TASK-000'],
             downstream: ['TASK-999'],

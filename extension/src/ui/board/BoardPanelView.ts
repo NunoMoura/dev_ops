@@ -417,12 +417,25 @@ function getBoardHtml(panelMode = false, logoUri = ''): string {
         position: relative;
         border-left: 2px solid #6b7280; /* Default: ready/done gray */
       }
-      /* Status-based left border colors for agent-human handoff */
-      .task-card[data-status="ready"] { border-left-color: #3b82f6; } /* Blue: spawn agent */
-      .task-card[data-status="agent_active"] { border-left-color: #22c55e; } /* Green: agent working */
-      .task-card[data-status="needs_feedback"] { border-left-color: #f97316; } /* Orange: user action needed */
-      .task-card[data-status="blocked"] { border-left-color: #ef4444; } /* Red: blocked */
-      .task-card[data-status="done"] { border-left-color: #6b7280; } /* Gray: complete */
+      /* Status-based left border colors and enhancements */
+      .task-card[data-status="todo"] { border-left-color: #6b7280; } /* Grey */
+      .task-card[data-status="in_progress"] { 
+        border-left-color: #22c55e;
+        background: linear-gradient(90deg, rgba(34, 197, 94, 0.05) 0%, rgba(34, 197, 94, 0) 100%);
+      } /* Green */
+      .task-card[data-status="needs_feedback"] { 
+        border-left-color: #eab308;
+        background: linear-gradient(90deg, rgba(234, 179, 8, 0.08) 0%, rgba(234, 179, 8, 0) 100%);
+        animation: pulse-border 2s infinite; 
+      } /* Yellow */
+      .task-card[data-status="blocked"] { border-left-color: #ef4444; } /* Red */
+      
+      @keyframes pulse-border {
+        0% { border-left-color: #eab308; box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); }
+        50% { border-left-color: #fca5a5; box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.1); }
+        100% { border-left-color: #eab308; box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); }
+      }
+
       .task-card.selected {
         border-color: var(--vscode-focusBorder);
         border-left-width: 2px;
@@ -561,11 +574,10 @@ function getBoardHtml(panelMode = false, logoUri = ''): string {
       .card-footer-right {
         text-transform: capitalize;
       }
-      .card-footer-right.status-ready { color: #3b82f6; }
-      .card-footer-right.status-agent_active { color: #22c55e; }
-      .card-footer-right.status-needs_feedback { color: #f97316; }
+      .card-footer-right.status-todo { color: #6b7280; }
+      .card-footer-right.status-in_progress { color: #22c55e; }
+      .card-footer-right.status-needs_feedback { color: #eab308; }
       .card-footer-right.status-blocked { color: #ef4444; }
-      .card-footer-right.status-done { color: #6b7280; }
       .card-actions {
         display: flex;
         justify-content: flex-end;
@@ -1119,8 +1131,7 @@ function getBoardHtml(panelMode = false, logoUri = ''): string {
           const card = document.createElement('article');
           card.className = 'task-card';
           card.draggable = true;
-          card.dataset.taskId = task.id;
-          card.dataset.status = task.status || 'ready';
+          card.dataset.status = task.status || 'todo';
           if (state.selection.has(task.id)) {
             card.classList.add('selected');
           }
@@ -1200,8 +1211,8 @@ function getBoardHtml(panelMode = false, logoUri = ''): string {
           }
 
           // Footer: Priority, Owner, Date on left; Status on right
-          const status = task.status || 'ready';
-          const hasStatus = status !== 'ready';
+          const status = task.status || 'todo';
+          const hasStatus = status !== 'todo';
           const hasPriority = !!task.priority;
           const hasDate = !!task.updatedAt;
           const hasOwner = !!(task.owner && task.owner.developer);
