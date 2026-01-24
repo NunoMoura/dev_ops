@@ -50,14 +50,22 @@ export async function ensureBoardInitialized(): Promise<void> {
   if (!boardPath || !tasksDir) { return; }
 
   // Ensure directories
+  // NOTE: We only ensure directories if we are about to migrate or write.
+  // But strictly speaking, ensureBoardInitialized is often called before reading.
+  // If board.json doesn't exist, we should do NOTHING here.
+
+  if (!await fs.stat(boardPath).catch(() => false)) {
+    return;
+  }
+
+  // Ensure tasks directory if board exists (implied we might need it)
   await fs.mkdir(tasksDir, { recursive: true });
 
   let boardContent: string;
   try {
     boardContent = await fs.readFile(boardPath, 'utf8');
   } catch {
-    // Missing board.json, initialize fresh
-    await initializeFreshBoard();
+    // Missing board.json - Do NOT initialize fresh automatically.
     return;
   }
 
@@ -100,6 +108,7 @@ export async function readBoard(): Promise<Board> {
     const raw = await fs.readFile(boardPath, 'utf8');
     layout = JSON.parse(raw);
   } catch (e) {
+    // If board.json missing, return in-memory empty board WITHOUT writing file
     return createEmptyBoard();
   }
 
