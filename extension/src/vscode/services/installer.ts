@@ -437,6 +437,7 @@ export async function install(
     fs.mkdirSync(path.join(devOpsDocsDir, 'ux', 'stories'), { recursive: true });
     fs.mkdirSync(path.join(devOpsDocsDir, 'ux', 'mockups'), { recursive: true });
     fs.mkdirSync(devOpsArchiveDir, { recursive: true });
+    fs.mkdirSync(path.join(devOpsDir, 'tasks'), { recursive: true });
     fs.mkdirSync(devOpsTemplatesDir, { recursive: true });
     log(`[installer] Directory structure created.`);
 
