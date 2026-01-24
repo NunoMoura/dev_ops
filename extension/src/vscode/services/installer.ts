@@ -432,10 +432,13 @@ export async function install(
     const devOpsTemplatesDir = path.join(devOpsDir, 'templates');
 
     // Create directories (architecture docs are now co-located as SPEC.md in component folders)
+    log(`[installer] Creating directory structure in ${devOpsDir}`);
     fs.mkdirSync(path.join(devOpsDocsDir, 'ux', 'personas'), { recursive: true });
     fs.mkdirSync(path.join(devOpsDocsDir, 'ux', 'stories'), { recursive: true });
     fs.mkdirSync(path.join(devOpsDocsDir, 'ux', 'mockups'), { recursive: true });
     fs.mkdirSync(devOpsArchiveDir, { recursive: true });
+    fs.mkdirSync(devOpsTemplatesDir, { recursive: true });
+    log(`[installer] Directory structure created.`);
 
     // Initialize archive index
     const archiveIndexPath = path.join(devOpsArchiveDir, 'index.json');

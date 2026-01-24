@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { log, error as logError } from "../../core";
 import { install, InstallerOptions } from "../services/installer";
-import { BootstrapService } from "../../services/setup/bootstrap";
+import { SetupService } from "../../services/setup/setupService";
 
 /**
  * DevOps: Initialize command
@@ -17,7 +17,7 @@ export function registerInitializeCommand(
         if (!workspaceFolders) { return; }
 
         const root = workspaceFolders[0].uri.fsPath;
-        const service = new BootstrapService(context);
+        const service = new SetupService(context);
 
         await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
