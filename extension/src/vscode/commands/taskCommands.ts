@@ -4,7 +4,7 @@ import type { BoardTreeProvider, BoardNode } from '../../ui/board';
 import type { DevOpsCommandServices } from './types';
 import { registerDevOpsCommand, getTaskFromNode } from './utils';
 import { handleCardDeleteMessage } from './sharedHandlers';
-import { readBoard, writeBoard, getWorkspaceRoot, boardService } from '../../data';
+import { readBoard, writeBoard, saveTask, getWorkspaceRoot, boardService } from '../../data';
 import type { Task, Column } from '../../core';
 import { COLUMN_FALLBACK_NAME, DEFAULT_COLUMN_NAME, formatError } from '../../core';
 import { compareTasks, isDefined, createTaskId } from '../../services/tasks/taskUtils';
@@ -254,6 +254,7 @@ export async function createTask(
     };
     board.items.push(task);
     await writeBoard(board);
+    await saveTask(task); // Persist task
     await appendTaskHistory(task, `Created in column ${columnId}`);
 
     return task;

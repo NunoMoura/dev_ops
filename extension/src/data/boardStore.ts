@@ -113,7 +113,7 @@ export async function readBoard(): Promise<Board> {
   }
 
   // Hydrate Items
-  const items: Task[] = [];
+  const items: Task[] = [...(layout.items || [])];
   const tasksDir = getTasksDir();
 
   if (tasksDir) {
@@ -128,7 +128,21 @@ export async function readBoard(): Promise<Board> {
         } catch { return null; }
       }));
 
-      items.push(...loaded.filter((t): t is Task => t !== null));
+      // Merge strategies:
+      // If task exists in both, prefer the one from tasksDir (newer architecture)
+      // or check timestamps (more complex).
+      // Since migration clears board.json items, duplicates should be rare unless
+      // external modification happened. We'll simply dedupe by ID, preferring loaded.
+      const loadedItems = loaded.filter((t): t is Task => t !== null);
+
+      for (const loadedItem of loadedItems) {
+        const index = items.findIndex(t => t.id === loadedItem.id);
+        if (index !== -1) {
+          items[index] = loadedItem;
+        } else {
+          items.push(loadedItem);
+        }
+      }
     } catch {
       // Ignore if dir missing
     }

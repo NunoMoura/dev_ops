@@ -32,7 +32,29 @@ export class CoreTaskService {
         if (!await this.workspace.exists(dir)) {
             await this.workspace.mkdir(dir);
         }
-        await this.workspace.writeFile(boardPath, JSON.stringify(board, null, 2));
+
+        // Strip items for persistence (File-Based Persistence)
+        const persistenceObject = {
+            version: board.version,
+            columns: board.columns,
+            items: [] // Items are stored in tasks/*.json
+        };
+
+        await this.workspace.writeFile(boardPath, JSON.stringify(persistenceObject, null, 2));
+    }
+
+    public async saveTask(task: Task): Promise<void> {
+        const boardPath = await this.getBoardPath();
+        const devOpsDir = path.dirname(boardPath);
+        const tasksDir = path.join(devOpsDir, 'tasks');
+
+        if (!await this.workspace.exists(tasksDir)) {
+            await this.workspace.mkdir(tasksDir); // Recursive check usually? IWorkspace.mkdir is recursive
+        }
+
+        const taskPath = path.join(tasksDir, `${task.id}.json`);
+        task.updatedAt = new Date().toISOString();
+        await this.workspace.writeFile(taskPath, JSON.stringify(task, null, 2));
     }
 
     public createEmptyBoard(): Board {
@@ -72,8 +94,15 @@ export class CoreTaskService {
             status: 'todo'
         };
 
+        // Update board view (in-memory)
         board.items.push(newTask);
+
+        // Save Board (updates columns/metadata, strips items)
         await this.writeBoard(board);
+
+        // Save Task (persists item)
+        await this.saveTask(newTask);
+
         return newTask;
     }
 
