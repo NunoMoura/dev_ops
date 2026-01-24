@@ -23,10 +23,10 @@ node .dev_ops/scripts/devops.js claim-task --id <TASK_ID>
 
 Read the appropriate phase skill:
 
-- Understand → `.agent/skills/understand_phase/SKILL.md`
-- Plan → `.agent/skills/plan_phase/SKILL.md`
-- Build → `.agent/skills/build_phase/SKILL.md`
-- Verify → `.agent/skills/verify_phase/SKILL.md`
+- Understand → `.agent/skills/understand/SKILL.md`
+- Plan → `.agent/skills/plan/SKILL.md`
+- Build → `.agent/skills/build/SKILL.md`
+- Verify → `.agent/skills/verify/SKILL.md`
 
 ## Outputs
 

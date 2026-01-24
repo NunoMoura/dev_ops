@@ -1,23 +1,23 @@
 ---
-name: understand-phase
-description: Research deeply before planning. Use when in the Understand phase, when you need to analyze requirements, or when scoping work.
+name: understand
+description: Research deeply before planning. Use when starting a new task, analyzing requirements, or scoping work.
 ---
 
-# Understand Phase
+# Understand
 
 > Know more about the problem than the person who wrote the trigger doc.
 
 ## When to Use This Skill
 
-- Task is in Understand column
+- Task is in Understand column (if applicable)
 - Need to research before planning
 - Scoping work or analyzing requirements
 
 ## How It Works
 
-| Input | Output | Next Phase |
+| Input | Output | Next Steps |
 |-------|--------|------------|
-| TASK + trigger + SPEC.md files | RES-XXX research doc | Plan |
+| Trigger + SPEC.md files | RES-XXX research doc | Plan |
 
 ---
 
@@ -74,7 +74,7 @@ Iterate autonomously until exit criteria are met:
 
 1. **Check**: Are all exit criteria satisfied?
 2. **If No**: Identify what's missing, research further, repeat
-3. **If Yes**: Proceed to Phase Completion
+3. **If Yes**: Proceed to Completion
 
 ### When to Iterate
 
@@ -103,11 +103,11 @@ If you find bugs, features, or tech debt unrelated to current task:
 
 ---
 
-## Phase Completion
+## Completion
 
 When exit criteria are met:
 
-1. Set task status to `ready-for-review`:
+1. If working on a task, set status to `ready-for-review`:
 
    ```bash
    node .dev_ops/scripts/devops.js update-task --id <TASK_ID> --status ready-for-review
@@ -115,4 +115,4 @@ When exit criteria are met:
 
 2. Notify user: "Research complete. RES-XXX created. Ready for your review."
 
-3. **Stop.** User will review, then open new chat and `/claim TASK-XXX` to start Plan phase.
+3. **Stop.** User will review, then next steps can be taken (e.g., `/claim` for Plan).

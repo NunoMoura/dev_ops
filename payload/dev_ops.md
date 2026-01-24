@@ -26,10 +26,10 @@ Understand → Plan → Build → Verify → Done
 
 | Phase | Key Question | Skill |
 |-------|--------------|-------|
-| Understand | Do I fully grasp the problem? | `understand_phase` |
-| Plan | Could another dev build this from my plan? | `plan_phase` |
-| Build | Would I be proud to ship this? | `build_phase` |
-| Verify | Have I proven correctness? | `verify_phase` |
+| Understand | Do I fully grasp the problem? | `understand` |
+| Plan | Could another dev build this from my plan? | `plan` |
+| Build | Would I be proud to ship this? | `build` |
+| Verify | Have I proven correctness? | `verify` |
 
 ### Utility Workflow
 
@@ -64,7 +64,7 @@ When entering a phase, **read the corresponding skill**:
 
 ```bash
 # Skills are in .agent/skills/
-view_file .agent/skills/<phase>_phase/SKILL.md
+view_file .agent/skills/<name>/SKILL.md
 ```
 
 ## Session Model (User-as-PM)
@@ -96,10 +96,10 @@ Tasks reference docs (`trigger`, `upstream`), not duplicate them.
 
 | Skill | Purpose |
 |-------|---------|
-| `understand_phase` | Deep research and scope definition |
-| `plan_phase` | Create implementation plan |
-| `build_phase` | TDD implementation |
-| `verify_phase` | Validation and PR creation |
+| `understand` | Deep research and scope definition |
+| `plan` | Create implementation plan |
+| `build` | TDD implementation |
+| `verify` | Validation and PR creation |
 
 ## Project Standards
 

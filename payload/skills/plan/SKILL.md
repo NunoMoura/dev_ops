@@ -1,21 +1,21 @@
 ---
-name: plan-phase
-description: Create implementation plans before building. Use when in the Plan phase, when designing solutions, or when breaking down work into steps.
+name: plan
+description: Create implementation plans before building. Use when designing solutions or breaking down work into steps.
 ---
 
-# Plan Phase
+# Plan
 
 > A plan so clear any developer could execute it.
 
 ## When to Use This Skill
 
-- Task is in Plan column
+- Task is in Plan column (if applicable)
 - Designing a solution
 - Breaking down work into implementable steps
 
 ## How It Works
 
-| Input | Output | Next Phase |
+| Input | Output | Next Steps |
 |-------|--------|------------|
 | RES-XXX + SPEC.md files | PLN-XXX implementation plan | Build |
 
@@ -73,7 +73,7 @@ Iterate autonomously until exit criteria are met:
 
 1. **Check**: Are all exit criteria satisfied?
 2. **If No**: Identify what's missing, refine plan, repeat
-3. **If Yes**: Proceed to Phase Completion
+3. **If Yes**: Proceed to Completion
 
 ### When to Iterate
 
@@ -103,11 +103,11 @@ If you find bugs, features, or tech debt unrelated to current task:
 
 ---
 
-## Phase Completion
+## Completion
 
 When exit criteria are met:
 
-1. Set task status to `ready-for-review`:
+1. If working on a task, set status to `ready-for-review`:
 
    ```bash
    node .dev_ops/scripts/devops.js update-task --id <TASK_ID> --status ready-for-review
@@ -115,4 +115,4 @@ When exit criteria are met:
 
 2. Notify user: "Plan complete. PLN-XXX created. Ready for your review."
 
-3. **Stop.** User will review, then open new chat and `/claim TASK-XXX` to start Build phase.
+3. **Stop.** User will review, then next steps can be taken (e.g., `/claim` for Build).

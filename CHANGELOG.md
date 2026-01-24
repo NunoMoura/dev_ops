@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Initial Beta Release**:
   - **RLM-Powered Documentation Navigation**:
     - New `doc_ops.py scope` command for docs-to-code navigation.
-    - Integrated with `understand_phase` and `plan_phase` for intelligent agent scoping.
+    - Integrated with `understand` and `plan` for intelligent agent scoping.
     - Automatic dependency traversal and impact analysis.
   - **Dynamic Board System**:
     - `board_ops.py` refactored to use `columns.json` for custom workflow definitions.
@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - GitHub CLI integration for automated PR creation and triage.
   - **Agent Intelligence**:
     - Phase-specific instructions (Skills) for high-quality autonomous work.
-    - REPL-like refinement loop via `/refine_phase` and `/retry_phase`.
+    - REPL-like refinement loop via `/refine` and `/retry`.
   - **Developer Tools**:
     - Agent Checklist system for fine-grained task progress.
     - Task splitting (`board_ops.py replace --with`) for complex work decomposition.

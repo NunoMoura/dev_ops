@@ -1,22 +1,22 @@
 ---
-name: verify-phase
-description: Validate, document proof, and ship via PR. Use when in the Verify phase, when testing, or when preparing work for review.
+name: verify
+description: Validate, document proof, and ship via PR. Use when testing or preparing work for review.
 ---
 
-# Verify Phase
+# Verify
 
 > Prove it works. Code matches what SPEC.md defines.
 
 ## When to Use This Skill
 
-- Task is in Verify column
+- Task is in Verify column (if applicable)
 - Testing and validating code
 - Self-reviewing changes
 - Creating PRs
 
 ## How It Works
 
-| Input | Output | Next Phase |
+| Input | Output | Next Steps |
 |-------|--------|------------|
 | Code + tests + SPEC.md | walkthrough.md, PR | Done |
 
@@ -81,7 +81,7 @@ Iterate autonomously until exit criteria are met:
 
 1. **Check**: Are all exit criteria satisfied?
 2. **If No**: Identify what's failing, fix it, repeat
-3. **If Yes**: Proceed to Phase Completion
+3. **If Yes**: Proceed to Completion
 
 ### When to Iterate
 
@@ -114,11 +114,11 @@ If you find bugs, features, or tech debt unrelated to current task:
 
 ---
 
-## Phase Completion
+## Completion
 
 When exit criteria are met:
 
-1. Set task status to `ready-for-review`:
+1. If working on a task, set status to `ready-for-review`:
 
    ```bash
    node .dev_ops/scripts/devops.js update-task --id <TASK_ID> --status ready-for-review

@@ -1,21 +1,21 @@
 ---
-name: build-phase
-description: Implement production-ready code with tests. Use when in the Build phase, when writing code, or when following TDD practices.
+name: build
+description: Implement production-ready code with tests. Use when writing code or following TDD practices.
 ---
 
-# Build Phase
+# Build
 
 > Code you'd be proud to ship. Code matches what SPEC.md defines.
 
 ## When to Use This Skill
 
-- Task is in Build column
+- Task is in Build column (if applicable)
 - Implementing features or fixes
 - Writing tests (TDD workflow)
 
 ## How It Works
 
-| Input | Output | Next Phase |
+| Input | Output | Next Steps |
 |-------|--------|------------|
 | PLN-XXX implementation plan | Code + tests + updated SPEC.md | Verify |
 
@@ -81,7 +81,7 @@ Iterate autonomously until exit criteria are met:
 
 1. **Check**: Are all exit criteria satisfied?
 2. **If No**: Identify what's failing, fix it, repeat
-3. **If Yes**: Proceed to Phase Completion
+3. **If Yes**: Proceed to Completion
 
 ### When to Iterate
 
@@ -113,11 +113,11 @@ If you find bugs, features, or tech debt unrelated to current task:
 
 ---
 
-## Phase Completion
+## Completion
 
 When exit criteria are met:
 
-1. Set task status to `ready-for-review`:
+1. If working on a task, set status to `ready-for-review`:
 
    ```bash
    node .dev_ops/scripts/devops.js update-task --id <TASK_ID> --status ready-for-review
@@ -125,4 +125,4 @@ When exit criteria are met:
 
 2. Notify user: "Build complete. All tests pass. Ready for your review."
 
-3. **Stop.** User will review, then open new chat and `/claim TASK-XXX` to start Verify phase.
+3. **Stop.** User will review, then next steps can be taken (e.g., `/claim` for Verify).

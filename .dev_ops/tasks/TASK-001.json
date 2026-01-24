@@ -1,0 +1,9 @@
+{
+  "id": "TASK-001",
+  "columnId": "col-backlog",
+  "title": "Configure Project Rules",
+  "summary": "Configure agent rules for the detected technology stack.\n\nDetected Stack:\n\n\nStrategy:\n1. Review the detected stack above.\n2. For each relevant item, use the templates in `.dev_ops/templates/rules/` to create rules in `.agent/rules/` (or `.cursor/rules/`).\n3. Customize the rules to match project conventions (naming, patterns, etc.).",
+  "priority": "high",
+  "updatedAt": "2026-01-24T21:55:03.706Z",
+  "status": "todo"
+}

@@ -27,10 +27,10 @@ Select the most appropriate skill/phase based on capabilities:
 
 | MCP Purpose | Phase |
 |-------------|-------|
-| Documentation, Research | `understand_phase` |
-| Planning, PM | `plan_phase` |
-| Code gen, DBs | `build_phase` |
-| PRs, Testing | `verify_phase` |
+| Documentation, Research | `understand` |
+| Planning, PM | `plan` |
+| Code gen, DBs | `build` |
+| PRs, Testing | `verify` |
 
 ## Step 3: Configure IDE
 
@@ -52,7 +52,7 @@ Add MCP to `~/.gemini/antigravity/mcp_config.json` (Antigravity) or `.cursor/mcp
 ## Step 4: Verify & Document
 
 1. Verify MCP starts without errors.
-2. Create capability file at `.agent/skills/{phase}_phase/mcps/{mcp_name}.md`.
+2. Create capability file at `.agent/skills/{skill}/mcps/{mcp_name}.md`.
 
 ## Error Handling
 
@@ -62,4 +62,4 @@ Add MCP to `~/.gemini/antigravity/mcp_config.json` (Antigravity) or `.cursor/mcp
 ## Outputs
 
 - MCP configuration added to IDE config file
-- Capability file in `.agent/skills/{phase}_phase/mcps/`
+- Capability file in `.agent/skills/{skill}/mcps/`

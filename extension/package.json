@@ -165,11 +165,6 @@
         "icon": "$(edit)"
       },
       {
-        "command": "devops.openPhaseSkill",
-        "title": "DevOps: Open Phase Skill",
-        "icon": "$(book)"
-      },
-      {
         "command": "devops.deleteTask",
         "title": "DevOps: Delete Task",
         "icon": "$(trash)"

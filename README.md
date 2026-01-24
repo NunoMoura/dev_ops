@@ -60,10 +60,10 @@ Every task moves through a **6-phase workflow**:
 
 | Phase | Purpose | Skill |
 |-------|---------|-------|
-| **Understand** | Research, scope, align | `understand_phase` |
-| **Plan** | Create implementation plan | `plan_phase` |
-| **Build** | TDD implementation | `build_phase` |
-| **Verify** | Test, document, PR | `verify_phase` |
+| **Understand** | Research, scope, align | `understand` |
+| **Plan** | Create implementation plan | `plan` |
+| **Build** | TDD implementation | `build` |
+| **Verify** | Test, document, PR | `verify` |
 
 > [!TIP]
 > **New**: Use `find . -name SPEC.md` to navigate component specs.
@@ -78,17 +78,17 @@ Skills are **detailed instructions** that guide agents through each phase. Locat
 
 | Skill | Description | Key Output |
 |-------|-------------|------------|
-| `understand_phase` | Deep research before planning | RES-XXX research doc |
-| `plan_phase` | Create detailed implementation plan | PLN-XXX plan doc |
-| `build_phase` | TDD implementation with tests first | Production-ready code |
-| `verify_phase` | Validate, document proof, ship PR | Walkthrough + PR |
+| `understand` | Deep research before planning | RES-XXX research doc |
+| `plan` | Create detailed implementation plan | PLN-XXX plan doc |
+| `build` | TDD implementation with tests first | Production-ready code |
+| `verify` | Validate, document proof, ship PR | Walkthrough + PR |
 
 ### Using Skills
 
 Agents automatically activate skills based on task phase. Each skill contains:
 
 ```markdown
-.agent/skills/<phase>_phase/
+.agent/skills/<name>/
 ├── SKILL.md         # Detailed instructions
 └── examples/        # Reference implementations
 ```
@@ -96,7 +96,7 @@ Agents automatically activate skills based on task phase. Each skill contains:
 To manually reference a skill:
 
 ```bash
-view_file .agent/skills/understand_phase/SKILL.md
+view_file .agent/skills/understand/SKILL.md
 ```
 
 ---
@@ -175,10 +175,10 @@ your-project/
 │   ├── rules/                 # Always-on behavioral rules
 │   │   └── dev_ops_guide.md   # Core framework guide
 │   ├── skills/                # Phase-specific instructions
-│   │   ├── understand_phase/
-│   │   ├── plan_phase/
-│   │   ├── build_phase/
-│   │   └── verify_phase/
+│   │   ├── understand/
+│   │   ├── plan/
+│   │   ├── build/
+│   │   └── verify/
 │   └── workflows/             # Slash commands
 │       ├── bootstrap.md
 │       ├── claim.md

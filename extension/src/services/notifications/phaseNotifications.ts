@@ -56,11 +56,11 @@ function getWorkflowForPhase(
 
     // From Backlog → first active phase: use pick_task
     if (fromPhase === 'Backlog' && toPhase === 'Understand') {
-        return { workflow: 'pick_task', isBackward: false };
+        return { workflow: 'claim_task', isBackward: false };
     }
 
     // Any other transition: use next_phase (forward) or indicate backward
-    return { workflow: 'next_phase', isBackward: backward };
+    return { workflow: 'claim_task', isBackward: backward };
 }
 
 /**
