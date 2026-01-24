@@ -6,6 +6,7 @@ import fg from 'fast-glob';
 import { CoreBootstrapService } from '../core/services/bootstrap';
 import { CoreTaskService } from '../core/services/taskService';
 import { CoreScopeService } from '../core/services/scopeService';
+import { ProjectAuditService } from '../core/services/projectAuditService';
 
 import { IWorkspace, IProgress } from '../core/types';
 
@@ -129,9 +130,10 @@ program
         // Wait, if bootstrapping a new project, we need the templates from somewhere!
         // The installer places them in .dev_ops. 
         // So we should point to .dev_ops.
-        const templateRoot = path.join(cwd, '.dev_ops');
-        const service = new CoreBootstrapService(workspace, taskService, cwd, templateRoot);
-        const detection = await service.detect();
+        // const templateRoot = path.join(cwd, '.dev_ops');
+
+        const auditService = new ProjectAuditService(workspace);
+        const detection = await auditService.audit();
         console.log(JSON.stringify(detection, null, 2));
     });
 

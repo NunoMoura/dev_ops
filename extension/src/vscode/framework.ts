@@ -56,10 +56,17 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
         reason = `version mismatch: project (${projectVersion}) vs bundled (${bundledVersion})`;
     }
 
+    // Source paths for verification
+    const assetsDir = path.join(context.extensionPath, 'dist', 'assets');
+    const scriptsSource = path.join(assetsDir, 'scripts');
+    const rulesSource = path.join(assetsDir, 'rules');
+    const workflowsSource = path.join(assetsDir, 'workflows');
+
     // Check 1: .dev_ops exists but scripts missing
-    if (fs.existsSync(boardPath) && !fs.existsSync(scriptsDir)) {
+    // only flag if we actually have scripts to install
+    if (fs.existsSync(boardPath) && !fs.existsSync(scriptsDir) && fs.existsSync(scriptsSource)) {
         needsUpdate = true;
-        updateType = 'missing';
+        if (updateType !== 'outdated') { updateType = 'missing'; }
         itemsToUpdate.push('scripts');
         reason = 'missing .dev_ops/scripts';
     }
@@ -69,23 +76,23 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
         const rulesDir = path.join(agentDir, 'rules');
         const workflowsDir = path.join(agentDir, 'workflows');
 
-        if (!fs.existsSync(rulesDir) || !fs.existsSync(workflowsDir)) {
-            needsUpdate = true;
-            updateType = 'missing';
-            if (!fs.existsSync(rulesDir)) { itemsToUpdate.push('rules'); }
-            if (!fs.existsSync(workflowsDir)) { itemsToUpdate.push('workflows'); }
-            reason = reason ? `${reason}, missing .agent/rules or .agent/workflows` : 'missing .agent/rules or .agent/workflows';
-        } else {
-            // Check if directories are empty
-            const rulesEmpty = fs.readdirSync(rulesDir).length === 0;
-            const workflowsEmpty = fs.readdirSync(workflowsDir).length === 0;
+        const rulesMissing = !fs.existsSync(rulesDir) || fs.readdirSync(rulesDir).length === 0;
+        const workflowsMissing = !fs.existsSync(workflowsDir) || fs.readdirSync(workflowsDir).length === 0;
 
-            if (rulesEmpty || workflowsEmpty) {
+        if (rulesMissing || workflowsMissing) {
+            // Only flag if sources exist
+            const canInstallRules = fs.existsSync(rulesSource);
+            const canInstallWorkflows = fs.existsSync(workflowsSource);
+
+            if ((rulesMissing && canInstallRules) || (workflowsMissing && canInstallWorkflows)) {
                 needsUpdate = true;
-                updateType = 'missing';
-                if (rulesEmpty) { itemsToUpdate.push('rules'); }
-                if (workflowsEmpty) { itemsToUpdate.push('workflows'); }
-                reason = reason ? `${reason}, empty .agent directories` : 'empty .agent directories';
+                if (updateType !== 'outdated') { updateType = 'missing'; }
+
+                if (rulesMissing && canInstallRules) { itemsToUpdate.push('rules'); }
+                if (workflowsMissing && canInstallWorkflows) { itemsToUpdate.push('workflows'); }
+
+                const newReason = 'missing/empty .agent directories';
+                reason = reason ? `${reason}, ${newReason}` : newReason;
             }
         }
     }
@@ -95,23 +102,24 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
         const rulesDir = path.join(cursorDir, 'rules');
         const commandsDir = path.join(cursorDir, 'commands');
 
-        if (!fs.existsSync(rulesDir) || !fs.existsSync(commandsDir)) {
-            needsUpdate = true;
-            updateType = 'missing';
-            if (!fs.existsSync(rulesDir)) { itemsToUpdate.push('rules'); }
-            if (!fs.existsSync(commandsDir)) { itemsToUpdate.push('commands'); }
-            reason = reason ? `${reason}, missing .cursor/rules or .cursor/commands` : 'missing .cursor/rules or .cursor/commands';
-        } else {
-            // Check if directories are empty
-            const rulesEmpty = fs.readdirSync(rulesDir).length === 0;
-            const workflowsEmpty = fs.readdirSync(commandsDir).length === 0;
+        const rulesMissing = !fs.existsSync(rulesDir) || fs.readdirSync(rulesDir).length === 0;
+        const workflowsMissing = !fs.existsSync(commandsDir) || fs.readdirSync(commandsDir).length === 0;
 
-            if (rulesEmpty || workflowsEmpty) {
+        if (rulesMissing || workflowsMissing) {
+            // Only flag if sources exist
+            const canInstallRules = fs.existsSync(rulesSource);
+            // Workflows source maps to commands in Cursor
+            const canInstallWorkflows = fs.existsSync(workflowsSource);
+
+            if ((rulesMissing && canInstallRules) || (workflowsMissing && canInstallWorkflows)) {
                 needsUpdate = true;
-                updateType = 'missing';
-                if (rulesEmpty) { itemsToUpdate.push('rules'); }
-                if (workflowsEmpty) { itemsToUpdate.push('commands'); }
-                reason = reason ? `${reason}, empty .cursor directories` : 'empty .cursor directories';
+                if (updateType !== 'outdated') { updateType = 'missing'; }
+
+                if (rulesMissing && canInstallRules) { itemsToUpdate.push('rules'); }
+                if (workflowsMissing && canInstallWorkflows) { itemsToUpdate.push('commands'); }
+
+                const newReason = 'missing/empty .cursor directories';
+                reason = reason ? `${reason}, ${newReason}` : newReason;
             }
         }
     }
