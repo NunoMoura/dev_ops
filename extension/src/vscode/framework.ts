@@ -48,6 +48,13 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
         }
     }
 
+    // Critical Check: If .dev_ops exists but NO version.json and NO board.json,
+    // assume it's a partial/failed install or empty folder and DO NOT Prompt for missing components.
+    // Let the user run "Initialize" manually or via Onboarding.
+    if (isDevOpsProject && !projectVersion && !fs.existsSync(boardPath)) {
+        return;
+    }
+
     // Only prompt for version update if version.json exists AND versions differ
     // (Projects without version.json will go through the 'missing components' flow instead)
     if (projectVersion !== null && bundledVersion !== projectVersion) {
