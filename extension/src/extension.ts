@@ -152,6 +152,14 @@ export async function activate(context: vscode.ExtensionContext) {
           silent: false
         });
 
+        // If user selected Greenfield or Brownfield, automatically bootstrap tasks
+        if (result.projectType === 'greenfield' || result.projectType === 'brownfield') {
+          // Delay slightly to ensure file watcher catches up?
+          // devops.bootstrap handles its own progress UI
+          log('[Onboarding] Triggering automatic bootstrap...');
+          await vscode.commands.executeCommand('devops.bootstrap');
+        }
+
         // Refresh views after initialization
         services.dashboard.refresh();
       } else if (result.projectType === 'skip') {
