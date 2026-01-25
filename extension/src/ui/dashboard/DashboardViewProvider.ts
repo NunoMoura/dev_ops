@@ -19,8 +19,8 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
   public readonly onDidComplete = this._onDidComplete.event;
 
   private _isBoardOpen = false;
+
   private _groupingMode: 'status' | 'phase' | 'priority' | 'owner' = 'phase';
-  private _bootstrapDismissed = false;
 
   constructor(private readonly _extensionUri: vscode.Uri) { }
 
@@ -75,12 +75,6 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
         vscode.commands.executeCommand('devops.openBoard');
       } else if (message.type === 'restartSetup') {
         vscode.commands.executeCommand('devops.onboard');
-      } else if (message.type === 'checkBootstrap') {
-        this._bootstrapDismissed = true; // Allow user to proceed even if check fails
-        this._updateContent();
-        vscode.commands.executeCommand('devops.openBoard');
-      } else if (message.type === 'runBootstrap') {
-        vscode.commands.executeCommand('devops.bootstrap');
       } else if (message.type === 'setGrouping') {
         this._groupingMode = message.mode;
         this._updateContent();
@@ -134,8 +128,6 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       this._view.webview.html = this._getSetupInProgressHtml();
     } else if (state.needsBoardInit) {
       this._view.webview.html = this._getGettingStartedHtml();
-    } else if (state.needsBootstrap) {
-      this._view.webview.html = this._getBootstrapRequiredHtml();
     } else {
       this._view.webview.html = await this._getDashboardHtml();
     }
@@ -144,10 +136,10 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
   /**
    * Get detailed onboarding state to show adaptive form.
    */
-  private async _getOnboardingState(): Promise<{ needsDeveloperName: boolean, needsBoardInit: boolean, needsBootstrap: boolean }> {
+  private async _getOnboardingState(): Promise<{ needsDeveloperName: boolean, needsBoardInit: boolean }> {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders || workspaceFolders.length === 0) {
-      return { needsDeveloperName: true, needsBoardInit: true, needsBootstrap: false };
+      return { needsDeveloperName: true, needsBoardInit: true };
     }
 
     const workspaceRoot = workspaceFolders[0].uri.fsPath;
@@ -190,96 +182,13 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       detectedIDE = 'antigravity';
     }
 
-    // Check if needs bootstrap (board empty and not fresh start)
-    // Only verify strictly if not dismissed by user
-    let needsBootstrap = false;
-    let isFresh = false;
-
-    if (fs.existsSync(configPath)) {
-      try {
-
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-        if (config.projectType === 'fresh' || config.projectType === 'skip') {
-          isFresh = true;
-        }
-      } catch { /* Ignore */ }
-    }
-
-    if (boardExists && !isFresh && !this._bootstrapDismissed) {
-      try {
-        const boardContent = fs.readFileSync(boardPath, 'utf-8');
-        const board = JSON.parse(boardContent);
-        if (board.items && board.items.length === 0) {
-          needsBootstrap = true;
-        }
-      } catch { /* ignore */ }
-    }
-
     return {
       needsDeveloperName: !savedName,
-      needsBoardInit: !boardExists,
-      needsBootstrap
+      needsBoardInit: !boardExists
     };
   }
 
-  private _getBootstrapRequiredHtml(): string {
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: var(--vscode-font-family);
-      font-size: var(--vscode-font-size);
-      color: var(--vscode-foreground);
-      background: var(--vscode-sideBar-background);
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      text-align: center;
-    }
-    .icon { font-size: 48px; margin-bottom: 16px; }
-    h2 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
-    p { font-size: 13px; opacity: 0.8; margin-bottom: 24px; line-height: 1.4; }
-    button {
-      padding: 8px 16px;
-      background: var(--vscode-button-background);
-      color: var(--vscode-button-foreground);
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-family: var(--vscode-font-family);
-      font-size: 13px;
-    }
-    button:hover { opacity: 0.9; }
-    .code {
-        font-family: var(--vscode-editor-font-family);
-        background: var(--vscode-textCodeBlock-background);
-        padding: 2px 4px;
-        border-radius: 3px;
-        font-size: 0.9em;
-    }
-  </style>
-</head>
-<body>
-  <div class="icon"><img src="${this._getLogoUri()}" alt="DevOps Logo" style="width: 64px; height: 64px;"></div>
-  <h2>Bootstrap Required</h2>
-  <p>Your project environment is ready.<br>Please open the AI Chat and run <span class="code">/bootstrap</span> to generate your task backlog and rules.</p>
-  <button onclick="checkBootstrap()">Continue</button>
-  <script>
-    const vscode = acquireVsCodeApi();
-    function checkBootstrap() {
-      vscode.postMessage({ type: 'checkBootstrap' });
-    }
-  </script>
-</body>
-</html>`;
-  }
+
 
   /**
    * Check if workspace has existing source code (not just config files).

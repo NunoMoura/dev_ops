@@ -214,8 +214,8 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
             let successMessage: string;
             let actionButton: string;
             if (isFirstInstall) {
-                successMessage = `✅ DevOps Framework Installed!\n\n📌 NEXT STEP: Run /bootstrap in your AI chat to analyze your project and generate custom rules.\n\nThis will detect your stack and create tailored guidelines for your codebase.`;
-                actionButton = 'Open Chat';
+                successMessage = `✅ DevOps Framework Installed!\n\n📌 NEXT STEP: Open the DevOps Board to claim your first task.\n\nWe have analyzed your project and created a custom backlog for you.`;
+                actionButton = 'Open Board';
             } else {
                 successMessage = `✅ DevOps Framework Updated!\n\nScripts and workflows updated to v${bundledVersion}.\nYour customized rules were preserved.`;
                 actionButton = 'Open Board';
@@ -226,11 +226,11 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
                 actionButton
             );
 
-            if (successAction === 'Open Chat') {
-                // Open the AI chat panel (works for both Antigravity and Cursor)
-                vscode.commands.executeCommand('workbench.action.chat.open');
-            } else if (successAction === 'Open Board') {
+            if (successAction === 'Open Board') {
                 vscode.commands.executeCommand('devops.openBoard');
+            } else if (successAction === 'Open Chat') {
+                // Legacy support just in case
+                vscode.commands.executeCommand('workbench.action.chat.open');
             }
         }
     } else {
@@ -280,12 +280,11 @@ function checkForUncustomizedRules(workspaceRoot: string): void {
         if (needsBootstrap) {
             log(`Detected ${uncustomizedCount} uncustomized rule files.`);
             vscode.window.showWarningMessage(
-                '⚠️ Project rules need customization. Run /bootstrap to generate project-specific rules.',
-                'Run Customization'
+                '⚠️ Project rules need customization. Please check your DevOps Board for configuration tasks.',
+                'Open Board'
             ).then(selection => {
-                if (selection === 'Run Customization') {
-                    // Open Chat and ideally suggest the command
-                    vscode.commands.executeCommand('workbench.action.chat.open');
+                if (selection === 'Open Board') {
+                    vscode.commands.executeCommand('devops.openBoard');
                 }
             });
         }

@@ -137,27 +137,7 @@ program
         console.log(JSON.stringify(detection, null, 2));
     });
 
-program
-    .command('bootstrap')
-    .description('Analyze codebase and create foundation tasks')
-    .action(async () => {
-        // Determine where templates are. In installed project, they are in .dev_ops/templates
-        // We need to override the template path logic.
-        // Since I can't easily change CoreBootstrapService signature extensively without breaking tests/extension...
-        // Actually I CAN change it, I just refactored it.
 
-        // For now I'll use a subclass or just pass a path that works if I tweak CoreBootstrapService slightly.
-        // Let's assume I modify CoreBootstrapService to look for templates in `.dev_ops/templates` as a fallback or primary?
-
-        // Actually, let's pass the project root as extensionPath for now and I will update CoreBootstrapService to handle it.
-        const templateRoot = path.join(cwd, '.dev_ops');
-        const service = new CoreBootstrapService(workspace, taskService, cwd, templateRoot);
-        // Override generateRules logic? No.
-        // I will verify template resolution in CoreBootstrapService.
-
-        await service.bootstrap(new ConsoleProgress());
-        console.log('✅ Project bootstrapped successfully!');
-    });
 
 program
     .command('create-task')

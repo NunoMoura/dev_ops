@@ -11,6 +11,8 @@ import * as path from 'path';
 import { log, error as logError } from '../../core';
 import { ProjectAuditService } from '../../core/services/projectAuditService';
 import { IWorkspace } from '../../core/types';
+import { CoreTaskService } from '../../core/services/taskService';
+import { CoreBootstrapService } from '../../core/services/bootstrap';
 import fg from 'fast-glob';
 
 // Framework version from package.json
@@ -510,7 +512,7 @@ export async function install(
     const skippedCount = allSkippedFiles.length;
     const message = wasUpgrade
         ? `Upgraded from ${installedVersion} to ${FRAMEWORK_VERSION}. Updated ${updatedCount} files.`
-        : `DevOps framework installed. Updated ${updatedCount} files, skipped ${skippedCount} unchanged.`;
+        : `DevOps framework installed. Open the DevOps Board to claim your first task.`;
 
     // -------------------------------------------------------------------------
     // Run Bootstrapping Detection (Context Capture)
@@ -526,19 +528,17 @@ export async function install(
         const auditService = new ProjectAuditService(workspace);
         const detectionContext = await auditService.audit();
 
-        // 3. Save to .dev_ops/.tmp/context.json
-        const tmpDir = path.join(devOpsDir, '.tmp');
-        if (!fs.existsSync(tmpDir)) {
-            fs.mkdirSync(tmpDir, { recursive: true });
-        }
+        // 3. Create Bootstrap Tasks directly
+        log('[installer] Creating bootstrap tasks...');
+        const taskService = new CoreTaskService(workspace);
+        const bootstrapService = new CoreBootstrapService(workspace, taskService, extensionPath);
 
-        const contextPath = path.join(tmpDir, 'context.json');
-        fs.writeFileSync(contextPath, JSON.stringify(detectionContext, null, 2));
-        log(`[installer] Context saved to ${contextPath}`);
+        await bootstrapService.createBootstrapTasks(detectionContext);
+        log('[installer] Bootstrap tasks created.');
 
     } catch (error) {
-        logError('[installer] Failed to run detection', error);
-        // We don't fail the install, just log it. Bootstrap will fallback to fresh detection.
+        logError('[installer] Failed to run detection/bootstrap', error);
+        // We don't fail the install, just log it. 
     }
 
     return {
