@@ -1,6 +1,6 @@
 import * as path from 'path';
-import { IWorkspace, IProgress } from '../types';
-import { CoreTaskService } from './taskService';
+import { IWorkspace, IProgress } from '../../common/types';
+import { CoreTaskService } from '../tasks/taskService';
 import { ProjectContext, StackItem, DocStatus, TestStatus } from './projectAuditService';
 
 // Global mapping from project_ops.py (Move this to shared constant if needed, or keeping it here if used by createBootstrapTasks if detecting specs manually - actually specs come from context now)

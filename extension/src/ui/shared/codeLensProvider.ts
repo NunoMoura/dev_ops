@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { boardService } from '../../data';
-import type { Task } from '../../core';
+import type { Task } from '../../common';
 
 /**
  * CodeLens provider for DevOps task references.

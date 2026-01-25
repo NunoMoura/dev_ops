@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert';
-import { Board, Task } from '../core';
+import { Board, Task } from '../common';
 
 // Testing statusBar logic patterns
 // The actual functions require VS Code APIs,

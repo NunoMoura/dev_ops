@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { TaskEditorProvider } from './ui/tasks';
 import { registerInitializeCommand } from './vscode/commands/initializeCommand';
 import { registerBoardWatchers } from './data';
-import { formatError, log, warn, error as logError } from './core';
+import { formatError, log, warn, error as logError } from './common';
 import { SessionBridge } from './integrations/sessionBridge';
 import { CursorBridge } from './integrations/cursorBridge';
 import { AgentManager, registerAgentManager, AntigravityAdapter, CursorAdapter } from './services/agents';

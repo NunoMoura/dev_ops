@@ -1,4 +1,4 @@
-import { Column, Task, Board, COLUMN_FALLBACK_NAME } from '../../core';
+import { Column, Task, Board, COLUMN_FALLBACK_NAME } from '../../common';
 
 export function compareTasks(a: Task, b: Task): number {
   // Sort by column rank (In Progress first, then Backlog, etc.)

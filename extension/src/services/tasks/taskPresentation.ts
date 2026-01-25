@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { TaskDetailsPayload } from '../../ui/tasks';
-import { Task, COLUMN_FALLBACK_NAME } from '../../core';
+import { Task, COLUMN_FALLBACK_NAME } from '../../common';
 import { isDefined } from '../../services/tasks/taskUtils';
 
 export function buildTaskDescription(task: Task): string | undefined {

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { readBoard, writeBoard, getBoardPath } from '../../data';
-import { Task, ChecklistItem, COLUMN_FALLBACK_NAME, TaskStatus } from '../../core';
+import { Task, ChecklistItem, COLUMN_FALLBACK_NAME, TaskStatus } from '../../common';
 import { getFontLink, getSharedStyles, getCSPMeta } from '../shared/styles';
 import { handleCardUpdateMessage, handleCardDeleteMessage } from '../../vscode/commands/sharedHandlers';
 import { BoardTreeProvider } from '../board';

@@ -6,7 +6,7 @@ import {
     buildCardPayload,
     buildCodexPrompt,
 } from '../services/tasks';
-import { Task } from '../core';
+import { Task } from '../common';
 
 // Helper to create a minimal task
 function createTask(overrides?: Partial<Task>): Task {

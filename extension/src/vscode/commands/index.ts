@@ -26,7 +26,7 @@ import { registerDevOpsCommand } from './utils';
 import { readBoard, writeBoard, getWorkspaceRoot } from '../../data';
 import type { BoardTreeProvider, BoardNode } from '../../ui/board';
 import type { DevOpsCommandServices } from './types';
-import { DEFAULT_COLUMN_NAME, COLUMN_FALLBACK_NAME } from '../../core';
+import { DEFAULT_COLUMN_NAME, COLUMN_FALLBACK_NAME } from '../../common';
 import {
   ensurePlanDirectory,
   listPlanFiles,

@@ -8,11 +8,11 @@
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
-import { log, error as logError } from '../../core';
-import { ProjectAuditService } from '../../core/services/projectAuditService';
-import { IWorkspace } from '../../core/types';
-import { CoreTaskService } from '../../core/services/taskService';
-import { CoreBootstrapService } from '../../core/services/bootstrap';
+import { log, error as logError } from '../../common';
+import { ProjectAuditService } from '../../services/setup/projectAuditService';
+import { IWorkspace } from '../../common/types';
+import { CoreTaskService } from '../../services/tasks/taskService';
+import { CoreBootstrapService } from '../../services/setup/bootstrap';
 import fg from 'fast-glob';
 
 // Framework version from package.json

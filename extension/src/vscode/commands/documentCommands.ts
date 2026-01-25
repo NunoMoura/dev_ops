@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { registerDevOpsCommand } from './utils';
 import { getWorkspaceRoot } from '../../data';
-import { CoreScopeService } from '../../core/services/scopeService';
-import { IWorkspace } from '../../core/types';
+import { CoreScopeService } from '../../services/core/scopeService';
+import { IWorkspace } from '../../common/types';
 import * as fs from 'fs';
 import * as path from 'path';
 

@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { BoardService, IBoardStore } from '../data/boardRepository';
-import { Board, Task } from '../core';
+import { Board, Task } from '../common';
 
 suite('BoardService', () => {
     let mockStore: IBoardStore;

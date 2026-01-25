@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { Board, Column, Task, COLUMN_FALLBACK_NAME } from '../../core';
+import { Board, Column, Task, COLUMN_FALLBACK_NAME } from '../../common';
 import { readBoard, writeBoard, getWorkspaceRoot } from '../../data';
 import { compareNumbers, compareTasks, isDefined } from '../../services/tasks/taskUtils';
-import { formatError } from '../../core';
+import { formatError } from '../../common';
 import { buildTaskDescription } from './taskPresentation';
 
 export type MoveTasksResult = { movedTaskIds: string[]; columnName: string };

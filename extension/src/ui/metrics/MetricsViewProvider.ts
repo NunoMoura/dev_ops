@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { readBoard } from '../../data';
-import { Board } from '../../core';
+import { Board } from '../../common';
 import { getFontLink, getSharedStyles, getCSPMeta } from '../shared/styles';
 
 export class MetricsViewProvider implements vscode.WebviewViewProvider {

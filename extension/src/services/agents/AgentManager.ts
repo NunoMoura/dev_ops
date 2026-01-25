@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { AgentAdapter, TaskContext } from './AgentAdapter';
-import { log, error as logError } from '../../core';
+import { log, error as logError } from '../../common';
 import { detectAgentEnvironment } from '../../integrations/environment';
 import { boardService } from '../../data';
 

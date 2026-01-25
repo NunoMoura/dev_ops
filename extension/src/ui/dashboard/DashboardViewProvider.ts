@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Board, Task } from '../../core';
+import { Board, Task } from '../../common';
 import { readBoard } from '../../data';
-import { log } from '../../core';
+import { log } from '../../common';
 
 /**
  * Dashboard webview that shows:

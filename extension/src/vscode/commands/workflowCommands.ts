@@ -3,6 +3,7 @@ import type { BoardTreeProvider, BoardNode } from '../../ui/board';
 import type { DevOpsCommandServices } from './types';
 import { registerDevOpsCommand, getTaskFromNode } from './utils';
 import { readBoard, getWorkspaceRoot, boardService } from '../../data';
+import { formatError } from '../../common';
 import { promptForTask } from '../../services/tasks';
 
 /**

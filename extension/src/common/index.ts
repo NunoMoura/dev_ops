@@ -1,7 +1,7 @@
 /**
- * Core module - Domain types and infrastructure
+ * Common module - Domain types and infrastructure
  * 
- * This barrel export provides convenient access to core domain types,
+ * This barrel export provides convenient access to common domain types,
  * error utilities, and logging functionality.
  */
 

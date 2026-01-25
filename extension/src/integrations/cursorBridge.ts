@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { log, error as logError } from '../core';
+import { log, error as logError } from '../common';
 
 /**
  * Integration with Cursor Background Tasks.

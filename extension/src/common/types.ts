@@ -1,14 +1,14 @@
 /**
  * DevOps Board Types
  *
- * Core types for the Board board, aligned with DevOps Framework terminology.
+ * Foundational types for the Board board, aligned with DevOps Framework terminology.
  * - Column = Board column (status-based)
  * - Task = Work item on the board (TASK-XXX)
  * - Board = Collection of columns and tasks
  */
 
 // ============================================================================
-// Core Types
+// Domain Types
 // ============================================================================
 
 export type Column = {

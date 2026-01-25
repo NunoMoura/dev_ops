@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { getFontLink, getSharedStyles, getCSPMeta } from '../shared/styles';
-import { Board } from '../../core';
+import { Board } from '../../common';
 import { readTaskContext, writeTaskContext, boardService } from '../../data';
 
 export type BoardViewColumn = {

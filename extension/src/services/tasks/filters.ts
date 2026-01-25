@@ -1,4 +1,4 @@
-import { Column, Task, FilterState, TaskFilter, FilterToken, COLUMN_FALLBACK_NAME, TaskStatus } from '../../core';
+import { Column, Task, FilterState, TaskFilter, FilterToken, COLUMN_FALLBACK_NAME, TaskStatus } from '../../common';
 import { isDefined } from '../../services/tasks/taskUtils';
 
 export function parseTaskFilter(raw?: string): TaskFilter | undefined {

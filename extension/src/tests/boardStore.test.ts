@@ -1,6 +1,6 @@
 import { strict as assert } from 'assert';
 import { createEmptyBoard, createDefaultColumns } from '../data';
-import { DEFAULT_COLUMN_BLUEPRINTS } from '../core';
+import { DEFAULT_COLUMN_BLUEPRINTS } from '../common';
 
 // Note: Most boardStore functions require mocking fs and vscode.workspace
 // We test the pure functions here and document integration patterns.

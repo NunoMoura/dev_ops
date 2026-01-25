@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { Board, Task, Column, DEFAULT_COLUMN_BLUEPRINTS, IWorkspace, IProgress } from '../types';
+import { Board, Task, Column, DEFAULT_COLUMN_BLUEPRINTS, IWorkspace, IProgress } from '../../common/types';
 
 export class CoreTaskService {
     constructor(protected workspace: IWorkspace) { }

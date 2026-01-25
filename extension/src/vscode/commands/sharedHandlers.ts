@@ -3,7 +3,7 @@ import type { BoardTreeProvider } from '../../ui/board';
 import type { TaskDetailsPayload } from '../../ui/tasks';
 import type { MoveTasksRequest } from './types';
 import { readBoard, writeBoard, getWorkspaceRoot, boardService } from '../../data';
-import { formatError, COLUMN_FALLBACK_NAME } from '../../core';
+import { formatError, COLUMN_FALLBACK_NAME } from '../../common';
 import { moveTasksToColumn } from '../../services/tasks';
 import { parseTags } from '../../services/tasks/taskUtils';
 

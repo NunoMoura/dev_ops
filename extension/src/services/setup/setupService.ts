@@ -2,7 +2,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { log, warn, formatError } from '../../core';
+import { log, warn, formatError } from '../../common';
 import { createTask } from '../../vscode/commands/taskCommands';
 import { readBoard } from '../../data/boardStore';
 

@@ -1,4 +1,4 @@
-import { Board, Task, Column, TaskOwner, TaskStatus } from '../core';
+import { Board, Task, Column, TaskOwner, TaskStatus } from '../common';
 import { readBoard, writeBoard, saveTask, getBoardPath, readCurrentTask, writeCurrentTask, clearCurrentTask, archiveTaskFile } from './boardStore';
 import { createTaskId, compareTasks } from '../services/tasks/taskUtils';
 

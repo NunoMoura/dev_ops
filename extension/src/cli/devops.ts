@@ -3,12 +3,12 @@ import * as fs from 'fs/promises';
 import { existsSync } from 'fs';
 import * as path from 'path';
 import fg from 'fast-glob';
-import { CoreBootstrapService } from '../core/services/bootstrap';
-import { CoreTaskService } from '../core/services/taskService';
-import { CoreScopeService } from '../core/services/scopeService';
-import { ProjectAuditService } from '../core/services/projectAuditService';
+import { CoreBootstrapService } from '../services/setup/bootstrap';
+import { CoreTaskService } from '../services/tasks/taskService';
+import { CoreScopeService } from '../services/core/scopeService';
+import { ProjectAuditService } from '../services/setup/projectAuditService';
 
-import { IWorkspace, IProgress } from '../core/types';
+import { IWorkspace, IProgress } from '../common/types';
 
 class NodeWorkspace implements IWorkspace {
     constructor(public root: string) { }

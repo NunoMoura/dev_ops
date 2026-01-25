@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { log, error as logError } from "../../core";
+import { log, error as logError } from "../../common";
 import { install, InstallerOptions } from "../services/installer";
 import { SetupService } from "../../services/setup/setupService";
 

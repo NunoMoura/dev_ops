@@ -5,8 +5,8 @@ import type { DevOpsCommandServices } from './types';
 import { registerDevOpsCommand, getTaskFromNode } from './utils';
 import { handleCardDeleteMessage } from './sharedHandlers';
 import { readBoard, writeBoard, saveTask, getWorkspaceRoot, boardService } from '../../data';
-import type { Task, Column } from '../../core';
-import { COLUMN_FALLBACK_NAME, DEFAULT_COLUMN_NAME, formatError } from '../../core';
+import type { Task, Column } from '../../common';
+import { COLUMN_FALLBACK_NAME, DEFAULT_COLUMN_NAME, formatError } from '../../common';
 import { compareTasks, isDefined, createTaskId } from '../../services/tasks/taskUtils';
 import {
     ensurePlanDirectory,

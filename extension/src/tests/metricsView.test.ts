@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert';
-import { Board, Task } from '../core';
+import { Board, Task } from '../common';
 
 // Testing metricsView logic patterns
 // The actual provider requires VS Code webview APIs,

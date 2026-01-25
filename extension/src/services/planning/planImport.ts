@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { Board, Task, Column } from '../../core';
+import { Board, Task, Column } from '../../common';
 import {
   ImportedTask,
   ParsedPlan,
@@ -9,7 +9,7 @@ import {
   ChecklistItem,
   COLUMN_FALLBACK_NAME,
   PLAN_EXTENSIONS,
-} from '../../core';
+} from '../../common';
 import { readBoard, writeBoard, getWorkspaceRoot } from '../../data';
 import {
   appendParagraph,
