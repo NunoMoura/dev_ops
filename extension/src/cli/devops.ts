@@ -76,11 +76,11 @@ program
     .option('--id <id>', 'Task ID (e.g. TASK-123)')
     .option('--column <column>', 'Target column ID', 'col-in-progress')
     .action(async (options) => {
-        // For basic agent flow: /claim usually moves to "Understand" or "Plan" depending on phase?
-        // Actually /claim workflow often claims the "Next" task.
-
-        await taskService.moveTask(options.id, options.column);
-        console.log(`Claimed Task: ${options.id} -> ${options.column}`);
+        if (options.column) {
+            await taskService.moveTask(options.id, options.column);
+        }
+        await taskService.claimTask(options.id, 'agent-session', 'Agent');
+        console.log(`Claimed Task: ${options.id}`);
     });
 
 program

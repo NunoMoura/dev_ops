@@ -156,13 +156,68 @@ export class CoreTaskService {
         await this.writeBoard(board);
         await this.saveTask(task);
     }
+
+    private async readConfig(): Promise<any> {
+        const configPath = path.join(this.workspace.root, '.dev_ops', 'config.json');
+        if (await this.workspace.exists(configPath)) {
+            try {
+                const content = await this.workspace.readFile(configPath);
+                return JSON.parse(content);
+            } catch (e) {
+                return {};
+            }
+        }
+        return {};
+    }
+
+    public async claimTask(taskId: string, ownerId: string, ownerName: string): Promise<void> {
+        const board = await this.readBoard();
+        const task = board.items.find(t => t.id === taskId);
+        if (!task) {
+            throw new Error(`Task ${taskId} not found`);
+        }
+
+        const column = board.columns.find(c => c.id === task.columnId);
+        const phase = column?.name || 'Unknown';
+
+        // Read config for developer info
+        let finalOwnerName = ownerName;
+        let developerName: string | undefined;
+
+        try {
+            const config = await this.readConfig();
+            if (config.developer && config.developer.name) {
+                developerName = config.developer.name;
+                // If the provided owner name is generic 'Agent' or 'agent-session' (from CLI default),
+                // use the developer name from config.
+                if (ownerName === 'Agent' || ownerName === 'agent-session') {
+                    finalOwnerName = developerName as string;
+                }
+            }
+        } catch (e) {
+            // Ignore config read errors
+        }
+
+        task.owner = {
+            id: ownerId,
+            name: finalOwnerName,
+            type: 'agent',
+            phase: phase,
+            startedAt: new Date().toISOString(),
+            developer: developerName
+        };
+        task.status = 'in_progress';
+        task.updatedAt = new Date().toISOString();
+
+        await this.writeBoard(board);
+        await this.saveTask(task);
+    }
+
     public async getCurrentTask(): Promise<string | null> {
         // In the CLI context, we can read .current_task from the workspace root
         // This file is usually managed by the agent or the extension.
-        const taskPath = path.join(this.workspace.root, '.dev_ops', '.current_task'); // Hidden file? Or .current_task in root?
-        // Extension usually writes to .dev_ops/context/current_task.json or similar?
+        const taskPath = path.join(this.workspace.root, '.dev_ops', '.current_task');
         // Let's assume a simple file for now or check extension logic.
-        // Actually, let's look at BoardService in extension...
         // BoardService uses `context/activeTask.json`.
 
         // For now, let's just return null or read a standard location if we define one.
