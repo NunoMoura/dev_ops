@@ -512,7 +512,21 @@ export async function install(
     const skippedCount = allSkippedFiles.length;
     const message = wasUpgrade
         ? `Upgraded from ${installedVersion} to ${FRAMEWORK_VERSION}. Updated ${updatedCount} files.`
-        : `DevOps framework installed. Open the DevOps Board to claim your first task.`;
+        : `Welcome to the DevOps Framework! 🚀
+
+The framework has been successfully initialized in your project.
+
+Getting Started:
+1. Open the DevOps Board (Command Palette > "DevOps: Open Board").
+2. Claim a task from the Backlog.
+3. Use the agents (e.g. @devops) to help you complete the task!
+
+Available CLI Commands:
+- devops claim-task --id <task-id>
+- devops create-task --title "Task Title"
+- devops move-task --id <task-id> --column <column-id>
+
+Your environment is now ready for agentic workflow.`;
 
     // -------------------------------------------------------------------------
     // Run Bootstrapping Detection (Context Capture)

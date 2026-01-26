@@ -37,7 +37,8 @@ export class CoreTaskService {
             try {
                 // Note: workspace.findFiles behavior depends on implementation (glob vs recursive).
                 // NodeWorkspace (used by CLI) uses fast-glob.
-                const files = await this.workspace.findFiles('tasks/*.json', null);
+                // Fix: Search in correct directory .dev_ops/tasks/
+                const files = await this.workspace.findFiles('.dev_ops/tasks/*.json', null);
                 // But wait, findFiles returns absolute paths or relative?
                 // NodeWorkspace.findFiles in devops.ts uses absolute:true.
                 // So we get absolute paths.
@@ -153,6 +154,7 @@ export class CoreTaskService {
         task.updatedAt = new Date().toISOString();
 
         await this.writeBoard(board);
+        await this.saveTask(task);
     }
     public async getCurrentTask(): Promise<string | null> {
         // In the CLI context, we can read .current_task from the workspace root

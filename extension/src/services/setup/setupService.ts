@@ -33,7 +33,6 @@ interface StackItem {
     template: string;  // e.g., 'templates/rules/languages.md'
     replacements: Record<string, string>;
     version?: string;
-    globs?: string[];
 }
 
 interface DocStatus {
@@ -53,31 +52,7 @@ interface TestStatus {
 }
 
 // Global mapping from project_ops.py
-const GLOB_MAPPINGS: Record<string, string[]> = {
-    "python": ["**/*.py"],
-    "typescript": ["**/*.ts", "**/*.tsx"],
-    "javascript": ["**/*.js", "**/*.jsx"],
-    "go": ["**/*.go"],
-    "rust": ["**/*.rs"],
-    "java": ["**/*.java"],
-    "cpp": ["**/*.cpp", "**/*.cc", "**/*.h", "**/*.hpp"],
-    "svelte": ["**/*.svelte"],
-    "vue": ["**/*.vue"],
-    "react": ["**/*.jsx", "**/*.tsx"],
-    "fastapi": ["**/routers/*.py", "**/routes.py", "**/main.py"],
-    "django": ["**/models.py", "**/views.py", "**/admin.py", "**/apps.py"],
-    "flask": ["**/app.py", "**/views.py"],
-    "sqlalchemy": ["**/models.py", "**/models/*.py"],
-    "pydantic": ["**/schemas.py", "**/schemas/*.py"],
-    "postgresql": ["**/migrations/**", "**/*.sql"],
-    "mysql": ["**/*.sql"],
-    "mongodb": ["mongod.conf"],
-    "redis": ["redis.conf"],
-    "sqlite": ["**/*.db", "**/*.sqlite", "**/*.sqlite3"],
-};
 
-// Global exclusion list for cleaner scaffolding
-// Global exclusion list removed (logic moved to installer)
 
 export class SetupService {
     private extensionPath: string;
@@ -150,8 +125,7 @@ export class SetupService {
                         '[Language Name]': this.capitalize(lang.name),
                         '[Language]': this.capitalize(lang.name),
                         '[extension]': lang.ext
-                    },
-                    globs: GLOB_MAPPINGS[lang.name]
+                    }
                 });
             }
         }
@@ -196,8 +170,7 @@ export class SetupService {
                     template: 'templates/rules/libraries.md',
                     replacements: {
                         '[Library Name]': this.capitalize(lib.name)
-                    },
-                    globs: GLOB_MAPPINGS[lib.name]
+                    }
                 });
             }
         }
@@ -313,34 +286,7 @@ export class SetupService {
         return s.charAt(0).toUpperCase() + s.slice(1);
     }
 
-    private convertToCursorFormat(content: string, globs?: string[]): string {
-        // Basic frontmatter conversion logic similar to installer.ts
-        // For brevity/robustness, we might want to re-use installer logic or keep it simple
-        const lines = content.split('\n');
-        const newLines: string[] = [];
-        let inFrontmatter = false;
 
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            if (line.trim() === '---') {
-                if (!inFrontmatter) {
-                    inFrontmatter = true;
-                    newLines.push('---');
-                    newLines.push(`description: Generated rule for ${globs ? globs.join(', ') : 'project'}`);
-                    if (globs) { newLines.push(`globs: ${globs.join(', ')}`); }
-                } else {
-                    inFrontmatter = false;
-                    newLines.push('---');
-                }
-            } else if (inFrontmatter) {
-                // Skip original frontmatter to avoid duplication/confusion if needed, 
-                // or just pass through. Cursor MDC format is specific.
-            } else {
-                newLines.push(line);
-            }
-        }
-        return newLines.join('\n');
-    }
     // --- Task Creation ---
 
     public async createBootstrapTasks(projectRoot: string, detection: DetectResult): Promise<void> {

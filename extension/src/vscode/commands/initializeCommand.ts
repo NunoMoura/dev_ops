@@ -105,6 +105,7 @@ export function registerInitializeCommand(
         // Function to run installation for each selected IDE
         const runInstall = async () => {
             let totalRules = 0, totalWorkflows = 0, totalSkills = 0;
+            let resultMessage = "";
 
             for (const ide of selectedIDEs) {
                 const installerOptions: InstallerOptions = {
@@ -121,6 +122,7 @@ export function registerInitializeCommand(
                     throw new Error(result.message);
                 }
 
+                resultMessage = result.message;
                 totalRules += result.rulesInstalled;
                 totalWorkflows += result.workflowsInstalled;
                 totalSkills += result.skillsInstalled;
@@ -130,7 +132,7 @@ export function registerInitializeCommand(
 
             log(`[initialize] Total installed - Rules: ${totalRules}, Workflows: ${totalWorkflows}, Skills: ${totalSkills}`);
 
-
+            return resultMessage;
         };
 
         if (silent) {
@@ -143,7 +145,7 @@ export function registerInitializeCommand(
             }
         } else {
             // Show progress while running
-            await vscode.window.withProgress(
+            const message = await vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Notification,
                     title: "DevOps: Initializing framework...",
@@ -151,14 +153,22 @@ export function registerInitializeCommand(
                 },
                 async () => {
                     try {
-                        await runInstall();
+                        return await runInstall();
                     } catch (error) {
                         vscode.window.showErrorMessage(
                             `DevOps: Initialization failed: ${error}`
                         );
+                        return null;
                     }
                 }
             );
+
+            if (message) {
+                const selection = await vscode.window.showInformationMessage("DevOps Framework Initialized", { modal: true, detail: message }, "Open Board");
+                if (selection === "Open Board") {
+                    vscode.commands.executeCommand("devops.openBoard");
+                }
+            }
         }
     });
 }

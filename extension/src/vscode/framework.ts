@@ -228,9 +228,6 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
 
             if (successAction === 'Open Board') {
                 vscode.commands.executeCommand('devops.openBoard');
-            } else if (successAction === 'Open Chat') {
-                // Legacy support just in case
-                vscode.commands.executeCommand('workbench.action.chat.open');
             }
         }
     } else {

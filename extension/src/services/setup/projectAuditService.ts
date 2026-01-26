@@ -14,7 +14,7 @@ export interface StackItem {
     template: string;
     replacements: Record<string, string>;
     version?: string;
-    globs?: string[];
+
 }
 
 export interface DocStatus {
@@ -33,29 +33,7 @@ export interface TestStatus {
     test_dirs: string[];
 }
 
-// Global mapping from project_ops.py
-const GLOB_MAPPINGS: Record<string, string[]> = {
-    "python": ["**/*.py"],
-    "typescript": ["**/*.ts", "**/*.tsx"],
-    "javascript": ["**/*.js", "**/*.jsx"],
-    "go": ["**/*.go"],
-    "rust": ["**/*.rs"],
-    "java": ["**/*.java"],
-    "cpp": ["**/*.cpp", "**/*.cc", "**/*.h", "**/*.hpp"],
-    "svelte": ["**/*.svelte"],
-    "vue": ["**/*.vue"],
-    "react": ["**/*.jsx", "**/*.tsx"],
-    "fastapi": ["**/routers/*.py", "**/routes.py", "**/main.py"],
-    "django": ["**/models.py", "**/views.py", "**/admin.py", "**/apps.py"],
-    "flask": ["**/app.py", "**/views.py"],
-    "sqlalchemy": ["**/models.py", "**/models/*.py"],
-    "pydantic": ["**/schemas.py", "**/schemas/*.py"],
-    "postgresql": ["**/migrations/**", "**/*.sql"],
-    "mysql": ["**/*.sql"],
-    "mongodb": ["mongod.conf"],
-    "redis": ["redis.conf"],
-    "sqlite": ["**/*.db", "**/*.sqlite", "**/*.sqlite3"],
-};
+
 
 export class ProjectAuditService {
     constructor(protected workspace: IWorkspace) { }
@@ -93,8 +71,7 @@ export class ProjectAuditService {
                         '[Language Name]': this.capitalize(lang.name),
                         '[Language]': this.capitalize(lang.name),
                         '[extension]': lang.ext
-                    },
-                    globs: GLOB_MAPPINGS[lang.name]
+                    }
                 });
             }
         }
@@ -139,8 +116,7 @@ export class ProjectAuditService {
                     template: 'templates/rules/libraries.md',
                     replacements: {
                         '[Library Name]': this.capitalize(lib.name)
-                    },
-                    globs: GLOB_MAPPINGS[lib.name]
+                    }
                 });
             }
         }

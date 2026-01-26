@@ -3,10 +3,7 @@ import { IWorkspace, IProgress } from '../../common/types';
 import { CoreTaskService } from '../tasks/taskService';
 import { ProjectContext, StackItem, DocStatus, TestStatus } from './projectAuditService';
 
-// Global mapping from project_ops.py (Move this to shared constant if needed, or keeping it here if used by createBootstrapTasks if detecting specs manually - actually specs come from context now)
-// We don't need GLOB_MAPPINGS here anymore if verify doesn't use it.
-// createBootstrapTasks doesn't use it.
-// Removed GLOB_MAPPINGS.
+
 
 export class CoreBootstrapService {
     constructor(
