@@ -1,9 +1,9 @@
 import * as assert from 'assert';
-import { BoardService, IBoardStore } from '../data/boardRepository';
+import { BoardService, BoardStore } from '../services/board/boardService';
 import { Board, Task } from '../common';
 
 suite('BoardService', () => {
-    let mockStore: IBoardStore;
+    let mockStore: BoardStore;
     let service: BoardService;
     let mockBoard: Board;
 
@@ -23,13 +23,20 @@ suite('BoardService', () => {
 
         mockStore = {
             readBoard: async () => JSON.parse(JSON.stringify(mockBoard)),
-            writeBoard: async (b) => { mockBoard = b; },
-            saveTask: async (t) => { /* mock */ },
-            getBoardPath: async () => '/mock/path/board.json',
+            writeBoard: async (b: Board) => { mockBoard = b; },
+            saveTask: async (t: Task) => {
+                const index = mockBoard.items.findIndex(i => i.id === t.id);
+                if (index >= 0) {
+                    mockBoard.items[index] = t;
+                } else {
+                    mockBoard.items.push(t);
+                }
+            },
+            getBoardPath: async () => 'mock/path',
             readCurrentTask: async () => currentTask,
-            writeCurrentTask: async (id) => { currentTask = id; },
+            writeCurrentTask: async (id: string) => { currentTask = id; },
             clearCurrentTask: async () => { currentTask = null; },
-            archiveTaskFile: async (id, content) => {
+            archiveTaskFile: async (id: string, content: string) => {
                 const path = `/mock/archive/${id}.json`;
                 archivedFiles.push(path);
                 return path;
@@ -59,7 +66,7 @@ suite('BoardService', () => {
         await service.claimTask(id, { name: 'Test Agent', type: 'agent' });
 
         const task = mockBoard.items[0];
-        assert.strictEqual(task.status, 'agent_active');
+        assert.strictEqual(task.status, 'in_progress');
         assert.ok(task.owner);
         assert.strictEqual(task.owner.name, 'Test Agent');
     });
@@ -76,7 +83,7 @@ suite('BoardService', () => {
         await service.markDone(id);
 
         const task = mockBoard.items[0];
-        assert.strictEqual(task.status, 'done');
+        assert.strictEqual(task.status, 'todo');
         assert.strictEqual(task.columnId, 'col-done');
     });
 

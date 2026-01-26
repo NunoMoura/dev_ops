@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { DevOpsExtensionServices } from './services';
-import { readBoard } from '../data';
+import { readBoard } from '../services/board/boardPersistence';
 import {
     handleBoardMoveTasks,
     handleBoardOpenTask,

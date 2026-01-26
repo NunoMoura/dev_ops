@@ -5,54 +5,12 @@ import * as path from 'path';
 import fg from 'fast-glob';
 
 import { CoreTaskService } from '../services/tasks/taskService';
-import { CoreScopeService } from '../services/core/scopeService';
+import { CoreScopeService } from '../services/analysis/scopeService';
 import { ProjectAuditService } from '../services/setup/projectAuditService';
 
-import { IWorkspace, IProgress } from '../common/types';
+import { NodeWorkspace } from '../infrastructure/nodeWorkspace';
+import { Workspace, ProgressReporter } from '../common/types';
 
-class NodeWorkspace implements IWorkspace {
-    constructor(public root: string) { }
-
-    async findFiles(pattern: string, exclude?: string | null, maxResults?: number): Promise<string[]> {
-        const ignore = exclude ? [exclude] : ['**/node_modules/**'];
-        // Ensure pattern is relative if possible, fg expects relative patterns or absolute paths
-        // We run cwd inside root for simplicity or pass cwd
-        const params: fg.Options = {
-            ignore,
-            cwd: this.root,
-            absolute: true
-        };
-
-        // fast-glob handles brace expansion, etc.
-        const entries = await fg(pattern, params);
-
-        if (maxResults && entries.length > maxResults) {
-            return entries.slice(0, maxResults);
-        }
-        return entries;
-    }
-
-    async readFile(path: string): Promise<string> {
-        return fs.readFile(path, 'utf8');
-    }
-
-    async writeFile(path: string, content: string): Promise<void> {
-        await fs.writeFile(path, content, 'utf8');
-    }
-
-    async exists(path: string): Promise<boolean> {
-        try {
-            await fs.access(path);
-            return true;
-        } catch {
-            return false;
-        }
-    }
-
-    async mkdir(path: string): Promise<void> {
-        await fs.mkdir(path, { recursive: true });
-    }
-}
 
 
 
@@ -71,12 +29,26 @@ program
 program
     .command('detect')
     .description('Detect project stack, docs, and tests (JSON output)')
-    .action(async () => {
-
-
+    .option('--scope <scope>', 'Detection scope (architecture, stack, docs, tests)')
+    .action(async (options) => {
         const auditService = new ProjectAuditService(workspace);
-        const detection = await auditService.audit();
-        console.log(JSON.stringify(detection, null, 2));
+
+        if (options.scope === 'architecture') {
+            const specs = await auditService.findSpecs();
+            console.log(JSON.stringify({ specs }, null, 2));
+        } else if (options.scope === 'stack') {
+            const stack = await auditService.detectStack();
+            console.log(JSON.stringify({ stack }, null, 2));
+        } else if (options.scope === 'docs') {
+            const docs = await auditService.detectDocs();
+            console.log(JSON.stringify({ docs }, null, 2));
+        } else if (options.scope === 'tests') {
+            const tests = await auditService.detectTests();
+            console.log(JSON.stringify({ tests }, null, 2));
+        } else {
+            const detection = await auditService.audit();
+            console.log(JSON.stringify(detection, null, 2));
+        }
     });
 
 

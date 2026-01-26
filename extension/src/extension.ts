@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import { TaskEditorProvider } from './ui/tasks';
 import { registerInitializeCommand } from './vscode/commands/initializeCommand';
-import { registerBoardWatchers } from './data';
+import { registerBoardWatchers } from './services/board/boardPersistence';
 import { formatError, log, warn, error as logError } from './common';
-import { SessionBridge } from './integrations/sessionBridge';
-import { CursorBridge } from './integrations/cursorBridge';
+import { SessionBridge } from './infrastructure/integrations/sessionBridge';
+import { CursorBridge } from './infrastructure/integrations/cursorBridge';
 import { AgentManager, registerAgentManager, AntigravityAdapter, CursorAdapter } from './services/agents';
 import { registerCodeLensProvider } from './ui/shared';
 import { registerSCMDecorations } from './vscode/scm/scmDecorator';
@@ -65,7 +65,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         // Push real-time update to Webview
         try {
-          const { readBoard } = require('./data');
+          const { readBoard } = require('./services/board/boardPersistence');
           const board = await readBoard();
           if (services.boardPanelManager.isPanelOpen()) {
             services.boardPanelManager.updateFromBoard(board);
@@ -127,7 +127,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         // Re-check onboarding state
         const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-        const { isInstalled } = require('./vscode/services/installer');
+        const { isInstalled } = require('./services/setup/frameworkInstaller');
         if (root && !isInstalled(root)) {
           // Maybe switch sidebar to onboarding?
           // Dashboard refresh() handles calling _getOnboardingState which will switch the HTML.
@@ -167,7 +167,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
       // Check if installed and run onboarding if needed
       // Note: checkAndUpdateFramework runs above, but we need to check if we need to run first-time onboarding
-      const { isInstalled } = require('./vscode/services/installer');
+      const { isInstalled } = require('./services/setup/frameworkInstaller');
       const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
       if (root && !isInstalled(root)) {

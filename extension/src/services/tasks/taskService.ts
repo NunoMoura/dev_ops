@@ -1,8 +1,8 @@
 import * as path from 'path';
-import { Board, Task, Column, DEFAULT_COLUMN_BLUEPRINTS, IWorkspace, IProgress } from '../../common/types';
+import { Board, Task, Column, DEFAULT_COLUMN_BLUEPRINTS, Workspace, ProgressReporter } from '../../common/types';
 
 export class CoreTaskService {
-    constructor(protected workspace: IWorkspace) { }
+    constructor(protected workspace: Workspace) { }
 
     protected async getBoardPath(): Promise<string> {
         return path.join(this.workspace.root, '.dev_ops', 'board.json');

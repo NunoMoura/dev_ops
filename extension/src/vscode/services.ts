@@ -4,7 +4,8 @@ import { DashboardViewProvider } from '../ui/dashboard';
 import { MetricsViewProvider } from '../ui/metrics';
 import { BoardTaskDetailsViewProvider, registerTaskDetailsView } from '../ui/tasks';
 import { StatusBarManager, createStatusBar } from '../ui/statusBar';
-import { readBoard } from '../data';
+import { readBoard } from '../services/board/boardPersistence';
+import { boardService } from '../services/board/boardService';
 import { DevOpsCommandServices } from './commands';
 
 export type DevOpsExtensionServices = DevOpsCommandServices & {

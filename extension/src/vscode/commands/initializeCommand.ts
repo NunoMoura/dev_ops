@@ -1,7 +1,10 @@
 import * as vscode from "vscode";
 import { log, error as logError } from "../../common";
-import { install, InstallerOptions } from "../services/installer";
-import { SetupService } from "../../services/setup/setupService";
+import { install, InstallerOptions } from "../../services/setup/frameworkInstaller";
+import { CoreTaskService } from "../../services/tasks/taskService";
+import { CoreBootstrapService } from "../../services/setup/bootstrap";
+import { Workspace } from "../../common/types";
+import { VSCodeWorkspace } from "../../infrastructure/vscodeWorkspace";
 
 /**
  * DevOps: Initialize command
@@ -17,7 +20,9 @@ export function registerInitializeCommand(
         if (!workspaceFolders) { return; }
 
         const root = workspaceFolders[0].uri.fsPath;
-        const service = new SetupService(context);
+        const workspace = new VSCodeWorkspace(root);
+        const taskService = new CoreTaskService(workspace);
+        const bootstrapService = new CoreBootstrapService(workspace, taskService, context.extensionPath);
 
         await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
@@ -25,8 +30,14 @@ export function registerInitializeCommand(
             cancellable: false
         }, async (progress) => {
             try {
-                progress.report({ message: "Analyzing project..." });
-                await service.bootstrap(root);
+                // Wrapper for progress reporting
+                const progressWrapper = {
+                    report: (value: { message?: string; increment?: number }) => {
+                        progress.report(value);
+                    }
+                };
+
+                await bootstrapService.bootstrap(progressWrapper);
                 vscode.window.showInformationMessage("✅ Project bootstrapped successfully!");
             } catch (err) {
                 logError(`Bootstrap failed`, err);
@@ -191,3 +202,4 @@ function detectIDE(): string {
     // (Antigravity uses .agent/rules, VS Code can use either format)
     return 'antigravity';
 }
+

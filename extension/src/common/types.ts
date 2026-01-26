@@ -21,11 +21,11 @@ export type Column = {
 // Abstraction Interfaces
 // ============================================================================
 
-export interface IProgress {
+export interface ProgressReporter {
   report(value: { message?: string; increment?: number }): void;
 }
 
-export interface IWorkspace {
+export interface Workspace {
   root: string;
   findFiles(pattern: string, exclude?: string | null, maxResults?: number): Promise<string[]>;
   readFile(path: string): Promise<string>;

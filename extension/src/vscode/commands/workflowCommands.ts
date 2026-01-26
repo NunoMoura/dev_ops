@@ -2,7 +2,8 @@ import * as vscode from 'vscode';
 import type { BoardTreeProvider, BoardNode } from '../../ui/board';
 import type { DevOpsCommandServices } from './types';
 import { registerDevOpsCommand, getTaskFromNode } from './utils';
-import { readBoard, getWorkspaceRoot, boardService } from '../../data';
+import { readBoard, getWorkspaceRoot } from '../../services/board/boardPersistence';
+import { boardService } from '../../services/board/boardService';
 import { formatError } from '../../common';
 import { promptForTask } from '../../services/tasks';
 

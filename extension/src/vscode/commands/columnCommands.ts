@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import type { BoardTreeProvider, BoardNode, BoardManagerNode } from '../../ui/board';
 import type { DevOpsCommandServices } from './types';
 import { registerDevOpsCommand, getColumnFromAnyNode } from './utils';
-import { readBoard, writeBoard } from '../../data';
+import { readBoard, writeBoard } from '../../services/board/boardPersistence';
 import type { Column } from '../../common';
 import { COLUMN_FALLBACK_NAME } from '../../common';
 import { createId, getNextColumnPosition, sortColumnsForManager } from '../../services/tasks/taskUtils';

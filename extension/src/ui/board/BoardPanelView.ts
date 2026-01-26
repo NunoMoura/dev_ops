@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import { getFontLink, getSharedStyles, getCSPMeta } from '../shared/styles';
 import { Board } from '../../common';
-import { readTaskContext, writeTaskContext, boardService } from '../../data';
+import { readTaskContext, writeTaskContext } from '../../services/board/boardPersistence';
+import { boardService } from '../../services/board/boardService';
 
 export type BoardViewColumn = {
   id: string;

@@ -9,8 +9,8 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { log, error as logError } from '../../common';
-import { ProjectAuditService } from '../../services/setup/projectAuditService';
-import { IWorkspace } from '../../common/types';
+
+import { Workspace } from '../../common/types';
 import { CoreTaskService } from '../../services/tasks/taskService';
 import { CoreBootstrapService } from '../../services/setup/bootstrap';
 import fg from 'fast-glob';
@@ -50,38 +50,7 @@ export interface InstallerResult {
 /**
  * Simple Workspace implementation for Installer (Node.js/FS based)
  */
-class InstallerWorkspace implements IWorkspace {
-    constructor(public root: string) { }
-
-    async findFiles(pattern: string, exclude?: string | null, maxResults?: number): Promise<string[]> {
-        const ignore = exclude ? [exclude] : ['**/node_modules/**'];
-        const entries = await fg(pattern, {
-            ignore,
-            cwd: this.root,
-            absolute: true
-        });
-        if (maxResults && entries.length > maxResults) {
-            return entries.slice(0, maxResults);
-        }
-        return entries;
-    }
-
-    async readFile(path: string): Promise<string> {
-        return fs.promises.readFile(path, 'utf8');
-    }
-
-    async writeFile(path: string, content: string): Promise<void> {
-        await fs.promises.writeFile(path, content, 'utf8');
-    }
-
-    async exists(path: string): Promise<boolean> {
-        return fs.existsSync(path);
-    }
-
-    async mkdir(path: string): Promise<void> {
-        await fs.promises.mkdir(path, { recursive: true });
-    }
-}
+import { NodeWorkspace } from '../../infrastructure/nodeWorkspace';
 
 
 /**
@@ -506,27 +475,29 @@ export async function install(
             }
         }
     }
-
     // Generate summary message
     const updatedCount = allUpdatedFiles.length;
     const skippedCount = allSkippedFiles.length;
+
     const message = wasUpgrade
         ? `Upgraded from ${installedVersion} to ${FRAMEWORK_VERSION}. Updated ${updatedCount} files.`
         : `Welcome to the DevOps Framework! 🚀
 
-The framework has been successfully initialized in your project.
+The framework has been successfully initialized. We have created a backlog of tasks to get your project set up.
 
-Getting Started:
-1. Open the DevOps Board (Command Palette > "DevOps: Open Board").
-2. Claim a task from the Backlog.
-3. Use the agents (e.g. @devops) to help you complete the task!
+**Backlog Tasks Created:**
+- Document System Architecture
+- Define Product Requirements
+- Define User Personas & Stories
+- Define Project Standards
+- Configure Project Rules
 
-Available CLI Commands:
-- devops claim-task --id <task-id>
-- devops create-task --title "Task Title"
-- devops move-task --id <task-id> --column <column-id>
+**Next Step:**
+1. Open the **DevOps Board** to see these tasks.
+2. Open your AI Chat (e.g. Cursor Chat).
+3. Type **/claim_task** to assign the first task to the agent.
 
-Your environment is now ready for agentic workflow.`;
+Let the agents handle the heavy lifting!`;
 
     // -------------------------------------------------------------------------
     // Run Bootstrapping Detection (Context Capture)
@@ -535,19 +506,15 @@ Your environment is now ready for agentic workflow.`;
         log('[installer] Running project detection...');
 
         // 1. Setup minimal services
-        const workspace = new InstallerWorkspace(projectRoot);
+        const workspace = new NodeWorkspace(projectRoot);
         // CoreTaskService is no longer needed for pure audit
 
-        // 2. Audit Project
-        const auditService = new ProjectAuditService(workspace);
-        const detectionContext = await auditService.audit();
-
-        // 3. Create Bootstrap Tasks directly
+        // 2. Create Bootstrap Tasks directly
         log('[installer] Creating bootstrap tasks...');
         const taskService = new CoreTaskService(workspace);
         const bootstrapService = new CoreBootstrapService(workspace, taskService, extensionPath);
 
-        await bootstrapService.createBootstrapTasks(detectionContext);
+        await bootstrapService.createBootstrapTasks();
         log('[installer] Bootstrap tasks created.');
 
     } catch (error) {

@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { IWorkspace } from '../../common/types';
+import { Workspace } from '../../common/types';
 
 export interface ProjectContext {
     stack: StackItem[];
@@ -36,7 +36,7 @@ export interface TestStatus {
 
 
 export class ProjectAuditService {
-    constructor(protected workspace: IWorkspace) { }
+    constructor(protected workspace: Workspace) { }
 
     public async audit(): Promise<ProjectContext> {
         const stack = await this.detectStack();
@@ -47,7 +47,7 @@ export class ProjectAuditService {
         return { stack, docs, tests, specs };
     }
 
-    private async detectStack(): Promise<StackItem[]> {
+    public async detectStack(): Promise<StackItem[]> {
         const stack: StackItem[] = [];
 
         // 1. Languages
@@ -124,7 +124,7 @@ export class ProjectAuditService {
         return stack;
     }
 
-    private async detectDocs(): Promise<DocStatus> {
+    public async detectDocs(): Promise<DocStatus> {
         const docs: DocStatus = {
             prd: null,
             projectStandards: null,
@@ -165,7 +165,7 @@ export class ProjectAuditService {
         return docs;
     }
 
-    private async detectTests(): Promise<TestStatus> {
+    public async detectTests(): Promise<TestStatus> {
         const tests: TestStatus = {
             exists: false,
             framework: null,
@@ -193,7 +193,7 @@ export class ProjectAuditService {
         return tests;
     }
 
-    private async findSpecs(): Promise<string[]> {
+    public async findSpecs(): Promise<string[]> {
         const specs: string[] = [];
         const matches = await this.workspace.findFiles('**\/SPEC.md', '**/node_modules/**', 50);
         for (const m of matches) {

@@ -1,4 +1,4 @@
-import { boardService } from '../../data';
+import { boardService } from '../../services/board/boardService';
 
 /**
  * AgentWorkflowService - Interface to agent workflow operations

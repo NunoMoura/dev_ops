@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { boardService } from '../data';
-import { log, warn, error as logError } from '../common';
+import { boardService } from '../../services/board/boardService';
+import { log, warn, error as logError } from '../../common';
 
 /**
  * Bridge between Antigravity sessions and board state.

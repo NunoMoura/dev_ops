@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { registerDevOpsCommand } from './utils';
-import { getWorkspaceRoot } from '../../data';
-import { CoreScopeService } from '../../services/core/scopeService';
-import { IWorkspace } from '../../common/types';
+import { getWorkspaceRoot } from '../../services/board/boardPersistence';
+import { CoreScopeService } from '../../services/analysis/scopeService';
+import { Workspace } from '../../common/types';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -33,7 +33,7 @@ export function registerDocumentCommands(context: vscode.ExtensionContext): void
 }
 
 // Simple VscodeWorkspace Adapter for CoreScopeService
-class VscodeWorkspaceAdapter implements IWorkspace {
+class VscodeWorkspaceAdapter implements Workspace {
     constructor(public root: string) { }
     async exists(p: string) { return fs.existsSync(p); }
     async readFile(p: string) { return fs.readFileSync(p, 'utf8'); }

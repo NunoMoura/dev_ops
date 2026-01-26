@@ -1,6 +1,6 @@
-import { Board, Task, Column, TaskOwner, TaskStatus } from '../common';
-import { readBoard, writeBoard, saveTask, getBoardPath, readCurrentTask, writeCurrentTask, clearCurrentTask, archiveTaskFile } from './boardStore';
-import { createTaskId, compareTasks } from '../services/tasks/taskUtils';
+import { Board, Task, Column, TaskOwner, TaskStatus } from '../../common/types';
+import { readBoard, writeBoard, saveTask, getBoardPath, readCurrentTask, writeCurrentTask, clearCurrentTask, archiveTaskFile } from './boardPersistence';
+import { createTaskId, compareTasks } from '../tasks/taskUtils';
 
 /**
  * BoardService - Central service for all board.json operations
@@ -11,7 +11,7 @@ import { createTaskId, compareTasks } from '../services/tasks/taskUtils';
 /**
  * Interface for board storage operations to enable mocking
  */
-export interface IBoardStore {
+export interface BoardStore {
     readBoard(): Promise<Board>;
     writeBoard(board: Board): Promise<void>;
     saveTask(task: Task): Promise<void>;
@@ -23,7 +23,7 @@ export interface IBoardStore {
 }
 
 // Default implementation using the actual data layer
-const defaultStore: IBoardStore = {
+const defaultStore: BoardStore = {
     readBoard,
     writeBoard,
     saveTask,
@@ -35,7 +35,7 @@ const defaultStore: IBoardStore = {
 };
 
 export class BoardService {
-    constructor(private store: IBoardStore = defaultStore) { }
+    constructor(private store: BoardStore = defaultStore) { }
 
     /**
      * Create a new task and add it to the board

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { readBoard } from '../../data';
+import { readBoard } from '../../services/board/boardPersistence';
 import { Board } from '../../common';
 import { getFontLink, getSharedStyles, getCSPMeta } from '../shared/styles';
 

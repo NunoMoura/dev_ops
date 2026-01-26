@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { Board, Column, Task, COLUMN_FALLBACK_NAME } from '../../common';
-import { readBoard, writeBoard, getWorkspaceRoot } from '../../data';
+import { readBoard, writeBoard, getWorkspaceRoot } from '../../services/board/boardPersistence';
 import { compareNumbers, compareTasks, isDefined } from '../../services/tasks/taskUtils';
 import { formatError } from '../../common';
 import { buildTaskDescription } from './taskPresentation';

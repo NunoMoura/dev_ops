@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { IWorkspace } from '../../common/types';
+import { Workspace } from '../../common/types';
 
 export interface ScopeResult {
     component: string;
@@ -10,7 +10,7 @@ export interface ScopeResult {
 }
 
 export class CoreScopeService {
-    constructor(private workspace: IWorkspace, private root: string) { }
+    constructor(private workspace: Workspace, private root: string) { }
 
     /**
      * Get the scope for a given path (finds nearest SPEC.md and resolves dependencies)

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Board, Task } from '../../common';
-import { readBoard } from '../../data';
+import { readBoard } from '../../services/board/boardPersistence';
 import { log } from '../../common';
 
 /**

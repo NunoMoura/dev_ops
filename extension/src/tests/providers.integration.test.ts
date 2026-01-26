@@ -22,7 +22,7 @@ function createMockBoard(options?: {
             { id: 'col-done', name: 'Done', position: 3 },
         ],
         items: options?.items ?? [
-            { id: '1', columnId: 'col-backlog', title: 'Task 1', status: 'todo' },
+            { id: 'TASK-001', columnId: 'col-backlog', title: 'First task', status: 'todo' },
             { id: 'TASK-002', columnId: 'col-impl', title: 'Second task', status: 'in_progress' },
             { id: 'TASK-003', columnId: 'col-done', title: 'Third task', status: 'done' },
         ],

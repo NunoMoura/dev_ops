@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { BoardViewSnapshot } from './BoardPanelView';
 import { Board, Column, Task, COLUMN_FALLBACK_NAME, FilterState } from '../../common';
-import { readBoard, writeBoard } from '../../data';
+import { readBoard, writeBoard } from '../../services/board/boardPersistence';
 import { applyFilters, columnMatchesFilters, parseTaskFilter } from '../../services/tasks';
 import { compareNumbers, compareTasks, sortColumnsForManager } from '../../services/tasks/taskUtils';
 import { buildTaskDescription, buildTaskTooltip } from '../../services/tasks';

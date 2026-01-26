@@ -6,21 +6,21 @@ import { Board, Task } from '../common';
 // so we test the pure logic patterns here.
 
 interface StatusMetrics {
-    statusCounts: { ready: number; agent_active: number; needs_feedback: number; blocked: number; done: number };
+    statusCounts: { todo: number; in_progress: number; needs_feedback: number; blocked: number; done: number };
 }
 
 function calculateMetrics(board: Board | undefined): StatusMetrics {
     if (!board) {
         return {
-            statusCounts: { ready: 0, agent_active: 0, needs_feedback: 0, blocked: 0, done: 0 },
+            statusCounts: { todo: 0, in_progress: 0, needs_feedback: 0, blocked: 0, done: 0 },
         };
     }
 
     const items = board.items || [];
-    const statusCounts = { ready: 0, agent_active: 0, needs_feedback: 0, blocked: 0, done: 0 };
+    const statusCounts = { todo: 0, in_progress: 0, needs_feedback: 0, blocked: 0, done: 0 };
 
     items.forEach((task) => {
-        const status = task.status || 'ready';
+        const status = task.status || 'todo';
         if (status in statusCounts) {
             statusCounts[status as keyof typeof statusCounts]++;
         }
@@ -32,8 +32,8 @@ function calculateMetrics(board: Board | undefined): StatusMetrics {
 suite('MetricsView - calculateMetrics', () => {
     test('returns zeros for undefined board', () => {
         const metrics = calculateMetrics(undefined);
-        assert.strictEqual(metrics.statusCounts.ready, 0);
-        assert.strictEqual(metrics.statusCounts.agent_active, 0);
+        assert.strictEqual(metrics.statusCounts.todo, 0);
+        assert.strictEqual(metrics.statusCounts.in_progress, 0);
         assert.strictEqual(metrics.statusCounts.needs_feedback, 0);
         assert.strictEqual(metrics.statusCounts.blocked, 0);
         assert.strictEqual(metrics.statusCounts.done, 0);
@@ -42,10 +42,10 @@ suite('MetricsView - calculateMetrics', () => {
     test('returns zeros for empty board', () => {
         const board: Board = { version: 1, columns: [], items: [] };
         const metrics = calculateMetrics(board);
-        assert.strictEqual(metrics.statusCounts.ready, 0);
+        assert.strictEqual(metrics.statusCounts.todo, 0);
     });
 
-    test('counts ready tasks', () => {
+    test('counts todo tasks', () => {
         const board: Board = {
             version: 1,
             columns: [],
@@ -55,10 +55,10 @@ suite('MetricsView - calculateMetrics', () => {
             ],
         };
         const metrics = calculateMetrics(board);
-        assert.strictEqual(metrics.statusCounts.ready, 2);
+        assert.strictEqual(metrics.statusCounts.todo, 2);
     });
 
-    test('counts agent_active tasks', () => {
+    test('counts in_progress tasks', () => {
         const board: Board = {
             version: 1,
             columns: [],
@@ -67,7 +67,7 @@ suite('MetricsView - calculateMetrics', () => {
             ],
         };
         const metrics = calculateMetrics(board);
-        assert.strictEqual(metrics.statusCounts.agent_active, 1);
+        assert.strictEqual(metrics.statusCounts.in_progress, 1);
     });
 
     test('counts blocked tasks', () => {
@@ -84,7 +84,7 @@ suite('MetricsView - calculateMetrics', () => {
         assert.strictEqual(metrics.statusCounts.blocked, 3);
     });
 
-    test('defaults to ready for tasks without status', () => {
+    test('defaults to todo for tasks without status', () => {
         const board: Board = {
             version: 1,
             columns: [],
@@ -94,7 +94,7 @@ suite('MetricsView - calculateMetrics', () => {
             ],
         };
         const metrics = calculateMetrics(board);
-        assert.strictEqual(metrics.statusCounts.ready, 2);
+        assert.strictEqual(metrics.statusCounts.todo, 2);
     });
 
     test('counts mixed statuses', () => {
@@ -110,8 +110,8 @@ suite('MetricsView - calculateMetrics', () => {
             ],
         };
         const metrics = calculateMetrics(board);
-        assert.strictEqual(metrics.statusCounts.ready, 1);
-        assert.strictEqual(metrics.statusCounts.agent_active, 1);
+        assert.strictEqual(metrics.statusCounts.todo, 1);
+        assert.strictEqual(metrics.statusCounts.in_progress, 1);
         assert.strictEqual(metrics.statusCounts.needs_feedback, 1);
         assert.strictEqual(metrics.statusCounts.blocked, 1);
         assert.strictEqual(metrics.statusCounts.done, 1);

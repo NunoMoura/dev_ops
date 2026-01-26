@@ -23,7 +23,7 @@ export type { DevOpsCommandServices, MoveTasksRequest } from './types';
 
 // Import utilities
 import { registerDevOpsCommand } from './utils';
-import { readBoard, writeBoard, getWorkspaceRoot } from '../../data';
+import { readBoard, writeBoard, getWorkspaceRoot } from '../../services/board/boardPersistence';
 import type { BoardTreeProvider, BoardNode } from '../../ui/board';
 import type { DevOpsCommandServices } from './types';
 import { DEFAULT_COLUMN_NAME, COLUMN_FALLBACK_NAME } from '../../common';

@@ -10,7 +10,7 @@ import {
   COLUMN_FALLBACK_NAME,
   PLAN_EXTENSIONS,
 } from '../../common';
-import { readBoard, writeBoard, getWorkspaceRoot } from '../../data';
+import { readBoard, writeBoard, getWorkspaceRoot } from '../../services/board/boardPersistence';
 import {
   appendParagraph,
   getNextColumnPosition,

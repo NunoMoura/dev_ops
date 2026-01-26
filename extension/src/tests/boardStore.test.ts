@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert';
-import { createEmptyBoard, createDefaultColumns } from '../data';
+import { createEmptyBoard, createDefaultColumns } from '../services/board/boardPersistence';
 import { DEFAULT_COLUMN_BLUEPRINTS } from '../common';
 
 // Note: Most boardStore functions require mocking fs and vscode.workspace

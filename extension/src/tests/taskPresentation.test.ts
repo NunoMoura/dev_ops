@@ -145,7 +145,7 @@ suite('taskPresentation - buildCardPayload', () => {
         assert.strictEqual(payload.summary, 'Summary text');
         assert.strictEqual(payload.tags, 'tag1, tag2');
         assert.strictEqual(payload.priority, 'high');
-        assert.strictEqual(payload.status, 'agent_active');
+        assert.strictEqual(payload.status, 'in_progress');
         assert.strictEqual(payload.column, 'Implementation');
         assert.strictEqual(payload.workflow, 'feature');
         assert.deepStrictEqual(payload.upstream, ['TASK-000']);

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { boardService } from '../../data';
+import { boardService } from '../../services/board/boardService';
 import type { Task } from '../../common';
 
 /**

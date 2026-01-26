@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { AgentAdapter, TaskContext } from './AgentAdapter';
 import { log, error as logError } from '../../common';
-import { detectAgentEnvironment } from '../../integrations/environment';
-import { boardService } from '../../data';
+import { detectAgentEnvironment } from '../../infrastructure/integrations/environment';
+import { boardService } from '../../services/board/boardService';
 
 export class AgentManager {
     private adapters: Map<string, AgentAdapter> = new Map();
