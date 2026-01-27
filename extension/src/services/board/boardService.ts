@@ -1,4 +1,4 @@
-import { Board, Task, Column, TaskOwner, TaskStatus } from '../../common/types';
+import { Board, Task, Column, TaskStatus } from '../../common/types';
 import { readBoard, writeBoard, saveTask, getBoardPath, readCurrentTask, writeCurrentTask, clearCurrentTask, archiveTaskFile } from './boardPersistence';
 import { createTaskId, compareTasks } from '../tasks/taskUtils';
 
@@ -210,10 +210,13 @@ export class BoardService {
      * Sets the owner field and updates status to agent_active.
      */
     async claimTask(taskId: string, options: {
-        type?: 'agent' | 'human';
-        name?: string;
-        sessionId?: string;
-        phase?: string;
+        owner?: string;         // Human developer name
+        driver?: {              // Agent/Driver details
+            agent: string;
+            model: string;
+            sessionId?: string;
+            phase?: string;
+        }
     } = {}): Promise<void> {
         const board = await this.store.readBoard();
         const task = board.items.find(t => t.id === taskId);
@@ -222,21 +225,25 @@ export class BoardService {
             throw new Error(`Task ${taskId} not found`);
         }
 
-        // Determine current phase from column
-        const column = board.columns.find(c => c.id === task.columnId);
-        const currentPhase = column?.name || 'Unknown';
+        // 1. Set Human Owner (if provided)
+        if (options.owner) {
+            task.owner = options.owner;
+        }
 
-        const owner: TaskOwner = {
-            id: options.sessionId || `session-${Date.now()}`,
-            type: options.type || 'agent',
-            name: options.name || 'Agent',
-            sessionId: options.sessionId,
-            phase: options.phase || currentPhase,
-            startedAt: new Date().toISOString(),
-        };
+        // 2. Set Active Session (if driver provided)
+        if (options.driver) {
+            const column = board.columns.find(c => c.id === task.columnId);
+            const currentPhase = column?.name || 'Unknown';
 
-        task.owner = owner;
-        task.owner = owner;
+            task.activeSession = {
+                id: options.driver.sessionId || `session-${Date.now()}`,
+                agent: options.driver.agent,
+                model: options.driver.model,
+                phase: options.driver.phase || currentPhase,
+                startedAt: new Date().toISOString(),
+            };
+        }
+
         task.status = 'in_progress';
         task.updatedAt = new Date().toISOString();
 
@@ -258,21 +265,23 @@ export class BoardService {
             throw new Error(`Task ${taskId} not found`);
         }
 
-        // Record history if owner exists
-        if (task.owner) {
+        // Record history if active session exists
+        if (task.activeSession) {
             const history = task.agentHistory || [];
             history.push({
-                agentId: task.owner.id,
-                sessionId: task.owner.sessionId || task.owner.id,
-                agentName: task.owner.name,
-                phase: task.owner.phase,
-                startedAt: task.owner.startedAt,
+                agentId: 'system', // TODO: standardize
+                sessionId: task.activeSession.id,
+                agentName: task.activeSession.agent,
+                model: task.activeSession.model,
+                phase: task.activeSession.phase,
+                startedAt: task.activeSession.startedAt,
                 endedAt: new Date().toISOString(),
             });
             task.agentHistory = history;
         }
 
-        task.owner = undefined;
+        // Clear active session, but KEEP owner (developer)
+        task.activeSession = undefined;
         task.status = 'todo';
         task.updatedAt = new Date().toISOString();
 
@@ -308,21 +317,23 @@ export class BoardService {
         }
         task.updatedAt = new Date().toISOString();
 
-        // Clear owner if set
-        if (task.owner) {
+        // Clear active session if set
+        if (task.activeSession) {
             const history = task.agentHistory || [];
             history.push({
-                agentId: task.owner.id,
-                sessionId: task.owner.sessionId || task.owner.id,
-                agentName: task.owner.name,
-                phase: task.owner.phase,
-                startedAt: task.owner.startedAt,
+                agentId: 'system',
+                sessionId: task.activeSession.id,
+                agentName: task.activeSession.agent,
+                model: task.activeSession.model,
+                phase: task.activeSession.phase,
+                startedAt: task.activeSession.startedAt,
                 endedAt: new Date().toISOString(),
                 summary: 'Task completed',
             });
             task.agentHistory = history;
-            task.owner = undefined;
+            task.activeSession = undefined;
         }
+        // Note: We DO NOT clear task.owner. The developer still owns the completed task.
 
         await this.store.writeBoard(board);
 
@@ -424,25 +435,28 @@ export class BoardService {
     async getActiveAgents(): Promise<Array<{
         taskId: string;
         taskTitle: string;
-        owner: TaskOwner;
-        phase: string;
+        owner: string;
+        activeSession: { agent: string; model: string; phase: string };
     }>> {
         const board = await this.store.readBoard();
         const activeAgents: Array<{
             taskId: string;
             taskTitle: string;
-            owner: TaskOwner;
-            phase: string;
+            owner: string;
+            activeSession: { agent: string; model: string; phase: string };
         }> = [];
 
         for (const task of board.items) {
-            if (task.owner) {
-                const column = board.columns.find(c => c.id === task.columnId);
+            if (task.activeSession) {
                 activeAgents.push({
                     taskId: task.id,
                     taskTitle: task.title,
-                    owner: task.owner,
-                    phase: column?.name || task.owner.phase,
+                    owner: task.owner || 'Unassigned',
+                    activeSession: {
+                        agent: task.activeSession.agent,
+                        model: task.activeSession.model,
+                        phase: task.activeSession.phase
+                    }
                 });
             }
         }
@@ -482,7 +496,7 @@ export class BoardService {
         const backlogTasks = board.items.filter(t =>
             t.columnId === 'col-backlog' &&
             (!t.status || t.status === 'todo') &&
-            !t.owner
+            !t.activeSession // Only pick tasks not currently being worked on upon
         );
 
         if (backlogTasks.length === 0) {
@@ -498,9 +512,12 @@ export class BoardService {
      * Pick and claim the next task in one operation.
      */
     async pickAndClaimTask(options: {
-        type?: 'agent' | 'human';
-        name?: string;
-        sessionId?: string;
+        owner?: string;
+        driver?: {
+            agent: string;
+            model: string;
+            sessionId?: string;
+        }
     } = {}): Promise<string | null> {
         const taskId = await this.pickNextTask();
         if (!taskId) {

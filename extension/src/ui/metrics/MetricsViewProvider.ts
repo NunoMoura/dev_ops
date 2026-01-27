@@ -132,18 +132,18 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
         let tasksWithoutIntervention = 0;
 
         for (const t of board.items) {
-            // Count agents: in_progress tasks with agent owner
-            if (t.status === 'in_progress' && t.owner?.type === 'agent') {
+            // Count agents: in_progress tasks with active agent session
+            if (t.status === 'in_progress' && t.activeSession) {
                 totals.activeAgents++;
             }
-            // Count active teammates (humans working on tasks)
-            if (t.status === 'in_progress' && t.owner?.type === 'human') {
+            // Count active teammates (humans working on tasks without agent)
+            if (t.status === 'in_progress' && !t.activeSession && t.owner) {
                 totals.activeTeammates++;
             }
 
             // Collect human teammates for Teamwork section
-            if (t.owner?.type === 'human' && t.owner?.name) {
-                const name = t.owner.name;
+            if (t.owner) {
+                const name = t.owner;
                 teammates.set(name, (teammates.get(name) || 0) + 1);
             }
 
@@ -153,7 +153,7 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
                     totals.doneLast24h++;
                 }
                 // Assume tasks done by agents count as "without intervention"
-                if (t.owner?.type === 'agent') {
+                if (t.activeSession) {
                     tasksWithoutIntervention++;
                 }
             }

@@ -20,10 +20,11 @@ export type BoardViewTask = {
   status?: string;
   tags?: string[];
   updatedAt?: string;
-  owner?: {
-    developer?: string;
-    agent?: string;
-    type?: string;
+  owner?: string;
+  activeSession?: {
+    agent: string;
+    model: string;
+    phase: string;
   };
   upstream?: string[];
   downstream?: string[];
@@ -191,7 +192,12 @@ export class BoardPanelManager {
         status: t.status,
         tags: t.tags,
         updatedAt: t.updatedAt,
-        owner: t.owner, // Assumes type compatibility
+        owner: t.owner,
+        activeSession: t.activeSession ? {
+          agent: t.activeSession.agent,
+          model: t.activeSession.model,
+          phase: t.activeSession.phase
+        } : undefined,
         upstream: t.upstream,
         downstream: t.downstream,
         checklistTotal: t.checklist?.length,
@@ -1021,7 +1027,7 @@ function getBoardHtml(panelMode = false, logoUri = ''): string {
             const matchesText = !text || 
                                 task.title.toLowerCase().includes(text) || 
                                 (task.summary && task.summary.toLowerCase().includes(text)) ||
-                                (task.owner && task.owner.developer && task.owner.developer.toLowerCase().includes(text));
+                                (task.owner && task.owner.toLowerCase().includes(text));
             return matchesText;
           });
         }
@@ -1216,7 +1222,7 @@ function getBoardHtml(panelMode = false, logoUri = ''): string {
           const hasStatus = status !== 'todo';
           const hasPriority = !!task.priority;
           const hasDate = !!task.updatedAt;
-          const hasOwner = !!(task.owner && task.owner.developer);
+          const hasOwner = !!task.owner;
 
           if (hasStatus || hasPriority || hasDate || hasOwner) {
             const footer = document.createElement('div');
@@ -1246,16 +1252,16 @@ function getBoardHtml(panelMode = false, logoUri = ''): string {
             if (hasOwner) {
                 const ownerBadge = document.createElement('span');
                 ownerBadge.className = 'owner-badge';
-                ownerBadge.title = 'Developer: ' + task.owner.developer;
-                ownerBadge.textContent = '👤 ' + task.owner.developer;
+                ownerBadge.title = 'Developer: ' + task.owner;
+                ownerBadge.textContent = '👤 ' + task.owner;
                 footerLeft.appendChild(ownerBadge);
 
-                // Agent
-                if (task.owner.agent) {
+                // Active Session (Agent)
+                if (task.activeSession) {
                     const agentBadge = document.createElement('span');
                     agentBadge.className = 'owner-badge agent-badge';
-                    agentBadge.title = 'Agent Activity: ' + task.owner.agent;
-                    agentBadge.textContent = '🤖'; // Minimal badge
+                    agentBadge.title = 'Agent: ' + task.activeSession.agent + ' (' + task.activeSession.model + ')';
+                    agentBadge.textContent = '🤖';
                     footerLeft.appendChild(agentBadge);
                 }
             }

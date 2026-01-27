@@ -63,12 +63,12 @@ suite('BoardService', () => {
             columnId: 'col-backlog'
         });
 
-        await service.claimTask(id, { name: 'Test Agent', type: 'agent' });
+        await service.claimTask(id, { driver: { agent: 'Test Agent', model: 'Test Model' } });
 
         const task = mockBoard.items[0];
         assert.strictEqual(task.status, 'in_progress');
-        assert.ok(task.owner);
-        assert.strictEqual(task.owner.name, 'Test Agent');
+        assert.ok(task.activeSession);
+        assert.strictEqual(task.activeSession.agent, 'Test Agent');
     });
 
     test('markDone updates status and moves to Done column', async () => {
@@ -101,6 +101,7 @@ suite('BoardService', () => {
         await service.claimTask(id);
 
         const pickedId = await service.pickNextTask();
+        // Since we claimed it, it has an activeSession, so pickNextTask should skip it (based on our boardService logic updates)
         assert.strictEqual(pickedId, null);
     });
 });

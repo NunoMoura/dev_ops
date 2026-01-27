@@ -571,7 +571,7 @@ async function handleClaimTask(
         } else {
             // Pick from Backlog
             const backlogTasks = board.items
-                .filter(t => t.columnId === backlogCol.id && (!t.owner))
+                .filter(t => t.columnId === backlogCol.id && (!t.activeSession))
                 .sort(compareTasks);
 
             if (backlogTasks.length > 0) {
@@ -602,7 +602,7 @@ async function handleClaimTask(
         return;
     }
 
-    await boardService.claimTask(taskId, { name: 'User' });
+    await boardService.claimTask(taskId, { owner: 'User' });
 
     await provider.refresh();
     vscode.window.showInformationMessage(`✅ Claimed ${taskId}`);

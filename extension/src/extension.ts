@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { TaskEditorProvider } from './ui/tasks';
 import { registerInitializeCommand } from './vscode/commands/initializeCommand';
-import { registerBoardWatchers } from './services/board/boardPersistence';
+import { registerBoardWatchers, readBoard } from './services/board/boardPersistence';
 import { formatError, log, warn, error as logError } from './common';
 import { SessionBridge } from './infrastructure/integrations/sessionBridge';
 import { CursorBridge } from './infrastructure/integrations/cursorBridge';
@@ -65,7 +65,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         // Push real-time update to Webview
         try {
-          const { readBoard } = require('./services/board/boardPersistence');
           const board = await readBoard();
           if (services.boardPanelManager.isPanelOpen()) {
             services.boardPanelManager.updateFromBoard(board);

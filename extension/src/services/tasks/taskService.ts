@@ -170,7 +170,7 @@ export class CoreTaskService {
         return {};
     }
 
-    public async claimTask(taskId: string, ownerId: string, ownerName: string): Promise<void> {
+    public async claimTask(taskId: string, driver: { agent: string; model: string; sessionId?: string; }, ownerOverride?: string): Promise<void> {
         const board = await this.readBoard();
         const task = board.items.find(t => t.id === taskId);
         if (!task) {
@@ -180,32 +180,31 @@ export class CoreTaskService {
         const column = board.columns.find(c => c.id === task.columnId);
         const phase = column?.name || 'Unknown';
 
-        // Read config for developer info
-        let finalOwnerName = ownerName;
-        let developerName: string | undefined;
-
-        try {
-            const config = await this.readConfig();
-            if (config.developer && config.developer.name) {
-                developerName = config.developer.name;
-                // If the provided owner name is generic 'Agent' or 'agent-session' (from CLI default),
-                // use the developer name from config.
-                if (ownerName === 'Agent' || ownerName === 'agent-session') {
-                    finalOwnerName = developerName as string;
+        // 1. Determine Human Owner
+        let owner = ownerOverride;
+        if (!owner) {
+            // Try config
+            try {
+                const config = await this.readConfig();
+                if (config.developer && config.developer.name) {
+                    owner = config.developer.name;
                 }
-            }
-        } catch (e) {
-            // Ignore config read errors
+            } catch (e) { /* ignore */ }
         }
+        if (!owner) {
+            owner = 'Unassigned'; // Fallback
+        }
+        task.owner = owner;
 
-        task.owner = {
-            id: ownerId,
-            name: finalOwnerName,
-            type: 'agent',
+        // 2. Set Active Session
+        task.activeSession = {
+            id: driver.sessionId || `session-${Date.now()}`,
+            agent: driver.agent,
+            model: driver.model,
             phase: phase,
-            startedAt: new Date().toISOString(),
-            developer: developerName
+            startedAt: new Date().toISOString()
         };
+
         task.status = 'in_progress';
         task.updatedAt = new Date().toISOString();
 

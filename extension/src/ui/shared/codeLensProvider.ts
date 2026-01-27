@@ -92,7 +92,7 @@ export class DevOpsCodeLensProvider implements vscode.CodeLensProvider {
         ];
 
         if (task.owner) {
-            lines.push(`Owner: ${task.owner.name}`);
+            lines.push(`Owner: ${task.owner || 'Unassigned'}`);
         }
 
         if (task.summary) {

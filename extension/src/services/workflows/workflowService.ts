@@ -14,10 +14,10 @@ export class AgentWorkflowService {
      */
     async pickAndClaimTask(taskId?: string): Promise<string | null> {
         if (taskId) {
-            await boardService.claimTask(taskId, { name: 'antigravity' });
+            await boardService.claimTask(taskId, { driver: { agent: 'antigravity', model: 'default' } });
             return taskId;
         }
-        return await boardService.pickAndClaimTask({ name: 'antigravity' });
+        return await boardService.pickAndClaimTask({ driver: { agent: 'antigravity', model: 'default' } });
     }
 
     /**
@@ -27,10 +27,14 @@ export class AgentWorkflowService {
      * @param ownerType Type of owner ('agent' or 'human')
      */
     async claimTask(taskId: string, ownerType: 'agent' | 'human' = 'agent'): Promise<void> {
-        await boardService.claimTask(taskId, {
-            type: ownerType,
-            name: 'antigravity'
-        });
+        if (ownerType === 'agent') {
+            await boardService.claimTask(taskId, {
+                driver: { agent: 'antigravity', model: 'default' }
+            });
+        } else {
+            // Human claim
+            await boardService.claimTask(taskId, { owner: 'Developer' });
+        }
     }
 
     /**

@@ -58,7 +58,7 @@ export function registerWorkflowCommands(
  * Pick and claim the next highest priority task from Backlog
  */
 async function handleSpawnAgent(provider: BoardTreeProvider): Promise<void> {
-    const taskId = await boardService.pickAndClaimTask({ name: 'Agent' });
+    const taskId = await boardService.pickAndClaimTask({ driver: { agent: 'Agent', model: 'Default' } });
 
     if (!taskId) {
         vscode.window.showInformationMessage('ℹ️ No tasks available in Backlog');

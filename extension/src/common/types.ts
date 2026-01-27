@@ -87,25 +87,26 @@ export type Task = {
   contextRange?: { startLine: number; endLine: number };
   source?: TaskSource;
 
+
   // Agentic Workflow
-  owner?: TaskOwner;             // Current active agent/human
+  owner?: string;                // Human Developer responsible (e.g. "Nuno")
+  activeSession?: AgentSession;  // Current active agent execution
   agentHistory?: AgentActivity[]; // History of past sessions
 };
 
-export type TaskOwner = {
-  id: string;                    // Session ID or User ID
-  type: 'agent' | 'human';
-  name: string;
-  sessionId?: string;            // Antigravity session ID
+export type AgentSession = {
+  id: string;                    // Session ID
+  agent: string;                 // Agent Name (e.g. "Antigravity")
+  model: string;                 // Model (e.g. "Claude Opus 4.5")
   phase: string;                 // Phase when ownership started
   startedAt: string;             // ISO date
-  developer?: string;            // Human developer orchestrating this (from config.json)
 };
 
 export type AgentActivity = {
-  agentId: string;
+  agentId: string; // Keep for history linking
   sessionId: string;
   agentName: string;
+  model?: string; // Add model to history
   phase: string;
   startedAt: string;
   endedAt: string;

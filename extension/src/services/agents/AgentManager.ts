@@ -73,9 +73,11 @@ export class AgentManager {
             // Use boardService to claim the task with agent metadata
             const tempSessionId = `session-${Date.now()}`;
             await boardService.claimTask(context.taskId, {
-                type: 'agent',
-                name: adapter.name,
-                sessionId: tempSessionId,
+                driver: {
+                    agent: adapter.name,
+                    model: 'Unknown',
+                    sessionId: tempSessionId,
+                }
             });
         } catch (e) {
             logError('AgentManager: Failed to register agent on board', e);

@@ -61,9 +61,11 @@ export class SessionBridge {
             if (taskId) {
                 // Claim task with session info
                 await boardService.claimTask(taskId, {
-                    type: 'agent',
-                    name: 'Antigravity',
-                    sessionId: sessionId,
+                    driver: {
+                        agent: 'Antigravity',
+                        model: 'Antigravity',
+                        sessionId: sessionId,
+                    }
                 });
 
                 vscode.window.showInformationMessage(`🤖 Antigravity session started for ${taskId}`);

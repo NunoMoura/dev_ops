@@ -341,15 +341,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
         let ownerName = 'Unassigned';
 
         if (t.owner) {
-          if (t.owner.type === 'human') {
-            ownerName = t.owner.name;
-          } else if (t.owner.type === 'agent' && t.owner.developer) {
-            // Agent working on behalf of a developer
-            ownerName = t.owner.developer;
-          } else {
-            // Autonomous agent fallback
-            ownerName = 'Autonomous';
-          }
+          ownerName = t.owner;
         } else if (t.assignee) {
           ownerName = t.assignee;
         }

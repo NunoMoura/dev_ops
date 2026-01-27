@@ -300,7 +300,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         ${columns.map(c => `<option value="${c.id}" ${c.id === task.columnId ? 'selected' : ''}>${c.name}</option>`).join('')}
       </select>
       <div style="flex:1"></div>
-      <div>Owner: <strong>${task.owner?.name || 'Unassigned'}</strong> (${task.owner?.type || '-'})</div>
+      <div>Owner: <strong>${task.owner || 'Unassigned'}</strong>${task.activeSession ? ` (Agent: ${task.activeSession.agent})` : ''}</div>
     </div>
   </div>
 

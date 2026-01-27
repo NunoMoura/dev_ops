@@ -38,8 +38,8 @@ suite('CodeLensProvider - Task ID Regex', () => {
 suite('CodeLensProvider - Status Icons', () => {
     function getStatusIcon(status: string): string {
         const icons: Record<string, string> = {
-            'ready': '○',
-            'agent_active': '◉',
+            'todo': '○',
+            'in_progress': '◉',
             'needs_feedback': '◐',
             'blocked': '●',
             'done': '✓',
@@ -47,12 +47,12 @@ suite('CodeLensProvider - Status Icons', () => {
         return icons[status] || '○';
     }
 
-    test('returns correct icon for ready', () => {
-        assert.strictEqual(getStatusIcon('ready'), '○');
+    test('returns correct icon for in_progress', () => {
+        assert.strictEqual(getStatusIcon('in_progress'), '◉');
     });
 
-    test('returns correct icon for agent_active', () => {
-        assert.strictEqual(getStatusIcon('agent_active'), '◉');
+    test('returns correct icon for todo', () => {
+        assert.strictEqual(getStatusIcon('todo'), '○');
     });
 
     test('returns correct icon for needs_feedback', () => {
@@ -82,13 +82,13 @@ suite('CodeLensProvider - Task Title Format', () => {
 
     function formatTaskTitle(task: Task): string {
         const icons: Record<string, string> = {
-            'ready': '○',
-            'agent_active': '◉',
+            'todo': '○',
+            'in_progress': '◉',
             'needs_feedback': '◐',
             'blocked': '●',
             'done': '✓',
         };
-        const status = icons[task.status || 'ready'] || '○';
+        const status = icons[task.status || 'todo'] || '○';
         const priority = task.priority ? ` [${task.priority.toUpperCase()}]` : '';
         return `${status} ${task.title}${priority}`;
     }
@@ -121,19 +121,19 @@ suite('CodeLensProvider - Task Tooltip Format', () => {
         status?: string;
         priority?: string;
         summary?: string;
-        owner?: { name: string };
+        owner?: string;
     }
 
     function formatTaskTooltip(task: Task): string {
         const lines = [
             `Task: ${task.title}`,
             `ID: ${task.id}`,
-            `Status: ${task.status || 'ready'}`,
+            `Status: ${task.status || 'todo'}`,
             `Priority: ${task.priority}`,
         ];
 
         if (task.owner) {
-            lines.push(`Owner: ${task.owner.name}`);
+            lines.push(`Owner: ${task.owner}`);
         }
 
         if (task.summary) {
@@ -144,16 +144,16 @@ suite('CodeLensProvider - Task Tooltip Format', () => {
     }
 
     test('includes basic task info', () => {
-        const task: Task = { id: 'TASK-001', title: 'Fix bug', status: 'ready', priority: 'medium' };
+        const task: Task = { id: 'TASK-001', title: 'Fix bug', status: 'todo', priority: 'medium' };
         const tooltip = formatTaskTooltip(task);
         assert.ok(tooltip.includes('Task: Fix bug'));
         assert.ok(tooltip.includes('ID: TASK-001'));
-        assert.ok(tooltip.includes('Status: ready'));
+        assert.ok(tooltip.includes('Status: todo'));
         assert.ok(tooltip.includes('Priority: medium'));
     });
 
     test('includes owner when set', () => {
-        const task: Task = { id: 'TASK-001', title: 'Fix bug', owner: { name: 'Cursor' } };
+        const task: Task = { id: 'TASK-001', title: 'Fix bug', owner: 'Cursor' };
         const tooltip = formatTaskTooltip(task);
         assert.ok(tooltip.includes('Owner: Cursor'));
     });

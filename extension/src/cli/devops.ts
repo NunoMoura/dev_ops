@@ -79,7 +79,11 @@ program
         if (options.column) {
             await taskService.moveTask(options.id, options.column);
         }
-        await taskService.claimTask(options.id, 'agent-session', 'Agent');
+        await taskService.claimTask(options.id, {
+            agent: 'CLI',
+            model: 'CLI',
+            sessionId: 'cli-session'
+        }, 'Agent');
         console.log(`Claimed Task: ${options.id}`);
     });
 
