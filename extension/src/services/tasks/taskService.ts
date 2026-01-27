@@ -38,15 +38,13 @@ export class CoreTaskService {
 
         if (await this.workspace.exists(tasksDir)) {
             try {
-                // Note: workspace.findFiles behavior depends on implementation (glob vs recursive).
-                // NodeWorkspace (used by CLI) uses fast-glob.
-                // Fix: Search in correct directory .dev_ops/tasks/
-                const files = await this.workspace.findFiles('.dev_ops/tasks/*.json', null);
-                // But wait, findFiles returns absolute paths or relative?
-                // NodeWorkspace.findFiles in devops.ts uses absolute:true.
-                // So we get absolute paths.
+                // Scan for Task Bundles (directories)
+                // Note: workspace.findFiles might be limited. NodeWorkspace uses fast-glob.
+                // fast-glob can match directories but usually matches files.
+                // Pattern: .dev_ops/tasks/*/task.json
+                const taskFiles = await this.workspace.findFiles('.dev_ops/tasks/*/task.json', null);
 
-                for (const file of files) {
+                for (const file of taskFiles) {
                     try {
                         const content = await this.workspace.readFile(file);
                         const task = JSON.parse(content) as Task;
@@ -54,11 +52,11 @@ export class CoreTaskService {
                             items.push(task);
                         }
                     } catch (e) {
-                        // Ignore corrupt task files
+                        // Ignore corrupt files
                     }
                 }
             } catch (e) {
-                // Ignore if findFiles fails
+                // Ignore failures
             }
         }
 
@@ -87,12 +85,13 @@ export class CoreTaskService {
         const boardPath = await this.getBoardPath();
         const devOpsDir = path.dirname(boardPath);
         const tasksDir = path.join(devOpsDir, 'tasks');
+        const bundleDir = path.join(tasksDir, task.id);
 
-        if (!await this.workspace.exists(tasksDir)) {
-            await this.workspace.mkdir(tasksDir); // Recursive check usually? IWorkspace.mkdir is recursive
+        if (!await this.workspace.exists(bundleDir)) {
+            await this.workspace.mkdir(bundleDir);
         }
 
-        const taskPath = path.join(tasksDir, `${task.id}.json`);
+        const taskPath = path.join(bundleDir, 'task.json');
         task.updatedAt = new Date().toISOString();
         await this.workspace.writeFile(taskPath, JSON.stringify(task, null, 2));
     }
@@ -213,11 +212,14 @@ export class CoreTaskService {
             const auditService = new ProjectAuditService(this.workspace);
             const projectContext = await auditService.audit();
 
-            const ctxDir = path.join(this.workspace.root, '.dev_ops', 'context');
-            if (!await this.workspace.exists(ctxDir)) {
-                await this.workspace.mkdir(ctxDir);
+            const tasksDir = path.join(this.workspace.root, '.dev_ops', 'tasks');
+            const bundleDir = path.join(tasksDir, taskId);
+
+            if (!await this.workspace.exists(bundleDir)) {
+                await this.workspace.mkdir(bundleDir);
             }
-            const contextPath = path.join(ctxDir, `${taskId}.md`);
+
+            const contextPath = path.join(bundleDir, 'context.md');
             let currentContext = '';
             if (await this.workspace.exists(contextPath)) {
                 currentContext = await this.workspace.readFile(contextPath);

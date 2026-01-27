@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Board, Task, Column, TaskStatus } from '../../common/types';
-import { readBoard, writeBoard, saveTask, deleteTask, getBoardPath, readCurrentTask, writeCurrentTask, clearCurrentTask, archiveTaskFile } from './boardPersistence';
+import { readBoard, writeBoard, saveTask, deleteTask, getBoardPath, readCurrentTask, writeCurrentTask, clearCurrentTask, archiveTaskBundle } from './boardPersistence';
 
 
 import { createTaskId, compareTasks } from '../tasks/taskUtils';
@@ -28,7 +28,7 @@ export interface BoardStore {
     readCurrentTask(): Promise<string | null>;
     writeCurrentTask(taskId: string): Promise<void>;
     clearCurrentTask(): Promise<void>;
-    archiveTaskFile(taskId: string, content: string): Promise<string>;
+    archiveTaskBundle(taskId: string): Promise<string>;
 }
 
 // Default implementation using the actual data layer
@@ -41,7 +41,7 @@ const defaultStore: BoardStore = {
     readCurrentTask,
     writeCurrentTask,
     clearCurrentTask,
-    archiveTaskFile
+    archiveTaskBundle
 };
 
 export class BoardService {
@@ -497,8 +497,8 @@ export class BoardService {
         task.status = 'archived' as any; // Ensure status is set in the archive
         task.updatedAt = new Date().toISOString();
 
-        // Physically archive (Zip and Delete)
-        const archivePath = await this.store.archiveTaskFile(taskId, JSON.stringify(task, null, 2));
+        // Physically archive (Move Bundle)
+        const archivePath = await this.store.archiveTaskBundle(taskId);
 
         // Remove from memory
         board.items = board.items.filter(t => t.id !== taskId);

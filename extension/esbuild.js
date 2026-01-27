@@ -94,13 +94,9 @@ function copyAssets() {
 
 	console.log('[assets] Copying framework assets to dist/assets...');
 
-	// Copy rules - now just dev_ops.md from payload root
+	// Copy rules
 	const rulesDir = path.join(assetsDir, 'rules');
-	fs.mkdirSync(rulesDir, { recursive: true });
-	const devOpsSrc = path.join(projectRoot, 'payload', 'dev_ops.md');
-	if (fs.existsSync(devOpsSrc)) {
-		fs.copyFileSync(devOpsSrc, path.join(rulesDir, 'dev_ops_guide.md'));
-	}
+	copyDir(path.join(projectRoot, 'payload', 'rules'), rulesDir);
 
 	copyDir(path.join(projectRoot, 'payload', 'workflows'), path.join(assetsDir, 'workflows'));
 	copyDir(path.join(projectRoot, 'payload', 'templates'), path.join(assetsDir, 'templates'));

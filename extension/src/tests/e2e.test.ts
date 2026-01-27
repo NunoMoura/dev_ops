@@ -127,7 +127,7 @@ suite('DevOps Extension - Command Execution', () => {
         }
     });
 
-    test.skip('devops.openBoard command executes (requires workspace)', async function () {
+    test('devops.openBoard command executes (requires workspace)', async function () {
         this.timeout(5000);
         // This test is skipped by default as it requires a workspace
         // Uncomment to run in an environment with a dev_ops project open

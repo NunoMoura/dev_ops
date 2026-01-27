@@ -1,5 +1,17 @@
 import { strict as assert } from 'assert';
-import { createEmptyBoard, createDefaultColumns } from '../services/board/boardPersistence';
+import * as vscode from 'vscode';
+import * as sinon from 'sinon';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import * as os from 'os';
+import {
+    createEmptyBoard,
+    createDefaultColumns,
+    getBoardPath,
+    readBoard,
+    writeBoard,
+    saveTask
+} from '../services/board/boardPersistence';
 import { DEFAULT_COLUMN_BLUEPRINTS } from '../common';
 
 // Note: Most boardStore functions require mocking fs and vscode.workspace
@@ -52,38 +64,98 @@ suite('Board Store - createDefaultColumns', () => {
 });
 
 suite('Board Store - Path Construction', () => {
-    // These would require mocking vscode.workspace.workspaceFolders
-    // Document the expected behavior for integration tests
+    let sandbox: sinon.SinonSandbox;
 
-    test.skip('getBoardPath returns .dev_ops/board.json path', async () => {
-        // Test that path is correctly formed
-        // Expected: /workspace/root/.dev_ops/board.json
+    setup(() => {
+        sandbox = sinon.createSandbox();
     });
 
-    test.skip('getBoardPath returns undefined without workspace', async () => {
-        // Would need to mock vscode.workspace.workspaceFolders as undefined
+    teardown(() => {
+        sandbox.restore();
+    });
+
+    test('getBoardPath returns .dev_ops/board.json path', async () => {
+        // Mock workspace folders
+        const mockUri = vscode.Uri.file('/mock/root');
+        sandbox.stub(vscode.workspace, 'workspaceFolders').value([{
+            uri: mockUri,
+            name: 'Mock',
+            index: 0
+        }]);
+
+        const p = getBoardPath();
+        assert.ok(p?.endsWith('.dev_ops/board.json'));
+        assert.ok(p?.includes('mock/root'));
+    });
+
+    test('getBoardPath returns undefined without workspace', async () => {
+        sandbox.stub(vscode.workspace, 'workspaceFolders').value(undefined);
+        const p = getBoardPath();
+        assert.strictEqual(p, undefined);
     });
 });
 
 suite('Board Store - File Operations', () => {
-    // These require mocking fs module
-    // Document patterns for integration tests
+    let sandbox: sinon.SinonSandbox;
+    const tempDir = path.join(os.tmpdir(), `dev-ops-test-${Date.now()}`);
 
-    test.skip('readBoard returns board from file', async () => {
-        // Mock fs.readFile to return valid JSON
+    setup(async () => {
+        sandbox = sinon.createSandbox();
+        await fs.mkdir(tempDir, { recursive: true });
+
+        const mockUri = vscode.Uri.file(tempDir);
+        sandbox.stub(vscode.workspace, 'workspaceFolders').value([{
+            uri: mockUri,
+            name: 'Mock',
+            index: 0
+        }]);
+
+        // Mock window.showErrorMessage to avoid UI popups
+        sandbox.stub(vscode.window, 'showErrorMessage').resolves();
     });
 
-    test.skip('readBoard returns empty board on ENOENT', async () => {
-        // Mock fs.readFile to throw { code: 'ENOENT' }
+    teardown(async () => {
+        sandbox.restore();
+        await fs.rm(tempDir, { recursive: true, force: true }).catch(() => { });
     });
 
-    test.skip('readBoard handles corrupt JSON', async () => {
-        // Mock fs.readFile to return invalid JSON
-        // Should call handleCorruptBoardFile
+    test('writeBoard creates directory and writes file', async () => {
+        const board = createEmptyBoard();
+        await writeBoard(board);
+
+        const content = await fs.readFile(path.join(tempDir, '.dev_ops', 'board.json'), 'utf8');
+        const parsed = JSON.parse(content);
+        assert.strictEqual(parsed.version, 1);
+        assert.ok(Array.isArray(parsed.columns));
     });
 
-    test.skip('writeBoard creates directory if needed', async () => {
-        // Mock fs.mkdir and fs.writeFile
+    test('readBoard returns board from file', async () => {
+        const board = createEmptyBoard();
+        const boardDir = path.join(tempDir, '.dev_ops');
+        await fs.mkdir(boardDir, { recursive: true });
+        await fs.writeFile(path.join(boardDir, 'board.json'), JSON.stringify(board));
+
+        const read = await readBoard();
+        assert.strictEqual(read.version, 1);
+        assert.ok(Array.isArray(read.columns));
+    });
+
+    test('readBoard returns empty board on ENOENT', async () => {
+        // Path construction ensures it looks for file in tempDir/.dev_ops/board.json
+        // which doesn't exist yet.
+        const read = await readBoard();
+        assert.strictEqual(read.version, 1);
+        assert.strictEqual(read.items.length, 0);
+    });
+
+    test('readBoard handles corrupt JSON', async () => {
+        const boardDir = path.join(tempDir, '.dev_ops');
+        await fs.mkdir(boardDir, { recursive: true });
+        await fs.writeFile(path.join(boardDir, 'board.json'), '{ incomplete json');
+
+        const read = await readBoard();
+        assert.strictEqual(read.version, 1);
+        assert.strictEqual(read.items.length, 0); // Reset to empty
     });
 });
 

@@ -37,8 +37,8 @@ suite('BoardService', () => {
             readCurrentTask: async () => currentTask,
             writeCurrentTask: async (id: string) => { currentTask = id; },
             clearCurrentTask: async () => { currentTask = null; },
-            archiveTaskFile: async (id: string, content: string) => {
-                const path = `/mock/archive/${id}.json`;
+            archiveTaskBundle: async (id: string) => {
+                const path = `/mock/archive/${id}`;
                 archivedFiles.push(path);
                 return path;
             },
