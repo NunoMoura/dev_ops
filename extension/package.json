@@ -253,6 +253,10 @@
       "view/item/context": []
     }
   },
+  "dependencies": {
+    "commander": "^14.0.2",
+    "fast-glob": "^3.3.3"
+  },
   "scripts": {
     "vscode:prepublish": "pnpm run package",
     "compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
@@ -278,12 +282,8 @@
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.7.1",
     "c8": "^9.1.0",
-    "commander": "^14.0.2",
-    "esbuild": "^0.27.0",
     "eslint": "^9.39.1",
-    "fast-glob": "^3.3.3",
     "npm-run-all": "^4.1.5",
-    "sharp": "^0.34.5",
     "sinon": "^17.0.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.3"
