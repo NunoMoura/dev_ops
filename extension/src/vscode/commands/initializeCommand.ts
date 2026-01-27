@@ -5,6 +5,7 @@ import { CoreTaskService } from "../../services/tasks/taskService";
 import { CoreBootstrapService } from "../../services/setup/bootstrap";
 import { Workspace } from "../../common/types";
 import { VSCodeWorkspace } from "../../infrastructure/vscodeWorkspace";
+import { ConfigService } from "../../services/setup/configService";
 
 /**
  * DevOps: Initialize command
@@ -78,32 +79,22 @@ export function registerInitializeCommand(
             return;
         }
 
+        // Use the first folder by default, but in the future we could detect based on current file
         const workspaceRoot = workspaceFolders[0].uri.fsPath;
         const extensionPath = context.extensionPath;
+        const workspace = new VSCodeWorkspace(workspaceRoot);
+        const configService = new ConfigService(workspace);
 
         // Save configuration to .dev_ops/config.json
         try {
-            const devOpsDir = require('path').join(workspaceRoot, '.dev_ops');
-            if (!require('fs').existsSync(devOpsDir)) {
-                require('fs').mkdirSync(devOpsDir, { recursive: true });
-            }
-            const configPath = require('path').join(devOpsDir, 'config.json');
+            const updates: any = {};
+            if (name) { updates.developer = { name }; }
+            if (projectType) { updates.projectType = projectType; }
+            if (githubWorkflows !== undefined) { updates.githubWorkflowsEnabled = githubWorkflows; }
+            if (selectedIDEs && selectedIDEs.length > 0) { updates.selectedIDEs = selectedIDEs; }
 
-            // Read existing or create new
-            let config: any = {};
-            if (require('fs').existsSync(configPath)) {
-                try {
-                    config = JSON.parse(require('fs').readFileSync(configPath, 'utf8'));
-                } catch { /* ignore */ }
-            }
-
-            if (name) { config.developer = { ...config.developer, name }; }
-            if (projectType) { config.projectType = projectType; }
-            if (githubWorkflows !== undefined) { config.githubWorkflowsEnabled = githubWorkflows; }
-            if (selectedIDEs.length > 0) { config.selectedIDEs = selectedIDEs; }
-
-            require('fs').writeFileSync(configPath, JSON.stringify(config, null, 2));
-            log(`[initialize] Saved config: name=${name}, projectType=${projectType}, ides=${selectedIDEs.join(',')}`);
+            await configService.updateConfig(updates);
+            log(`[initialize] Saved config: name=${name}, projectType=${projectType}`);
         } catch (e) {
             logError(`[initialize] Failed to save config`, e);
         }

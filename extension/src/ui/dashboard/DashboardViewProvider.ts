@@ -4,6 +4,8 @@ import * as path from 'path';
 import { Board, Task } from '../../common';
 import { readBoard } from '../../services/board/boardPersistence';
 import { log } from '../../common';
+import { VSCodeWorkspace } from '../../infrastructure/vscodeWorkspace';
+import { ConfigService } from '../../services/setup/configService';
 
 /**
  * Dashboard webview that shows:
@@ -49,11 +51,8 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     webviewView.webview.onDidReceiveMessage(async (message) => {
       if (message.type === 'submit') {
         const { name, projectType, githubWorkflows, selectedIDEs } = message;
-        await this._saveConfig(name, projectType, githubWorkflows, selectedIDEs);
         // Skip doesn't initialize board - just saves config
-        if (projectType !== 'skip') {
-          await vscode.commands.executeCommand('devops.initialize', { projectType, githubWorkflows, selectedIDEs });
-        }
+        await vscode.commands.executeCommand('devops.initialize', { name, projectType, githubWorkflows, selectedIDEs, silent: projectType === 'skip' });
         this._onDidComplete.fire();
         this._updateContent();
       } else if (message.type === 'initBoardLater') {
@@ -143,44 +142,16 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     }
 
     const workspaceRoot = workspaceFolders[0].uri.fsPath;
+    const workspace = new VSCodeWorkspace(workspaceRoot);
+    const configService = new ConfigService(workspace);
     const devOpsDir = path.join(workspaceRoot, '.dev_ops');
-    const configPath = path.join(devOpsDir, 'config.json');
     const boardPath = path.join(devOpsDir, 'board.json');
-
-    // Check if project has existing code (for detecting brownfield)
-    const projectExists = this._hasExistingCode(workspaceRoot);
 
     // Check if board is initialized
     const boardExists = fs.existsSync(boardPath);
 
     // Get saved developer name
-    let savedName: string | null = null;
-    if (fs.existsSync(configPath)) {
-      try {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-        savedName = config.developer?.name || null;
-      } catch { /* Ignore */ }
-    }
-
-    // Try to get name from git config
-    let gitName: string | null = null;
-    try {
-      const { execSync } = require('child_process');
-      gitName = execSync('git config user.name', {
-        cwd: workspaceRoot,
-        encoding: 'utf-8',
-        timeout: 2000
-      }).trim() || null;
-    } catch { /* Ignore */ }
-
-    // Detect current IDE
-    let detectedIDE: 'antigravity' | 'cursor' | 'vscode' = 'vscode';
-    const appName = vscode.env.appName;
-    if (appName.includes('Cursor')) {
-      detectedIDE = 'cursor';
-    } else if (vscode.extensions.getExtension('google.antigravity')) {
-      detectedIDE = 'antigravity';
-    }
+    const savedName = await configService.getDeveloperName();
 
     return {
       needsDeveloperName: !savedName,
@@ -190,72 +161,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
 
 
 
-  /**
-   * Check if workspace has existing source code (not just config files).
-   */
-  private _hasExistingCode(workspaceRoot: string): boolean {
-    const codeExtensions = ['.ts', '.js', '.py', '.java', '.go', '.rs', '.rb', '.php', '.cs', '.cpp', '.c', '.swift', '.kt'];
-    try {
-      const files = fs.readdirSync(workspaceRoot);
-      for (const file of files) {
-        if (file.startsWith('.')) {
-          continue;
-        }
-        const ext = path.extname(file).toLowerCase();
-        if (codeExtensions.includes(ext)) {
-          return true;
-        }
-        const fullPath = path.join(workspaceRoot, file);
-        if (fs.statSync(fullPath).isDirectory() && !file.startsWith('.') && file !== 'node_modules') {
-          // Check one level deep
-          try {
-            const subfiles = fs.readdirSync(fullPath);
-            for (const subfile of subfiles) {
-              const subext = path.extname(subfile).toLowerCase();
-              if (codeExtensions.includes(subext)) {
-                return true;
-              }
-            }
-          } catch { /* Ignore */ }
-        }
-      }
-    } catch { /* Ignore */ }
-    return false;
-  }
 
-  private async _saveConfig(name: string, projectType: string, githubWorkflows?: boolean, selectedIDEs?: string[]): Promise<void> {
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (!workspaceFolders || workspaceFolders.length === 0) {
-      return;
-    }
-
-    const workspaceRoot = workspaceFolders[0].uri.fsPath;
-    const devOpsDir = path.join(workspaceRoot, '.dev_ops');
-    const configPath = path.join(devOpsDir, 'config.json');
-
-    if (!fs.existsSync(devOpsDir)) {
-      fs.mkdirSync(devOpsDir, { recursive: true });
-    }
-
-    let config: Record<string, unknown> = {};
-    if (fs.existsSync(configPath)) {
-      try {
-        config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-      } catch { /* Ignore */ }
-    }
-
-    config.developer = { name: name.trim() };
-    config.projectType = projectType;
-    config.githubWorkflowsEnabled = githubWorkflows ?? false;
-    config.selectedIDEs = selectedIDEs ?? ['antigravity'];
-
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-    log(`Onboarding complete: ${name}, ${projectType}, github_workflows=${githubWorkflows}, ides=${selectedIDEs?.join(',')}`);
-
-    vscode.window.showInformationMessage(
-      `✅ Welcome, ${name}! Your DevOps workspace is ready.`
-    );
-  }
 
   private _getSetupInProgressHtml(): string {
     return `<!DOCTYPE html>

@@ -2,6 +2,7 @@ import * as path from 'path';
 import { Board, Task, Column, DEFAULT_COLUMN_BLUEPRINTS, Workspace, ProgressReporter } from '../../common/types';
 import { ProjectAuditService } from '../setup/projectAuditService';
 import { NodeWorkspace } from '../../infrastructure/nodeWorkspace';
+import { ConfigService } from '../setup/configService';
 
 export class CoreTaskService {
     constructor(protected workspace: Workspace) { }
@@ -159,18 +160,7 @@ export class CoreTaskService {
         await this.saveTask(task);
     }
 
-    private async readConfig(): Promise<any> {
-        const configPath = path.join(this.workspace.root, '.dev_ops', 'config.json');
-        if (await this.workspace.exists(configPath)) {
-            try {
-                const content = await this.workspace.readFile(configPath);
-                return JSON.parse(content);
-            } catch (e) {
-                return {};
-            }
-        }
-        return {};
-    }
+
 
     public async claimTask(taskId: string, driver: { agent: string; model: string; sessionId?: string; }, ownerOverride?: string): Promise<void> {
         const board = await this.readBoard();
@@ -186,12 +176,8 @@ export class CoreTaskService {
         let owner = ownerOverride;
         if (!owner) {
             // Try config
-            try {
-                const config = await this.readConfig();
-                if (config.developer && config.developer.name) {
-                    owner = config.developer.name;
-                }
-            } catch (e) { /* ignore */ }
+            const configService = new ConfigService(this.workspace);
+            owner = await configService.getDeveloperName();
         }
         if (!owner) {
             owner = 'Unassigned'; // Fallback

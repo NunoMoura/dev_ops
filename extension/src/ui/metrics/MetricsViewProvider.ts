@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { readBoard } from '../../services/board/boardPersistence';
 import { Board } from '../../common';
 import { getFontLink, getSharedStyles, getCSPMeta } from '../shared/styles';
+import { VSCodeWorkspace } from '../../infrastructure/vscodeWorkspace';
+import { ConfigService } from '../../services/setup/configService';
 
 export class MetricsViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'devopsMetricsView';
@@ -39,7 +41,7 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
         }
 
         // Check if onboarding is complete
-        const developerName = this._getDeveloperName();
+        const developerName = await this._getDeveloperName();
         if (!developerName) {
             // Show placeholder during onboarding
             this._view.webview.html = this._getOnboardingPlaceholderHtml();
@@ -55,27 +57,17 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
         }
     }
 
-    private _getDeveloperName(): string | null {
+    private async _getDeveloperName(): Promise<string | null> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders || workspaceFolders.length === 0) {
             return null;
         }
 
         const workspaceRoot = workspaceFolders[0].uri.fsPath;
-        const fs = require('fs');
-        const path = require('path');
-        const configPath = path.join(workspaceRoot, '.dev_ops', 'config.json');
+        const workspace = new VSCodeWorkspace(workspaceRoot);
+        const configService = new ConfigService(workspace);
 
-        if (!fs.existsSync(configPath)) {
-            return null;
-        }
-
-        try {
-            const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-            return config.developer?.name || null;
-        } catch {
-            return null;
-        }
+        return await configService.getDeveloperName() || null;
     }
 
     private _getOnboardingPlaceholderHtml(): string {
