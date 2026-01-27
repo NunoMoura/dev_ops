@@ -910,6 +910,66 @@ function getBoardHtml(panelMode = false, logoUri = ''): string {
         border-radius: 3px;
         font-size: 0.9em;
       }
+      
+      /* Info Button */
+      .info-button {
+        color: var(--vscode-descriptionForeground);
+        opacity: 0.7;
+      }
+      .info-button:hover {
+        color: var(--vscode-foreground);
+        opacity: 1;
+        background: var(--vscode-toolbar-hoverBackground);
+        border-radius: 3px;
+      }
+
+      /* Details Popover */
+      .details-popover {
+        position: fixed;
+        z-index: 1000;
+        background: var(--vscode-editor-background);
+        border: 1px solid var(--vscode-widget-border);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+        border-radius: 4px;
+        padding: 12px;
+        width: 250px;
+        font-size: 13px;
+        animation: fadeIn 0.1s ease-out;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-5px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .popover-row {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .popover-row:last-child {
+        margin-bottom: 0;
+      }
+      .popover-label {
+        color: var(--vscode-descriptionForeground);
+        font-weight: 600;
+        width: 50px;
+        flex-shrink: 0;
+      }
+      .popover-value {
+        color: var(--vscode-foreground);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .popover-overlay {
+        position: fixed;
+        top: 0; 
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 999;
+        background: transparent;
+      }
     </style>
   `;
 
@@ -1209,49 +1269,21 @@ function renderTaskCard(task, columnId) {
 
   /* Removed: Upstream/Downstream artifacts, Progress Bars */
 
-  // Footer: Owner (Left) + Status (Right)
+  // Footer: Status (Left) + Info Button (Right)
   const status = task.status || 'todo';
   const hasOwner = !!task.owner;
+  const hasAgent = !!task.activeSession;
 
   const footer = document.createElement('div');
   footer.className = 'card-footer';
+  footer.style.justifyContent = 'space-between';
 
-  // Left side: Owner
+  // Left side: Status
   const footerLeft = document.createElement('div');
   footerLeft.className = 'card-footer-left';
-
-  if (hasOwner) {
-    const ownerBadge = document.createElement('span');
-    ownerBadge.className = 'owner-badge';
-    ownerBadge.title = 'Developer: ' + task.owner;
-    ownerBadge.textContent = '👤 ' + task.owner;
-    footerLeft.appendChild(ownerBadge);
-
-    // Active Session (Agent)
-    if (task.activeSession) {
-      const agentBadge = document.createElement('span');
-      agentBadge.className = 'owner-badge agent-badge';
-      // Icon depending on agent? For now just Robot.
-      // Append Model if available
-      const model = task.activeSession.model || '';
-      // Use codicon or emoji. 
-      // User request: "add another icon after the agent with the model"
-      
-      const agentIcon = '🤖'; 
-      const modelIcon = '🧠'; // Brain for model? Or just text? 
-      // Or maybe a specific icon based on model name (GPT vs Claude vs Jemini)
-      
-      agentBadge.textContent = agentIcon + ' ' + (model ? modelIcon + ' ' + model : '');
-      agentBadge.title = 'Agent: ' + task.activeSession.agent + ' Model: ' + model;
-      
-      footerLeft.appendChild(agentBadge);
-    }
-  }
-  footer.appendChild(footerLeft);
-
-  // Right side: Status
+  
   const statusSpan = document.createElement('span');
-  statusSpan.className = 'card-footer-right status-' + status;
+  statusSpan.className = 'card-footer-right status-' + status; // Keep class name for color but move left
   const statusLabels = {
     'todo': 'Todo',
     'ready': 'Ready',
@@ -1261,7 +1293,30 @@ function renderTaskCard(task, columnId) {
     'done': 'Done'
   };
   statusSpan.textContent = statusLabels[status] || status;
-  footer.appendChild(statusSpan);
+  footerLeft.appendChild(statusSpan);
+  footer.appendChild(footerLeft);
+
+  // Right side: Info Button (if Owner or Agent exists)
+  if (hasOwner || hasAgent) {
+    const footerRight = document.createElement('div');
+    footerRight.className = 'card-footer-right-actions';
+    
+    const infoBtn = document.createElement('button');
+    infoBtn.className = 'icon-button info-button';
+    // Use an icon, e.g. "i" or codicon-info
+    infoBtn.innerHTML = '<span class="codicon codicon-info"></span>'; 
+    infoBtn.title = 'View Details';
+    infoBtn.style.padding = '2px 6px';
+    
+    infoBtn.onclick = (e) => {
+        e.stopPropagation();
+        const rect = infoBtn.getBoundingClientRect();
+        showTaskDetailsPopover(task, rect.left, rect.bottom);
+    };
+    
+    footerRight.appendChild(infoBtn);
+    footer.appendChild(footerRight);
+  }
 
   card.appendChild(footer);
 
@@ -1393,6 +1448,66 @@ searchInput?.addEventListener('input', (e) => {
 
 
 // --- Modal Logic ---
+function showTaskDetailsPopover(task, x, y) {
+    // Remove existing
+    const existing = document.getElementById('details-popover-container');
+    if (existing) existing.remove();
+
+    const container = document.createElement('div');
+    container.id = 'details-popover-container';
+
+    // Overlay to close
+    const overlay = document.createElement('div');
+    overlay.className = 'popover-overlay';
+    overlay.onclick = () => container.remove();
+    container.appendChild(overlay);
+
+    const popover = document.createElement('div');
+    popover.className = 'details-popover';
+    
+    // Position
+    // Check boundaries (keep simple for now, refine if needed)
+    popover.style.left = Math.min(x, window.innerWidth - 260) + 'px';
+    popover.style.top = (y + 5) + 'px';
+
+    // Content
+    let html = '';
+    
+    if (task.owner) {
+        html += '<div class="popover-row">' +
+                '<span class="popover-label">Owner</span>' +
+                '<span class="popover-value">👤 ' + task.owner + '</span>' +
+                '</div>';
+    }
+
+    if (task.activeSession) {
+        html += '<div class="popover-row">' +
+                '<span class="popover-label">Agent</span>' +
+                '<span class="popover-value">🤖 ' + task.activeSession.agent + '</span>' +
+                '</div>';
+        
+        if (task.activeSession.model) {
+            html += '<div class="popover-row">' +
+                    '<span class="popover-label">Model</span>' +
+                    '<span class="popover-value">🧠 ' + task.activeSession.model + '</span>' +
+                    '</div>';
+        }
+    }
+
+popover.innerHTML = html;
+container.appendChild(popover);
+document.body.appendChild(container);
+
+// Close on Escape
+const escHandler = (e) => {
+  if (e.key === 'Escape') {
+    container.remove();
+    document.removeEventListener('keydown', escHandler);
+  }
+};
+document.addEventListener('keydown', escHandler);
+}
+
 function openEditModal(taskId) {
   currentEditingTaskId = taskId;
   const task = state.tasks.find(t => t.id === taskId);
@@ -1553,5 +1668,17 @@ vscode.postMessage({ type: 'ready' });
 </script>
   `;
 
-  return `< !DOCTYPE html > <html lang="en" > <head><meta charset="UTF-8" /> ${cspMeta}${fontLink}${sharedStyles}${styles} <style>${layoutStyles} </style></head > ${body}${script} </html>`;
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    ${cspMeta}
+    ${fontLink}
+    ${sharedStyles}
+    ${styles}
+    <style>${layoutStyles}</style>
+</head>
+${body}
+${script}
+</html>`;
 }
