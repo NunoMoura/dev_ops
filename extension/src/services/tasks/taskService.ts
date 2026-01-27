@@ -278,8 +278,7 @@ export class CoreTaskService {
             return null;
         }
 
-        // Sort by priority (high > medium > low)
-        const priorityMap = { high: 3, medium: 2, low: 1 };
+        const priorityMap: Record<string, number> = { high: 3, medium: 2, low: 1 };
         backlogTasks.sort((a, b) => {
             const pa = priorityMap[a.priority || 'medium'] || 0;
             const pb = priorityMap[b.priority || 'medium'] || 0;

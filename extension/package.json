@@ -85,6 +85,10 @@
         "title": "DevOps: Delete Column"
       },
       {
+        "command": "devops.configureColumn",
+        "title": "DevOps: Configure Column (WIP Limit)"
+      },
+      {
         "command": "devops.createTask",
         "title": "DevOps: Create Task",
         "icon": "$(add)"

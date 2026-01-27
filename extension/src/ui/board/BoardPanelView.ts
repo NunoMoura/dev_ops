@@ -1108,7 +1108,7 @@ function getBoardHtml(panelMode = false, logoUri = ''): string {
             const isOverLimit = wipLimit !== undefined && taskCount >= wipLimit;
 
             if (wipLimit !== undefined) {
-               count.textContent = `${ taskCount } / ${wipLimit}`;
+               count.textContent = taskCount + ' / ' + wipLimit;
   if (isOverLimit) {
     count.style.color = '#ef4444'; // Red
     count.style.fontWeight = 'bold';
@@ -1537,5 +1537,5 @@ vscode.postMessage({ type: 'ready' });
 </script>
   `;
 
-  return `< !DOCTYPE html > <html lang="en" > <head><meta charset="UTF-8" /> ${ cspMeta }${ fontLink }${ sharedStyles }${ styles } <style>${ layoutStyles } </style></head > ${ body }${ script } </html>`;
+  return `< !DOCTYPE html > <html lang="en" > <head><meta charset="UTF-8" /> ${cspMeta}${fontLink}${sharedStyles}${styles} <style>${layoutStyles} </style></head > ${body}${script} </html>`;
 }

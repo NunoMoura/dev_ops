@@ -43,6 +43,56 @@ export function registerColumnCommands(
         },
         'Unable to delete column',
     );
+
+    registerDevOpsCommand(
+        context,
+        'devops.configureColumn',
+        async (node?: BoardNode | BoardManagerNode) => {
+            await handleConfigureColumn(provider, node);
+        },
+        'Unable to configure column',
+    );
+}
+
+/**
+ * Configure a column (e.g. WIP Limits)
+ */
+async function handleConfigureColumn(provider: BoardTreeProvider, node?: BoardNode | BoardManagerNode): Promise<void> {
+    const board = await readBoard();
+    let column = getColumnFromAnyNode(board, node);
+    if (!column) {
+        column = await promptForColumn(board, 'Select a column to configure');
+    }
+    if (!column) {
+        return;
+    }
+
+    const currentWip = column.wipLimit?.toString() || '';
+    const newWipStr = await vscode.window.showInputBox({
+        prompt: `Set Max Work-in-Progress Limit for "${column.name}"`,
+        placeHolder: 'e.g. 3 (Leave empty for no limit)',
+        value: currentWip,
+        validateInput: (value) => {
+            if (!value) { return undefined; }
+            const n = parseInt(value, 10);
+            if (isNaN(n) || n < 0) { return 'Please enter a positive number'; }
+            return undefined;
+        }
+    });
+
+    if (newWipStr === undefined) {
+        return; // Canceled
+    }
+
+    if (newWipStr === '') {
+        delete column.wipLimit;
+    } else {
+        column.wipLimit = parseInt(newWipStr, 10);
+    }
+
+    await writeBoard(board);
+    await provider.refresh();
+    vscode.window.showInformationMessage(`Configured "${column.name}": WIP Limit = ${column.wipLimit ?? 'Unlimited'}`);
 }
 
 /**
