@@ -1,0 +1,11 @@
+{
+    "developer": {
+        "name": "Nuno Moura"
+    },
+    "projectType": "brownfield",
+    "githubWorkflowsEnabled": false,
+    "selectedIDEs": [
+        ".agent",
+        ".cursor"
+    ]
+}

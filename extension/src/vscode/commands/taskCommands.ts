@@ -575,14 +575,7 @@ async function handleClaimTask(
                 .sort(compareTasks);
 
             if (backlogTasks.length > 0) {
-                const task = backlogTasks[0];
-                // Move to Understand
-                task.columnId = understandCol.id;
-                task.updatedAt = new Date().toISOString();
-                await writeBoard(board);
-                await provider.refresh();
-                taskId = task.id;
-                vscode.window.showInformationMessage(`Promoted ${task.title} to Understand.`);
+                taskId = backlogTasks[0].id;
             }
         }
 

@@ -1,5 +1,7 @@
 import * as path from 'path';
 import { Board, Task, Column, DEFAULT_COLUMN_BLUEPRINTS, Workspace, ProgressReporter } from '../../common/types';
+import { ProjectAuditService } from '../setup/projectAuditService';
+import { NodeWorkspace } from '../../infrastructure/nodeWorkspace';
 
 export class CoreTaskService {
     constructor(protected workspace: Workspace) { }
@@ -205,11 +207,77 @@ export class CoreTaskService {
             startedAt: new Date().toISOString()
         };
 
+        // 3. Auto-Promotion logic
+        if (task.columnId === 'col-backlog') {
+            const understandCol = board.columns.find(c => c.id === 'col-understand' || c.name.toLowerCase() === 'understand');
+            if (understandCol) {
+                task.columnId = understandCol.id;
+                task.activeSession.phase = understandCol.name;
+            }
+        }
+
         task.status = 'in_progress';
         task.updatedAt = new Date().toISOString();
 
         await this.writeBoard(board);
         await this.saveTask(task);
+
+        // 4. Context Hydration
+        try {
+            const auditService = new ProjectAuditService(this.workspace);
+            const projectContext = await auditService.audit();
+
+            const ctxDir = path.join(this.workspace.root, '.dev_ops', 'context');
+            if (!await this.workspace.exists(ctxDir)) {
+                await this.workspace.mkdir(ctxDir);
+            }
+            const contextPath = path.join(ctxDir, `${taskId}.md`);
+            let currentContext = '';
+            if (await this.workspace.exists(contextPath)) {
+                currentContext = await this.workspace.readFile(contextPath);
+            }
+
+            const hydrationHeader = '\n\n## Project Baseline\n';
+
+            if (!currentContext.includes(hydrationHeader)) {
+                let hydrationContent = hydrationHeader;
+                hydrationContent += 'The following existing project documentation and configuration have been detected. Use these as a primary source for your research and planning:\n\n';
+
+                // 1. Core Docs
+                if (projectContext.docs.readme) {
+                    hydrationContent += `- [ ] [README.md](file://${path.join(this.workspace.root, projectContext.docs.readme)})\n`;
+                }
+                if (projectContext.docs.prd) {
+                    hydrationContent += `- [ ] [PRD](file://${path.join(this.workspace.root, projectContext.docs.prd)})\n`;
+                }
+                if (projectContext.docs.projectStandards) {
+                    hydrationContent += `- [ ] [Standards](file://${path.join(this.workspace.root, projectContext.docs.projectStandards)})\n`;
+                }
+                if (projectContext.docs.existing_docs_folder) {
+                    hydrationContent += `- [ ] [Documentation Folder](file://${path.join(this.workspace.root, projectContext.docs.existing_docs_folder)})\n`;
+                }
+
+                // 2. Env/Config
+                if (projectContext.docs.env_templates.length > 0) {
+                    hydrationContent += '\n### Environment Templates\n';
+                    for (const env of projectContext.docs.env_templates) {
+                        hydrationContent += `- [ ] [${path.basename(env)}](file://${path.join(this.workspace.root, env)})\n`;
+                    }
+                }
+
+                // 3. Existing Specs
+                if (projectContext.specs.length > 0) {
+                    hydrationContent += '\n### Existing Specifications (SPEC.md)\n';
+                    for (const spec of projectContext.specs) {
+                        hydrationContent += `- [ ] [${spec}](file://${path.join(this.workspace.root, spec)})\n`;
+                    }
+                }
+
+                await this.workspace.writeFile(contextPath, currentContext + hydrationContent);
+            }
+        } catch (e) {
+            console.error(`Failed to hydrate context for ${taskId}:`, e);
+        }
     }
 
     public async getCurrentTask(): Promise<string | null> {

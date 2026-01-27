@@ -13,7 +13,8 @@ suite('BoardService', () => {
             version: 1,
             columns: [
                 { id: 'col-backlog', name: 'Backlog', position: 1 },
-                { id: 'col-done', name: 'Done', position: 2 }
+                { id: 'col-understand', name: 'Understand', position: 2 },
+                { id: 'col-done', name: 'Done', position: 3 }
             ],
             items: []
         };
@@ -69,6 +70,8 @@ suite('BoardService', () => {
         assert.strictEqual(task.status, 'in_progress');
         assert.ok(task.activeSession);
         assert.strictEqual(task.activeSession.agent, 'Test Agent');
+        // Verify auto-promotion from Backlog to Understand
+        assert.strictEqual(task.columnId, 'col-understand');
     });
 
     test('markDone updates status and moves to Done column', async () => {

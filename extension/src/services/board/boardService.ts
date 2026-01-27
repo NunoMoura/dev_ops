@@ -1,6 +1,10 @@
+import * as path from 'path';
 import { Board, Task, Column, TaskStatus } from '../../common/types';
 import { readBoard, writeBoard, saveTask, getBoardPath, readCurrentTask, writeCurrentTask, clearCurrentTask, archiveTaskFile } from './boardPersistence';
 import { createTaskId, compareTasks } from '../tasks/taskUtils';
+import { ProjectAuditService } from '../setup/projectAuditService';
+import { NodeWorkspace } from '../../infrastructure/nodeWorkspace';
+import { writeTaskContext, readTaskContext, getWorkspaceRoot as getRoot } from './boardPersistence';
 
 /**
  * BoardService - Central service for all board.json operations
@@ -244,10 +248,73 @@ export class BoardService {
             };
         }
 
+        // 3. Auto-Promotion logic: Move from Backlog to Understand if claimed
+        if (task.columnId === 'col-backlog') {
+            const understandCol = board.columns.find(c => c.id === 'col-understand' || c.name.toLowerCase() === 'understand');
+            if (understandCol) {
+                task.columnId = understandCol.id;
+                if (task.activeSession) {
+                    task.activeSession.phase = understandCol.name;
+                }
+            }
+        }
+
         task.status = 'in_progress';
         task.updatedAt = new Date().toISOString();
 
         await this.store.writeBoard(board);
+
+        // 4. Context Hydration (Run Audit)
+        try {
+            const root = getRoot();
+            if (root) {
+                const workspace = new NodeWorkspace(root);
+                const auditService = new ProjectAuditService(workspace);
+                const projectContext = await auditService.audit();
+
+                let currentContext = await readTaskContext(taskId);
+                const hydrationHeader = '\n\n## Project Baseline\n';
+
+                if (!currentContext.includes(hydrationHeader)) {
+                    let hydrationContent = hydrationHeader;
+                    hydrationContent += 'The following existing project documentation and configuration have been detected. Use these as a primary source for your research and planning:\n\n';
+
+                    // 1. Core Docs
+                    if (projectContext.docs.readme) {
+                        hydrationContent += `- [ ] [README.md](file://${path.join(root, projectContext.docs.readme)})\n`;
+                    }
+                    if (projectContext.docs.prd) {
+                        hydrationContent += `- [ ] [PRD](file://${path.join(root, projectContext.docs.prd)})\n`;
+                    }
+                    if (projectContext.docs.projectStandards) {
+                        hydrationContent += `- [ ] [Standards](file://${path.join(root, projectContext.docs.projectStandards)})\n`;
+                    }
+                    if (projectContext.docs.existing_docs_folder) {
+                        hydrationContent += `- [ ] [Documentation Folder](file://${path.join(root, projectContext.docs.existing_docs_folder)})\n`;
+                    }
+
+                    // 2. Env/Config
+                    if (projectContext.docs.env_templates.length > 0) {
+                        hydrationContent += '\n### Environment Templates\n';
+                        for (const env of projectContext.docs.env_templates) {
+                            hydrationContent += `- [ ] [${path.basename(env)}](file://${path.join(root, env)})\n`;
+                        }
+                    }
+
+                    // 3. Existing Specs
+                    if (projectContext.specs.length > 0) {
+                        hydrationContent += '\n### Existing Specifications (SPEC.md)\n';
+                        for (const spec of projectContext.specs) {
+                            hydrationContent += `- [ ] [${spec}](file://${path.join(root, spec)})\n`;
+                        }
+                    }
+
+                    await writeTaskContext(taskId, currentContext + hydrationContent);
+                }
+            }
+        } catch (e) {
+            console.error(`Failed to hydrate context for ${taskId}:`, e);
+        }
 
         // Also set as current task
         await this.setCurrentTask(taskId);

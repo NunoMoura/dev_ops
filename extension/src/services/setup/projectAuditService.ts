@@ -20,10 +20,11 @@ export interface StackItem {
 export interface DocStatus {
     prd: string | null;
     projectStandards: string | null;
-    readme: 'comprehensive' | 'basic' | 'minimal' | null;
+    readme: string | null;
     contributing: string | null;
     changelog: string | null;
     existing_docs_folder: string | null;
+    env_templates: string[];
 }
 
 export interface TestStatus {
@@ -131,7 +132,8 @@ export class ProjectAuditService {
             readme: null,
             contributing: null,
             changelog: null,
-            existing_docs_folder: null
+            existing_docs_folder: null,
+            env_templates: []
         };
 
         // Check PRD
@@ -155,11 +157,48 @@ export class ProjectAuditService {
         }
 
         // Check README
-        const readmePath = path.join(this.workspace.root, 'README.md');
-        if (await this.workspace.exists(readmePath)) {
-            const content = await this.workspace.readFile(readmePath);
-            const words = content.split(/\s+/).length;
-            docs.readme = words > 500 ? 'comprehensive' : (words > 100 ? 'basic' : 'minimal');
+        const readmePatterns = ["README.md", "readme.md", "README", "readme.txt"];
+        for (const p of readmePatterns) {
+            const pAbs = path.join(this.workspace.root, p);
+            if (await this.workspace.exists(pAbs)) {
+                docs.readme = p;
+                break;
+            }
+        }
+
+        // Check Contributing
+        const contribPatterns = ["CONTRIBUTING.md", "contributing.md", "docs/CONTRIBUTING.md"];
+        for (const p of contribPatterns) {
+            const pAbs = path.join(this.workspace.root, p);
+            if (await this.workspace.exists(pAbs)) {
+                docs.contributing = p;
+                break;
+            }
+        }
+
+        // Check Changelog
+        const changelogPatterns = ["CHANGELOG.md", "changelog.md", "HISTORY.md"];
+        for (const p of changelogPatterns) {
+            const pAbs = path.join(this.workspace.root, p);
+            if (await this.workspace.exists(pAbs)) {
+                docs.changelog = p;
+                break;
+            }
+        }
+
+        // Check docs folder
+        const docsFolder = path.join(this.workspace.root, 'docs');
+        if (await this.workspace.exists(docsFolder)) {
+            docs.existing_docs_folder = 'docs';
+        }
+
+        // Check env templates
+        const envPatterns = [".env.example", ".env.template", ".env.sample", ".env.dist", "config/.env.example"];
+        for (const p of envPatterns) {
+            const pAbs = path.join(this.workspace.root, p);
+            if (await this.workspace.exists(pAbs)) {
+                docs.env_templates.push(p);
+            }
         }
 
         return docs;
