@@ -28,6 +28,7 @@ function registerBoardSnapshotSync(context: vscode.ExtensionContext, services: D
             statusBar.update(board);
             dashboard.refresh();
             metricsView.updateContent();
+            boardPanelManager.updateFromBoard(board);
         } catch (e) { }
     };
 
