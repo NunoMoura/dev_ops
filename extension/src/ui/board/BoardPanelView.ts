@@ -1108,17 +1108,22 @@ function getBoardHtml(panelMode = false, logoUri = ''): string {
             const isOverLimit = wipLimit !== undefined && taskCount >= wipLimit;
 
             if (wipLimit !== undefined) {
-               count.textContent = taskCount + ' / ' + wipLimit;
-  if (isOverLimit) {
-    count.style.color = '#ef4444'; // Red
-    count.style.fontWeight = 'bold';
-    header.style.borderColor = '#ef4444'; // Use header border to indicate danger
-  } else {
-    header.style.borderColor = ''; // Reset
-  }
-} else {
-  count.textContent = String(taskCount);
-}
+               // Smart WIP: Only show if over limit or explicitly requested (future).
+               // User request: "only need to show the user when the wip was surpassed"
+               if (isOverLimit) {
+                  count.textContent = taskCount + ' / ' + wipLimit;
+                  count.style.color = '#ef4444'; // Red
+                  count.style.fontWeight = 'bold';
+                  header.style.borderColor = '#ef4444'; 
+               } else {
+                  // If under limit, just show count? Or hide limit part?
+                  // User: "don't need to have the wip always present". So just count.
+                  count.textContent = String(taskCount);
+                  header.style.borderColor = ''; 
+               }
+            } else {
+               count.textContent = String(taskCount);
+            }
 
 headerContent.appendChild(count);
 
@@ -1226,8 +1231,19 @@ function renderTaskCard(task, columnId) {
     if (task.activeSession) {
       const agentBadge = document.createElement('span');
       agentBadge.className = 'owner-badge agent-badge';
-      agentBadge.title = 'Agent: ' + task.activeSession.agent + ' (' + task.activeSession.model + ')';
-      agentBadge.textContent = '🤖';
+      // Icon depending on agent? For now just Robot.
+      // Append Model if available
+      const model = task.activeSession.model || '';
+      // Use codicon or emoji. 
+      // User request: "add another icon after the agent with the model"
+      
+      const agentIcon = '🤖'; 
+      const modelIcon = '🧠'; // Brain for model? Or just text? 
+      // Or maybe a specific icon based on model name (GPT vs Claude vs Jemini)
+      
+      agentBadge.textContent = agentIcon + ' ' + (model ? modelIcon + ' ' + model : '');
+      agentBadge.title = 'Agent: ' + task.activeSession.agent + ' Model: ' + model;
+      
       footerLeft.appendChild(agentBadge);
     }
   }

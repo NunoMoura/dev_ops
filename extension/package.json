@@ -202,6 +202,14 @@
           "default": false,
           "description": "Automatically open board when workspace opens"
         },
+        "devops.wipLimits": {
+          "type": "object",
+          "default": {},
+          "description": "Work-in-Progress limits per column (e.g. {\"In Progress\": 3})",
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
         "devops.enableCodeLens": {
           "type": "boolean",
           "default": true,

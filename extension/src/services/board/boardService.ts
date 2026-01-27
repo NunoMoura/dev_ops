@@ -1,3 +1,4 @@
+import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Board, Task, Column, TaskStatus } from '../../common/types';
@@ -223,7 +224,31 @@ export class BoardService {
      * Get the current board
      */
     async getBoard(): Promise<Board> {
-        return await this.store.readBoard();
+        const board = await this.store.readBoard();
+
+        // Merge WIP Limits from Settings (User Preferences override board.json)
+        try {
+            const config = vscode.workspace.getConfiguration('devops');
+            const wipLimits = config.get<Record<string, number>>('wipLimits');
+
+            if (wipLimits) {
+                // We don't want to mutate the persisted board if we save it back later without this info.
+                // But getBoard returns the view. If we save using check-then-act, we might need this info.
+                // The safest is to mutate the in-memory object returned here.
+                for (const col of board.columns) {
+                    // Try Name first, then ID
+                    if (wipLimits[col.name] !== undefined) {
+                        col.wipLimit = wipLimits[col.name];
+                    } else if (wipLimits[col.id] !== undefined) {
+                        col.wipLimit = wipLimits[col.id];
+                    }
+                }
+            }
+        } catch (e) {
+            // Ignore config errors
+        }
+
+        return board;
     }
 
     // ========================================================================
