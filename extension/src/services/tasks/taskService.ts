@@ -266,6 +266,29 @@ export class CoreTaskService {
         }
     }
 
+    public async pickNextTask(): Promise<string | null> {
+        const board = await this.readBoard();
+        const backlogTasks = board.items.filter(t =>
+            t.columnId === 'col-backlog' &&
+            t.status === 'todo' &&
+            !t.activeSession
+        );
+
+        if (backlogTasks.length === 0) {
+            return null;
+        }
+
+        // Sort by priority (high > medium > low)
+        const priorityMap = { high: 3, medium: 2, low: 1 };
+        backlogTasks.sort((a, b) => {
+            const pa = priorityMap[a.priority || 'medium'] || 0;
+            const pb = priorityMap[b.priority || 'medium'] || 0;
+            return pb - pa; // Descending
+        });
+
+        return backlogTasks[0].id;
+    }
+
     public async getCurrentTask(): Promise<string | null> {
         // In the CLI context, we can read .current_task from the workspace root
         // This file is usually managed by the agent or the extension.

@@ -194,6 +194,12 @@ export class BoardTreeProvider implements vscode.TreeDataProvider<BoardNode> {
       nodes.forEach((node) => this.itemsById.set(node.item.id, node));
     }
     this.columnNodes = nextColumns;
+    this.columnNodes = nextColumns;
+    console.log(`[BoardTreeProvider] Board reloaded. Columns: ${this.columnNodes.length}, Total Tasks: ${this.board.items.length}`);
+    this.columnNodes.forEach(c => {
+      const count = this.itemsByColumn.get(c.column.id)?.length || 0;
+      console.log(`[BoardTreeProvider] Column '${c.column.name}' (${c.column.id}): ${count} tasks`);
+    });
     this.onDidUpdateBoardEmitter.fire(this.getBoardViewSnapshot());
   }
 

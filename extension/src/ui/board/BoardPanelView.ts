@@ -8,6 +8,7 @@ export type BoardViewColumn = {
   id: string;
   name: string;
   position?: number;
+  wipLimit?: number;
 };
 
 export type BoardViewTask = {
@@ -180,7 +181,8 @@ export class BoardPanelManager {
       columns: board.columns.map(c => ({
         id: c.id,
         name: c.name,
-        position: c.position
+        position: c.position,
+        wipLimit: c.wipLimit
       })),
       tasks: board.items.map(t => ({
         id: t.id,
@@ -1100,494 +1102,440 @@ function getBoardHtml(panelMode = false, logoUri = ''): string {
             
             const count = document.createElement('span');
             count.className = 'column-count';
-            count.textContent = String(columnTasks.length);
-            headerContent.appendChild(count);
             
-            header.appendChild(headerContent);
+            const taskCount = columnTasks.length;
+            const wipLimit = column.wipLimit;
+            const isOverLimit = wipLimit !== undefined && taskCount >= wipLimit;
 
-            columnEl.appendChild(header);
+            if (wipLimit !== undefined) {
+               count.textContent = `${ taskCount } / ${wipLimit}`;
+  if (isOverLimit) {
+    count.style.color = '#ef4444'; // Red
+    count.style.fontWeight = 'bold';
+    header.style.borderColor = '#ef4444'; // Use header border to indicate danger
+  } else {
+    header.style.borderColor = ''; // Reset
+  }
+} else {
+  count.textContent = String(taskCount);
+}
 
-            const list = document.createElement('div');
-            list.className = 'task-list';
-            list.addEventListener('dragover', (event) => handleDragOver(event, columnEl));
-            list.addEventListener('drop', (event) => handleDrop(event, column.id, columnEl));
-            
-            columnTasks.forEach((task) => {
-              const card = renderTaskCard(task, column.id);
-              list.appendChild(card);
-            });
-            
-            // Add Archive All button after cards in Done column
-            if (column.id === 'col-done' && columnTasks.length >0) {
-                const archiveAllBtn = document.createElement('button');
-                archiveAllBtn.className = 'archive-all-button';
-                archiveAllBtn.textContent = 'Archive All';
-                archiveAllBtn.onclick = () => {
-                    vscode.postMessage({ type: 'archiveTasks' });
-                };
-                list.appendChild(archiveAllBtn);
-            }
-            
-            columnEl.appendChild(list);
-            boardEl.appendChild(columnEl);
+headerContent.appendChild(count);
+
+header.appendChild(headerContent);
+
+columnEl.appendChild(header);
+
+const list = document.createElement('div');
+list.className = 'task-list';
+list.addEventListener('dragover', (event) => handleDragOver(event, columnEl));
+list.addEventListener('drop', (event) => handleDrop(event, column.id, columnEl));
+
+columnTasks.forEach((task) => {
+  const card = renderTaskCard(task, column.id);
+  list.appendChild(card);
+});
+
+// Add Archive All button after cards in Done column
+if (column.id === 'col-done' && columnTasks.length > 0) {
+  const archiveAllBtn = document.createElement('button');
+  archiveAllBtn.className = 'archive-all-button';
+  archiveAllBtn.textContent = 'Archive All';
+  archiveAllBtn.onclick = () => {
+    vscode.postMessage({ type: 'archiveTasks' });
+  };
+  list.appendChild(archiveAllBtn);
+}
+
+columnEl.appendChild(list);
+boardEl.appendChild(columnEl);
           });
-          updateSelectionBanner();
+updateSelectionBanner();
         }
 
-        function renderTaskCard(task, columnId) {
-          const card = document.createElement('article');
-          card.className = 'task-card';
-          card.draggable = true;
-          card.dataset.status = task.status || 'todo';
-          if (state.selection.has(task.id)) {
-            card.classList.add('selected');
-          }
-          // Single click selects
-          card.addEventListener('click', (event) => handleCardClick(event, task.id));
-          // Context menu opens Edit Modal (Custom)
-          card.addEventListener('contextmenu', (event) => {
-             showContextMenu(event, task.id);
-          });
-          // Double click opens task in editor (Standard)
-          card.addEventListener('dblclick', () => {
-             vscode.postMessage({ type: 'openTask', taskId: task.id });
-          });
-          
-          card.addEventListener('dragstart', (event) => handleDragStart(event, task.id, card));
-          card.addEventListener('dragend', () => handleDragEnd(card));
+function renderTaskCard(task, columnId) {
+  const card = document.createElement('article');
+  card.className = 'task-card';
+  card.draggable = true;
+  card.dataset.status = task.status || 'todo';
+  if (state.selection.has(task.id)) {
+    card.classList.add('selected');
+  }
+  // Single click selects
+  card.addEventListener('click', (event) => handleCardClick(event, task.id));
+  // Context menu opens Edit Modal (Custom)
+  card.addEventListener('contextmenu', (event) => {
+    showContextMenu(event, task.id);
+  });
+  // Double click opens task in editor (Standard)
+  card.addEventListener('dblclick', () => {
+    vscode.postMessage({ type: 'openTask', taskId: task.id });
+  });
 
-          // Title
-          const title = document.createElement('div');
-          title.className = 'task-title';
-          title.textContent = task.title;
-          card.appendChild(title);
+  card.addEventListener('dragstart', (event) => handleDragStart(event, task.id, card));
+  card.addEventListener('dragend', () => handleDragEnd(card));
 
-          // Summary
-          if (task.summary) {
-            const summary = document.createElement('div');
-            summary.className = 'task-summary';
-            summary.textContent = task.summary;
-            card.appendChild(summary);
-          }
+  // Card Header: ID + Title
+  const header = document.createElement('div');
+  header.className = 'card-header';
+  header.style.cssText = 'display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;';
 
-          // Artifact links (upstream and downstream)
-          const hasUpstream = task.upstream?.length >0;
-          const hasDownstream = task.downstream?.length >0;
-          if (hasUpstream || hasDownstream) {
-            const artifactLinks = document.createElement('div');
-            artifactLinks.className = 'artifact-links';
-            if (hasUpstream) {
-              task.upstream.forEach(artifact => {
-                const badge = document.createElement('span');
-                badge.className = 'artifact-badge upstream';
-                badge.textContent = artifact;
-                badge.title = 'Upstream: ' + artifact;
-                artifactLinks.appendChild(badge);
-              });
-            }
-            if (hasDownstream) {
-              task.downstream.forEach(artifact => {
-                const badge = document.createElement('span');
-                badge.className = 'artifact-badge downstream';
-                badge.textContent = artifact;
-                badge.title = 'Downstream: ' + artifact;
-                artifactLinks.appendChild(badge);
-              });
-            }
-            card.appendChild(artifactLinks);
-          }
+  const title = document.createElement('div');
+  title.className = 'task-title';
+  title.textContent = task.title;
+  title.style.marginBottom = '0'; // Override generic style
+  header.appendChild(title);
 
-          // Progress bar (if checklist exists)
-          const total = task.checklistTotal || 0;
-          const done = task.checklistDone || 0;
-          if (total >0) {
-            const progressContainer = document.createElement('div');
-            progressContainer.className = 'progress-container';
-            const progressBar = document.createElement('div');
-            progressBar.className = 'progress-bar';
-            const progressFill = document.createElement('div');
-            progressFill.className = 'progress-fill';
-            progressFill.style.width = Math.round((done / total) * 100) + '%';
-            progressBar.appendChild(progressFill);
-            progressContainer.appendChild(progressBar);
-            const progressText = document.createElement('span');
-            progressText.className = 'progress-text';
-            progressText.textContent = done + '/' + total;
-            progressContainer.appendChild(progressText);
-            card.appendChild(progressContainer);
-          }
+  const idBadge = document.createElement('div');
+  idBadge.className = 'task-id-badge';
+  idBadge.textContent = task.id;
+  idBadge.style.cssText = 'font-size:10px; color:var(--vscode-descriptionForeground); margin-left:8px; white-space:nowrap; opacity:0.7;';
+  header.appendChild(idBadge);
 
-          // Footer: Priority, Owner, Date on left; Status on right
-          const status = task.status || 'todo';
-          const hasStatus = status !== 'todo';
-          const hasPriority = !!task.priority;
-          const hasDate = !!task.updatedAt;
-          const hasOwner = !!task.owner;
+  card.appendChild(header);
 
-          if (hasStatus || hasPriority || hasDate || hasOwner) {
-            const footer = document.createElement('div');
-            footer.className = 'card-footer';
-            
-            // Left side
-            const footerLeft = document.createElement('div');
-            footerLeft.className = 'card-footer-left';
-            
-            // Priority
-            if (hasPriority) {
-              const prioritySpan = document.createElement('span');
-              prioritySpan.className = 'priority priority-' + (task.priority.toLowerCase() || 'medium');
-              prioritySpan.textContent = task.priority;
-              footerLeft.appendChild(prioritySpan);
-            }
+  // Summary (Description)
+  if (task.summary) {
+    const summary = document.createElement('div');
+    summary.className = 'task-summary';
+    summary.textContent = task.summary;
+    card.appendChild(summary);
+  }
 
-            // Separator 1
-            if (hasPriority && (hasOwner || hasDate)) {
-               const sep = document.createElement('span');
-               sep.className = 'separator';
-               sep.textContent = '·';
-               footerLeft.appendChild(sep);
-            }
+  /* Removed: Upstream/Downstream artifacts, Progress Bars */
 
-            // Owner
-            if (hasOwner) {
-                const ownerBadge = document.createElement('span');
-                ownerBadge.className = 'owner-badge';
-                ownerBadge.title = 'Developer: ' + task.owner;
-                ownerBadge.textContent = '👤 ' + task.owner;
-                footerLeft.appendChild(ownerBadge);
+  // Footer: Owner (Left) + Status (Right)
+  const status = task.status || 'todo';
+  const hasOwner = !!task.owner;
 
-                // Active Session (Agent)
-                if (task.activeSession) {
-                    const agentBadge = document.createElement('span');
-                    agentBadge.className = 'owner-badge agent-badge';
-                    agentBadge.title = 'Agent: ' + task.activeSession.agent + ' (' + task.activeSession.model + ')';
-                    agentBadge.textContent = '🤖';
-                    footerLeft.appendChild(agentBadge);
-                }
-            }
+  const footer = document.createElement('div');
+  footer.className = 'card-footer';
 
-            // Separator 2
-            if (hasOwner && hasDate) {
-               const sep = document.createElement('span');
-               sep.className = 'separator';
-               sep.textContent = '·';
-               footerLeft.appendChild(sep);
-            }
-            
-            // Date
-            if (hasDate) {
-              const dateSpan = document.createElement('span');
-              dateSpan.className = 'date';
-              const date = new Date(task.updatedAt);
-              dateSpan.textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-              footerLeft.appendChild(dateSpan);
-            }
-            
-            footer.appendChild(footerLeft);
-            
-            // Right side: status
-            if (hasStatus) {
-              const statusSpan = document.createElement('span');
-              statusSpan.className = 'card-footer-right status-' + status;
-              const statusLabels = {
-                'ready': 'Ready',
-                'agent_active': 'In Progress',
-                'needs_feedback': 'Feedback',
-                'blocked': 'Blocked',
-                'done': 'Done'
-              };
-              statusSpan.textContent = statusLabels[status] || status;
-              footer.appendChild(statusSpan);
-            }
-            
-            card.appendChild(footer);
-          }
-          // Actions row for Done tasks
-          if (columnId === 'col-done') {
-            const actionsRow = document.createElement('div');
-            actionsRow.className = 'card-actions';
-            const archiveBtn = document.createElement('button');
-            archiveBtn.className = 'card-archive-button';
-            archiveBtn.textContent = 'Archive';
-            archiveBtn.onclick = (e) => {
-              e.stopPropagation();
-              vscode.postMessage({ type: 'archiveTask', taskId: task.id });
-            };
-            actionsRow.appendChild(archiveBtn);
-            card.appendChild(actionsRow);
-          }
+  // Left side: Owner
+  const footerLeft = document.createElement('div');
+  footerLeft.className = 'card-footer-left';
 
-          return card;
-        }
+  if (hasOwner) {
+    const ownerBadge = document.createElement('span');
+    ownerBadge.className = 'owner-badge';
+    ownerBadge.title = 'Developer: ' + task.owner;
+    ownerBadge.textContent = '👤 ' + task.owner;
+    footerLeft.appendChild(ownerBadge);
+
+    // Active Session (Agent)
+    if (task.activeSession) {
+      const agentBadge = document.createElement('span');
+      agentBadge.className = 'owner-badge agent-badge';
+      agentBadge.title = 'Agent: ' + task.activeSession.agent + ' (' + task.activeSession.model + ')';
+      agentBadge.textContent = '🤖';
+      footerLeft.appendChild(agentBadge);
+    }
+  }
+  footer.appendChild(footerLeft);
+
+  // Right side: Status
+  const statusSpan = document.createElement('span');
+  statusSpan.className = 'card-footer-right status-' + status;
+  const statusLabels = {
+    'todo': 'Todo',
+    'ready': 'Ready',
+    'in_progress': 'In Progress',
+    'needs_feedback': 'Feedback',
+    'blocked': 'Blocked',
+    'done': 'Done'
+  };
+  statusSpan.textContent = statusLabels[status] || status;
+  footer.appendChild(statusSpan);
+
+  card.appendChild(footer);
+
+  // Actions row for Done tasks (Archive)
+  if (columnId === 'col-done') {
+    const actionsRow = document.createElement('div');
+    actionsRow.className = 'card-actions';
+    const archiveBtn = document.createElement('button');
+    archiveBtn.className = 'card-archive-button';
+    archiveBtn.textContent = 'Archive';
+    archiveBtn.onclick = (e) => {
+      e.stopPropagation();
+      vscode.postMessage({ type: 'archiveTask', taskId: task.id });
+    };
+    actionsRow.appendChild(archiveBtn);
+    card.appendChild(actionsRow);
+  }
+
+  return card;
+
+}
 
 
 
-        function createChip(text, extraClass) {
-          const chip = document.createElement('span');
-          chip.className = 'task-chip' + (extraClass ? ' ' + extraClass : '');
-          chip.textContent = text;
-          return chip;
-        }
+function createChip(text, extraClass) {
+  const chip = document.createElement('span');
+  chip.className = 'task-chip' + (extraClass ? ' ' + extraClass : '');
+  chip.textContent = text;
+  return chip;
+}
 
-        function handleCardClick(event, taskId) {
-          event.stopPropagation();
-          const multi = event.shiftKey || event.metaKey || event.ctrlKey;
-          if (multi) {
-            if (state.selection.has(taskId)) {
-              state.selection.delete(taskId);
-            } else {
-              state.selection.add(taskId);
-            }
-          } else if (!state.selection.has(taskId) || state.selection.size >1) {
-            state.selection.clear();
-            state.selection.add(taskId);
-          }
-          persistState();
-          renderBoard();
-        }
+function handleCardClick(event, taskId) {
+  event.stopPropagation();
+  const multi = event.shiftKey || event.metaKey || event.ctrlKey;
+  if (multi) {
+    if (state.selection.has(taskId)) {
+      state.selection.delete(taskId);
+    } else {
+      state.selection.add(taskId);
+    }
+  } else if (!state.selection.has(taskId) || state.selection.size > 1) {
+    state.selection.clear();
+    state.selection.add(taskId);
+  }
+  persistState();
+  renderBoard();
+}
 
-        function handleDragStart(event, taskId, card) {
-          const dragIds = state.selection.has(taskId) ? Array.from(state.selection) : [taskId];
-          state.dragTaskIds = dragIds;
-          card.classList.add('dragging');
-          if (!state.selection.has(taskId)) {
-            state.selection.clear();
-            state.selection.add(taskId);
-            persistState();
-            renderBoard();
-          }
-          if (event.dataTransfer) {
-            event.dataTransfer.effectAllowed = 'move';
-            event.dataTransfer.setData('text/plain', dragIds.join(','));
-            const preview = createDragPreview(dragIds.length);
-            event.dataTransfer.setDragImage(preview, -10, -10);
-            setTimeout(() => preview.remove(), 0);
-          }
-        }
+function handleDragStart(event, taskId, card) {
+  const dragIds = state.selection.has(taskId) ? Array.from(state.selection) : [taskId];
+  state.dragTaskIds = dragIds;
+  card.classList.add('dragging');
+  if (!state.selection.has(taskId)) {
+    state.selection.clear();
+    state.selection.add(taskId);
+    persistState();
+    renderBoard();
+  }
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', dragIds.join(','));
+    const preview = createDragPreview(dragIds.length);
+    event.dataTransfer.setDragImage(preview, -10, -10);
+    setTimeout(() => preview.remove(), 0);
+  }
+}
 
-        function createDragPreview(count) {
-          const preview = document.createElement('div');
-          preview.className = 'drag-preview';
-          preview.textContent = count === 1 ? 'Moving 1 task' : 'Moving ' + count + ' tasks';
-          document.body.appendChild(preview);
-          return preview;
-        }
+function createDragPreview(count) {
+  const preview = document.createElement('div');
+  preview.className = 'drag-preview';
+  preview.textContent = count === 1 ? 'Moving 1 task' : 'Moving ' + count + ' tasks';
+  document.body.appendChild(preview);
+  return preview;
+}
 
-        function handleDragEnd(card) {
-          card.classList.remove('dragging');
-          state.dragTaskIds = [];
-        }
+function handleDragEnd(card) {
+  card.classList.remove('dragging');
+  state.dragTaskIds = [];
+}
 
-        function handleDragOver(event, columnEl) {
-          event.preventDefault();
-          event.dataTransfer && (event.dataTransfer.dropEffect = 'move');
-          columnEl.classList.add('drop-target');
-        }
+function handleDragOver(event, columnEl) {
+  event.preventDefault();
+  event.dataTransfer && (event.dataTransfer.dropEffect = 'move');
+  columnEl.classList.add('drop-target');
+}
 
-        function handleDrop(event, columnId, columnEl) {
-          event.preventDefault();
-          columnEl.classList.remove('drop-target');
-          if (!state.dragTaskIds.length) {
-            const payload = event.dataTransfer?.getData('text/plain');
-            if (payload) {
-              state.dragTaskIds = payload.split(',').filter(Boolean);
-            }
-          }
-          const taskIds = state.dragTaskIds.filter(Boolean);
-          state.dragTaskIds = [];
-          if (!taskIds.length) {
-            return;
-          }
-          vscode.postMessage({ type: 'moveTasks', taskIds, columnId });
-        }
+function handleDrop(event, columnId, columnEl) {
+  event.preventDefault();
+  columnEl.classList.remove('drop-target');
+  if (!state.dragTaskIds.length) {
+    const payload = event.dataTransfer?.getData('text/plain');
+    if (payload) {
+      state.dragTaskIds = payload.split(',').filter(Boolean);
+    }
+  }
+  const taskIds = state.dragTaskIds.filter(Boolean);
+  state.dragTaskIds = [];
+  if (!taskIds.length) {
+    return;
+  }
+  vscode.postMessage({ type: 'moveTasks', taskIds, columnId });
+}
 
-        function updateSelectionBanner() {
-          if (!state.selection.size) {
-            selectionBanner.classList.add('hidden');
-            return;
-          }
-          selectionBanner.classList.remove('hidden');
-          selectionCount.textContent =
-            state.selection.size === 1 ? '1 task selected' : state.selection.size + ' tasks selected';
-        }
+function updateSelectionBanner() {
+  if (!state.selection.size) {
+    selectionBanner.classList.add('hidden');
+    return;
+  }
+  selectionBanner.classList.remove('hidden');
+  selectionCount.textContent =
+    state.selection.size === 1 ? '1 task selected' : state.selection.size + ' tasks selected';
+}
 
-        function clearSelection() {
-          if (!state.selection.size) {
-            return;
-          }
-          state.selection.clear();
-          persistState();
-          renderBoard();
-        }
+function clearSelection() {
+  if (!state.selection.size) {
+    return;
+  }
+  state.selection.clear();
+  persistState();
+  renderBoard();
+}
 
-        // --- Filter Listeners ---
-        searchInput?.addEventListener('input', (e) => {
-           state.filterText = e.target.value;
-           updateBoard({ columns: state.columns, tasks: state.tasks }); // Trigger re-filter
-        });
-        
+// --- Filter Listeners ---
+searchInput?.addEventListener('input', (e) => {
+  state.filterText = e.target.value;
+  updateBoard({ columns: state.columns, tasks: state.tasks }); // Trigger re-filter
+});
 
 
-        // --- Modal Logic ---
-        function openEditModal(taskId) {
-           currentEditingTaskId = taskId;
-           const task = state.tasks.find(t => t.id === taskId);
-           modalTitle.textContent = task ? 'Edit Task: ' + task.title : 'Edit Task';
-           modalContextEditor.value = 'Loading context...';
-           
-           modal.showModal();
-           
-           // Fetch Context
-           vscode.postMessage({ type: 'getTaskContext', taskId });
-        }
-        
-        function closeEditModal() {
-           modal.close();
-           currentEditingTaskId = null;
-        }
-        
-        function saveContext() {
-           if (currentEditingTaskId) {
-              const content = modalContextEditor.value;
-              vscode.postMessage({ type: 'saveTaskContext', taskId: currentEditingTaskId, content });
-              closeEditModal();
-           }
-        }
-        
-        modalClose?.addEventListener('click', closeEditModal);
-        modalSave?.addEventListener('click', (e) => {
-           e.preventDefault();
-           saveContext();
-        });
-        
-        // --- Event Listeners ---
 
-        boardEl?.addEventListener('click', (event) => {
-          if (event.target === boardEl) {
-            clearSelection();
-          }
-        });
-        clearSelectionBtn?.addEventListener('click', clearSelection);
-        
-        // Add task button - triggers column selection
-        const addTaskBtn = document.getElementById('addTaskBtn');
-        addTaskBtn?.addEventListener('click', () => {
-          vscode.postMessage({ type: 'createTask' });
-        });
-        
-        document.addEventListener('keydown', (event) => {
-          if (event.key === 'Escape') {
-            if (modal.open) {
-                closeEditModal();
-            } else {
-                clearSelection();
-            }
-          }
-          // Delete selected tasks with Delete or Backspace key
-          if ((event.key === 'Delete' || event.key === 'Backspace') && state.selection.size >0 && !modal.open) {
-            const taskIds = Array.from(state.selection);
-            vscode.postMessage({ type: 'deleteTasks', taskIds });
-          }
-        });
+// --- Modal Logic ---
+function openEditModal(taskId) {
+  currentEditingTaskId = taskId;
+  const task = state.tasks.find(t => t.id === taskId);
+  modalTitle.textContent = task ? 'Edit Task: ' + task.title : 'Edit Task';
+  modalContextEditor.value = 'Loading context...';
 
-        window.addEventListener('message', (event) => {
-          if (event?.data?.type === 'board') {
-            updateBoard(event.data.data);
-          } else if (event?.data?.type === 'taskContext') {
-             // Handle context load
-             if (currentEditingTaskId === event.data.taskId && modal.open) {
-                 modalContextEditor.value = event.data.content || '';
-             }
-          }
-        });
+  modal.showModal();
 
-        // --- Context Menu Logic ---
-        const contextMenu = document.getElementById('context-menu');
-        const ctxEdit = document.getElementById('ctx-edit');
-        const ctxArchive = document.getElementById('ctx-archive');
-        let contextTask = null;
+  // Fetch Context
+  vscode.postMessage({ type: 'getTaskContext', taskId });
+}
 
-        function showContextMenu(event, taskId) {
-           event.preventDefault();
-           contextTask = taskId;
-           
-           // Position
-           const { clientX: mouseX, clientY: mouseY } = event;
-           contextMenu.style.top = mouseY + 'px';
-           contextMenu.style.left = mouseX + 'px';
-           contextMenu.classList.remove('hidden');
-           
-           // Adjust if out of bounds (basic)
-           const rect = contextMenu.getBoundingClientRect();
-           if (rect.right >window.innerWidth) {
-               contextMenu.style.left = (window.innerWidth - rect.width - 10) + 'px';
-           }
-           if (rect.bottom >window.innerHeight) {
-               contextMenu.style.top = (window.innerHeight - rect.height - 10) + 'px';
-           }
-        }
+function closeEditModal() {
+  modal.close();
+  currentEditingTaskId = null;
+}
 
-        function hideContextMenu() {
-           contextMenu.classList.add('hidden');
-           contextTask = null;
-        }
+function saveContext() {
+  if (currentEditingTaskId) {
+    const content = modalContextEditor.value;
+    vscode.postMessage({ type: 'saveTaskContext', taskId: currentEditingTaskId, content });
+    closeEditModal();
+  }
+}
 
-        document.addEventListener('click', (e) => {
-            if (!contextMenu.contains(e.target)) {
-                hideContextMenu();
-            }
-        });
+modalClose?.addEventListener('click', closeEditModal);
+modalSave?.addEventListener('click', (e) => {
+  e.preventDefault();
+  saveContext();
+});
 
-        document.addEventListener('contextmenu', (e) => {
-            if (!contextMenu.contains(e.target)) {
-                 hideContextMenu();
-            }
-        });
-        
-        ctxEdit?.addEventListener('click', () => {
-             if(contextTask) openEditModal(contextTask);
-             hideContextMenu();
-        });
-        
-        ctxArchive?.addEventListener('click', () => {
-             if(contextTask) vscode.postMessage({ type: 'archiveTask', taskId: contextTask });
-             hideContextMenu();
-        });
+// --- Event Listeners ---
 
-        // Priority Handlers
-        ['high', 'medium', 'low'].forEach(p => {
-             const el = document.getElementById('ctx-priority-' + p);
-             el?.addEventListener('click', () => {
-                 if(contextTask) {
-                     vscode.postMessage({ 
-                        type: 'updateTask', 
-                        taskId: contextTask, 
-                        updates: { priority: p.charAt(0).toUpperCase() + p.slice(1) } 
-                     });
-                 }
-                 hideContextMenu();
-             });
-        });
+boardEl?.addEventListener('click', (event) => {
+  if (event.target === boardEl) {
+    clearSelection();
+  }
+});
+clearSelectionBtn?.addEventListener('click', clearSelection);
 
-        // Empty State Handler
-        emptyState?.addEventListener('click', (e) => {
-            const target = e.target;
-            if (target.closest('.cta-create')) {
-                vscode.postMessage({ type: 'createTask' });
-            }
-            if (target.closest('.cta-clear')) {
-                 if(searchInput) searchInput.value = '';
-                 if(priorityFilter) priorityFilter.value = '';
-                 state.filterText = '';
-                 state.filterPriority = '';
-                 updateBoard({ columns: state.columns, tasks: state.tasks });
-            }
-        });
+// Add task button - triggers column selection
+const addTaskBtn = document.getElementById('addTaskBtn');
+addTaskBtn?.addEventListener('click', () => {
+  vscode.postMessage({ type: 'createTask' });
+});
 
-        vscode.postMessage({ type: 'ready' });
-      })();
-    </script>
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    if (modal.open) {
+      closeEditModal();
+    } else {
+      clearSelection();
+    }
+  }
+  // Delete selected tasks with Delete or Backspace key
+  if ((event.key === 'Delete' || event.key === 'Backspace') && state.selection.size > 0 && !modal.open) {
+    const taskIds = Array.from(state.selection);
+    vscode.postMessage({ type: 'deleteTasks', taskIds });
+  }
+});
+
+window.addEventListener('message', (event) => {
+  if (event?.data?.type === 'board') {
+    updateBoard(event.data.data);
+  } else if (event?.data?.type === 'taskContext') {
+    // Handle context load
+    if (currentEditingTaskId === event.data.taskId && modal.open) {
+      modalContextEditor.value = event.data.content || '';
+    }
+  }
+});
+
+// --- Context Menu Logic ---
+const contextMenu = document.getElementById('context-menu');
+const ctxEdit = document.getElementById('ctx-edit');
+const ctxArchive = document.getElementById('ctx-archive');
+let contextTask = null;
+
+function showContextMenu(event, taskId) {
+  event.preventDefault();
+  contextTask = taskId;
+
+  // Position
+  const { clientX: mouseX, clientY: mouseY } = event;
+  contextMenu.style.top = mouseY + 'px';
+  contextMenu.style.left = mouseX + 'px';
+  contextMenu.classList.remove('hidden');
+
+  // Adjust if out of bounds (basic)
+  const rect = contextMenu.getBoundingClientRect();
+  if (rect.right > window.innerWidth) {
+    contextMenu.style.left = (window.innerWidth - rect.width - 10) + 'px';
+  }
+  if (rect.bottom > window.innerHeight) {
+    contextMenu.style.top = (window.innerHeight - rect.height - 10) + 'px';
+  }
+}
+
+function hideContextMenu() {
+  contextMenu.classList.add('hidden');
+  contextTask = null;
+}
+
+document.addEventListener('click', (e) => {
+  if (!contextMenu.contains(e.target)) {
+    hideContextMenu();
+  }
+});
+
+document.addEventListener('contextmenu', (e) => {
+  if (!contextMenu.contains(e.target)) {
+    hideContextMenu();
+  }
+});
+
+ctxEdit?.addEventListener('click', () => {
+  if (contextTask) openEditModal(contextTask);
+  hideContextMenu();
+});
+
+ctxArchive?.addEventListener('click', () => {
+  if (contextTask) vscode.postMessage({ type: 'archiveTask', taskId: contextTask });
+  hideContextMenu();
+});
+
+// Priority Handlers
+['high', 'medium', 'low'].forEach(p => {
+  const el = document.getElementById('ctx-priority-' + p);
+  el?.addEventListener('click', () => {
+    if (contextTask) {
+      vscode.postMessage({
+        type: 'updateTask',
+        taskId: contextTask,
+        updates: { priority: p.charAt(0).toUpperCase() + p.slice(1) }
+      });
+    }
+    hideContextMenu();
+  });
+});
+
+// Empty State Handler
+emptyState?.addEventListener('click', (e) => {
+  const target = e.target;
+  if (target.closest('.cta-create')) {
+    vscode.postMessage({ type: 'createTask' });
+  }
+  if (target.closest('.cta-clear')) {
+    if (searchInput) searchInput.value = '';
+    if (priorityFilter) priorityFilter.value = '';
+    state.filterText = '';
+    state.filterPriority = '';
+    updateBoard({ columns: state.columns, tasks: state.tasks });
+  }
+});
+
+vscode.postMessage({ type: 'ready' });
+      }) ();
+</script>
   `;
 
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" />${cspMeta}${fontLink}${sharedStyles}${styles}<style>${layoutStyles}</style></head>${body}${script}</html>`;
+  return `< !DOCTYPE html > <html lang="en" > <head><meta charset="UTF-8" /> ${ cspMeta }${ fontLink }${ sharedStyles }${ styles } <style>${ layoutStyles } </style></head > ${ body }${ script } </html>`;
 }

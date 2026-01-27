@@ -74,17 +74,29 @@ program
     .command('claim-task')
     .description('Claim a task and move it to In Progress (or specified column)')
     .option('--id <id>', 'Task ID (e.g. TASK-123)')
-    .option('--column <column>', 'Target column ID', 'col-in-progress')
+    .option('--column <column>', 'Target column ID', 'col-understand')
     .action(async (options) => {
-        if (options.column) {
-            await taskService.moveTask(options.id, options.column);
+        let taskId = options.id;
+
+        if (!taskId) {
+            console.log('No Task ID provided. Smart-picking next task from Backlog...');
+            taskId = await taskService.pickNextTask();
+            if (!taskId) {
+                console.error('No available tasks in Backlog to claim.');
+                process.exit(1);
+            }
+            console.log(`Auto-selected Task: ${taskId}`);
         }
-        await taskService.claimTask(options.id, {
+
+        if (options.column) {
+            await taskService.moveTask(taskId, options.column);
+        }
+        await taskService.claimTask(taskId, {
             agent: 'CLI',
             model: 'CLI',
             sessionId: 'cli-session'
         });
-        console.log(`Claimed Task: ${options.id}`);
+        console.log(`Claimed Task: ${taskId}`);
     });
 
 program

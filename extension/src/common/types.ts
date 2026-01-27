@@ -15,6 +15,7 @@ export type Column = {
   id: string;
   name: string;
   position: number;
+  wipLimit?: number;
 };
 
 // ============================================================================
@@ -92,6 +93,7 @@ export type Task = {
   owner?: string;                // Human Developer responsible (e.g. "Nuno")
   activeSession?: AgentSession;  // Current active agent execution
   agentHistory?: AgentActivity[]; // History of past sessions
+  traceFile?: string;            // Path to current decision trace
 };
 
 export type AgentSession = {

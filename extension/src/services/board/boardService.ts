@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as fs from 'fs';
 import { Board, Task, Column, TaskStatus } from '../../common/types';
 import { readBoard, writeBoard, saveTask, deleteTask, getBoardPath, readCurrentTask, writeCurrentTask, clearCurrentTask, archiveTaskFile } from './boardPersistence';
 
@@ -103,6 +104,20 @@ export class BoardService {
      * Move a task to a different column
      */
     async moveTask(taskId: string, columnId: string): Promise<void> {
+        const board = await this.store.readBoard();
+        const targetColumn = board.columns.find(c => c.id === columnId);
+        if (targetColumn && targetColumn.wipLimit) {
+            const currentCount = board.items.filter(t => t.columnId === columnId).length;
+            if (currentCount >= targetColumn.wipLimit) {
+                // Check if we are moving WITHIN the same column (no-op/reorder) allows it, 
+                // but moveTask is usually across columns.
+                // We need to check if the task is ALREADY in this column.
+                const task = board.items.find(t => t.id === taskId);
+                if (task && task.columnId !== columnId) {
+                    throw new Error(`Cannot move task to '${targetColumn.name}'. WIP Limit reached (${currentCount}/${targetColumn.wipLimit}).`);
+                }
+            }
+        }
         await this.updateTask(taskId, { columnId, status: 'todo' });
     }
 
@@ -252,6 +267,25 @@ export class BoardService {
                 phase: options.driver.phase || currentPhase,
                 startedAt: new Date().toISOString(),
             };
+
+            // Initialize Decision Trace
+            try {
+                const root = getRoot();
+                if (root) {
+                    const activityDir = path.join(root, '.dev_ops', 'activity');
+                    if (!fs.existsSync(activityDir)) {
+                        await fs.promises.mkdir(activityDir, { recursive: true });
+                    }
+                    const tracePath = path.join(activityDir, `${taskId}.md`);
+                    if (!fs.existsSync(tracePath)) {
+                        const header = `# Decision Trace: ${task.title}\n> Created: ${new Date().toLocaleString()}\n\n## Session Started (${options.driver.agent})\n- **Model**: ${options.driver.model}\n- **Phase**: ${task.columnId}\n\n`;
+                        await fs.promises.writeFile(tracePath, header, 'utf8');
+                        task.traceFile = `.dev_ops/activity/${taskId}.md`; // Relative path
+                    }
+                }
+            } catch (e) {
+                console.error('[BoardService] Failed to init trace file', e);
+            }
         }
 
         // 3. Auto-Promotion logic: Move from Backlog to Understand if claimed
@@ -261,13 +295,18 @@ export class BoardService {
                 c.name.toLowerCase() === 'understand'
             );
             if (understandCol) {
+                console.log(`[BoardService] Promoting task ${taskId} from Backlog to ${understandCol.name} (${understandCol.id})`);
                 task.columnId = understandCol.id;
                 if (task.activeSession) {
                     task.activeSession.phase = understandCol.name;
                 }
+            } else {
+                console.warn(`[BoardService] 'Understand' column not found. Task ${taskId} staying in Backlog.`);
             }
         }
 
+        // Ensure status reflects active work
+        task.status = 'in_progress';
         task.updatedAt = new Date().toISOString();
 
         await this.store.writeBoard(board);

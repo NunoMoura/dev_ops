@@ -178,6 +178,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       /* Page-specific overrides */
       body {
         padding: 0; margin: 0;
+        font-family: var(--vscode-font-family);
       }
       
       /* Status indicator bar at top */
@@ -190,88 +191,113 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       .header {
         position: sticky; top: 0; z-index: 100;
         background: var(--vscode-editor-background);
-        border-bottom: 1px solid var(--border-normal);
-        padding: var(--space-md) var(--space-lg);
-        box-shadow: var(--shadow-md);
+        border-bottom: 1px solid var(--vscode-panel-border);
+        padding: 16px 24px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       }
-      .header-top { display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-md); }
-      .header-row { display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; }
+      .header-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+      .header-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
       
       /* Title Input */
       input.title-input {
-        font-size: var(--font-lg); font-weight: var(--weight-semibold);
+        font-size: 18px; font-weight: 600;
         background: transparent; border: none; color: inherit; 
-        flex: 1; min-width: 0; /* Allow flexing */
-        outline: none; border-bottom: 2px solid transparent;
+        flex: 1; min-width: 0; outline: none; border-bottom: 2px solid transparent;
         font-family: inherit;
+        padding-bottom: 4px;
+        transition: border-color 0.2s;
       }
       input.title-input:focus { border-bottom-color: var(--vscode-focusBorder); }
 
       /* Controls */
-      select {
-        background: var(--vscode-dropdown-background);
-        color: var(--vscode-dropdown-foreground);
-        border: 1px solid var(--border-normal);
-        padding: var(--space-xs) var(--space-sm); border-radius: 4px;
+      select, input[type="text"] {
+        background: var(--vscode-input-background);
+        color: var(--vscode-input-foreground);
+        border: 1px solid var(--vscode-input-border);
+        padding: 4px 8px; border-radius: 4px;
         font-family: inherit;
+        font-size: 13px;
+        height: 28px;
+      }
+      select:focus, input[type="text"]:focus {
+        border-color: var(--vscode-focusBorder);
+        outline: none;
       }
 
       .badge {
-        padding: 2px var(--space-sm); border-radius: 99px; font-size: var(--font-xs); font-weight: var(--weight-medium);
-        text-transform: none; letter-spacing: normal;
-        white-space: nowrap; flex-shrink: 0; /* Prevent squashing */
+        padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 500;
+        text-transform: none; letter-spacing: normal; white-space: nowrap; flex-shrink: 0;
+        line-height: 1.4;
       }
       .badge-id { background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); }
       
       /* Main Content */
-      .container { max-width: 900px; margin: 0 auto; padding: var(--space-lg); }
+      .container { max-width: 800px; margin: 0 auto; padding: 32px; }
       
-      .section { margin-bottom: var(--space-xl); }
+      .section { margin-bottom: 40px; }
       .section-title { 
-        font-size: var(--font-sm); text-transform: uppercase; letter-spacing: 0.05em; 
-        color: var(--vscode-descriptionForeground); margin-bottom: var(--space-md); 
-        border-bottom: 1px solid var(--border-subtle); padding-bottom: var(--space-xs);
-        font-weight: var(--weight-medium);
+        font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; 
+        color: var(--vscode-descriptionForeground); margin-bottom: 8px; 
+        font-weight: 600;
+        display: flex; align-items: center; justify-content: space-between;
       }
 
       /* Summary */
       textarea.summary-input {
-        width: 100%; min-height: 80px;
+        width: 100%; min-height: 120px;
         background: var(--vscode-input-background);
         color: var(--vscode-input-foreground);
-        border: 1px solid var(--border-normal);
-        padding: var(--space-sm); font-family: inherit; resize: vertical;
+        border: 1px solid var(--vscode-input-border);
+        padding: 12px; font-family: var(--vscode-editor-font-family); 
+        resize: vertical;
         border-radius: 4px;
-        transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+        line-height: 1.5;
+        font-size: 13px;
       }
       textarea.summary-input:focus {
         border-color: var(--vscode-focusBorder);
         outline: none;
-        box-shadow: var(--shadow-sm);
       }
 
+      /* Buttons */
+      button {
+        background: var(--vscode-button-secondaryBackground);
+        color: var(--vscode-button-secondaryForeground);
+        border: none; padding: 6px 14px; border-radius: 2px;
+        cursor: pointer; font-family: inherit; font-size: 13px;
+        transition: background 0.2s;
+      }
+      button:hover { background: var(--vscode-button-secondaryHoverBackground); }
+      
+      button.btn-danger {
+        background: var(--vscode-errorForeground); color: white;
+      }
+      button.btn-danger:hover { opacity: 0.9; }
+
       /* Timeline / Trace */
-      .timeline { position: relative; padding-left: 20px; }
+      .timeline { position: relative; padding-left: 20px; margin-top: 16px; }
       .timeline::before {
         content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
-        background: var(--border-normal);
+        background: var(--vscode-textSeparator-foreground); opacity: 0.3;
       }
-      .trace-item { position: relative; margin-bottom: var(--space-lg); padding-left: var(--space-md); }
+      .trace-item { position: relative; margin-bottom: 24px; padding-left: 16px; }
       .trace-item::before {
-        content: ''; position: absolute; left: -24px; top: 6px; width: 10px; height: 10px;
-        border-radius: 50%; background: ${statusColor};
+        content: ''; position: absolute; left: -24px; top: 6px; width: 8px; height: 8px;
+        border-radius: 50%; background: var(--vscode-textLink-foreground);
         border: 2px solid var(--vscode-editor-background);
       }
-      .trace-date { font-size: var(--font-xs); color: var(--vscode-descriptionForeground); margin-bottom: var(--space-xs); }
+      .trace-date { font-size: 10px; color: var(--vscode-descriptionForeground); margin-bottom: 4px; opacity: 0.8; }
       .trace-content { 
         background: var(--vscode-textBlockQuote-background); 
-        padding: var(--space-md); border-radius: 6px;
-        border: 1px solid var(--border-subtle);
+        padding: 12px; border-radius: 6px;
+        position: relative;
       }
-      .trace-content h3 { margin-top: 0; font-size: var(--font-base); font-weight: var(--weight-semibold); }
+      .trace-content h3 { margin-top: 0; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+      .trace-content p { margin: 0 0 8px 0; font-size: 12px; line-height: 1.5; opacity: 0.9; }
+      .trace-content li { font-size: 12px; margin-bottom: 4px; }
       
       /* Actions */
-      .actions { display: flex; gap: var(--space-md); justify-content: flex-end; margin-top: var(--space-lg); }
+      .actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 40px; border-top: 1px solid var(--vscode-textSeparator-foreground); padding-top: 24px; }
     </style>`;
 
     return `<!DOCTYPE html>
