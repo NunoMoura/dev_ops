@@ -11,8 +11,8 @@ export class DevOpsCodeLensProvider implements vscode.CodeLensProvider {
     private _onDidChangeCodeLenses = new vscode.EventEmitter<void>();
     readonly onDidChangeCodeLenses = this._onDidChangeCodeLenses.event;
 
-    // Regex to match TASK-XXX format
-    private readonly taskRegex = /TASK-\d{3}/g;
+    // Regex to match TASK-XXX format (excluding RES-TASK-XXX)
+    private readonly taskRegex = /(?<!RES-)TASK-\d{3}\b/g;
 
     constructor() {
         const folders = vscode.workspace.workspaceFolders;
@@ -64,7 +64,7 @@ export class DevOpsCodeLensProvider implements vscode.CodeLensProvider {
                         codeLenses.push(new vscode.CodeLens(range, {
                             title: this.formatTaskTitle(task),
                             tooltip: this.formatTaskTooltip(task),
-                            command: 'board.showTaskDetails',
+                            command: 'devops.showTaskDetails',
                             arguments: [taskId],
                         }));
                     }

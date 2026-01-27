@@ -83,7 +83,7 @@ program
             agent: 'CLI',
             model: 'CLI',
             sessionId: 'cli-session'
-        }, 'Agent');
+        });
         console.log(`Claimed Task: ${options.id}`);
     });
 
