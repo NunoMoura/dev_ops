@@ -146,6 +146,23 @@ export async function saveTask(task: Task): Promise<void> {
 }
 
 /**
+ * Deletes a single task file from disk.
+ */
+export async function deleteTask(taskId: string): Promise<void> {
+  const tasksDir = getTasksDir();
+  if (!tasksDir) { throw new Error('No workspace open'); }
+
+  const filePath = path.join(tasksDir, `${taskId}.json`);
+  try {
+    await fs.unlink(filePath);
+  } catch (err: any) {
+    if (err.code !== 'ENOENT') {
+      throw err;
+    }
+  }
+}
+
+/**
  * Archive a task (Compress and Remove).
  * Moves TASK-ID.json -> archive/TASK-ID.gz (JSON content zipped)
  */

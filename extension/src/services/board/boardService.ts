@@ -1,6 +1,8 @@
 import * as path from 'path';
 import { Board, Task, Column, TaskStatus } from '../../common/types';
-import { readBoard, writeBoard, saveTask, getBoardPath, readCurrentTask, writeCurrentTask, clearCurrentTask, archiveTaskFile } from './boardPersistence';
+import { readBoard, writeBoard, saveTask, deleteTask, getBoardPath, readCurrentTask, writeCurrentTask, clearCurrentTask, archiveTaskFile } from './boardPersistence';
+
+
 import { createTaskId, compareTasks } from '../tasks/taskUtils';
 import { ProjectAuditService } from '../setup/projectAuditService';
 import { NodeWorkspace } from '../../infrastructure/nodeWorkspace';
@@ -19,6 +21,7 @@ export interface BoardStore {
     readBoard(): Promise<Board>;
     writeBoard(board: Board): Promise<void>;
     saveTask(task: Task): Promise<void>;
+    deleteTask(taskId: string): Promise<void>;
     getBoardPath(): Promise<string | undefined>;
     readCurrentTask(): Promise<string | null>;
     writeCurrentTask(taskId: string): Promise<void>;
@@ -31,6 +34,7 @@ const defaultStore: BoardStore = {
     readBoard,
     writeBoard,
     saveTask,
+    deleteTask,
     getBoardPath: async () => getBoardPath(),
     readCurrentTask,
     writeCurrentTask,
@@ -56,6 +60,7 @@ export class BoardService {
 
         board.items.push(newTask);
         await this.store.writeBoard(board);
+        await this.store.saveTask(newTask);
 
         return id;
     }
@@ -91,13 +96,14 @@ export class BoardService {
         }
 
         await this.store.writeBoard(board);
+        await this.store.deleteTask(taskId);
     }
 
     /**
      * Move a task to a different column
      */
     async moveTask(taskId: string, columnId: string): Promise<void> {
-        await this.updateTask(taskId, { columnId });
+        await this.updateTask(taskId, { columnId, status: 'todo' });
     }
 
     /**
@@ -250,7 +256,10 @@ export class BoardService {
 
         // 3. Auto-Promotion logic: Move from Backlog to Understand if claimed
         if (task.columnId === 'col-backlog') {
-            const understandCol = board.columns.find(c => c.id === 'col-understand' || c.name.toLowerCase() === 'understand');
+            const understandCol = board.columns.find(c =>
+                c.id === 'col-understand' ||
+                c.name.toLowerCase() === 'understand'
+            );
             if (understandCol) {
                 task.columnId = understandCol.id;
                 if (task.activeSession) {
@@ -259,10 +268,10 @@ export class BoardService {
             }
         }
 
-        task.status = 'in_progress';
         task.updatedAt = new Date().toISOString();
 
         await this.store.writeBoard(board);
+        await this.store.saveTask(task);
 
         // 4. Context Hydration (Run Audit)
         try {
@@ -353,6 +362,7 @@ export class BoardService {
         task.updatedAt = new Date().toISOString();
 
         await this.store.writeBoard(board);
+        await this.store.saveTask(task);
 
         // Clear current task if it matches
         const currentTask = await this.getCurrentTask();
@@ -403,6 +413,7 @@ export class BoardService {
         // Note: We DO NOT clear task.owner. The developer still owns the completed task.
 
         await this.store.writeBoard(board);
+        await this.store.saveTask(task);
 
         // Clear current task if it matches
         const currentTask = await this.getCurrentTask();

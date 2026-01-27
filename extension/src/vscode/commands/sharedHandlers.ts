@@ -85,6 +85,11 @@ export async function handleBoardOpenTask(taskId: string): Promise<void> {
  * 
  * Used by: TaskEditorProvider
  */
+/**
+ * Handle updating a task from the task editor
+ * 
+ * Used by: TaskEditorProvider
+ */
 export async function handleCardUpdateMessage(
     update: TaskDetailsPayload,
     provider: BoardTreeProvider,
@@ -94,27 +99,24 @@ export async function handleCardUpdateMessage(
         if (!update.id) {
             throw new Error('Missing task id');
         }
-        const board = await readBoard();
-        const task = board.items.find((item) => item.id === update.id);
-        if (!task) {
-            throw new Error('Task not found in board');
-        }
-        if (!update.title?.trim()) {
-            throw new Error('Title is required');
-        }
-        task.title = update.title.trim();
-        task.summary = update.summary?.trim() || undefined;
-        task.tags = parseTags(update.tags);
-        task.priority = update.priority || undefined;
-        task.workflow = update.workflow || task.workflow;
-        task.upstream = update.upstream || task.upstream;
-        task.downstream = update.downstream || task.downstream;
-        task.status = update.status as any || task.status;
-        task.updatedAt = new Date().toISOString();
-        await writeBoard(board);
+
+        // Use boardService for correct persistence
+        const updates: Partial<Omit<import('../../common').Task, 'id'>> = {};
+
+        if (update.title !== undefined) { updates.title = update.title.trim() || 'Untitled'; }
+        if (update.summary !== undefined) { updates.summary = update.summary.trim() || undefined; }
+        if (update.tags !== undefined) { updates.tags = parseTags(update.tags); }
+        if (update.priority !== undefined && update.priority) { updates.priority = update.priority; }
+        if (update.workflow !== undefined) { updates.workflow = update.workflow; }
+        if (update.upstream !== undefined) { updates.upstream = update.upstream; }
+        if (update.downstream !== undefined) { updates.downstream = update.downstream; }
+        if (update.status !== undefined) { updates.status = update.status as any; }
+
+        await boardService.updateTask(update.id, updates);
+
+        // Refresh UI
         await provider.refresh();
         syncFilterUI();
-        // Note: task details view replaced by editor tabs with their own rendering
     } catch (error) {
         vscode.window.showErrorMessage(`Unable to save task: ${formatError(error)}`);
     }
@@ -134,12 +136,16 @@ export async function handleCardDeleteMessage(
         if (!taskId) {
             throw new Error('Missing task id');
         }
+
+        // Get task details for confirmation message (optional, but good UX)
+        // boardService.getTask would be better but readBoard works for confirmation reading
         const board = await readBoard();
-        const index = board.items.findIndex((item) => item.id === taskId);
-        if (index === -1) {
-            throw new Error('Task not found in board');
+        const task = board.items.find(t => t.id === taskId);
+
+        if (!task) {
+            throw new Error('Task not found');
         }
-        const task = board.items[index];
+
         const confirmDelete = 'Delete Task';
         const columnName = board.columns.find((column) => column.id === task.columnId)?.name ?? COLUMN_FALLBACK_NAME;
         const selection = await vscode.window.showWarningMessage(
@@ -151,11 +157,11 @@ export async function handleCardDeleteMessage(
         if (selection !== confirmDelete) {
             return;
         }
-        board.items.splice(index, 1);
-        await writeBoard(board);
+
+        await boardService.deleteTask(taskId);
+
         await provider.refresh();
         syncFilterUI();
-        // Note: task editor tab will naturally close when task no longer exists
         vscode.window.showInformationMessage('Task deleted.');
     } catch (error) {
         vscode.window.showErrorMessage(`Unable to delete task: ${formatError(error)}`);
@@ -224,9 +230,13 @@ export async function handleBoardDeleteTasks(taskIds: string[], provider: BoardT
         return;
     }
     try {
-        const board = await readBoard();
-        board.items = board.items.filter(t => !taskIds.includes(t.id));
-        await writeBoard(board);
+        for (const taskId of taskIds) {
+            try {
+                await boardService.deleteTask(taskId);
+            } catch (e) {
+                console.error(`Failed to delete ${taskId}`, e);
+            }
+        }
         await provider.refresh();
         vscode.window.showInformationMessage(`Deleted ${count} task${count > 1 ? 's' : ''}`);
     } catch (error) {

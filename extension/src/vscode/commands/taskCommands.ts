@@ -328,9 +328,11 @@ async function handleMoveTask(
     if (!targetColumn || targetColumn.id === task.columnId) {
         return;
     }
-    task.columnId = targetColumn.id;
-    task.updatedAt = new Date().toISOString();
-    await writeBoard(board);
+
+    await boardService.moveTask(task.id, targetColumn.id);
+
+    // Status is auto-reset to 'todo' by boardService.moveTask
+
     await provider.refresh();
     await appendTaskHistory(task, `Moved to column ${targetColumn.name || COLUMN_FALLBACK_NAME}`);
     await provider.revealTask(task.id, view);

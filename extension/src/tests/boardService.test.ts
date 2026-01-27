@@ -41,6 +41,9 @@ suite('BoardService', () => {
                 const path = `/mock/archive/${id}.json`;
                 archivedFiles.push(path);
                 return path;
+            },
+            deleteTask: async (id: string) => {
+                mockBoard.items = mockBoard.items.filter(i => i.id !== id);
             }
         };
 

@@ -108,26 +108,32 @@ export async function openTaskContext(task: Task): Promise<void> {
   }
 }
 
+import { boardService } from '../../services/board/boardService';
+
 export async function moveTasksToColumn(taskIds: string[], columnId: string): Promise<MoveTasksResult> {
+  // Read board just to get column name validation
   const board = await readBoard();
   const column = board.columns.find((col) => col.id === columnId);
   if (!column) {
     throw new Error('Target column not found.');
   }
+
   const updatedIds: string[] = [];
+
   for (const id of taskIds) {
-    const task = board.items.find((item) => item.id === id);
-    if (!task || task.columnId === columnId) {
-      continue;
+    try {
+      await boardService.moveTask(id, columnId);
+      updatedIds.push(id);
+      // Status reset is handled by boardService.moveTask
+    } catch (e) {
+      console.error(`Failed to move task ${id}:`, e);
     }
-    task.columnId = columnId;
-    task.updatedAt = new Date().toISOString();
-    updatedIds.push(id);
-    await appendTaskHistory(task, `Moved to column ${column.name || COLUMN_FALLBACK_NAME}`);
   }
+
   if (!updatedIds.length) {
     return { movedTaskIds: [], columnName: column.name || COLUMN_FALLBACK_NAME };
   }
-  await writeBoard(board);
+
+  // No need to writeBoard, boardService handles it.
   return { movedTaskIds: updatedIds, columnName: column.name || COLUMN_FALLBACK_NAME };
 }
