@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { TaskEditorProvider } from './ui/tasks';
 import { registerInitializeCommand } from './vscode/commands/initializeCommand';
-import { registerBoardWatchers, readBoard } from './services/board/boardPersistence';
+import { registerBoardWatchers } from './services/board/boardPersistence';
 import { formatError, log, warn, error as logError } from './common';
 import { SessionBridge } from './infrastructure/integrations/sessionBridge';
 import { CursorBridge } from './infrastructure/integrations/cursorBridge';
@@ -48,6 +48,15 @@ export async function activate(context: vscode.ExtensionContext) {
     bindDevOpsViews(context, services);
     log('[Activation] Step 4 complete');
 
+    // Watch for updates to refresh dashboard, metrics, and board panel
+    context.subscriptions.push(
+      services.provider.onDidUpdateBoardView((snapshot) => {
+        services.dashboard.refresh();
+        services.metricsView.updateContent();
+        services.boardPanelManager.setBoard(snapshot);
+      })
+    );
+
     try {
       await services.provider.refresh();
       services.dashboard.refresh();
@@ -58,20 +67,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
     await registerBoardWatchers(services.provider, context);
     // Also watch for updates to refresh dashboard and metrics
-    context.subscriptions.push(
-      services.provider.onDidUpdateBoardView(async () => {
-        services.dashboard.refresh();
-        services.metricsView.updateContent();
-
-        // Push real-time update to Webview
-        try {
-          const board = await readBoard();
-          if (services.boardPanelManager.isPanelOpen()) {
-            services.boardPanelManager.updateFromBoard(board);
-          }
-        } catch (e) { }
-      })
-    );
 
     registerBoardCommands(context, services, services.syncFilterUI);
 
