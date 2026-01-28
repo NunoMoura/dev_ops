@@ -7,6 +7,14 @@ description: Core DevOps behavioral invariants
 
 > **Document-first. Quality over speed. Understand before you build.**
 
+## Project Structure & Artifacts
+
+- **Docs**: `.dev_ops/docs/` (Architecture, Specs)
+- **Mockups**: `.dev_ops/docs/ux/mockups/` (UI/UX Designs)
+- **Tasks**: `.dev_ops/tasks/` (JSON Metadata)
+- **Context**: `.dev_ops/context/` (Markdown Notes per Task)
+- **Templates**: `.dev_ops/templates/`
+
 ## Core Philosophy
 
 SPEC.md files define requirements. Code matches specs. Verify confirms the match.

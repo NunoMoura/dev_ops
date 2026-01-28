@@ -4,6 +4,6 @@
   "title": "Define Project Standards",
   "summary": "Define technical and product standards.\n\nStrategy:\n1. Analyze existing docs and tech stack constraints.\n2. Create `.dev_ops/docs/project_standards.md` using the project_standards.md template.",
   "priority": "high",
-  "updatedAt": "2026-01-27T21:29:53.448Z",
+  "updatedAt": "2026-01-28T01:36:21.569Z",
   "status": "todo"
 }
