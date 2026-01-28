@@ -416,59 +416,41 @@ function getBoardHtml(panelMode = false, logoUri = ''): string {
       .task-card {
         border: 1px solid var(--vscode-input-border, rgba(255, 255, 255, 0.1));
         border-radius: 8px;
-        padding: 10px 10px 10px 14px;
+        padding: 12px;
         background: var(--vscode-editor-background, rgba(0, 0, 0, 0.4));
         cursor: grab;
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 8px;
         transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
         position: relative;
-        border-left: 2px solid #6b7280; /* Default: ready/done gray */
+        border-left: 2px solid #6b7280; /* Default: grey */
       }
-      /* Status-based left border colors and enhancements */
-      .task-card[data-status="todo"] { border-left-color: #6b7280; } /* Grey */
-      .task-card[data-status="in_progress"] { 
-        border-left-color: #22c55e;
-        background: linear-gradient(90deg, rgba(34, 197, 94, 0.05) 0%, rgba(34, 197, 94, 0) 100%);
-      } /* Green */
-      .task-card[data-status="needs_feedback"] { 
-        border-left-color: #eab308;
-        background: linear-gradient(90deg, rgba(234, 179, 8, 0.08) 0%, rgba(234, 179, 8, 0) 100%);
-        animation: pulse-border 2s infinite; 
-      } /* Yellow */
-      .task-card[data-status="blocked"] { border-left-color: #ef4444; } /* Red */
-      
-      @keyframes pulse-border {
-        0% { border-left-color: #eab308; box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); }
-        50% { border-left-color: #fca5a5; box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.1); }
-        100% { border-left-color: #eab308; box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); }
+      .task-card:hover {
+        border-color: var(--vscode-focusBorder, #3b82f6);
+        background: var(--vscode-editor-background, rgba(0, 0, 0, 0.5));
       }
+      /* Status-based left border colors */
+      .task-card[data-status="todo"] { border-left-color: #6b7280; }
+      .task-card[data-status="ready"] { border-left-color: #3b82f6; }
+      .task-card[data-status="in_progress"], 
+      .task-card[data-status="agent_active"] { border-left-color: #22c55e; }
+      .task-card[data-status="needs_feedback"] { border-left-color: #eab308; }
+      .task-card[data-status="blocked"] { border-left-color: #ef4444; }
+      .task-card[data-status="done"] { border-left-color: #6b7280; opacity: 0.8; }
 
       .task-card.selected {
         border-color: var(--vscode-focusBorder);
-        border-left-width: 2px;
         box-shadow: 0 0 0 1px var(--vscode-focusBorder);
       }
       .task-card.dragging {
         opacity: 0.5;
-      }
-      .task-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 8px;
-      }
-      .task-id {
-        font-size: 10px;
-        color: var(--vscode-descriptionForeground);
-        opacity: 0.7;
+        cursor: grabbing;
       }
       .task-title {
-        font-weight: 500; /* Reduced from 600 */
+        font-weight: 600;
         font-size: 13px;
         line-height: 1.3;
-        margin-bottom: 4px;
         color: var(--vscode-editor-foreground);
       }
       .task-summary {
@@ -476,170 +458,60 @@ function getBoardHtml(panelMode = false, logoUri = ''): string {
         color: var(--vscode-descriptionForeground);
         line-height: 1.4;
         display: -webkit-box;
-        -webkit-line-clamp: 4;
+        -webkit-line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        margin-bottom: 8px;
-      }
-      .task-tags {
-        font-size: 11px;
-        color: var(--vscode-textLink-foreground);
         opacity: 0.8;
-        margin-bottom: 8px;
       }
-      .task-tags::before {
-        content: "";
-      }
-      /* Artifact badges */
-      .artifact-links {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-        margin-top: 4px;
-      }
-      .artifact-badge {
-        background: rgba(20, 184, 166, 0.15);
-        border: 1px solid rgba(20, 184, 166, 0.3);
-        border-radius: 4px;
-        padding: 1px 5px;
-        font-size: 9px;
-        color: #5b72e8;
-      }
-      .artifact-badge.upstream::before { content: "↑ "; opacity: 0.7; }
-      .artifact-badge.downstream::before { content: "↓ "; opacity: 0.7; }
-      /* Progress bar */
-      .progress-container {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin-top: 4px;
-      }
-      .progress-bar {
-        flex: 1;
-        height: 4px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
-        overflow: hidden;
-      }
-      .progress-fill {
-        height: 100%;
-        background: var(--brand-gradient);
-        transition: width 0.3s ease;
-      }
-      .progress-text {
-        font-size: 10px;
-        color: var(--vscode-descriptionForeground);
-        white-space: nowrap;
-      }
-      /* Card footer: priority/date left, status right */
       .card-footer {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-top: 10px;
+        margin-top: 4px;
         padding-top: 8px;
-        border-top: 1px solid rgba(255, 255, 255, 0.06);
-        font-size: 11px;
-        color: var(--vscode-descriptionForeground);
-        opacity: 0.85;
-      }
-      .card-footer-left {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-      .card-footer-left .priority {
-        text-transform: uppercase;
-        font-size: 10px;
-        letter-spacing: 0.05em;
-        font-weight: 500;
-      }
-      .card-footer-left .priority-high,
-      .card-footer-left .priority-medium,
-      .card-footer-left .priority-low {
-        color: var(--vscode-descriptionForeground);
-        opacity: 0.9;
-      }
-      .card-footer-left .owner-badge {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        background: rgba(255, 255, 255, 0.08);
-        padding: 1px 5px;
-        border-radius: 4px;
-        font-size: 10px;
-        color: var(--vscode-foreground);
-        opacity: 0.9;
-      }
-      .card-footer-left .agent-badge {
-        color: #22c55e; /* Green for active agent */
-      }
-      .card-footer-left .date {
-        text-transform: uppercase;
-        font-size: 10px;
-        letter-spacing: 0.05em;
-      }
-      .card-footer-left .separator { opacity: 0.4; }
-      .card-footer-right {
-        text-transform: capitalize;
-      }
-      .card-footer-right.status-todo { color: #6b7280; }
-      .card-footer-right.status-in_progress { color: #22c55e; }
-      .card-footer-right.status-needs_feedback { color: #eab308; }
-      .card-footer-right.status-blocked { color: #ef4444; }
-      .card-actions {
-        display: flex;
-        justify-content: flex-end;
-        margin-top: 8px;
-      }
-      .card-open-button {
-        border: 1px solid var(--vscode-focusBorder);
-        border-radius: 4px;
-        background: transparent;
-        color: var(--vscode-focusBorder);
-        padding: 4px 10px;
-        font-size: 11px;
-        cursor: pointer;
-      }
-      .card-open-button:hover {
-        background: var(--vscode-focusBorder);
-        color: var(--vscode-sideBar-background);
-      }
-      .archive-all-button {
-        width: 100%;
-        padding: 10px;
-        margin-top: 8px;
-        background: transparent;
-        border: 1px solid var(--brand-color);
-        border-radius: 6px;
-        color: var(--brand-color);
-        font-size: 12px;
-        cursor: pointer;
-        transition: all 0.15s ease;
-      }
-      .archive-all-button:hover {
-        background: var(--brand-color);
-        color: var(--vscode-sideBar-background);
-        border-style: solid;
+        border-top: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.06));
       }
       .card-archive-button {
-        border: 1px solid var(--brand-color);
+        border: 1px solid var(--vscode-button-background);
         border-radius: 4px;
         background: transparent;
-        color: var(--brand-color);
-        padding: 4px 10px;
-        font-size: 11px;
+        color: var(--vscode-foreground);
+        padding: 2px 8px;
+        font-size: 10px;
         cursor: pointer;
-        margin-left: 6px;
+        margin-right: 8px;
+        opacity: 0.7;
+        transition: opacity 0.2s;
       }
       .card-archive-button:hover {
-        background: var(--brand-color);
-        color: var(--vscode-sideBar-background);
+        opacity: 1;
+        background: var(--vscode-button-background);
+        color: var(--vscode-button-foreground);
       }
       #empty-state {
         text-align: center;
         color: var(--vscode-descriptionForeground);
         margin-top: 48px;
+        grid-column: 1 / -1;
+      }
+      .archive-all-button {
+        width: 100%;
+        padding: 8px;
+        margin-top: 12px;
+        background: transparent;
+        border: 1px solid var(--vscode-button-background, #3b82f6);
+        border-radius: 6px;
+        color: var(--vscode-button-background, #3b82f6);
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        font-weight: 500;
+        opacity: 0.8;
+      }
+      .archive-all-button:hover {
+        background: var(--vscode-button-background, #3b82f6);
+        color: var(--vscode-button-foreground, #ffffff);
+        opacity: 1;
       }
       .selection-banner {
         border: 1px solid var(--vscode-focusBorder);
@@ -914,45 +786,75 @@ function getBoardHtml(panelMode = false, logoUri = ''): string {
       /* Info Button */
       .info-button {
         color: var(--vscode-descriptionForeground);
-        opacity: 0.7;
+        opacity: 0.6;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        transition: opacity 0.2s, background 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       .info-button:hover {
-        color: var(--vscode-foreground);
+        color: var(--vscode-textLink-foreground);
         opacity: 1;
-        background: var(--vscode-toolbar-hoverBackground);
-        border-radius: 3px;
+        background: rgba(59, 130, 246, 0.1);
       }
 
       /* Details Popover */
       .details-popover {
         position: fixed;
         z-index: 1000;
-        background: var(--vscode-editor-background);
-        border: 1px solid var(--vscode-widget-border);
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-        border-radius: 4px;
-        padding: 12px;
-        width: 250px;
+        background: var(--vscode-editor-background, #1e1e1e);
+        border: 1px solid #3b82f6; /* Premium blue border as in mockup */
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        border-radius: 8px;
+        padding: 14px;
+        width: 260px;
         font-size: 13px;
         animation: fadeIn 0.1s ease-out;
+        pointer-events: auto;
       }
+      /* Tooltip Arrow */
+      .details-popover::after {
+        content: '';
+        position: absolute;
+        bottom: -6px;
+        right: 20px;
+        width: 10px;
+        height: 10px;
+        background: var(--vscode-editor-background, #1e1e1e);
+        border-right: 1px solid #3b82f6;
+        border-bottom: 1px solid #3b82f6;
+        transform: rotate(45deg);
+      }
+
       @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-5px); }
+        from { opacity: 0; transform: translateY(5px); }
         to { opacity: 1; transform: translateY(0); }
       }
       .popover-row {
-        margin-bottom: 8px;
+        margin-bottom: 10px;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 12px;
       }
       .popover-row:last-child {
         margin-bottom: 0;
       }
+      .popover-icon {
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--vscode-descriptionForeground);
+        opacity: 0.8;
+      }
       .popover-label {
         color: var(--vscode-descriptionForeground);
-        font-weight: 600;
-        width: 50px;
+        font-weight: 500;
+        width: 55px;
         flex-shrink: 0;
       }
       .popover-value {
@@ -960,6 +862,9 @@ function getBoardHtml(panelMode = false, logoUri = ''): string {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 6px;
       }
       .popover-overlay {
         position: fixed;
@@ -970,6 +875,22 @@ function getBoardHtml(panelMode = false, logoUri = ''): string {
         z-index: 999;
         background: transparent;
       }
+      
+      /* Badge Status Overrides for Footer */
+      .status-badge {
+        font-size: 10px;
+        padding: 1px 8px;
+        border-radius: 12px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+      }
+      .status-badge.status-todo { background: rgba(107, 114, 128, 0.15); color: #9ca3af; border: 1px solid rgba(107, 114, 128, 0.3); }
+      .status-badge.status-ready { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+      .status-badge.status-in_progress { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+      .status-badge.status-needs_feedback { background: rgba(234, 179, 18, 0.15); color: #facd15; border: 1px solid rgba(234, 179, 8, 0.3); }
+      .status-badge.status-blocked { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+      .status-badge.status-done { background: rgba(107, 114, 128, 0.1); color: #9ca3af; border: 1px solid rgba(107, 114, 128, 0.2); opacity: 0.7; }
     </style>
   `;
 
@@ -1269,25 +1190,23 @@ function renderTaskCard(task, columnId) {
 
   /* Removed: Upstream/Downstream artifacts, Progress Bars */
 
-  // Footer: Status (Left) + Info Button (Right)
-  const status = task.status || 'todo';
-  const hasOwner = !!task.owner;
-  const hasAgent = !!task.activeSession;
-
+  // Footer: Status (Left) + Info Button (Right) - Matching Mockup
+  const status = task.status || 'ready';
+  
   const footer = document.createElement('div');
   footer.className = 'card-footer';
-  footer.style.justifyContent = 'space-between';
+  footer.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:8px; border-top: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.05));';
 
-  // Left side: Status
+  // Left side: Status Badge
   const footerLeft = document.createElement('div');
-  footerLeft.className = 'card-footer-left';
-  
   const statusSpan = document.createElement('span');
-  statusSpan.className = 'card-footer-right status-' + status; // Keep class name for color but move left
+  statusSpan.className = 'status-badge status-' + (status === 'agent_active' ? 'in_progress' : status);
+  
   const statusLabels = {
     'todo': 'Todo',
     'ready': 'Ready',
     'in_progress': 'In Progress',
+    'agent_active': 'In Progress',
     'needs_feedback': 'Feedback',
     'blocked': 'Blocked',
     'done': 'Done'
@@ -1296,34 +1215,25 @@ function renderTaskCard(task, columnId) {
   footerLeft.appendChild(statusSpan);
   footer.appendChild(footerLeft);
 
-  // Right side: Info Button (if Owner or Agent exists)
-  if (hasOwner || hasAgent) {
-    const footerRight = document.createElement('div');
-    footerRight.className = 'card-footer-right-actions';
-    
-    const infoBtn = document.createElement('button');
-    infoBtn.className = 'icon-button info-button';
-    // Use an icon, e.g. "i" or codicon-info
-    infoBtn.innerHTML = '<span class="codicon codicon-info"></span>'; 
-    infoBtn.title = 'View Details';
-    infoBtn.style.padding = '2px 6px';
-    
-    infoBtn.onclick = (e) => {
-        e.stopPropagation();
-        const rect = infoBtn.getBoundingClientRect();
-        showTaskDetailsPopover(task, rect.left, rect.bottom);
-    };
-    
-    footerRight.appendChild(infoBtn);
-    footer.appendChild(footerRight);
-  }
+  // Right side: Info Button (Always visible)
+  const footerRight = document.createElement('div');
+  footerRight.style.display = 'flex';
+  footerRight.style.alignItems = 'center';
+  
+  const infoBtn = document.createElement('button');
+  infoBtn.className = 'icon-button info-button';
+  infoBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16zM7.5 7v4h1V7h-1zM8 6a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1z"/></svg>';
+  infoBtn.title = 'View Details';
+  
+  infoBtn.onclick = (e) => {
+    e.stopPropagation();
+    const rect = infoBtn.getBoundingClientRect();
+    showTaskDetailsPopover(task, rect.left, rect.top); // Show above
+  };
+  
+  footerRight.appendChild(infoBtn);
 
-  card.appendChild(footer);
-
-  // Actions row for Done tasks (Archive)
-  if (columnId === 'col-done') {
-    const actionsRow = document.createElement('div');
-    actionsRow.className = 'card-actions';
+  if (columnId === 'col-done' || status === 'done') {
     const archiveBtn = document.createElement('button');
     archiveBtn.className = 'card-archive-button';
     archiveBtn.textContent = 'Archive';
@@ -1331,12 +1241,13 @@ function renderTaskCard(task, columnId) {
       e.stopPropagation();
       vscode.postMessage({ type: 'archiveTask', taskId: task.id });
     };
-    actionsRow.appendChild(archiveBtn);
-    card.appendChild(actionsRow);
+    footerRight.prepend(archiveBtn);
   }
 
-  return card;
+  footer.appendChild(footerRight);
+  card.appendChild(footer);
 
+  return card;
 }
 
 
@@ -1447,7 +1358,7 @@ searchInput?.addEventListener('input', (e) => {
 
 
 
-// --- Modal Logic ---
+// --- Popover Logic ---
 function showTaskDetailsPopover(task, x, y) {
     // Remove existing
     const existing = document.getElementById('details-popover-container');
@@ -1465,47 +1376,48 @@ function showTaskDetailsPopover(task, x, y) {
     const popover = document.createElement('div');
     popover.className = 'details-popover';
     
-    // Position
-    // Check boundaries (keep simple for now, refine if needed)
-    popover.style.left = Math.min(x, window.innerWidth - 260) + 'px';
-    popover.style.top = (y + 5) + 'px';
+    // Position: Above the button
+    popover.style.left = Math.max(10, Math.min(x - 220, window.innerWidth - 275)) + 'px';
+    popover.style.top = (y - 135) + 'px'; 
 
-    // Content
-    let html = '';
-    
-    if (task.owner) {
-        html += '<div class="popover-row">' +
-                '<span class="popover-label">Owner</span>' +
-                '<span class="popover-value">👤 ' + task.owner + '</span>' +
-                '</div>';
-    }
+    // Tooltip icons
+    const iconOwner = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0-2.21-1.79-4-4-4H6c-2.21 0-4 1.79-4 4v1h12v-1zM3.07 13c.34-1.14 1.38-2 2.6-2h4.66c1.22 0 2.26.86 2.6 2H3.07z"/></svg>';
+    const iconAgent = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M11 3H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM5 4h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M6 7h1v1H6zM9 7h1v1H9zM6 10h4v1H6z"/></svg>';
+    const iconModel = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a5 5 0 0 0-5 5c0 1.2.4 2.3 1.1 3.2C3.5 10.1 3 11 3 12c0 1.6 1.3 3 3 3h4c1.7 0 3-1.4 3-3 0-1-.5-1.9-1.1-2.8.7-.9 1.1-2 1.1-3.2a5 5 0 0 0-5-5zM6 14c-1.1 0-2-.9-2-2 0-.7.3-1.3.8-1.7l.5-.4-.1-.6C5.1 8.7 5 8 5 7.4 5 5.5 6.3 4 8 4s3 1.5 3 3.4c0 .6-.1 1.3-.2 1.9l-.1.6.5.4c.5.4.8 1 .8 1.7 0 1.1-.9 2-2 2H6z"/></svg>';
 
-    if (task.activeSession) {
-        html += '<div class="popover-row">' +
-                '<span class="popover-label">Agent</span>' +
-                '<span class="popover-value">🤖 ' + task.activeSession.agent + '</span>' +
-                '</div>';
-        
-        if (task.activeSession.model) {
-            html += '<div class="popover-row">' +
-                    '<span class="popover-label">Model</span>' +
-                    '<span class="popover-value">🧠 ' + task.activeSession.model + '</span>' +
-                    '</div>';
-        }
-    }
+    // Values with fallbacks
+    const ownerName = task.owner || 'Unassigned';
+    const agentName = task.activeSession?.agent || 'None';
+    const modelName = task.activeSession?.model || 'None';
 
-popover.innerHTML = html;
-container.appendChild(popover);
-document.body.appendChild(container);
+    popover.innerHTML = 
+        '<div class="popover-row">' +
+            '<span class="popover-icon">' + iconOwner + '</span>' +
+            '<span class="popover-label">Owner:</span>' +
+            '<span class="popover-value">👤 ' + ownerName + '</span>' +
+        '</div>' +
+        '<div class="popover-row">' +
+            '<span class="popover-icon">' + iconAgent + '</span>' +
+            '<span class="popover-label">Agent:</span>' +
+            '<span class="popover-value">🤖 ' + agentName + '</span>' +
+        '</div>' +
+        '<div class="popover-row">' +
+            '<span class="popover-icon">' + iconModel + '</span>' +
+            '<span class="popover-label">Model:</span>' +
+            '<span class="popover-value">🧠 ' + modelName + '</span>' +
+        '</div>';
 
-// Close on Escape
-const escHandler = (e) => {
-  if (e.key === 'Escape') {
-    container.remove();
-    document.removeEventListener('keydown', escHandler);
-  }
-};
-document.addEventListener('keydown', escHandler);
+    container.appendChild(popover);
+    document.body.appendChild(container);
+
+    // Close on Escape
+    const escHandler = (e) => {
+      if (e.key === 'Escape') {
+        container.remove();
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+    document.addEventListener('keydown', escHandler);
 }
 
 function openEditModal(taskId) {
@@ -1669,16 +1581,16 @@ vscode.postMessage({ type: 'ready' });
   `;
 
   return `<!DOCTYPE html>
-<html lang="en">
-<head>
+  <html lang="en">
+  <head>
     <meta charset="UTF-8" />
     ${cspMeta}
     ${fontLink}
     ${sharedStyles}
     ${styles}
     <style>${layoutStyles}</style>
-</head>
-${body}
-${script}
-</html>`;
+  </head>
+  ${body}
+  ${script}
+  </html>`;
 }
