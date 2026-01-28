@@ -1605,9 +1605,7 @@ emptyState?.addEventListener('click', (e) => {
   }
   if (target.closest('.cta-clear')) {
     if (searchInput) searchInput.value = '';
-    if (priorityFilter) priorityFilter.value = '';
     state.filterText = '';
-    state.filterPriority = '';
     updateBoard({ columns: state.columns, tasks: state.tasks });
   }
 });
