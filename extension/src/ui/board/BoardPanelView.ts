@@ -786,14 +786,17 @@ function getBoardHtml(panelMode = false, logoUri = ''): string {
       /* Info Button */
       .info-button {
         color: var(--vscode-descriptionForeground);
-        opacity: 0.6;
-        width: 20px;
-        height: 20px;
+        opacity: 0.7;
+        width: 24px;
+        height: 24px;
+        border-radius: 4px; /* More standard button shape or stick to circle? Mockup uses circle. */
         border-radius: 50%;
-        transition: opacity 0.2s, background 0.2s;
+        transition: all 0.2s; /* Smooth transition */
         display: flex;
         align-items: center;
         justify-content: center;
+        font-size: 16px !important; /* Ensure icon is explicitly sized */
+        cursor: pointer; /* Ensure hand cursor */
       }
       .info-button:hover {
         color: var(--vscode-textLink-foreground);
@@ -1222,13 +1225,13 @@ function renderTaskCard(task, columnId) {
   
   const infoBtn = document.createElement('button');
   infoBtn.className = 'icon-button info-button';
-  infoBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16zM7.5 7v4h1V7h-1zM8 6a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1z"/></svg>';
+  infoBtn.innerHTML = '<span class="codicon codicon-info"></span>';
   infoBtn.title = 'View Details';
   
   infoBtn.onclick = (e) => {
     e.stopPropagation();
     const rect = infoBtn.getBoundingClientRect();
-    showTaskDetailsPopover(task, rect.left, rect.top); // Show above
+    showTaskDetailsPopover(task, rect.left, rect.top);
   };
   
   footerRight.appendChild(infoBtn);

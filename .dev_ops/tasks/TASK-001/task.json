@@ -4,8 +4,8 @@
   "title": "Document System Architecture",
   "summary": "Document system architecture.\n\nStrategy:\n1. Analyze existing docs (README, docs/, *.md) and folder structure.\n2. Recursively identify ALL leaf components.\n3. Create `SPEC.md` for each component using the spec.md template.",
   "priority": "high",
-  "updatedAt": "2026-01-28T00:50:38.075Z",
-  "status": "todo",
+  "updatedAt": "2026-01-28T00:53:26.929Z",
+  "status": "in_progress",
   "owner": "Nuno",
   "traceFile": ".dev_ops/activity/TASK-001.md",
   "agentHistory": [
