@@ -303,39 +303,6 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
         flex: 1;
         min-height: 200px;
       }
-
-      .context-menu {
-        position: fixed;
-        background: var(--vscode-menu-background);
-        color: var(--vscode-menu-foreground);
-        border: 1px solid var(--vscode-menu-border);
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-        border-radius: 4px;
-        z-index: 1000;
-        padding: 4px 0;
-        min-width: 180px;
-        font-family: var(--vscode-font-family);
-        font-size: var(--vscode-font-size);
-      }
-      .context-menu.hidden {
-        display: none;
-      }
-      .menu-item {
-        padding: 6px 12px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-      .menu-item:hover {
-        background: var(--vscode-menu-selectionBackground);
-        color: var(--vscode-menu-selectionForeground);
-      }
-      .menu-separator {
-        height: 1px;
-        background: var(--vscode-menu-separatorBackground);
-        margin: 4px 0;
-      }
     `;
 
   const styles = /* HTML */ `
@@ -901,6 +868,50 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
       .status-badge.status-needs_feedback { background: rgba(234, 179, 18, 0.15); color: #facd15; border: 1px solid rgba(234, 179, 8, 0.3); }
       .status-badge.status-blocked { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
       .status-badge.status-done { background: rgba(107, 114, 128, 0.1); color: #9ca3af; border: 1px solid rgba(107, 114, 128, 0.2); opacity: 0.7; }
+
+      .context-menu {
+        position: fixed;
+        background: var(--vscode-menu-background);
+        color: var(--vscode-menu-foreground);
+        border: 1px solid var(--vscode-menu-border);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+        border-radius: 4px;
+        z-index: 1000;
+        padding: 4px 0;
+        min-width: 180px;
+        font-family: var(--vscode-font-family);
+        font-size: var(--vscode-font-size);
+      }
+      .context-menu.hidden {
+        display: none;
+      }
+      .menu-item {
+        padding: 6px 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .menu-item:hover {
+        background: var(--vscode-menu-selectionBackground);
+        color: var(--vscode-menu-selectionForeground);
+      }
+      .menu-separator {
+        height: 1px;
+        background: var(--vscode-menu-separatorBackground);
+        margin: 4px 0;
+      }
+      .priority-badge {
+        font-size: 10px;
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+        margin-right: 8px;
+        text-transform: uppercase;
+      }
+      .priority-high { color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); }
+      .priority-medium { color: #eab308; background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.2); }
+      .priority-low { color: #22c55e; background: rgba(34, 197, 129, 0.1); border: 1px solid rgba(34, 197, 129, 0.2); }
     </style>
   `;
 
@@ -1063,7 +1074,7 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
              emptyState.innerHTML = 
                 '<div class="icon">🔍</div>' +
                 '<h3>No Matches Found</h3>' +
-                '<p>Try adjusting your search or priority filters.</p>' +
+                '<p>Try adjusting your search terms.</p>' +
                 '<button class="cta-button cta-clear">Clear Filters</button>';
           } else if (state.tasks.length === 0) {
              emptyState.classList.remove('hidden');
@@ -1108,52 +1119,46 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
             const isOverLimit = wipLimit !== undefined && taskCount >= wipLimit;
 
             if (wipLimit !== undefined) {
-               // Smart WIP: Only show if over limit or explicitly requested (future).
-               // User request: "only need to show the user when the wip was surpassed"
-               if (isOverLimit) {
-                  count.textContent = taskCount + ' / ' + wipLimit;
-                  count.style.color = '#ef4444'; // Red
-                  count.style.fontWeight = 'bold';
-                  header.style.borderColor = '#ef4444'; 
-               } else {
-                  // If under limit, just show count? Or hide limit part?
-                  // User: "don't need to have the wip always present". So just count.
-                  count.textContent = String(taskCount);
-                  header.style.borderColor = ''; 
-               }
+              if (isOverLimit) {
+                count.textContent = taskCount + ' / ' + wipLimit;
+                count.style.color = '#ef4444'; // Red
+                count.style.fontWeight = 'bold';
+                header.style.borderColor = '#ef4444'; 
+              } else {
+                count.textContent = String(taskCount);
+                header.style.borderColor = ''; 
+              }
             } else {
-               count.textContent = String(taskCount);
+              count.textContent = String(taskCount);
             }
 
-headerContent.appendChild(count);
+            headerContent.appendChild(count);
+            header.appendChild(headerContent);
+            columnEl.appendChild(header);
 
-header.appendChild(headerContent);
+            const list = document.createElement('div');
+            list.className = 'task-list';
+            list.addEventListener('dragover', (event) => handleDragOver(event, columnEl));
+            list.addEventListener('drop', (event) => handleDrop(event, column.id, columnEl));
 
-columnEl.appendChild(header);
+            columnTasks.forEach((task) => {
+              const card = renderTaskCard(task, column.id);
+              list.appendChild(card);
+            });
 
-const list = document.createElement('div');
-list.className = 'task-list';
-list.addEventListener('dragover', (event) => handleDragOver(event, columnEl));
-list.addEventListener('drop', (event) => handleDrop(event, column.id, columnEl));
+            // Add Archive All button after cards in Done column
+            if (column.id === 'col-done' && columnTasks.length > 0) {
+              const archiveAllBtn = document.createElement('button');
+              archiveAllBtn.className = 'archive-all-button';
+              archiveAllBtn.textContent = 'Archive All';
+              archiveAllBtn.onclick = () => {
+                vscode.postMessage({ type: 'archiveTasks' });
+              };
+              list.appendChild(archiveAllBtn);
+            }
 
-columnTasks.forEach((task) => {
-  const card = renderTaskCard(task, column.id);
-  list.appendChild(card);
-});
-
-// Add Archive All button after cards in Done column
-if (column.id === 'col-done' && columnTasks.length > 0) {
-  const archiveAllBtn = document.createElement('button');
-  archiveAllBtn.className = 'archive-all-button';
-  archiveAllBtn.textContent = 'Archive All';
-  archiveAllBtn.onclick = () => {
-    vscode.postMessage({ type: 'archiveTasks' });
-  };
-  list.appendChild(archiveAllBtn);
-}
-
-columnEl.appendChild(list);
-boardEl.appendChild(columnEl);
+            columnEl.appendChild(list);
+            boardEl.appendChild(columnEl);
           });
 updateSelectionBanner();
         }
@@ -1216,8 +1221,19 @@ function renderTaskCard(task, columnId) {
   footer.className = 'card-footer';
   footer.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:8px; border-top: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.05));';
 
-  // Left side: Status Badge
+  // Left side: Status Badge + Priority
   const footerLeft = document.createElement('div');
+  footerLeft.style.display = 'flex';
+  footerLeft.style.alignItems = 'center';
+
+  if (task.priority) {
+    const prioritySpan = document.createElement('span');
+    const p = task.priority.toLowerCase();
+    prioritySpan.className = 'priority-badge priority-' + p;
+    prioritySpan.textContent = task.priority;
+    footerLeft.appendChild(prioritySpan);
+  }
+
   const statusSpan = document.createElement('span');
   statusSpan.className = 'status-badge status-' + (status === 'agent_active' ? 'in_progress' : status);
   
