@@ -103,6 +103,18 @@ function copyAssets() {
 	copyDir(path.join(projectRoot, 'payload', 'scripts'), path.join(assetsDir, 'scripts'));
 	copyDir(path.join(projectRoot, 'payload', 'skills'), path.join(assetsDir, 'skills'));
 
+	// Copy Codicons
+	const codiconsDir = path.join(assetsDir, 'codicons');
+	fs.mkdirSync(codiconsDir, { recursive: true });
+	try {
+		const nodeModules = path.join(__dirname, 'node_modules');
+		fs.copyFileSync(path.join(nodeModules, '@vscode/codicons/dist/codicon.css'), path.join(codiconsDir, 'codicon.css'));
+		fs.copyFileSync(path.join(nodeModules, '@vscode/codicons/dist/codicon.ttf'), path.join(codiconsDir, 'codicon.ttf'));
+		console.log('[assets] Copied Codicons to dist/assets/codicons');
+	} catch (e) {
+		console.error('[assets] Failed to copy Codicons:', e);
+	}
+
 	// Generate version.json from package.json (single source of truth)
 	const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
 	const versionData = { version: packageJson.version };

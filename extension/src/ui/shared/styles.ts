@@ -1,3 +1,5 @@
+import * as vscode from 'vscode';
+
 /**
  * Shared Design System for DevOps Extension
  * 
@@ -30,8 +32,24 @@ export const STATUS_THEME_COLORS = {
 // FONT LOADING
 // ============================================================================
 
-export function getFontLink(): string {
-  return '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">';
+export function getFontLink(webview?: vscode.Webview, extensionUri?: vscode.Uri): string {
+  if (webview && extensionUri) {
+    try {
+      const codiconUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'dist', 'assets', 'codicons', 'codicon.css'));
+      return `
+            <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+            <link href="${codiconUri}" rel="stylesheet" />
+        `;
+    } catch (e) {
+      console.warn('Failed to generate local codicon URI, falling back to CDN', e);
+    }
+  }
+
+  // Fallback to CDN
+  return `
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/vscode-codicons/0.0.17/codicon.min.css" rel="stylesheet">
+  `;
 }
 
 // ============================================================================

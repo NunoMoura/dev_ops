@@ -110,7 +110,7 @@ export class BoardPanelManager {
     const logoUri = this.panel.webview.asWebviewUri(
       vscode.Uri.joinPath(this.extensionUri, 'resources', 'devops-logo.svg')
     );
-    this.panel.webview.html = getBoardHtml(true, logoUri.toString()); // true = panel mode (full width)
+    this.panel.webview.html = getBoardHtml(true, logoUri.toString(), this.panel.webview, this.extensionUri); // true = panel mode (full width)
 
     this.panel.onDidDispose(() => {
       this.panel = undefined;
@@ -199,7 +199,11 @@ export class BoardPanelManager {
           agent: t.activeSession.agent,
           model: t.activeSession.model,
           phase: t.activeSession.phase
-        } : undefined,
+        } : (t.agentHistory && t.agentHistory.length > 0 ? {
+          agent: t.agentHistory[t.agentHistory.length - 1].agentName,
+          model: t.agentHistory[t.agentHistory.length - 1].model || 'Unknown',
+          phase: t.agentHistory[t.agentHistory.length - 1].phase || 'Unknown'
+        } : undefined),
         upstream: t.upstream,
         downstream: t.downstream,
         checklistTotal: t.checklist?.length,
@@ -235,10 +239,10 @@ export function createBoardPanelManager(context: vscode.ExtensionContext): Board
   return manager;
 }
 
-function getBoardHtml(panelMode = false, logoUri = ''): string {
+function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview, extensionUri?: vscode.Uri): string {
   // Use shared design system
   const cspMeta = getCSPMeta();
-  const fontLink = getFontLink();
+  const fontLink = getFontLink(webview, extensionUri);
   const sharedStyles = getSharedStyles();
 
   // Panel mode: horizontal Trello-like layout (columns side by side)
@@ -470,6 +474,9 @@ function getBoardHtml(panelMode = false, logoUri = ''): string {
         margin-top: 4px;
         padding-top: 8px;
         border-top: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.06));
+        overflow: visible; /* Ensure tooltip/popover isn't clipped if it was internal, though popover is fixed. */
+        position: relative;
+        z-index: 10; /* Ensure footer sits above other card elements if they overlap */
       }
       .card-archive-button {
         border: 1px solid var(--vscode-button-background);
@@ -809,7 +816,7 @@ function getBoardHtml(panelMode = false, logoUri = ''): string {
         position: fixed;
         z-index: 1000;
         background: var(--vscode-editor-background, #1e1e1e);
-        border: 1px solid #3b82f6; /* Premium blue border as in mockup */
+        border: 1px solid var(--vscode-focusBorder, #3b82f6); /* Theme aware border */
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
         border-radius: 8px;
         padding: 14px;
@@ -827,8 +834,8 @@ function getBoardHtml(panelMode = false, logoUri = ''): string {
         width: 10px;
         height: 10px;
         background: var(--vscode-editor-background, #1e1e1e);
-        border-right: 1px solid #3b82f6;
-        border-bottom: 1px solid #3b82f6;
+        border-right: 1px solid var(--vscode-focusBorder, #3b82f6);
+        border-bottom: 1px solid var(--vscode-focusBorder, #3b82f6);
         transform: rotate(45deg);
       }
 
@@ -1383,12 +1390,12 @@ function showTaskDetailsPopover(task, x, y) {
     popover.style.left = Math.max(10, Math.min(x - 220, window.innerWidth - 275)) + 'px';
     popover.style.top = (y - 135) + 'px'; 
 
-    // Tooltip icons
-    const iconOwner = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0-2.21-1.79-4-4-4H6c-2.21 0-4 1.79-4 4v1h12v-1zM3.07 13c.34-1.14 1.38-2 2.6-2h4.66c1.22 0 2.26.86 2.6 2H3.07z"/></svg>';
-    const iconAgent = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M11 3H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM5 4h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M6 7h1v1H6zM9 7h1v1H9zM6 10h4v1H6z"/></svg>';
-    const iconModel = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a5 5 0 0 0-5 5c0 1.2.4 2.3 1.1 3.2C3.5 10.1 3 11 3 12c0 1.6 1.3 3 3 3h4c1.7 0 3-1.4 3-3 0-1-.5-1.9-1.1-2.8.7-.9 1.1-2 1.1-3.2a5 5 0 0 0-5-5zM6 14c-1.1 0-2-.9-2-2 0-.7.3-1.3.8-1.7l.5-.4-.1-.6C5.1 8.7 5 8 5 7.4 5 5.5 6.3 4 8 4s3 1.5 3 3.4c0 .6-.1 1.3-.2 1.9l-.1.6.5.4c.5.4.8 1 .8 1.7 0 1.1-.9 2-2 2H6z"/></svg>';
+    // Tooltip icons (using Codicons for stability)
+    const iconOwner = '<span class="codicon codicon-account"></span>';
+    const iconAgent = '<span class="codicon codicon-robot"></span>';
+    const iconModel = '<span class="codicon codicon-circuit-board"></span>';
 
-    // Values with fallbacks
+    // Values with fallbacks (Clean text, no emojis)
     const ownerName = task.owner || 'Unassigned';
     const agentName = task.activeSession?.agent || 'None';
     const modelName = task.activeSession?.model || 'None';
@@ -1397,17 +1404,17 @@ function showTaskDetailsPopover(task, x, y) {
         '<div class="popover-row">' +
             '<span class="popover-icon">' + iconOwner + '</span>' +
             '<span class="popover-label">Owner:</span>' +
-            '<span class="popover-value">👤 ' + ownerName + '</span>' +
+            '<span class="popover-value">' + ownerName + '</span>' +
         '</div>' +
         '<div class="popover-row">' +
             '<span class="popover-icon">' + iconAgent + '</span>' +
             '<span class="popover-label">Agent:</span>' +
-            '<span class="popover-value">🤖 ' + agentName + '</span>' +
+            '<span class="popover-value">' + agentName + '</span>' +
         '</div>' +
         '<div class="popover-row">' +
             '<span class="popover-icon">' + iconModel + '</span>' +
             '<span class="popover-label">Model:</span>' +
-            '<span class="popover-value">🧠 ' + modelName + '</span>' +
+            '<span class="popover-value">' + modelName + '</span>' +
         '</div>';
 
     container.appendChild(popover);
