@@ -1,0 +1,11 @@
+{
+  "developer": {
+    "name": "Nuno"
+  },
+  "projectType": "brownfield",
+  "githubWorkflowsEnabled": true,
+  "selectedIDEs": [
+    "antigravity",
+    "cursor"
+  ]
+}

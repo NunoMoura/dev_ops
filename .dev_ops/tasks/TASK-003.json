@@ -1,0 +1,9 @@
+{
+  "id": "TASK-003",
+  "columnId": "col-backlog",
+  "title": "Define User Personas & Stories",
+  "summary": "Define User Experience artifacts.\n\nStrategy:\n1. Analyze PRD and codebase.\n2. Create `.dev_ops/docs/user.md` (Personas) using the user.md template.\n3. Create `.dev_ops/docs/story.md` (User Stories) using the story.md template.\n4. Trace stories to PRD requirements.",
+  "priority": "high",
+  "updatedAt": "2026-01-27T21:29:53.443Z",
+  "status": "todo"
+}

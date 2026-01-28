@@ -1,0 +1,9 @@
+{
+  "id": "TASK-002",
+  "columnId": "col-backlog",
+  "title": "Define Product Requirements",
+  "summary": "Define Product Requirements.\n\nStrategy:\n1. Analyze existing docs and codebase to understand intent.\n2. Create/update `.dev_ops/docs/prd.md` using the prd.md template.\n3. Request user review.",
+  "priority": "high",
+  "updatedAt": "2026-01-27T21:29:53.440Z",
+  "status": "todo"
+}

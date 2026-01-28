@@ -1,0 +1,18 @@
+{
+  "id": "TASK-001",
+  "columnId": "col-understand",
+  "title": "Document System Architecture",
+  "summary": "Document system architecture.\n\nStrategy:\n1. Analyze existing docs (README, docs/, *.md) and folder structure.\n2. Recursively identify ALL leaf components.\n3. Create `SPEC.md` for each component using the spec.md template.",
+  "priority": "high",
+  "updatedAt": "2026-01-27T22:01:55.105Z",
+  "status": "in_progress",
+  "owner": "Nuno",
+  "activeSession": {
+    "id": "session-1769551315087",
+    "agent": "Antigravity",
+    "model": "Unknown",
+    "phase": "Understand",
+    "startedAt": "2026-01-27T22:01:55.095Z"
+  },
+  "traceFile": ".dev_ops/activity/TASK-001.md"
+}
