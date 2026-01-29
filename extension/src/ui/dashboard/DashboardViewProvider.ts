@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Board, Task } from '../../common';
+import { Board, Task } from '../../types';
 import { readBoard } from '../../services/board/boardPersistence';
-import { log } from '../../common';
+import { log } from '../../infrastructure/logger';
 import { VSCodeWorkspace } from '../../infrastructure/vscodeWorkspace';
 import { ConfigService } from '../../services/setup/configService';
 
@@ -22,7 +22,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
 
   private _isBoardOpen = false;
 
-  private _groupingMode: 'status' | 'phase' | 'priority' | 'owner' = 'phase';
+  private _groupingMode: 'status' | 'phase' | 'owner' = 'phase';
 
   constructor(private readonly _extensionUri: vscode.Uri) { }
 
@@ -231,14 +231,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
         color: 'var(--vscode-foreground)', // Neutral color for phase headers
         tasks: tasks.filter(t => t.columnId === col.id)
       }));
-    } else if (this._groupingMode === 'priority') {
-      // Group by Priority
-      groups = [
-        { id: 'high', label: 'High Priority', color: 'var(--vscode-foreground)', tasks: tasks.filter(t => t.priority === 'high') },
-        { id: 'medium', label: 'Medium Priority', color: 'var(--vscode-foreground)', tasks: tasks.filter(t => t.priority === 'medium') },
-        { id: 'low', label: 'Low Priority', color: 'var(--vscode-foreground)', tasks: tasks.filter(t => t.priority === 'low') },
-        { id: 'none', label: 'No Priority', color: 'var(--vscode-descriptionForeground)', tasks: tasks.filter(t => !t.priority) }
-      ];
+      // Priority grouping removed - falling back to status if mapped locally or just skipping
     } else if (this._groupingMode === 'owner') {
       // Group by Human Owner only
       const humans = new Map<string, Task[]>();
@@ -503,7 +496,6 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       <div class="dropdown-menu">
         <button class="dropdown-item ${this._groupingMode === 'status' ? 'active' : ''}" data-value="status">Status</button>
         <button class="dropdown-item ${this._groupingMode === 'phase' ? 'active' : ''}" data-value="phase">Phase</button>
-        <button class="dropdown-item ${this._groupingMode === 'priority' ? 'active' : ''}" data-value="priority">Priority</button>
         <button class="dropdown-item ${this._groupingMode === 'owner' ? 'active' : ''}" data-value="owner">Owner</button>
       </div>
     </div>

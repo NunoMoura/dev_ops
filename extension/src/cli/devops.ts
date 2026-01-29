@@ -9,7 +9,7 @@ import { CoreScopeService } from '../services/analysis/scopeService';
 import { ProjectAuditService } from '../services/setup/projectAuditService';
 
 import { NodeWorkspace } from '../infrastructure/nodeWorkspace';
-import { Workspace, ProgressReporter } from '../common/types';
+import { Workspace, ProgressReporter } from '../types';
 
 
 
@@ -58,14 +58,12 @@ program
     .description('Create a new task on the board')
     .requiredOption('--title <title>', 'task title')
     .option('--summary <summary>', 'task summary')
-    .option('--priority <priority>', 'task priority (low, medium, high)', 'medium')
     .option('--column <column>', 'column ID', 'col-backlog')
     .action(async (options) => {
         const task = await taskService.createTask(
             options.column,
             options.title,
-            options.summary,
-            options.priority as any
+            options.summary
         );
         console.log(`Created Task: ${task.id}`);
     });

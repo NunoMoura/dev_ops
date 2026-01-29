@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { log, warn, formatError } from '../common';
+import { log, warn } from '../infrastructure/logger';
+import { formatError } from '../infrastructure/errors';
 
 /**
  * Check if existing project needs framework files update.

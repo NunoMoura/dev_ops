@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import fg from 'fast-glob';
-import { Workspace } from '../common/types';
+import { Workspace } from '../types';
 
 /**
  * Node.js implementation of the Workspace interface.

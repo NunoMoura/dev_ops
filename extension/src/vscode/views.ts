@@ -9,7 +9,7 @@ import {
     handleBoardDeleteTasks
 } from './commands';
 import { showPhaseNotification } from '../services/notifications';
-import { formatError } from '../common';
+import { formatError } from '../infrastructure/errors';
 
 export function bindDevOpsViews(
     context: vscode.ExtensionContext,

@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
 import { BoardViewSnapshot } from './BoardPanelView';
-import { Board, Column, Task, COLUMN_FALLBACK_NAME, FilterState } from '../../common';
+import { Board, Column, Task, COLUMN_FALLBACK_NAME, FilterState } from '../../types';
 import { readBoard, writeBoard } from '../../services/board/boardPersistence';
 import { applyFilters, columnMatchesFilters, parseTaskFilter } from '../../services/tasks';
 import { compareNumbers, compareTasks, sortColumnsForManager } from '../../services/tasks/taskUtils';
 import { buildTaskDescription, buildTaskTooltip } from '../../services/tasks';
-import { formatError } from '../../common';
+import { formatError } from '../../infrastructure/errors';
 
 export type BoardColumnNode = { kind: 'column'; column: Column };
 export type BoardItemNode = { kind: 'item'; item: Task; column: Column };
@@ -230,7 +230,7 @@ export class BoardTreeProvider implements vscode.TreeDataProvider<BoardNode> {
           title: task.title,
           summary: task.summary,
           columnName: columnNode.column.name,
-          priority: task.priority,
+          // status removed
           status: task.status,
           tags: task.tags,
           updatedAt: task.updatedAt,

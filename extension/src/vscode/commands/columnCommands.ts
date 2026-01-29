@@ -3,8 +3,8 @@ import type { BoardTreeProvider, BoardNode, BoardManagerNode } from '../../ui/bo
 import type { DevOpsCommandServices } from './types';
 import { registerDevOpsCommand, getColumnFromAnyNode } from './utils';
 import { readBoard, writeBoard } from '../../services/board/boardPersistence';
-import type { Column } from '../../common';
-import { COLUMN_FALLBACK_NAME } from '../../common';
+import type { Column } from '../../types';
+import { COLUMN_FALLBACK_NAME } from '../../types';
 import { createId, getNextColumnPosition, sortColumnsForManager } from '../../services/tasks/taskUtils';
 import { promptForColumn } from '../../services/tasks';
 

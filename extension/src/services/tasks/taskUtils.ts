@@ -1,4 +1,4 @@
-import { Column, Task, Board, COLUMN_FALLBACK_NAME } from '../../common';
+import { Column, Task, Board, COLUMN_FALLBACK_NAME } from '../../types';
 
 export function compareTasks(a: Task, b: Task): number {
   // Sort by column rank (In Progress first, then Backlog, etc.)
@@ -6,10 +6,7 @@ export function compareTasks(a: Task, b: Task): number {
   if (columnDelta !== 0) {
     return columnDelta;
   }
-  const priorityDelta = getPriorityRank(a.priority) - getPriorityRank(b.priority);
-  if (priorityDelta !== 0) {
-    return priorityDelta;
-  }
+  // Remove priority comparison
   return getUpdatedAtRank(a.updatedAt) - getUpdatedAtRank(b.updatedAt);
 }
 
@@ -38,23 +35,6 @@ export function getColumnRank(columnId?: string): number {
 
 
 
-
-export function getPriorityRank(priority?: string): number {
-  switch (priority?.toLowerCase()) {
-    case 'p0':
-    case 'critical':
-    case 'high':
-      return 0;
-    case 'p1':
-    case 'medium':
-      return 1;
-    case 'p2':
-    case 'low':
-      return 2;
-    default:
-      return 3;
-  }
-}
 
 export function getUpdatedAtRank(updatedAt?: string): number {
   if (!updatedAt) {

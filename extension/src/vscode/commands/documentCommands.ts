@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { registerDevOpsCommand } from './utils';
 import { getWorkspaceRoot } from '../../services/board/boardPersistence';
 import { CoreScopeService } from '../../services/analysis/scopeService';
-import { Workspace } from '../../common/types';
+import { Workspace } from '../../types';
 import * as fs from 'fs';
 import * as path from 'path';
 

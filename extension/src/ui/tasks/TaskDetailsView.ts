@@ -9,7 +9,6 @@ export type TaskDetailsPayload = {
   title: string;
   summary?: string;
   tags?: string;
-  priority?: string;
   columnId?: string;              // Column determines workflow phase
   status?: string;                // Autonomy state: ready, agent_active, needs_feedback, blocked, done
   column?: string;                // Column display name
@@ -386,7 +385,6 @@ function getCardHtml(): string {
       const titleInput = document.getElementById('title');
       const summaryInput = document.getElementById('summary');
       const tagsInput = document.getElementById('tags');
-      const prioritySelect = document.getElementById('priority');
       const statusSelect = document.getElementById('status');
       const columnLabel = document.getElementById('columnLabel');
       const deleteBtn = document.getElementById('deleteBtn');
@@ -651,7 +649,6 @@ function getCardHtml(): string {
           titleInput.value = message.task.title || '';
           summaryInput.value = message.task.summary || '';
           tagsInput.value = message.task.tags || '';
-          prioritySelect.value = message.task.priority || '';
           statusSelect.value = message.task.status || 'todo';
           columnLabel.textContent = message.task.column ? 'Column: ' + message.task.column : '';
           
@@ -703,7 +700,6 @@ function getCardHtml(): string {
           title: titleInput.value,
           summary: summaryInput.value,
           tags: tagsInput.value,
-          priority: prioritySelect.value,
           status: statusSelect.value,
           featureTasks: serializeFeatureTasks(),
         };
@@ -730,7 +726,7 @@ function getCardHtml(): string {
       [titleInput, summaryInput, tagsInput].forEach(input => {
         input.addEventListener('input', triggerAutoSave);
       });
-      [prioritySelect, statusSelect].forEach(select => {
+      [statusSelect].forEach(select => {
         select.addEventListener('change', triggerAutoSave);
       });
 
@@ -797,15 +793,6 @@ function getCardHtml(): string {
         <input id="tags" type="text" />
 
         <div class="row">
-          <div>
-            <label for="priority">Priority</label>
-            <select id="priority">
-              <option value=""></option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-          </div>
         <div>
             <label for="status">Status</label>
             <select id="status">

@@ -6,7 +6,7 @@ import {
     buildCardPayload,
     buildCodexPrompt,
 } from '../services/tasks';
-import { Task } from '../common';
+import { Task } from '../types';
 
 // Helper to create a minimal task
 function createTask(overrides?: Partial<Task>): Task {
@@ -26,11 +26,7 @@ suite('taskPresentation - buildTaskDescription', () => {
         assert.ok(desc?.includes('col-backlog'));
     });
 
-    test('includes priority when set', () => {
-        const task = createTask({ priority: 'high' });
-        const desc = buildTaskDescription(task);
-        assert.ok(desc?.includes('high'));
-    });
+    // Priority description test removed
 
     test('includes status when set', () => {
         const task = createTask({ status: 'blocked' });
@@ -46,7 +42,7 @@ suite('taskPresentation - buildTaskDescription', () => {
     });
 
     test('joins parts with bullet separator', () => {
-        const task = createTask({ priority: 'high', status: 'todo' });
+        const task = createTask({ status: 'todo' });
         const desc = buildTaskDescription(task);
         assert.ok(desc?.includes(' • '));
     });
@@ -85,11 +81,10 @@ suite('taskPresentation - buildTaskTooltip', () => {
 });
 
 suite('taskPresentation - buildTaskDetail', () => {
-    test('includes column and priority', () => {
-        const task = createTask({ priority: 'medium' });
+    test('includes column', () => {
+        const task = createTask();
         const detail = buildTaskDetail(task, 'Planning');
         assert.ok(detail.includes('Column: Planning'));
-        assert.ok(detail.includes('Priority: medium'));
     });
 
     test('includes acceptance criteria when set', () => {
@@ -131,7 +126,7 @@ suite('taskPresentation - buildCardPayload', () => {
             title: 'Card Task',
             summary: 'Summary text',
             tags: ['tag1', 'tag2'],
-            priority: 'high',
+            // priority removed
             status: 'in_progress',
             workflow: 'feature',
             upstream: ['TASK-000'],
@@ -144,7 +139,7 @@ suite('taskPresentation - buildCardPayload', () => {
         assert.strictEqual(payload.title, 'Card Task');
         assert.strictEqual(payload.summary, 'Summary text');
         assert.strictEqual(payload.tags, 'tag1, tag2');
-        assert.strictEqual(payload.priority, 'high');
+        // priority removed
         assert.strictEqual(payload.status, 'in_progress');
         assert.strictEqual(payload.column, 'Implementation');
         assert.strictEqual(payload.workflow, 'feature');
@@ -158,7 +153,7 @@ suite('taskPresentation - buildCardPayload', () => {
 
         assert.strictEqual(payload.summary, undefined);
         assert.strictEqual(payload.tags, undefined);
-        assert.strictEqual(payload.priority, undefined);
+        // priority removed
     });
 });
 
@@ -169,11 +164,10 @@ suite('taskPresentation - buildCodexPrompt', () => {
         assert.ok(prompt.includes('# Task: Implement Feature'));
     });
 
-    test('includes column and priority', () => {
-        const task = createTask({ priority: 'high' });
+    test('includes column', () => {
+        const task = createTask();
         const prompt = buildCodexPrompt(task, 'Implementation');
         assert.ok(prompt.includes('Column: Implementation'));
-        assert.ok(prompt.includes('Priority: high'));
     });
 
     test('includes summary section', () => {

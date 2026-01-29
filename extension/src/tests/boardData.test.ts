@@ -2,7 +2,7 @@ import { strict as assert } from 'assert';
 import {
     compareTasks,
     getColumnRank,
-    getPriorityRank,
+    // getPriorityRank removed
     getUpdatedAtRank,
     compareNumbers,
     sortColumnsForManager,
@@ -16,7 +16,7 @@ import {
     isDefined,
     createTaskId,
 } from '../services/tasks/taskUtils';
-import { Board, Column, Task } from '../common';
+import { Board, Column, Task } from '../types';
 
 suite('boardData - getColumnRank', () => {
     test('returns 0 for col-build (active work)', () => {
@@ -44,41 +44,7 @@ suite('boardData - getColumnRank', () => {
     });
 });
 
-suite('boardData - getPriorityRank', () => {
-    test('returns 0 for high priority', () => {
-        assert.strictEqual(getPriorityRank('high'), 0);
-    });
-
-    test('returns 0 for p0', () => {
-        assert.strictEqual(getPriorityRank('p0'), 0);
-    });
-
-    test('returns 0 for critical', () => {
-        assert.strictEqual(getPriorityRank('critical'), 0);
-    });
-
-    test('returns 1 for medium', () => {
-        assert.strictEqual(getPriorityRank('medium'), 1);
-    });
-
-    test('returns 1 for p1', () => {
-        assert.strictEqual(getPriorityRank('p1'), 1);
-    });
-
-    test('returns 2 for low', () => {
-        assert.strictEqual(getPriorityRank('low'), 2);
-    });
-
-    test('returns 3 for undefined', () => {
-        assert.strictEqual(getPriorityRank(undefined), 3);
-    });
-
-    test('is case insensitive', () => {
-        assert.strictEqual(getPriorityRank('HIGH'), 0);
-        assert.strictEqual(getPriorityRank('Medium'), 1);
-        assert.strictEqual(getPriorityRank('LOW'), 2);
-    });
-});
+// getPriorityRank tests removed
 
 suite('boardData - getUpdatedAtRank', () => {
     test('returns MAX_SAFE_INTEGER for undefined', () => {
@@ -333,15 +299,11 @@ suite('boardData - compareTasks', () => {
         assert.ok(compareTasks(taskA, taskB) > 0); // backlog comes after build
     });
 
-    test('sorts by priority when columns equal', () => {
-        const taskA: Task = { id: '1', columnId: 'col-build', title: 'A', priority: 'low' };
-        const taskB: Task = { id: '2', columnId: 'col-build', title: 'B', priority: 'high' };
-        assert.ok(compareTasks(taskA, taskB) > 0); // low priority comes after high
-    });
+    // Priority sort test removed
 
-    test('sorts by updatedAt when column and priority equal', () => {
-        const taskA: Task = { id: '1', columnId: 'col-build', title: 'A', priority: 'high', updatedAt: '2024-01-02' };
-        const taskB: Task = { id: '2', columnId: 'col-build', title: 'B', priority: 'high', updatedAt: '2024-01-01' };
+    test('sorts by updatedAt when column equal', () => {
+        const taskA: Task = { id: '1', columnId: 'col-build', title: 'A', updatedAt: '2024-01-02' };
+        const taskB: Task = { id: '2', columnId: 'col-build', title: 'B', updatedAt: '2024-01-01' };
         assert.ok(compareTasks(taskA, taskB) > 0); // newer comes after older
     });
 });

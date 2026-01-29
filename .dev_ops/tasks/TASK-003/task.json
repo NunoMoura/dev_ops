@@ -4,6 +4,6 @@
   "title": "Define User Personas & Stories",
   "summary": "Define User Experience artifacts.\n\nStrategy:\n1. Analyze PRD and codebase.\n2. Create `.dev_ops/docs/user.md` (Personas) using the user.md template.\n3. Create `.dev_ops/docs/story.md` (User Stories) using the story.md template.\n4. Trace stories to PRD requirements.",
   "priority": "high",
-  "updatedAt": "2026-01-28T01:36:21.553Z",
+  "updatedAt": "2026-01-29T11:21:39.432Z",
   "status": "todo"
 }

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { Board, Task, Column, TaskStatus } from '../../common/types';
+import { Board, Task, Column, TaskStatus } from '../../types';
 import { readBoard, writeBoard, saveTask, deleteTask, getBoardPath, readCurrentTask, writeCurrentTask, clearCurrentTask, archiveTaskBundle } from './boardPersistence';
 
 
@@ -61,10 +61,42 @@ export class BoardService {
         };
 
         board.items.push(newTask);
+
+        // Add to column list (append to bottom)
+        const column = board.columns.find(c => c.id === newTask.columnId);
+        if (column) {
+            if (!column.taskIds) { column.taskIds = []; }
+            column.taskIds.push(id);
+        }
+
         await this.store.writeBoard(board);
         await this.store.saveTask(newTask);
 
         return id;
+    }
+
+    /**
+     * Pick the next task from Backlog.
+     * With manual ordering, this is simply the top task in the Backlog column.
+     */
+    async pickNextTask(): Promise<string | null> {
+        const board = await this.store.readBoard();
+        const backlogColumn = board.columns.find(c => c.id === 'col-backlog');
+
+        if (!backlogColumn || !backlogColumn.taskIds || backlogColumn.taskIds.length === 0) {
+            return null;
+        }
+
+        // Iterate through ordered IDs to find the first candidate
+        for (const taskId of backlogColumn.taskIds) {
+            const task = board.items.find(t => t.id === taskId);
+            // Check eligibility: Status 'todo' and no active session
+            if (task && (!task.status || task.status === 'todo') && !task.activeSession) {
+                return task.id;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -107,19 +139,84 @@ export class BoardService {
     async moveTask(taskId: string, columnId: string): Promise<void> {
         const board = await this.store.readBoard();
         const targetColumn = board.columns.find(c => c.id === columnId);
-        if (targetColumn && targetColumn.wipLimit) {
+
+        if (!targetColumn) {
+            throw new Error(`Column ${columnId} not found`);
+        }
+
+        if (targetColumn.wipLimit) {
             const currentCount = board.items.filter(t => t.columnId === columnId).length;
             if (currentCount >= targetColumn.wipLimit) {
-                // Check if we are moving WITHIN the same column (no-op/reorder) allows it, 
-                // but moveTask is usually across columns.
-                // We need to check if the task is ALREADY in this column.
                 const task = board.items.find(t => t.id === taskId);
                 if (task && task.columnId !== columnId) {
                     throw new Error(`Cannot move task to '${targetColumn.name}'. WIP Limit reached (${currentCount}/${targetColumn.wipLimit}).`);
                 }
             }
         }
+
+        const task = board.items.find(t => t.id === taskId);
+        if (!task) {
+            throw new Error(`Task ${taskId} not found`);
+        }
+
+        // Remove from old column list
+        const oldColumn = board.columns.find(c => c.id === task.columnId);
+        if (oldColumn && oldColumn.taskIds) {
+            oldColumn.taskIds = oldColumn.taskIds.filter(id => id !== taskId);
+        }
+
+        // Add to new column list (append by default)
+        if (!targetColumn.taskIds) {
+            targetColumn.taskIds = [];
+        }
+        // If moving within same column, this is a no-op for order, but moveTask implies status change potentially.
+        // But if it was in the list, we removed it above. So we append it to bottom?
+        // Usually moveTask implies "send to", so bottom is appropriate.
+        if (!targetColumn.taskIds.includes(taskId)) {
+            targetColumn.taskIds.push(taskId);
+        }
+
         await this.updateTask(taskId, { columnId, status: 'todo' });
+        await this.store.writeBoard(board);
+    }
+
+    /**
+     * Reorder a task within a column or move to a new column at a specific index.
+     */
+    async reorderTask(taskId: string, columnId: string, newIndex: number): Promise<void> {
+        const board = await this.store.readBoard();
+        const task = board.items.find(t => t.id === taskId);
+        if (!task) { throw new Error(`Task ${taskId} not found`); }
+
+        const sourceColumn = board.columns.find(c => c.id === task.columnId);
+        const targetColumn = board.columns.find(c => c.id === columnId);
+
+        if (!sourceColumn || !targetColumn) { throw new Error('Column not found'); }
+
+        // Remove from source
+        if (sourceColumn.taskIds) {
+            sourceColumn.taskIds = sourceColumn.taskIds.filter(id => id !== taskId);
+        }
+
+        // Initialize target if needed
+        if (!targetColumn.taskIds) {
+            targetColumn.taskIds = [];
+        }
+
+        // Insert at new index
+        // Clamp index
+        const validIndex = Math.max(0, Math.min(newIndex, targetColumn.taskIds.length));
+        targetColumn.taskIds.splice(validIndex, 0, taskId);
+
+        // Update task data
+        if (task.columnId !== columnId) {
+            task.columnId = columnId;
+            task.status = 'todo'; // Reset status on move?
+            task.updatedAt = new Date().toISOString();
+            await this.store.saveTask(task);
+        }
+
+        await this.store.writeBoard(board);
     }
 
     /**
@@ -539,23 +636,17 @@ export class BoardService {
     async getMetrics(): Promise<{
         totalTasks: number;
         statusCounts: Record<string, number>;
-        priorityCounts: Record<string, number>;
         columnCounts: Record<string, number>;
     }> {
         const board = await this.store.readBoard();
 
         const statusCounts: Record<string, number> = {};
-        const priorityCounts: Record<string, number> = {};
         const columnCounts: Record<string, number> = {};
 
         for (const task of board.items) {
             // Status counts
             const status = task.status || 'todo';
             statusCounts[status] = (statusCounts[status] || 0) + 1;
-
-            // Priority counts
-            const priority = task.priority || 'unset';
-            priorityCounts[priority] = (priorityCounts[priority] || 0) + 1;
 
             // Column counts
             const column = board.columns.find(c => c.id === task.columnId);
@@ -566,7 +657,6 @@ export class BoardService {
         return {
             totalTasks: board.items.length,
             statusCounts,
-            priorityCounts,
             columnCounts,
         };
     }
@@ -631,24 +721,7 @@ export class BoardService {
      * Pick the next highest priority task from Backlog.
      * Returns the task ID or null if no tasks available.
      */
-    async pickNextTask(): Promise<string | null> {
-        const board = await this.store.readBoard();
-
-        // Filter tasks in Backlog with status 'todo'
-        const backlogTasks = board.items.filter(t =>
-            t.columnId === 'col-backlog' &&
-            (!t.status || t.status === 'todo') &&
-            !t.activeSession // Only pick tasks not currently being worked on upon
-        );
-
-        if (backlogTasks.length === 0) {
-            return null;
-        }
-
-        // Sort by priority and updated time
-        const sorted = [...backlogTasks].sort(compareTasks);
-        return sorted[0].id;
-    }
+    // pickNextTask already implemented above
 
     /**
      * Pick and claim the next task in one operation.

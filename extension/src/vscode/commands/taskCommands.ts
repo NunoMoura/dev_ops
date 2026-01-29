@@ -6,8 +6,8 @@ import { registerDevOpsCommand, getTaskFromNode } from './utils';
 import { handleCardDeleteMessage } from './sharedHandlers';
 import { readBoard, writeBoard, saveTask, getWorkspaceRoot } from '../../services/board/boardPersistence';
 import { boardService } from '../../services/board/boardService';
-import type { Task, Column } from '../../common';
-import { COLUMN_FALLBACK_NAME, DEFAULT_COLUMN_NAME, formatError } from '../../common';
+import type { Task, Column } from '../../types';
+import { COLUMN_FALLBACK_NAME, DEFAULT_COLUMN_NAME } from '../../types'; import { formatError } from '../../infrastructure/errors';
 import { compareTasks, isDefined, createTaskId } from '../../services/tasks/taskUtils';
 import {
     ensurePlanDirectory,
@@ -239,8 +239,7 @@ export async function createTask(
     board: any,
     columnId: string,
     title: string,
-    summary?: string,
-    priority?: 'low' | 'medium' | 'high'
+    summary?: string
 ): Promise<Task> {
     const taskId = createTaskId(board);
 
@@ -249,7 +248,7 @@ export async function createTask(
         columnId: columnId,
         title: title,
         summary: summary,
-        priority: priority,
+        // priority removed
         status: 'todo',
         updatedAt: new Date().toISOString(),
     };

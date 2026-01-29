@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { Board, Task, Column } from '../../common';
+import { Board, Task, Column } from '../../types';
 import {
   ImportedTask,
   ParsedPlan,
@@ -9,7 +9,7 @@ import {
   ChecklistItem,
   COLUMN_FALLBACK_NAME,
   PLAN_EXTENSIONS,
-} from '../../common';
+} from '../../types';
 import { readBoard, writeBoard, getWorkspaceRoot } from '../../services/board/boardPersistence';
 import {
   appendParagraph,
@@ -97,7 +97,7 @@ export function normalizePlanTaskFromJson(input: any, index: number): ImportedTa
     summary: typeof input?.summary === 'string' ? input.summary.trim() || undefined : undefined,
     column: typeof input?.column === 'string' ? input.column.trim() || undefined : undefined,
     status: typeof input?.status === 'string' ? input.status.trim() as any || undefined : undefined,
-    priority: typeof input?.priority === 'string' ? input.priority.trim() || undefined : undefined,
+    // priority removed
     tags: ensureStringArray(input?.tags) ?? parseTags(input?.tags),
     entryPoints: ensureStringArray(input?.entryPoints),
     acceptanceCriteria: ensureStringArray(input?.acceptanceCriteria),
@@ -228,9 +228,7 @@ export function parsePlanMarkdown(raw: string, filePath: string): ParsedPlan {
         case 'status':
           currentTask.status = value.toLowerCase() as any;
           break;
-        case 'priority':
-          currentTask.priority = value.toLowerCase();
-          break;
+        // priority removed
         case 'tags':
           currentTask.tags = parseTags(value);
           break;
@@ -376,7 +374,7 @@ export function applyPlanTask(
   item.title = planTask.title;
   item.summary = planTask.summary ?? planTask.context?.split('\n')[0] ?? item.summary;
   // Note: status is now determined by columnId, not stored separately
-  item.priority = planTask.priority ?? item.priority;
+  // priority removed
   item.tags = planTask.tags ?? item.tags;
   item.entryPoints = entryPoints ?? item.entryPoints;
   item.acceptanceCriteria = planTask.acceptanceCriteria ?? item.acceptanceCriteria;
@@ -430,7 +428,7 @@ export async function ensureTaskDocument(
     '',
     `Source Plan: ${relativePlanPath} `,
     columnName ? `Column: ${columnName} ` : undefined,
-    `Priority: ${task.priority ?? 'not set'} `,
+    // priority removed
   ].filter(isDefined);
   if (planTask.context) {
     lines.push('', '## Context', planTask.context);

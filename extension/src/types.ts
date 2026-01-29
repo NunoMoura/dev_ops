@@ -16,6 +16,7 @@ export type Column = {
   name: string;
   position: number;
   wipLimit?: number;
+  taskIds?: string[]; // Ordered list of task IDs
 };
 
 // ============================================================================
@@ -51,7 +52,7 @@ export type Task = {
   columnId: string;              // Current column (workflow phase)
   title: string;
   summary?: string;
-  priority?: string;             // high | medium | low
+  // priority removed
   tags?: string[];
   updatedAt?: string;
   status?: TaskStatus;           // Autonomy state (default: ready)
@@ -154,7 +155,7 @@ export type ImportedTask = {
   title: string;
   summary?: string;
   column?: string;
-  priority?: string;
+  // priority removed
   tags?: string[];
   entryPoints?: string[];
   acceptanceCriteria?: string[];

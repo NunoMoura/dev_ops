@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import type { Board, Column, Task } from '../../common';
+import type { Board, Column, Task } from '../../types';
 import type { BoardNode, BoardManagerNode } from '../../ui/board';
-import { formatError } from '../../common';
+import { formatError } from '../../infrastructure/errors';
 
 /**
  * Register a DevOps command with automatic error handling

@@ -1,9 +1,11 @@
 import * as vscode from 'vscode';
 import { readBoard } from '../../services/board/boardPersistence';
-import { Board } from '../../common';
+import { Board } from '../../types';
 import { getFontLink, getSharedStyles, getCSPMeta } from '../shared/styles';
 import { VSCodeWorkspace } from '../../infrastructure/vscodeWorkspace';
 import { ConfigService } from '../../services/setup/configService';
+import { log } from '../../infrastructure/logger';
+import { formatError } from '../../infrastructure/errors';
 
 export class MetricsViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'devopsMetricsView';

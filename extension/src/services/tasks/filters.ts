@@ -1,4 +1,4 @@
-import { Column, Task, FilterState, TaskFilter, FilterToken, COLUMN_FALLBACK_NAME, TaskStatus } from '../../common';
+import { Column, Task, FilterState, TaskFilter, FilterToken, COLUMN_FALLBACK_NAME, TaskStatus } from '../../types';
 import { isDefined } from '../../services/tasks/taskUtils';
 
 export function parseTaskFilter(raw?: string): TaskFilter | undefined {
@@ -56,7 +56,7 @@ export function matchesTextFilter(item: Task, column: Column, filter: TaskFilter
     return true;
   }
   const columnName = column.name || COLUMN_FALLBACK_NAME;
-  const haystack = [item.title, item.summary, item.columnId, item.priority, columnName]
+  const haystack = [item.title, item.summary, item.columnId, columnName]
     .filter(isDefined)
     .join(' ')
     .toLowerCase();

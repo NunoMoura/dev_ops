@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { log } from '../../common';
+import { log } from '../../infrastructure/logger';
 
 export type AgentEnvironment = {
     agent: 'antigravity' | 'cursor' | 'vscode';

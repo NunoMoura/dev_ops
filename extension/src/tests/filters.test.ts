@@ -1,6 +1,6 @@
 import { strict as assert } from 'assert';
 import { applyFilters, columnMatchesFilters, parseTaskFilter } from '../services/tasks';
-import { Column, Task } from '../common';
+import { Column, Task } from '../types';
 
 suite('Task filters', () => {
   const column: Column = { id: 'col-1', name: 'Implementation', position: 1 };

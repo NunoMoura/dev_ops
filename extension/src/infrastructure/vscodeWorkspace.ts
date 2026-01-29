@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { TextDecoder, TextEncoder } from 'util';
-import { Workspace } from '../common/types';
+import { Workspace } from '../types';
+import { log } from './logger';
 
 /**
  * VS Code implementation of the Workspace interface.

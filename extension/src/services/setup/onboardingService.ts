@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { log } from '../../common';
+import { log } from '../../infrastructure/logger';
 
 export interface OnboardingResult {
     completed: boolean;

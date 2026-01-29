@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Board } from '../../common';
+import { Board } from '../../types';
 
 export interface StatusBarManager {
     update(board: Board): void;

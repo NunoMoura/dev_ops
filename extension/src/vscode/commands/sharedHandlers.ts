@@ -4,7 +4,8 @@ import type { TaskDetailsPayload } from '../../ui/tasks';
 import type { MoveTasksRequest } from './types';
 import { readBoard, writeBoard, getWorkspaceRoot } from '../../services/board/boardPersistence';
 import { boardService } from '../../services/board/boardService';
-import { formatError, COLUMN_FALLBACK_NAME } from '../../common';
+import { COLUMN_FALLBACK_NAME, Task } from '../../types';
+import { formatError } from '../../infrastructure/errors';
 import { moveTasksToColumn } from '../../services/tasks';
 import { parseTags } from '../../services/tasks/taskUtils';
 
@@ -101,12 +102,12 @@ export async function handleCardUpdateMessage(
         }
 
         // Use boardService for correct persistence
-        const updates: Partial<Omit<import('../../common').Task, 'id'>> = {};
+        const updates: Partial<Omit<Task, 'id'>> = {};
 
         if (update.title !== undefined) { updates.title = update.title.trim() || 'Untitled'; }
         if (update.summary !== undefined) { updates.summary = update.summary.trim() || undefined; }
         if (update.tags !== undefined) { updates.tags = parseTags(update.tags); }
-        if (update.priority !== undefined && update.priority) { updates.priority = update.priority; }
+        // priority update removed
         if (update.workflow !== undefined) { updates.workflow = update.workflow; }
         if (update.upstream !== undefined) { updates.upstream = update.upstream; }
         if (update.downstream !== undefined) { updates.downstream = update.downstream; }

@@ -1,12 +1,11 @@
 import * as vscode from 'vscode';
 import { TaskDetailsPayload } from '../../ui/tasks';
-import { Task, COLUMN_FALLBACK_NAME } from '../../common';
+import { Task, COLUMN_FALLBACK_NAME } from '../../types';
 import { isDefined } from '../../services/tasks/taskUtils';
 
 export function buildTaskDescription(task: Task): string | undefined {
   const parts = [
     task.columnId,
-    task.priority,
     task.status ? `status:${task.status}` : undefined,
     task.tags?.length ? task.tags.join(', ') : undefined,
   ].filter(isDefined);
@@ -18,7 +17,7 @@ export function buildTaskTooltip(task: Task, columnName: string): string {
     `**${task.title}**`,
     '',
     `Column: ${columnName || COLUMN_FALLBACK_NAME}`,
-    `Priority: ${task.priority ?? 'not set'}`,
+    // priority removed
     `Status: ${task.status ?? 'ready'}`,
     task.workflow ? `Workflow: ${task.workflow}` : undefined,
     task.summary ? `Summary: ${task.summary}` : undefined,
@@ -34,7 +33,7 @@ export function buildTaskTooltip(task: Task, columnName: string): string {
 export function buildTaskDetail(task: Task, columnName: string): string {
   const detail = [
     `Column: ${columnName || COLUMN_FALLBACK_NAME}`,
-    `Priority: ${task.priority ?? 'not set'}`,
+    // priority removed
     `Status: ${task.status ?? 'ready'}`,
     task.workflow ? `Workflow: ${task.workflow}` : undefined,
     task.tags?.length ? `Tags: ${task.tags.join(', ')}` : undefined,
@@ -69,7 +68,7 @@ export function buildCardPayload(task: Task, columnName: string): TaskDetailsPay
     title: task.title,
     summary: task.summary,
     tags: task.tags?.join(', '),
-    priority: task.priority,
+    // priority removed
     columnId: task.columnId,
     status: task.status,
     column: columnName,
@@ -87,7 +86,7 @@ export function buildCodexPrompt(task: Task, columnName: string): string {
     `# Task: ${task.title}`,
     '',
     `Column: ${columnName}`,
-    `Priority: ${task.priority ?? 'not set'}`,
+    // priority removed
     `Status: ${task.status ?? 'ready'}`,
     task.workflow ? `Workflow: ${task.workflow}` : undefined,
     task.tags?.length ? `Tags: ${task.tags.join(', ')}` : undefined,

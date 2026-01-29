@@ -12,7 +12,7 @@ import {
     writeBoard,
     saveTask
 } from '../services/board/boardPersistence';
-import { DEFAULT_COLUMN_BLUEPRINTS } from '../common';
+import { DEFAULT_COLUMN_BLUEPRINTS } from '../services/board/boardPersistence';
 
 // Note: Most boardStore functions require mocking fs and vscode.workspace
 // We test the pure functions here and document integration patterns.

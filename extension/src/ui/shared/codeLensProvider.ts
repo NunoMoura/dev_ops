@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { boardService } from '../../services/board/boardService';
-import type { Task } from '../../common';
+import type { Task } from '../../types';
 
 /**
  * CodeLens provider for DevOps task references.
@@ -79,8 +79,7 @@ export class DevOpsCodeLensProvider implements vscode.CodeLensProvider {
 
     private formatTaskTitle(task: Task): string {
         const status = this.getStatusIcon(task.status || 'todo');
-        const priority = task.priority ? ` [${task.priority.toUpperCase()}]` : '';
-        return `${status} ${task.title}${priority}`;
+        return `${status} ${task.title}`;
     }
 
     private formatTaskTooltip(task: Task): string {
@@ -88,7 +87,6 @@ export class DevOpsCodeLensProvider implements vscode.CodeLensProvider {
             `Task: ${task.title}`,
             `ID: ${task.id}`,
             `Status: ${task.status || 'todo'}`,
-            `Priority: ${task.priority}`,
         ];
 
         if (task.owner) {

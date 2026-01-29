@@ -1,9 +1,9 @@
 import * as vscode from "vscode";
-import { log, error as logError } from "../../common";
+import { log, error as logError } from '../../infrastructure/logger';
 import { install, InstallerOptions } from "../../services/setup/frameworkInstaller";
 import { CoreTaskService } from "../../services/tasks/taskService";
 import { CoreBootstrapService } from "../../services/setup/bootstrap";
-import { Workspace } from "../../common/types";
+import { Board, Workspace } from '../../types';
 import { VSCodeWorkspace } from "../../infrastructure/vscodeWorkspace";
 import { ConfigService } from "../../services/setup/configService";
 

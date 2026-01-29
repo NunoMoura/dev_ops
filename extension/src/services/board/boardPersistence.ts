@@ -3,12 +3,21 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as zlib from 'zlib';
 import { promisify } from 'util';
-import { Board, Column, Task, DEFAULT_COLUMN_BLUEPRINTS } from '../../common/types';
+import { Board, Column, Task } from '../../types';
 
 const gzip = promisify(zlib.gzip);
 
 const TASKS_DIR = 'tasks';
 const BOARD_FILE = 'board.json';
+
+export const DEFAULT_COLUMN_BLUEPRINTS = [
+  { id: 'col-backlog', name: 'Backlog' },
+  { id: 'col-understand', name: 'Understand' },
+  { id: 'col-plan', name: 'Plan' },
+  { id: 'col-build', name: 'Build' },
+  { id: 'col-verify', name: 'Verify' },
+  { id: 'col-done', name: 'Done' }
+];
 
 // --- Paths ---
 
@@ -138,8 +147,6 @@ export async function readBoard(): Promise<Board> {
   }
 
   // Hydrate Items (if needed, or merge with index)
-  // For robustness, we can scan the tasks directory to ensure we pick up any manual changes or new bundles.
-  // In a high-perf scenario, we might skip this and trust board.json, but for now, let's sync.
   const items: Task[] = [];
   const tasksDir = getTasksDir();
 
@@ -152,7 +159,7 @@ export async function readBoard(): Promise<Board> {
       const loaded = await Promise.all(bundleDirs.map(async bundleName => {
         try {
           const taskPath = path.join(tasksDir, bundleName, 'task.json');
-          if (!await fs.stat(taskPath).catch(() => false)) {return null;}
+          if (!await fs.stat(taskPath).catch(() => false)) { return null; }
 
           const raw = await fs.readFile(taskPath, 'utf8');
           return JSON.parse(raw) as Task;
@@ -165,10 +172,75 @@ export async function readBoard(): Promise<Board> {
     }
   }
 
+  // Ensure every column has taskIds initialized
+  for (const col of layout.columns) {
+    if (!col.taskIds) {
+      col.taskIds = [];
+    }
+  }
+
+  // Organize items by column
+  const itemsByColumn: Record<string, Task[]> = {};
+  for (const task of items) {
+    if (!itemsByColumn[task.columnId]) {
+      itemsByColumn[task.columnId] = [];
+    }
+    itemsByColumn[task.columnId].push(task);
+  }
+
+  // Reconstruct sorted items list
+  const sortedItems: Task[] = [];
+  const processedTaskIds = new Set<string>();
+
+  for (const col of layout.columns) {
+    const colItems = itemsByColumn[col.id] || [];
+    const colTaskIds = col.taskIds || [];
+
+    // 1. Add items in the order specified by taskIds
+    for (const id of colTaskIds) {
+      const task = colItems.find(t => t.id === id);
+      if (task) {
+        sortedItems.push(task);
+        processedTaskIds.add(task.id);
+      }
+    }
+
+    // 2. Append any items found on disk but not in taskIds (newly discovered or legacy)
+    const newItems = colItems.filter(t => !processedTaskIds.has(t.id));
+    // Sort new items by ID to be deterministic
+    newItems.sort((a, b) => a.id.localeCompare(b.id));
+
+    for (const task of newItems) {
+      sortedItems.push(task);
+      col.taskIds!.push(task.id); // Update the layout in-memory so it saves correctly later if needed
+      processedTaskIds.add(task.id);
+    }
+  }
+
+  // Handle orphaned items (column not found in layout)
+  // These might be in a column that was deleted. Move them to backlog? 
+  // For now, just append them so they aren't lost.
+  const orphaned = items.filter(t => !processedTaskIds.has(t.id));
+  if (orphaned.length > 0) {
+    // Find backlog
+    const backlog = layout.columns.find(c => c.id === 'col-backlog') || layout.columns[0];
+    if (backlog) {
+      for (const task of orphaned) {
+        task.columnId = backlog.id;
+        sortedItems.push(task);
+        if (!backlog.taskIds) { backlog.taskIds = []; }
+        backlog.taskIds.push(task.id);
+      }
+    } else {
+      // Just return them, they might display weirdly but won't be lost
+      sortedItems.push(...orphaned);
+    }
+  }
+
   return {
     version: layout.version || 1,
     columns: layout.columns || createDefaultColumns(),
-    items: items // We use the hydrated items as source of truth
+    items: sortedItems
   };
 }
 
@@ -278,7 +350,10 @@ export function createEmptyBoard(): Board {
 }
 
 export function createDefaultColumns(): Column[] {
-  return DEFAULT_COLUMN_BLUEPRINTS.map((column) => ({ ...column }));
+  return DEFAULT_COLUMN_BLUEPRINTS.map((column, index) => ({
+    ...column,
+    position: index + 1,
+  }));
 }
 
 export async function isProjectInitialized(): Promise<boolean> {

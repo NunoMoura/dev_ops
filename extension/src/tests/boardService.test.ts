@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { BoardService, BoardStore } from '../services/board/boardService';
-import { Board, Task } from '../common';
+import { Board, Task } from '../types';
 
 suite('BoardService', () => {
     let mockStore: BoardStore;
@@ -93,17 +93,17 @@ suite('BoardService', () => {
         assert.strictEqual(task.columnId, 'col-done');
     });
 
-    test('pickNextTask selects highest priority task from Backlog', async () => {
-        await service.createTask({ title: 'Low Priority', columnId: 'col-backlog', priority: 'low' });
-        const highId = await service.createTask({ title: 'High Priority', columnId: 'col-backlog', priority: 'high' });
+    test('pickNextTask selects first task from Backlog', async () => {
+        const firstId = await service.createTask({ title: 'First Task', columnId: 'col-backlog' });
+        await service.createTask({ title: 'Second Task', columnId: 'col-backlog' });
 
-        // Should pick the high priority one
+        // Should pick the first one
         const pickedId = await service.pickNextTask();
-        assert.strictEqual(pickedId, highId);
+        assert.strictEqual(pickedId, firstId);
     });
 
     test('pickNextTask ignores tasks with owners', async () => {
-        const id = await service.createTask({ title: 'Claimed Task', columnId: 'col-backlog', priority: 'high' });
+        const id = await service.createTask({ title: 'Claimed Task', columnId: 'col-backlog' });
         await service.claimTask(id);
 
         const pickedId = await service.pickNextTask();

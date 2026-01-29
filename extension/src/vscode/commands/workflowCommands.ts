@@ -4,7 +4,7 @@ import type { DevOpsCommandServices } from './types';
 import { registerDevOpsCommand, getTaskFromNode } from './utils';
 import { readBoard, getWorkspaceRoot } from '../../services/board/boardPersistence';
 import { boardService } from '../../services/board/boardService';
-import { formatError } from '../../common';
+import { formatError } from '../../infrastructure/errors';
 import { promptForTask } from '../../services/tasks';
 
 /**

@@ -8,9 +8,9 @@
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
-import { log, error as logError } from '../../common';
+import { log, error as logError } from '../../infrastructure/logger';
 
-import { Workspace } from '../../common/types';
+import { Workspace } from '../../types';
 import { CoreTaskService } from '../../services/tasks/taskService';
 import { CoreBootstrapService } from '../../services/setup/bootstrap';
 import fg from 'fast-glob';

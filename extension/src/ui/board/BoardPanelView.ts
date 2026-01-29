@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { getFontLink, getSharedStyles, getCSPMeta } from '../shared/styles';
-import { Board } from '../../common';
+import { Board } from '../../types';
 import { readTaskContext, writeTaskContext } from '../../services/board/boardPersistence';
 import { boardService } from '../../services/board/boardService';
 
@@ -17,7 +17,7 @@ export type BoardViewTask = {
   title: string;
   summary?: string;
   columnName?: string;
-  priority?: string;
+  // priority removed
   status?: string;
   tags?: string[];
   updatedAt?: string;
@@ -40,7 +40,7 @@ export type BoardViewSnapshot = {
 
 type WebviewMessage =
   | { type: 'ready' }
-  | { type: 'moveTasks'; taskIds: string[]; columnId: string }
+  | { type: 'moveTasks'; taskIds: string[]; columnId: string; newIndex?: number }
   | { type: 'openTask'; taskId: string }
   | { type: 'createTask'; columnId?: string }
   | { type: 'deleteTasks'; taskIds: string[] }
@@ -60,7 +60,7 @@ export class BoardPanelManager {
   private panel: vscode.WebviewPanel | undefined;
   private webviewReady = false;
   private latestBoard: BoardViewSnapshot = { columns: [], tasks: [] };
-  private readonly onMoveEmitter = new vscode.EventEmitter<{ taskIds: string[]; columnId: string }>();
+  private readonly onMoveEmitter = new vscode.EventEmitter<{ taskIds: string[]; columnId: string; newIndex?: number }>();
   private readonly onOpenEmitter = new vscode.EventEmitter<string>();
   private readonly onCreateEmitter = new vscode.EventEmitter<{ columnId?: string }>();
   private readonly onDeleteEmitter = new vscode.EventEmitter<string[]>();
@@ -135,7 +135,25 @@ export class BoardPanelManager {
         Array.isArray(message.taskIds) &&
         typeof message.columnId === 'string'
       ) {
-        this.onMoveEmitter.fire({ taskIds: message.taskIds, columnId: message.columnId });
+        // Handle reorder directly via service if index provided
+        if (message.newIndex !== undefined) {
+          // Sequential reorder to preserve relative order of moved block?
+          // Or just move them all to that index.
+          // If we iterate backwards (for insertion at top) or forwards (for insertion at bottom)?
+          // If we insert at index X, the next one should be at X+1.
+          let currentIndex = message.newIndex;
+          for (const taskId of message.taskIds) {
+            await boardService.reorderTask(taskId, message.columnId, currentIndex);
+            currentIndex++;
+          }
+        } else {
+          // Fallback to legacy append
+          for (const taskId of message.taskIds) {
+            await boardService.moveTask(taskId, message.columnId);
+          }
+        }
+        // Emit event for UI update or external listeners (if any)
+        this.onMoveEmitter.fire({ taskIds: message.taskIds, columnId: message.columnId, newIndex: message.newIndex });
       } else if (message.type === 'openTask' && typeof message.taskId === 'string') {
         this.onOpenEmitter.fire(message.taskId);
       } else if (message.type === 'createTask') {
@@ -190,7 +208,7 @@ export class BoardPanelManager {
         title: t.title,
         summary: t.summary,
         columnName: board.columns.find(c => c.id === t.columnId)?.name,
-        priority: t.priority,
+        // priority removed
         status: t.status,
         tags: t.tags,
         updatedAt: t.updatedAt,
@@ -901,17 +919,6 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
         background: var(--vscode-menu-separatorBackground);
         margin: 4px 0;
       }
-      .priority-badge {
-        font-size: 10px;
-        padding: 1px 6px;
-        border-radius: 4px;
-        font-weight: 600;
-        margin-right: 8px;
-        text-transform: uppercase;
-      }
-      .priority-high { color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); }
-      .priority-medium { color: #eab308; background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.2); }
-      .priority-low { color: #22c55e; background: rgba(34, 197, 129, 0.1); border: 1px solid rgba(34, 197, 129, 0.2); }
     </style>
   `;
 
@@ -969,10 +976,6 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
         <!-- Context Menu -->
         <div id="context-menu" class="context-menu hidden">
           <div class="menu-item" id="ctx-edit">Edit Task...</div>
-          <div class="menu-separator"></div>
-          <div class="menu-item" id="ctx-priority-high">Set Priority: High</div>
-          <div class="menu-item" id="ctx-priority-medium">Set Priority: Medium</div>
-          <div class="menu-item" id="ctx-priority-low">Set Priority: Low</div>
           <div class="menu-separator"></div>
           <div class="menu-item" id="ctx-archive">Archive</div>
         </div>
@@ -1221,18 +1224,12 @@ function renderTaskCard(task, columnId) {
   footer.className = 'card-footer';
   footer.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:8px; border-top: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.05));';
 
-  // Left side: Status Badge + Priority
+  // Left side: Status Badge
   const footerLeft = document.createElement('div');
   footerLeft.style.display = 'flex';
   footerLeft.style.alignItems = 'center';
 
-  if (task.priority) {
-    const prioritySpan = document.createElement('span');
-    const p = task.priority.toLowerCase();
-    prioritySpan.className = 'priority-badge priority-' + p;
-    prioritySpan.textContent = task.priority;
-    footerLeft.appendChild(prioritySpan);
-  }
+  // Priority removed
 
   const statusSpan = document.createElement('span');
   statusSpan.className = 'status-badge status-' + (status === 'agent_active' ? 'in_progress' : status);
@@ -1355,22 +1352,45 @@ function handleDragOver(event, columnEl) {
   columnEl.classList.add('drop-target');
 }
 
-function handleDrop(event, columnId, columnEl) {
-  event.preventDefault();
-  columnEl.classList.remove('drop-target');
-  if (!state.dragTaskIds.length) {
-    const payload = event.dataTransfer?.getData('text/plain');
-    if (payload) {
-      state.dragTaskIds = payload.split(',').filter(Boolean);
-    }
-  }
-  const taskIds = state.dragTaskIds.filter(Boolean);
-  state.dragTaskIds = [];
-  if (!taskIds.length) {
-    return;
-  }
-  vscode.postMessage({ type: 'moveTasks', taskIds, columnId });
-}
+        function handleDrop(event, columnId, columnEl) {
+          event.preventDefault();
+          columnEl.classList.remove('drop-target');
+          if (!state.dragTaskIds.length) {
+            const payload = event.dataTransfer?.getData('text/plain');
+            if (payload) {
+              state.dragTaskIds = payload.split(',').filter(Boolean);
+            }
+          }
+          const taskIds = state.dragTaskIds.filter(Boolean);
+          state.dragTaskIds = [];
+          if (!taskIds.length) {
+            return;
+          }
+
+          // Calculate insertion index
+          const taskList = columnEl.querySelector('.task-list');
+          // Exclude the cards we are dragging to avoid self-reference issues if moving in same column
+          const cards = Array.from(taskList.children).filter(c => 
+              c.classList.contains('task-card') && 
+              // Check if this card's ID is one of the ones being dragged
+              // We grab ID from dataset if possible, or query selector
+              !taskIds.includes(c.querySelector('.task-id-badge')?.textContent)
+          );
+
+          const mouseY = event.clientY;
+          let newIndex = cards.length;
+
+          for (let i = 0; i < cards.length; i++) {
+             const rect = cards[i].getBoundingClientRect();
+             const center = rect.top + rect.height / 2;
+             if (mouseY < center) {
+                newIndex = i;
+                break;
+             }
+          }
+
+          vscode.postMessage({ type: 'moveTasks', taskIds, columnId, newIndex });
+        }
 
 function updateSelectionBanner() {
   if (!state.selection.size) {
@@ -1596,21 +1616,6 @@ ctxEdit?.addEventListener('click', () => {
 ctxArchive?.addEventListener('click', () => {
   if (contextTask) vscode.postMessage({ type: 'archiveTask', taskId: contextTask });
   hideContextMenu();
-});
-
-// Priority Handlers
-['high', 'medium', 'low'].forEach(p => {
-  const el = document.getElementById('ctx-priority-' + p);
-  el?.addEventListener('click', () => {
-    if (contextTask) {
-      vscode.postMessage({
-        type: 'updateTask',
-        taskId: contextTask,
-        updates: { priority: p.charAt(0).toUpperCase() + p.slice(1) }
-      });
-    }
-    hideContextMenu();
-  });
 });
 
 // Empty State Handler

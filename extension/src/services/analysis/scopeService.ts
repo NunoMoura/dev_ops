@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { Workspace } from '../../common/types';
+import { Workspace } from '../../types';
 
 export interface ScopeResult {
     component: string;
