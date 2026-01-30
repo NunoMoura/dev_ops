@@ -1,0 +1,8 @@
+{
+  "id": "TASK-006",
+  "columnId": "col-backlog",
+  "title": "Test Prompt Integration",
+  "summary": "Testing if prompts are injected.\n\n## CRITICAL REQUIREMENT: DECISION TRACE\n\nYou MUST explicitly log your activity and decisions to the \"Decision Trace\" file.\n**Trace File Path**: `.dev_ops/tasks/TASK-006/trace.md`\n\n1.  **Initialize**: If the file is empty, start with a header.\n2.  **Log Live**: As you make decisions (e.g., \"Exploring file X\", \"Decided to refactor Y\", \"Found bug Z\"), append them to this file immediately.\n3.  **Format**: Use Markdown. Use H2/H3 for major steps and bullet points for actions.",
+  "updatedAt": "2026-01-30T00:47:25.399Z",
+  "status": "todo"
+}

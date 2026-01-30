@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+
 
 export interface TaskContext {
     taskId: string;

@@ -68,6 +68,12 @@ export class AgentManager {
             throw new Error(`Agent adapter '${targetAgentId}' not found. Available: ${Array.from(this.adapters.keys()).join(', ')}`);
         }
 
+        // Fix: Verify availability before attempting to start
+        // This ensures that we don't try to run commands if the extension is missing or commands are not registered
+        if (!(await adapter.isAvailable())) {
+            throw new Error(`Agent '${adapter.name}' is not available in the current environment.`);
+        }
+
         // 2. Register Agent on Board (Before starting session)
         try {
             // Use boardService to claim the task with agent metadata

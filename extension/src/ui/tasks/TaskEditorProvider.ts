@@ -133,7 +133,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     if (!workspaceFolders) { return undefined; }
     // Assuming single root for now or first root containing .dev_ops
     const root = workspaceFolders[0].uri.fsPath; // Simplification, robust logic is in boardStore
-    return path.join(root, '.dev_ops', 'activity', `${taskId}.md`);
+    return path.join(root, '.dev_ops', 'tasks', taskId, 'trace.md');
   }
 
   private async readTraceFile(taskId: string): Promise<string> {
@@ -333,8 +333,8 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
   <div class="container">
     <div class="section">
-      <div class="section-title">Overview</div>
-      <textarea id="summary" class="summary-input" placeholder="Task summary...">${task.summary || ''}</textarea>
+      <div class="section-title">Agent Instructions</div>
+      <textarea id="summary" class="summary-input" placeholder="Enter instructions for the agent...">${task.summary || ''}</textarea>
     </div>
 
     <div class="section">

@@ -74,16 +74,7 @@ function needsUpdate(srcPath: string, destPath: string, force: boolean = false):
     return getFileHash(srcPath) !== getFileHash(destPath);
 }
 
-/**
- * Check if file has customization marker
- */
-function isCustomized(filePath: string): boolean {
-    if (!fs.existsSync(filePath)) {
-        return false;
-    }
-    const content = fs.readFileSync(filePath, 'utf8');
-    return content.includes('<!-- dev-ops-customized -->');
-}
+
 
 /**
  * Compare semantic versions (simple comparison)
@@ -120,9 +111,9 @@ interface CopyResult {
 function copyDirRecursive(
     src: string,
     dest: string,
-    options: { force?: boolean; checkCustomization?: boolean; basePath?: string } = {}
+    options: { force?: boolean; basePath?: string } = {}
 ): CopyResult {
-    const { force = false, checkCustomization = false, basePath = dest } = options;
+    const { force = false, basePath = dest } = options;
     let copied = 0;
     let skipped = 0;
     const updatedFiles: string[] = [];
@@ -142,31 +133,25 @@ function copyDirRecursive(
         const relativePath = path.relative(basePath, destPath);
 
         if (entry.isDirectory()) {
-            const result = copyDirRecursive(srcPath, destPath, { force, checkCustomization, basePath });
+            const result = copyDirRecursive(srcPath, destPath, { force, basePath });
             copied += result.copied;
             skipped += result.skipped;
             updatedFiles.push(...result.updatedFiles);
             skippedFiles.push(...result.skippedFiles);
         } else {
-            // Check customization if enabled
-            if (checkCustomization && isCustomized(destPath)) {
-                log(`[installer] Skipping customized: ${relativePath}`);
+            // SAFE BY DEFAULT: If file exists and not forced, skip it.
+            if (fs.existsSync(destPath) && !force) {
+                // Check if content matches to avoid noisy logs (optional optimization)
+                if (needsUpdate(srcPath, destPath, false)) {
+                    log(`[installer] Skipping existing user file: ${relativePath}`);
+                }
                 skipped++;
                 skippedFiles.push(relativePath);
                 continue;
             }
 
             if (needsUpdate(srcPath, destPath, force)) {
-                // Add customization marker to new files
-                if (checkCustomization && (entry.name.endsWith('.md') || entry.name.endsWith('.mdc'))) {
-                    let content = fs.readFileSync(srcPath, 'utf8');
-                    if (!content.includes('<!-- dev-ops-customized -->')) {
-                        content += "\n\n<!-- To prevent automatic updates, add '<!-- dev-ops-customized -->' to this file -->\n";
-                    }
-                    fs.writeFileSync(destPath, content);
-                } else {
-                    fs.copyFileSync(srcPath, destPath);
-                }
+                fs.copyFileSync(srcPath, destPath);
                 copied++;
                 updatedFiles.push(relativePath);
             } else {
@@ -274,7 +259,8 @@ function convertFrontmatterForCursor(content: string): string {
 function installRules(
     srcDir: string,
     destDir: string,
-    ide: string
+    ide: string,
+    force: boolean = false
 ): number {
     if (!fs.existsSync(srcDir)) {
         logError(`[installer] Rules source not found: ${srcDir}`);
@@ -296,13 +282,9 @@ function installRules(
 
         const destPath = path.join(destDir, destFile);
 
-        // Check for user customization marker
-        if (fs.existsSync(destPath)) {
-            const existing = fs.readFileSync(destPath, 'utf8');
-            if (existing.includes('<!-- dev-ops-customized -->')) {
-                log(`[installer] Skipping customized rule: ${file}`);
-                continue;
-            }
+        // SAFE BY DEFAULT: Skip if exists and not forced
+        if (fs.existsSync(destPath) && !force) {
+            continue;
         }
 
         let content = fs.readFileSync(srcPath, 'utf8');
@@ -311,10 +293,7 @@ function installRules(
             content = convertFrontmatterForCursor(content);
         }
 
-        // Add customization protection marker
-        if (!content.includes('<!-- dev-ops-customized -->')) {
-            content += "\n\n<!-- To prevent automatic updates, add '<!-- dev-ops-customized -->' to this file -->\n";
-        }
+        // No more customization marker injection
 
         fs.writeFileSync(destPath, content);
         installed++;
@@ -332,7 +311,7 @@ function installWorkflows(srcDir: string, destDir: string, force: boolean = fals
         return { copied: 0, skipped: 0, updatedFiles: [], skippedFiles: [] };
     }
 
-    return copyDirRecursive(srcDir, destDir, { force, checkCustomization: true });
+    return copyDirRecursive(srcDir, destDir, { force });
 }
 
 /**
@@ -345,7 +324,7 @@ function installSkills(srcDir: string, destDir: string, force: boolean = false):
         return { copied: 0, skipped: 0, updatedFiles: [], skippedFiles: [] };
     }
 
-    return copyDirRecursive(srcDir, destDir, { force, checkCustomization: true });
+    return copyDirRecursive(srcDir, destDir, { force });
 }
 
 /**
@@ -435,7 +414,7 @@ export async function install(
     }
 
     // Install rules
-    const rulesInstalled = installRules(rulesSrc, paths.rulesDir, ide);
+    const rulesInstalled = installRules(rulesSrc, paths.rulesDir, ide, force || wasUpgrade);
     log(`[installer] ${rulesInstalled} rules installed`);
 
     // Install workflows (with customization protection)

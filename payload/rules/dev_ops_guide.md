@@ -93,6 +93,8 @@ view_file .agent/skills/<name>/SKILL.md
 **Code**: Production-ready, handles errors, tested behavior
 **Docs**: Accurate, actionable, current
 **Decisions**: Documented in ADRs with rationale
+**Activity**: Agents MUST log key decisions in real-time to the Decision Trace
+
 
 ## Task Structure
 

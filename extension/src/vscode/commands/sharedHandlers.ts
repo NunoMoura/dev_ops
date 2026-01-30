@@ -42,13 +42,22 @@ export async function handleBoardMoveTasks(request: MoveTasksRequest, provider: 
         if (!isBacklog && !isDone && request.taskIds.length > 0) {
             // Trigger startAgentSession for the primary task
             // We pass phase name as context
-            void vscode.commands.executeCommand('devops.startAgentSession', undefined, {
-                taskId: request.taskIds[0],
-                phase: columnName
-            });
+            try {
+                // We use executeCommand but handle errors gracefully so the user isn't blocked 
+                // if the agent fails to launch (e.g. extension not installed)
+                await vscode.commands.executeCommand('devops.startAgentSession', undefined, {
+                    taskId: request.taskIds[0],
+                    phase: columnName
+                });
 
-            if (count === 1) {
-                vscode.window.showInformationMessage(`Agent Session ready for ${columnName}.`);
+                if (count === 1) {
+                    vscode.window.showInformationMessage(`Agent Session ready for ${columnName}.`);
+                }
+            } catch (err) {
+                // Log but do NOT show modal error to user, as the move action succeeded
+                console.warn('Failed to auto-start agent session:', err);
+                // Optional: Show status bar message instead of modal?
+                vscode.window.setStatusBarMessage(`Agent session skipped: ${err instanceof Error ? err.message : String(err)}`, 5000);
             }
         }
     } catch (error) {

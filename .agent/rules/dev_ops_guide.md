@@ -1,5 +1,5 @@
 ---
-activation_mode: Always On
+trigger: always_on
 description: Core DevOps behavioral invariants
 ---
 

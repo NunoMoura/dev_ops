@@ -3,6 +3,7 @@ import { Board, Task, Column, DEFAULT_COLUMN_BLUEPRINTS, Workspace, ProgressRepo
 import { ProjectAuditService } from '../setup/projectAuditService';
 import { NodeWorkspace } from '../../infrastructure/nodeWorkspace';
 import { ConfigService } from '../setup/configService';
+import { getAgentInstructions } from '../agents/prompts';
 
 export class CoreTaskService {
     constructor(protected workspace: Workspace) { }
@@ -126,7 +127,7 @@ export class CoreTaskService {
             id: newId,
             columnId,
             title,
-            summary,
+            summary: (summary || '') + '\n\n' + getAgentInstructions(newId, 'Unknown'), // Phase unknown at creation
             updatedAt: new Date().toISOString(),
             status: 'todo'
         };

@@ -4,14 +4,18 @@
   "title": "Define Project Standards",
   "summary": "Define technical and product standards.\n\nStrategy:\n1. Analyze existing docs and tech stack constraints.\n2. Create `.dev_ops/docs/project_standards.md` using the project_standards.md template.",
   "priority": "high",
-  "updatedAt": "2026-01-29T11:20:59.308Z",
-  "status": "in_progress",
-  "activeSession": {
-    "id": "session-1769685659270",
-    "agent": "Antigravity",
-    "model": "Unknown",
-    "phase": "Understand",
-    "startedAt": "2026-01-29T11:20:59.299Z"
-  },
-  "traceFile": ".dev_ops/activity/TASK-004.md"
+  "updatedAt": "2026-01-30T00:34:02.452Z",
+  "status": "todo",
+  "traceFile": ".dev_ops/activity/TASK-004.md",
+  "agentHistory": [
+    {
+      "agentId": "system",
+      "sessionId": "a31ca0dc-9103-44d2-a6c0-271535b4f38e",
+      "agentName": "Antigravity",
+      "model": "Antigravity",
+      "phase": "Understand",
+      "startedAt": "2026-01-30T00:20:53.383Z",
+      "endedAt": "2026-01-30T00:34:02.449Z"
+    }
+  ]
 }

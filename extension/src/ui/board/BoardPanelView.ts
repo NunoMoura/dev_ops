@@ -9,6 +9,7 @@ export type BoardViewColumn = {
   name: string;
   position?: number;
   wipLimit?: number;
+  taskIds?: string[]; // Added: Ordered list of task IDs
 };
 
 export type BoardViewTask = {
@@ -200,7 +201,8 @@ export class BoardPanelManager {
         id: c.id,
         name: c.name,
         position: c.position,
-        wipLimit: c.wipLimit
+        wipLimit: c.wipLimit,
+        taskIds: c.taskIds // Pass the ordered source of truth
       })),
       tasks: board.items.map(t => ({
         id: t.id,
@@ -1112,7 +1114,31 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
             title.textContent = column.name;
             headerContent.appendChild(title);
             
-            const columnTasks = displayTasks.filter(t => t.columnId === column.id);
+            // Filter tasks for this column
+            const unsortedTasks = displayTasks.filter(t => t.columnId === column.id);
+            
+            // Sort tasks based on column.taskIds order
+            let columnTasks = [];
+            if (column.taskIds && Array.isArray(column.taskIds)) {
+                // 1. Map existing tasks by ID for quick lookup
+                const taskMap = new Map(unsortedTasks.map(t => [t.id, t]));
+                
+                // 2. Add tasks in order defined by column.taskIds
+                column.taskIds.forEach(id => {
+                    if (taskMap.has(id)) {
+                        columnTasks.push(taskMap.get(id));
+                        taskMap.delete(id); // Remove handled
+                    }
+                });
+                
+                // 3. Append any remaining tasks (safety fallback for data sync issues)
+                if (taskMap.size > 0) {
+                    columnTasks.push(...Array.from(taskMap.values()));
+                }
+            } else {
+                // Fallback if no taskIds ordering exists
+                columnTasks = unsortedTasks;
+            }
             
             const count = document.createElement('span');
             count.className = 'column-count';
