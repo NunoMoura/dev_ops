@@ -548,14 +548,32 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
         font-size: 12px;
       }
+      .drag-spacer {
+        content: '';
+        height: 2px; /* Thinner line as originally liked, but fully opaque */
+        margin: 4px 0;
+        border-radius: 2px;
+        background: var(--vscode-focusBorder);
+        box-shadow: 0 0 2px var(--vscode-focusBorder);
+        opacity: 1; 
+        animation: slideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        transform-origin: center;
+        pointer-events: none;
+      }
+      @keyframes slideIn {
+        from { height: 0; margin: 0; opacity: 0; }
+        to { height: 2px; margin: 4px 0; opacity: 1; }
+      }
+      
       .board-header {
         display: flex;
+        flex-direction: row; /* Explicitly set direction */
         justify-content: space-between;
         align-items: center;
         padding: 8px 0 16px 0;
         margin-bottom: 16px;
-        min-height: 28px; /* Force consistent height for alignment with Dashboard */
-        /* Consistent separator to match Dashboard and Columns */
+        min-height: 28px;
+        width: 100%;
         border-bottom: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
       }
       .board-title {

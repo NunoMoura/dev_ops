@@ -1,10 +1,10 @@
 {
   "id": "TASK-001",
-  "columnId": "col-plan",
+  "columnId": "col-backlog",
   "title": "Document System Architecture",
   "summary": "Document system architecture.\n\nStrategy:\n1. Analyze existing docs (README, docs/, *.md) and folder structure.\n2. Recursively identify ALL leaf components.\n3. Create `SPEC.md` for each component using the spec.md template.",
   "priority": "high",
-  "updatedAt": "2026-01-29T23:11:57.725Z",
+  "updatedAt": "2026-01-30T22:26:38.429Z",
   "status": "todo",
   "traceFile": ".dev_ops/activity/TASK-001.md",
   "agentHistory": [

@@ -4,6 +4,6 @@
   "title": "Configure Project Rules",
   "summary": "Configure agent rules.\n\nStrategy:\n1. Detect tech stack (languages, frameworks, tools).\n2. Select matching templates from `.dev_ops/templates/rules/`.\n3. Create rules in `.agent/rules/` (or `.cursor/rules/`).\n4. Customize rules to match project conventions.",
   "priority": "high",
-  "updatedAt": "2026-01-28T01:36:21.585Z",
+  "updatedAt": "2026-01-30T22:46:30.157Z",
   "status": "todo"
 }

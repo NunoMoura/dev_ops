@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Board, Task } from '../../types';
 import { readBoard } from '../../services/board/boardPersistence';
+import { boardService } from '../../services/board/boardService';
 import { log } from '../../infrastructure/logger';
 import { VSCodeWorkspace } from '../../infrastructure/vscodeWorkspace';
 import { ConfigService } from '../../services/setup/configService';
@@ -77,6 +78,22 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       } else if (message.type === 'setGrouping') {
         this._groupingMode = message.mode;
         this._updateContent();
+      } else if (message.type === 'moveTasks') {
+        const { taskIds, columnId, newIndex } = message;
+        if (Array.isArray(taskIds) && taskIds.length > 0 && columnId) {
+          let currentIndex = newIndex;
+          for (const taskId of taskIds) {
+            // Only reorder if in phase mode, or if we want to confirm support for other modes.
+            // For now, assume columnId is valid column ID.
+            try {
+              await boardService.reorderTask(taskId, columnId, currentIndex);
+              currentIndex++;
+            } catch (e) {
+              vscode.window.showErrorMessage(`Move failed: ${e}`);
+            }
+          }
+          this._updateContent();
+        }
       }
     });
   }
@@ -272,11 +289,22 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
           <span class="group-name" style="color:${g.color}">${g.label}</span>
           <span class="count">${g.tasks.length}</span>
         </summary>
-        ${g.tasks.map(t => `
-          <div class="task" onclick="openTask('${t.id}')" data-status="${t.status || 'ready'}">
-            <span class="task-title">${this._escapeHtml(t.title)}</span>
-          </div>
-        `).join('')}
+        <div class="task-list" 
+             ondragover="handleDragOver(event, this)" 
+             ondrop="handleDrop(event, '${g.id}', this)"
+             ondragleave="handleDragLeave(event, this)">
+          ${g.tasks.map(t => `
+            <div class="task" 
+                 draggable="true" 
+                 ondragstart="handleDragStart(event, '${t.id}', this)"
+                 ondragend="handleDragEnd(this)"
+                 onclick="openTask('${t.id}')" 
+                 data-status="${t.status || 'ready'}"
+                 data-task-id="${t.id}">
+              <span class="task-title">${this._escapeHtml(t.title)}</span>
+            </div>
+          `).join('')}
+        </div>
       </details>
     `).join('');
 
@@ -327,6 +355,31 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       background: var(--vscode-list-hoverBackground);
       transform: translateX(2px);
       box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .task.dragging { 
+      opacity: 0.4; 
+      transform: scale(0.98);
+      box-shadow: none;
+    }
+    .drag-spacer {
+       content: '';
+       height: 2px; /* Thinner line, opaque */
+       margin: 4px 6px; /* Indent slightly less than tasks */
+       border-radius: 2px;
+       background: var(--vscode-focusBorder);
+       box-shadow: 0 0 2px var(--vscode-focusBorder);
+       opacity: 1; 
+       animation: slideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+       transform-origin: center;
+       pointer-events: none;
+    }
+    @keyframes slideIn {
+      from { height: 0; margin: 0; opacity: 0; }
+      to { height: 2px; margin: 4px 6px; opacity: 1; }
+    }
+    /* Improve general task transition for fluid movement */
+    .task {
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.1s ease, box-shadow 0.1s ease;
     }
     .task[data-status="ready"] { border-left-color: #3b82f6; }
     .task[data-status="agent_active"] { border-left-color: #22c55e; } /* Kept for status mapping, displays as In Progress */
@@ -540,6 +593,88 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     function openTask(id) { vscode.postMessage({ type: 'openTask', taskId: id }); }
     function openBoard() { vscode.postMessage({ type: 'openBoard' }); }
     function openPrefs() { vscode.postMessage({ type: 'openPreferences' }); }
+
+    // --- Drag and Drop Logic ---
+    let dragSpacer = null;
+    let dragTaskIds = [];
+
+    function handleDragStart(event, taskId, el) {
+       event.stopPropagation();
+       el.classList.add('dragging');
+       dragTaskIds = [taskId]; // Currently single task
+       event.dataTransfer.effectAllowed = 'move';
+       event.dataTransfer.setData('text/plain', taskId);
+    }
+
+    function handleDragEnd(el) {
+       el.classList.remove('dragging');
+       if (dragSpacer) { dragSpacer.remove(); dragSpacer = null; }
+       dragTaskIds = [];
+    }
+
+    function handleDragOver(event, listEl) {
+       event.preventDefault();
+       event.dataTransfer.dropEffect = 'move';
+       
+       const afterElement = getDragAfterElement(listEl, event.clientY);
+       
+       if (!dragSpacer) {
+           dragSpacer = document.createElement('div');
+           dragSpacer.className = 'drag-spacer';
+       }
+
+       if (afterElement) {
+           if (afterElement.previousElementSibling !== dragSpacer) {
+               listEl.insertBefore(dragSpacer, afterElement);
+           }
+       } else {
+           if (listEl.lastElementChild !== dragSpacer) {
+               listEl.appendChild(dragSpacer);
+           }
+       }
+    }
+    
+    function handleDragLeave(event, listEl) {
+        // Optional cleanup if needed
+    }
+
+    function getDragAfterElement(container, y) {
+      const draggableElements = [...container.querySelectorAll('.task:not(.dragging)')];
+
+      return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        } else {
+          return closest;
+        }
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    function handleDrop(event, columnId, listEl) {
+       event.preventDefault();
+       const taskId = event.dataTransfer.getData('text/plain');
+       if (!taskId) return;
+       
+       let newIndex = 0;
+       if (dragSpacer && dragSpacer.parentNode === listEl) {
+           let walker = dragSpacer.previousElementSibling;
+           while (walker) {
+               if (walker.classList.contains('task') && !walker.classList.contains('dragging') && !walker.classList.contains('drag-spacer')) {
+                   newIndex++;
+               }
+               walker = walker.previousElementSibling;
+           }
+       } else {
+           const tasks = Array.from(listEl.querySelectorAll('.task:not(.dragging)'));
+           newIndex = tasks.length;
+       }
+
+       if (dragSpacer) { dragSpacer.remove(); dragSpacer = null; }
+
+       vscode.postMessage({ type: 'moveTasks', taskIds: [taskId], columnId, newIndex });
+    }
   </script>
 </body>
 </html>`;

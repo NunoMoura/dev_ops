@@ -4,6 +4,6 @@
   "title": "Define Product Requirements",
   "summary": "Define Product Requirements.\n\nStrategy:\n1. Analyze existing docs and codebase to understand intent.\n2. Create/update `.dev_ops/docs/prd.md` using the prd.md template.\n3. Request user review.",
   "priority": "high",
-  "updatedAt": "2026-01-28T01:36:21.540Z",
+  "updatedAt": "2026-01-30T22:07:13.569Z",
   "status": "todo"
 }

@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { BoardViewSnapshot } from './BoardPanelView';
 import { Board, Column, Task, COLUMN_FALLBACK_NAME, FilterState } from '../../types';
 import { readBoard, writeBoard } from '../../services/board/boardPersistence';
+import { boardService } from '../../services/board/boardService';
 import { applyFilters, columnMatchesFilters, parseTaskFilter } from '../../services/tasks';
 import { compareNumbers, compareTasks, sortColumnsForManager } from '../../services/tasks/taskUtils';
 import { buildTaskDescription, buildTaskTooltip } from '../../services/tasks';
@@ -35,8 +36,15 @@ export class BoardTreeProvider implements vscode.TreeDataProvider<BoardNode> {
   private readonly onDidUpdateBoardEmitter = new vscode.EventEmitter<BoardViewSnapshot | undefined>();
   readonly onDidChangeTreeData = this.onDidChangeEmitter.event;
   readonly onDidUpdateBoardView = this.onDidUpdateBoardEmitter.event;
+  private readonly dragAndDrop: BoardDragAndDropController;
 
-  constructor(private readonly loadBoard: () => Promise<Board>) { }
+  constructor(private readonly loadBoard: () => Promise<Board>) {
+    this.dragAndDrop = new BoardDragAndDropController(this);
+  }
+
+  getDragAndDropController(): BoardDragAndDropController {
+    return this.dragAndDrop;
+  }
 
   getFilterText(): string | undefined {
     return this.filter.text?.raw;
@@ -404,3 +412,75 @@ class BoardManagerDragAndDropController implements vscode.TreeDragAndDropControl
 
   dispose(): void { }
 }
+
+const TASK_DRAG_MIME = 'application/vnd.devops-board.task';
+
+export class BoardDragAndDropController implements vscode.TreeDragAndDropController<BoardNode> {
+  readonly dragMimeTypes = [TASK_DRAG_MIME];
+  readonly dropMimeTypes = [TASK_DRAG_MIME];
+
+  constructor(private readonly provider: BoardTreeProvider) { }
+
+  async handleDrag(source: readonly BoardNode[], dataTransfer: vscode.DataTransfer): Promise<void> {
+    const taskIds = source
+      .filter((node): node is BoardItemNode => node.kind === 'item')
+      .map((node) => node.item.id);
+
+    if (!taskIds.length) {
+      return;
+    }
+    dataTransfer.set(TASK_DRAG_MIME, new vscode.DataTransferItem(JSON.stringify(taskIds)));
+  }
+
+  async handleDrop(target: BoardNode | undefined, dataTransfer: vscode.DataTransfer): Promise<void> {
+    const item = dataTransfer.get(TASK_DRAG_MIME);
+    if (!item) {
+      return;
+    }
+    try {
+      const raw = await item.asString();
+      const taskIds = JSON.parse(raw);
+      if (!Array.isArray(taskIds) || taskIds.length === 0) {
+        return;
+      }
+
+      let targetColumnId: string | undefined;
+      let insertBeforeTaskId: string | undefined;
+
+      if (target && target.kind === 'column') {
+        targetColumnId = target.column.id;
+      } else if (target && target.kind === 'item') {
+        targetColumnId = target.item.columnId;
+        insertBeforeTaskId = target.item.id;
+      }
+
+      if (!targetColumnId) {
+        return;
+      }
+
+      for (const taskId of taskIds) {
+        if (insertBeforeTaskId) {
+          // Fetch fresh board to get current index of the target
+          // This ensures we account for shifts caused by previous moves in the loop
+          const board = await boardService.getBoard();
+          const col = board.columns.find(c => c.id === targetColumnId);
+          const targetIndex = col?.taskIds?.indexOf(insertBeforeTaskId) ?? -1;
+
+          if (targetIndex !== -1) {
+            await boardService.reorderTask(taskId, targetColumnId, targetIndex);
+          } else {
+            // Fallback if target lost
+            await boardService.moveTask(taskId, targetColumnId);
+          }
+        } else {
+          await boardService.moveTask(taskId, targetColumnId);
+        }
+      }
+
+      await this.provider.refresh();
+    } catch (error) {
+      vscode.window.showErrorMessage(`Unable to move task: ${formatError(error)}`);
+    }
+  }
+}
+

@@ -5,24 +5,23 @@
       "id": "col-backlog",
       "name": "Backlog",
       "taskIds": [
+        "TASK-003",
         "TASK-002",
+        "TASK-001",
+        "TASK-004",
         "TASK-005",
-        "TASK-003"
+        "TASK-006"
       ]
     },
     {
       "id": "col-understand",
       "name": "Understand",
-      "taskIds": [
-        "TASK-004"
-      ]
+      "taskIds": []
     },
     {
       "id": "col-plan",
       "name": "Plan",
-      "taskIds": [
-        "TASK-001"
-      ]
+      "taskIds": []
     },
     {
       "id": "col-build",
@@ -40,5 +39,101 @@
       "taskIds": []
     }
   ],
-  "items": []
+  "items": [
+    {
+      "id": "TASK-003",
+      "columnId": "col-backlog",
+      "title": "Define User Personas & Stories",
+      "summary": "Define User Experience artifacts.\n\nStrategy:\n1. Analyze PRD and codebase.\n2. Create `.dev_ops/docs/user.md` (Personas) using the user.md template.\n3. Create `.dev_ops/docs/story.md` (User Stories) using the story.md template.\n4. Trace stories to PRD requirements.",
+      "priority": "high",
+      "updatedAt": "2026-01-30T22:02:06.161Z",
+      "status": "todo"
+    },
+    {
+      "id": "TASK-006",
+      "columnId": "col-backlog",
+      "title": "Test Prompt Integration",
+      "summary": "Testing if prompts are injected.\n\n## CRITICAL REQUIREMENT: DECISION TRACE\n\nYou MUST explicitly log your activity and decisions to the \"Decision Trace\" file.\n**Trace File Path**: `.dev_ops/tasks/TASK-006/trace.md`\n\n1.  **Initialize**: If the file is empty, start with a header.\n2.  **Log Live**: As you make decisions (e.g., \"Exploring file X\", \"Decided to refactor Y\", \"Found bug Z\"), append them to this file immediately.\n3.  **Format**: Use Markdown. Use H2/H3 for major steps and bullet points for actions.",
+      "updatedAt": "2026-01-30T22:07:10.071Z",
+      "status": "todo"
+    },
+    {
+      "id": "TASK-002",
+      "columnId": "col-backlog",
+      "title": "Define Product Requirements",
+      "summary": "Define Product Requirements.\n\nStrategy:\n1. Analyze existing docs and codebase to understand intent.\n2. Create/update `.dev_ops/docs/prd.md` using the prd.md template.\n3. Request user review.",
+      "priority": "high",
+      "updatedAt": "2026-01-30T22:07:13.569Z",
+      "status": "todo"
+    },
+    {
+      "id": "TASK-001",
+      "columnId": "col-backlog",
+      "title": "Document System Architecture",
+      "summary": "Document system architecture.\n\nStrategy:\n1. Analyze existing docs (README, docs/, *.md) and folder structure.\n2. Recursively identify ALL leaf components.\n3. Create `SPEC.md` for each component using the spec.md template.",
+      "priority": "high",
+      "updatedAt": "2026-01-30T22:26:38.429Z",
+      "status": "todo",
+      "traceFile": ".dev_ops/activity/TASK-001.md",
+      "agentHistory": [
+        {
+          "agentId": "system",
+          "sessionId": "1f5032cb-dd2f-4a02-a750-08a23d6bf673",
+          "agentName": "Antigravity",
+          "model": "Antigravity",
+          "phase": "Understand",
+          "startedAt": "2026-01-28T01:40:14.654Z",
+          "endedAt": "2026-01-28T01:57:32.819Z"
+        },
+        {
+          "agentId": "system",
+          "sessionId": "349435d1-38b2-4e53-82c9-d5d9d118b8e0",
+          "agentName": "Antigravity",
+          "model": "Antigravity",
+          "phase": "Understand",
+          "startedAt": "2026-01-29T11:26:22.841Z",
+          "endedAt": "2026-01-29T11:46:10.693Z"
+        },
+        {
+          "agentId": "system",
+          "sessionId": "86743afd-2a40-4b5a-ad31-6f25afa3ec37",
+          "agentName": "Antigravity",
+          "model": "Antigravity",
+          "phase": "Plan",
+          "startedAt": "2026-01-29T23:03:56.091Z",
+          "endedAt": "2026-01-29T23:11:57.724Z"
+        }
+      ]
+    },
+    {
+      "id": "TASK-004",
+      "columnId": "col-backlog",
+      "title": "Define Project Standards",
+      "summary": "Define technical and product standards.\n\nStrategy:\n1. Analyze existing docs and tech stack constraints.\n2. Create `.dev_ops/docs/project_standards.md` using the project_standards.md template.",
+      "priority": "high",
+      "updatedAt": "2026-01-30T22:27:16.790Z",
+      "status": "todo",
+      "traceFile": ".dev_ops/activity/TASK-004.md",
+      "agentHistory": [
+        {
+          "agentId": "system",
+          "sessionId": "a31ca0dc-9103-44d2-a6c0-271535b4f38e",
+          "agentName": "Antigravity",
+          "model": "Antigravity",
+          "phase": "Understand",
+          "startedAt": "2026-01-30T00:20:53.383Z",
+          "endedAt": "2026-01-30T00:34:02.449Z"
+        }
+      ]
+    },
+    {
+      "id": "TASK-005",
+      "columnId": "col-backlog",
+      "title": "Configure Project Rules",
+      "summary": "Configure agent rules.\n\nStrategy:\n1. Detect tech stack (languages, frameworks, tools).\n2. Select matching templates from `.dev_ops/templates/rules/`.\n3. Create rules in `.agent/rules/` (or `.cursor/rules/`).\n4. Customize rules to match project conventions.",
+      "priority": "high",
+      "updatedAt": "2026-01-30T22:46:30.157Z",
+      "status": "todo"
+    }
+  ]
 }

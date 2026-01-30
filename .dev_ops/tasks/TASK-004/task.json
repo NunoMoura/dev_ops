@@ -1,10 +1,10 @@
 {
   "id": "TASK-004",
-  "columnId": "col-understand",
+  "columnId": "col-backlog",
   "title": "Define Project Standards",
   "summary": "Define technical and product standards.\n\nStrategy:\n1. Analyze existing docs and tech stack constraints.\n2. Create `.dev_ops/docs/project_standards.md` using the project_standards.md template.",
   "priority": "high",
-  "updatedAt": "2026-01-30T00:34:02.452Z",
+  "updatedAt": "2026-01-30T22:27:16.790Z",
   "status": "todo",
   "traceFile": ".dev_ops/activity/TASK-004.md",
   "agentHistory": [
