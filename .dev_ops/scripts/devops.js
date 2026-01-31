@@ -6600,8 +6600,8 @@ var require_pattern = __commonJS({
     }
     exports2.endsWithSlashGlobStar = endsWithSlashGlobStar;
     function isAffectDepthOfReadingPattern(pattern) {
-      const basename3 = path5.basename(pattern);
-      return endsWithSlashGlobStar(pattern) || isStaticPattern(basename3);
+      const basename2 = path5.basename(pattern);
+      return endsWithSlashGlobStar(pattern) || isStaticPattern(basename2);
     }
     exports2.isAffectDepthOfReadingPattern = isAffectDepthOfReadingPattern;
     function expandPatternsWithBraceExpansion(patterns) {
@@ -8983,7 +8983,7 @@ var {
 // src/services/tasks/taskService.ts
 var path3 = __toESM(require("path"));
 
-// src/common/types.ts
+// src/types.ts
 var DEFAULT_COLUMN_BLUEPRINTS = [
   { id: "col-backlog", name: "Backlog", position: 1 },
   { id: "col-understand", name: "Understand", position: 2 },
@@ -9247,6 +9247,35 @@ var ConfigService = class {
   }
 };
 
+// src/services/agents/prompts.ts
+function getAgentInstructions(taskId, phase) {
+  const tracePath = `.dev_ops/tasks/${taskId}/trace.md`;
+  let phaseInstructions = "";
+  if (phase && phase !== "Unknown" && phase !== "Backlog") {
+    const skillPath = `.agent/skills/${phase.toLowerCase()}/SKILL.md`;
+    phaseInstructions = `
+## CURRENT PHASE: ${phase.toUpperCase()}
+
+You are in the **${phase.toUpperCase()}** phase.
+**Requirement**: You must STRICTLY follow the instructions in \`${skillPath}\`.
+- Read this file using \`view_file\`.
+- Do NOT perform actions outside the scope of this skill.
+- If you find unrelated work (bugs/features), use the \`/create_task\` workflow.
+`;
+  }
+  return `
+## CRITICAL REQUIREMENT: DECISION TRACE
+
+You MUST explicitly log your activity and decisions to the "Decision Trace" file.
+**Trace File Path**: \`${tracePath}\`
+
+1.  **Initialize**: If the file is empty, start with a header.
+2.  **Log Live**: As you make decisions (e.g., "Exploring file X", "Decided to refactor Y", "Found bug Z"), append them to this file immediately.
+3.  **Format**: Use Markdown. Use H2/H3 for major steps and bullet points for actions.
+${phaseInstructions}
+`.trim();
+}
+
 // src/services/tasks/taskService.ts
 var CoreTaskService = class {
   constructor(workspace2) {
@@ -9326,7 +9355,7 @@ var CoreTaskService = class {
       items: []
     };
   }
-  async createTask(columnId, title, summary, priority = "medium") {
+  async createTask(columnId, title, summary) {
     const board = await this.readBoard();
     let maxId = 0;
     board.items.forEach((t) => {
@@ -9343,8 +9372,8 @@ var CoreTaskService = class {
       id: newId,
       columnId,
       title,
-      summary,
-      priority,
+      summary: (summary || "") + "\n\n" + getAgentInstructions(newId, "Unknown"),
+      // Phase unknown at creation
       updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
       status: "todo"
     };
@@ -9358,6 +9387,20 @@ var CoreTaskService = class {
     const task = board.items.find((t) => t.id === taskId);
     if (!task) {
       throw new Error(`Task ${taskId} not found`);
+    }
+    const sourceColumn = board.columns.find((c) => c.id === task.columnId);
+    const targetColumn = board.columns.find((c) => c.id === columnId);
+    if (!targetColumn) {
+      throw new Error(`Column ${columnId} not found`);
+    }
+    if (sourceColumn && sourceColumn.taskIds) {
+      sourceColumn.taskIds = sourceColumn.taskIds.filter((id) => id !== taskId);
+    }
+    if (!targetColumn.taskIds) {
+      targetColumn.taskIds = [];
+    }
+    if (!targetColumn.taskIds.includes(taskId)) {
+      targetColumn.taskIds.push(taskId);
     }
     task.columnId = columnId;
     task.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
@@ -9374,11 +9417,15 @@ var CoreTaskService = class {
     const phase = column?.name || "Unknown";
     let owner = ownerOverride;
     if (!owner) {
-      const configService = new ConfigService(this.workspace);
-      owner = await configService.getDeveloperName();
-    }
-    if (!owner) {
       owner = "Unassigned";
+      try {
+        const configService = new ConfigService(this.workspace);
+        const name = await configService.getDeveloperName();
+        if (name) {
+          owner = name;
+        }
+      } catch {
+      }
     }
     task.owner = owner;
     task.activeSession = {
@@ -9391,8 +9438,18 @@ var CoreTaskService = class {
     if (task.columnId === "col-backlog") {
       const understandCol = board.columns.find((c) => c.id === "col-understand" || c.name.toLowerCase() === "understand");
       if (understandCol) {
+        const sourceColumn = board.columns.find((c) => c.id === task.columnId);
+        if (sourceColumn && sourceColumn.taskIds) {
+          sourceColumn.taskIds = sourceColumn.taskIds.filter((id) => id !== taskId);
+        }
         task.columnId = understandCol.id;
         task.activeSession.phase = understandCol.name;
+        if (!understandCol.taskIds) {
+          understandCol.taskIds = [];
+        }
+        if (!understandCol.taskIds.includes(taskId)) {
+          understandCol.taskIds.push(taskId);
+        }
       }
     }
     task.status = "in_progress";
@@ -9408,48 +9465,10 @@ var CoreTaskService = class {
         await this.workspace.mkdir(bundleDir);
       }
       const contextPath = path3.join(bundleDir, "context.md");
-      let currentContext = "";
-      if (await this.workspace.exists(contextPath)) {
-        currentContext = await this.workspace.readFile(contextPath);
-      }
-      const hydrationHeader = "\n\n## Project Baseline\n";
-      if (!currentContext.includes(hydrationHeader)) {
-        let hydrationContent = hydrationHeader;
-        hydrationContent += "The following existing project documentation and configuration have been detected. Use these as a primary source for your research and planning:\n\n";
-        if (projectContext.docs.readme) {
-          hydrationContent += `- [ ] [README.md](file://${path3.join(this.workspace.root, projectContext.docs.readme)})
-`;
-        }
-        if (projectContext.docs.prd) {
-          hydrationContent += `- [ ] [PRD](file://${path3.join(this.workspace.root, projectContext.docs.prd)})
-`;
-        }
-        if (projectContext.docs.projectStandards) {
-          hydrationContent += `- [ ] [Standards](file://${path3.join(this.workspace.root, projectContext.docs.projectStandards)})
-`;
-        }
-        if (projectContext.docs.existing_docs_folder) {
-          hydrationContent += `- [ ] [Documentation Folder](file://${path3.join(this.workspace.root, projectContext.docs.existing_docs_folder)})
-`;
-        }
-        if (projectContext.docs.env_templates.length > 0) {
-          hydrationContent += "\n### Environment Templates\n";
-          for (const env of projectContext.docs.env_templates) {
-            hydrationContent += `- [ ] [${path3.basename(env)}](file://${path3.join(this.workspace.root, env)})
-`;
-          }
-        }
-        if (projectContext.specs.length > 0) {
-          hydrationContent += "\n### Existing Specifications (SPEC.md)\n";
-          for (const spec of projectContext.specs) {
-            hydrationContent += `- [ ] [${spec}](file://${path3.join(this.workspace.root, spec)})
-`;
-          }
-        }
-        await this.workspace.writeFile(contextPath, currentContext + hydrationContent);
+      if (!await this.workspace.exists(contextPath)) {
+        await this.workspace.writeFile(contextPath, "");
       }
     } catch (e) {
-      console.error(`Failed to hydrate context for ${taskId}:`, e);
     }
   }
   async pickNextTask() {
@@ -9460,12 +9479,6 @@ var CoreTaskService = class {
     if (backlogTasks.length === 0) {
       return null;
     }
-    const priorityMap = { high: 3, medium: 2, low: 1 };
-    backlogTasks.sort((a, b) => {
-      const pa = priorityMap[a.priority || "medium"] || 0;
-      const pb = priorityMap[b.priority || "medium"] || 0;
-      return pb - pa;
-    });
     return backlogTasks[0].id;
   }
   async getCurrentTask() {
@@ -9616,12 +9629,11 @@ program2.command("detect").description("Detect project stack, docs, and tests (J
     console.log(JSON.stringify(detection, null, 2));
   }
 });
-program2.command("create-task").description("Create a new task on the board").requiredOption("--title <title>", "task title").option("--summary <summary>", "task summary").option("--priority <priority>", "task priority (low, medium, high)", "medium").option("--column <column>", "column ID", "col-backlog").action(async (options) => {
+program2.command("create-task").description("Create a new task on the board").requiredOption("--title <title>", "task title").option("--summary <summary>", "task summary").option("--column <column>", "column ID", "col-backlog").action(async (options) => {
   const task = await taskService.createTask(
     options.column,
     options.title,
-    options.summary,
-    options.priority
+    options.summary
   );
   console.log(`Created Task: ${task.id}`);
 });

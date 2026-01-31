@@ -33,6 +33,3 @@ Return to your current phase and continue. The new task will be triaged later.
 ## Outputs
 
 - TASK-XXX created in Backlog column
-
-
-<!-- To prevent automatic updates, add '<!-- dev-ops-customized -->' to this file -->

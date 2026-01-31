@@ -13,44 +13,116 @@ description: Implement production-ready code with tests. Use when writing code o
 - Implementing features or fixes
 - Writing tests (TDD workflow)
 
-## Phase Constraints
+## How It Works
 
-- **Allowed**: Reading code, changing code, running tests.
-- **Forbidden**: Changing requirements, fixing unrelated bugs (use `/create_task`).
+| Input | Output | Next Steps |
+|-------|--------|------------|
+| PLN-XXX implementation plan | Code + tests + updated SPEC.md | Verify |
 
-## Execution Flow
+---
 
-### 1. Discover (Understand Context)
+## Step 1: Review Plan and SPEC.md
 
-- **Input**: Read `PLN-XXX` and linked `SPEC.md` files.
-- **Goal**: Understand exactly what needs to be built.
+**SPEC.md defines requirements. Code matches specs.**
 
-### 2. Filter & Drill (Focus)
+Read relevant SPEC.md files to understand:
 
-- Identify specific files and functions to modify.
-- **Rule**: Open *only* the files related to the current implementation step.
+- What files should exist
+- What functions should be implemented
+- What constraints must be followed
 
-### 3. Implement (TDD Cycle)
+## Step 2: Write Tests First (TDD)
 
-For each checklist item in `PLN-XXX`:
+For each checklist item in PLN-XXX, write tests before code:
 
-1. **Test**: Write a failing test for the specific requirement.
-2. **Code**: Write just enough code to pass the test.
-3. **Refactor**: Clean up while keeping tests passing.
+- Unit tests for behavior
+- Edge case tests
+- Error condition tests
 
-**Constraint**: If you find unrelated bugs, use `/create_task` then continue.
+## Step 3: Implement Code
 
-### 4. Verify & Iterate (Ralph Wiggum Loop)
+Implement just enough to make tests pass:
 
-- **Check**: Run `npm test` or equivalent.
-- **Loop**:
-  - **Failing?** Fix code, re-run.
-  - **Lint error?** Fix style.
-  - **Done?** Update `SPEC.md` (exports, structure).
-- **Exit**: When checks pass and checklist is done.
+- Handle errors gracefully
+- Validate all inputs
+- Follow existing patterns
+
+## Step 4: Refactor
+
+While tests still pass:
+
+- Simplify complex logic
+- Extract reusable components
+- Improve naming
+
+## Step 5: Update SPEC.md
+
+Keep SPEC.md in sync with code changes:
+
+- **Adding folder/file**: Add row to `## Structure` table
+- **Adding export**: Add to `## Key Exports` section
+- **Making decision**: Add ADR row to `## ADRs` table
+
+## Step 6: Commit
+
+Use conventional commits:
+
+```bash
+git commit -m "feat(<scope>): <what>
+
+Task: TASK-XXX"
+```
+
+---
+
+## Ralf Wiggum Loop
+
+Iterate autonomously until exit criteria are met:
+
+1. **Check**: Are all exit criteria satisfied?
+2. **If No**: Identify what's failing, fix it, repeat
+3. **If Yes**: Proceed to Completion
+
+### When to Iterate
+
+- Tests fail → fix code, re-run tests
+- Lint errors → fix style issues
+- Checklist item incomplete → finish implementation
+- SPEC.md outdated → update it
+
+**Test failures are iteration triggers, not phase failures.**
+
+---
+
+## Exit Criteria (Self-Check)
+
+Before notifying user, verify:
+
+- [ ] All checklist items in PLN-XXX marked done
+- [ ] All tests pass (`npm test` / `pytest`)
+- [ ] Lint passes
+- [ ] SPEC.md updated if structure changed
+- [ ] Changes committed with proper message
+
+---
+
+## Out-of-Scope Discoveries
+
+If you find bugs, features, or tech debt unrelated to current task:
+→ Use `/create_task` workflow, then continue building
+
+---
 
 ## Completion
 
-1. Commit changes: `feat: <description> \n\n Task: TASK-XXX`
-2. Update task status: `ready-for-review`
-3. Notify user: "Build complete. Tests passed."
+When exit criteria are met:
+
+1. If working on a task, set status to `ready-for-review`:
+
+   ```bash
+   node .dev_ops/scripts/devops.js update-task --id <TASK_ID> --status ready-for-review
+   ```
+
+2. Notify user: "Build complete. All tests pass. Ready for your review."
+
+3. **Stop.** User will review, then next steps can be taken (e.g., `/claim` for Verify).

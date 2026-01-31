@@ -181,6 +181,3 @@ Task: TASK-042"
 2. **Green**: Write minimal code to pass
 3. **Refactor**: Improve while tests pass
 4. **Commit**: Small, atomic commits
-
-
-<!-- To prevent automatic updates, add '<!-- dev-ops-customized -->' to this file -->

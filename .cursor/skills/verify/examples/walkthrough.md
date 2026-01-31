@@ -87,6 +87,3 @@ curl -X POST http://localhost:8000/users \
 - Used Pydantic v2 syntax throughout
 - Error messages follow the format agreed in RES-042
 - Decorator pattern allows easy addition of validation to new endpoints
-
-
-<!-- To prevent automatic updates, add '<!-- dev-ops-customized -->' to this file -->

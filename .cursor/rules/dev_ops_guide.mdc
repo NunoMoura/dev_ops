@@ -93,6 +93,8 @@ view_file .agent/skills/<name>/SKILL.md
 **Code**: Production-ready, handles errors, tested behavior
 **Docs**: Accurate, actionable, current
 **Decisions**: Documented in ADRs with rationale
+**Activity**: Agents MUST log key decisions in real-time to the Decision Trace
+
 
 ## Task Structure
 
@@ -119,6 +121,3 @@ Before significant changes, check `.dev_ops/docs/project_standards.md` for:
 - **Anti-Patterns**: Explicitly forbidden practices
 
 If work would violate a project standard, **stop and flag to user**.
-
-
-<!-- To prevent automatic updates, add '<!-- dev-ops-customized -->' to this file -->

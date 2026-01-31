@@ -126,6 +126,3 @@ When exit criteria are met:
 2. Notify user: "Build complete. All tests pass. Ready for your review."
 
 3. **Stop.** User will review, then next steps can be taken (e.g., `/claim` for Verify).
-
-
-<!-- To prevent automatic updates, add '<!-- dev-ops-customized -->' to this file -->

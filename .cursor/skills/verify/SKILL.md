@@ -127,6 +127,3 @@ When exit criteria are met:
 2. Notify user: "Verification complete. walkthrough.md and PR ready. Ready for your final review."
 
 3. **Stop.** User will review. If approved, task moves to Done.
-
-
-<!-- To prevent automatic updates, add '<!-- dev-ops-customized -->' to this file -->

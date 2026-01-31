@@ -22,6 +22,3 @@ node .dev_ops/scripts/devops.js refine-phase --feedback "{{user_input}}"
 1. Verify changes matching feedback.
 2. Notify user of refinements.
 3. Keep task status as `in_progress` until fully satisfied.
-
-
-<!-- To prevent automatic updates, add '<!-- dev-ops-customized -->' to this file -->

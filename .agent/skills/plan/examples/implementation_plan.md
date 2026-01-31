@@ -76,6 +76,3 @@ pytest tests/api/test_validation.py -v
 # Lint
 ruff check src/api/
 ```
-
-
-<!-- To prevent automatic updates, add '<!-- dev-ops-customized -->' to this file -->

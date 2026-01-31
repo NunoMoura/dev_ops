@@ -26,6 +26,3 @@ node .dev_ops/scripts/devops.js retry-phase
 ## Step 4: Execute
 
 Restart phase execution with corrected approach.
-
-
-<!-- To prevent automatic updates, add '<!-- dev-ops-customized -->' to this file -->

@@ -37,6 +37,3 @@ node .dev_ops/scripts/devops.js create-task \
 
 - `.dev_ops/docs/BUG-XXX.md`
 - TASK-XXX in Backlog
-
-
-<!-- To prevent automatic updates, add '<!-- dev-ops-customized -->' to this file -->

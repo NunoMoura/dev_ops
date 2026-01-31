@@ -33,6 +33,3 @@ Read the appropriate phase skill:
 - Task claimed (owner set)
 - Task status updated to `in_progress`
 - **NOTE**: Do NOT move the task to another column. The user will move it when ready.
-
-
-<!-- To prevent automatic updates, add '<!-- dev-ops-customized -->' to this file -->

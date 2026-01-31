@@ -63,6 +63,3 @@ Add MCP to `~/.gemini/antigravity/mcp_config.json` (Antigravity) or `.cursor/mcp
 
 - MCP configuration added to IDE config file
 - Capability file in `.agent/skills/{skill}/mcps/`
-
-
-<!-- To prevent automatic updates, add '<!-- dev-ops-customized -->' to this file -->

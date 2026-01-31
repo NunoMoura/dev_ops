@@ -13,42 +13,106 @@ description: Research deeply before planning. Use when starting a new task, anal
 - Need to research before planning
 - Scoping work or analyzing requirements
 
-## Phase Constraints
+## How It Works
 
-- **Allowed**: Reading `SPEC.md` files, external research, creating `RES-XXX`.
-- **Forbidden**: Writing code, creating plans.
+| Input | Output | Next Steps |
+|-------|--------|------------|
+| Trigger + SPEC.md files | RES-XXX research doc | Plan |
 
-## Execution Flow
+---
 
-### 1. Discover (Define Scope)
+## Step 1: Define Scope
 
-- **Input**: Trigger doc (User request).
-- **Rule**: Do NOT open code files yet.
-- **Action**: Find relevant `SPEC.md` files: `find . -name SPEC.md | xargs grep "term"`.
+Document what's in and out of scope explicitly:
 
-### 2. Filter & Drill (Research)
+- **In Scope**: Components, files, and behaviors you will change
+- **Out of Scope**: Related areas you explicitly won't touch
 
-- Read `## Structure`, `## Constraints`, and `## Dependencies` in SPECs.
-- **External**: Check docs for libraries/frameworks.
-- Identify what is **In Scope** vs **Out of Scope**.
+## Step 2: Navigate SPEC.md Files
 
-### 3. Implement (Create Research)
+**Do NOT open code files in this phase.** Work only with SPEC.md files.
 
-Create `RES-XXX` using `.dev_ops/templates/artifacts/research.md`.
+```bash
+find . -name SPEC.md
+grep -r "keyword" */SPEC.md
+```
 
-- Document: Scope, Dependencies, Risks, Recommended Approach.
+Read matched SPEC.md files to understand:
 
-**Constraint**: If you find unrelated issues, use `/create_task`.
+- `## Structure`: Folder/file layout and purposes
+- `## Key Exports`: Important interfaces exposed
+- `## Constraints`: Rules that cannot be violated
+- `## Dependencies`: Links to other SPEC.md files
 
-### 4. Verify & Iterate (Ralph Wiggum Loop)
+For each dependency, verify linked SPEC.md exists and interfaces are defined.
 
-- **Check**: Do I know enough to Plan?
-- **Loop**:
-  - **Unclear?** Research more.
-  - **Assumptions?** Challenge them.
-- **Exit**: When "How" and "Why" are clear.
+## Step 3: External Research
+
+- Library/framework documentation
+- Best practices and known issues
+- Edge cases and constraints
+
+## Step 4: Challenge Assumptions
+
+- Is this the right approach?
+- Are there simpler alternatives?
+- What constraints aren't written down?
+
+## Step 5: Update SPEC.md if Needed
+
+If you discover drift between SPECs and reality, update SPEC.md now.
+
+## Step 6: Create Research Artifact
+
+Document findings using the research template: `.dev_ops/templates/artifacts/research.md`
+
+---
+
+## Ralf Wiggum Loop
+
+Iterate autonomously until exit criteria are met:
+
+1. **Check**: Are all exit criteria satisfied?
+2. **If No**: Identify what's missing, research further, repeat
+3. **If Yes**: Proceed to Completion
+
+### When to Iterate
+
+- Scope unclear → revisit trigger doc, ask clarifying questions
+- SPEC.md missing info → search broader, check related components
+- Research incomplete → find more sources, document gaps
+
+---
+
+## Exit Criteria (Self-Check)
+
+Before notifying user, verify:
+
+- [ ] RES-XXX artifact file exists
+- [ ] `## Scope` section has explicit in/out
+- [ ] `## Research` section is populated
+- [ ] Dependencies and risks documented
+- [ ] Can explain "what" and "why" clearly
+
+---
+
+## Out-of-Scope Discoveries
+
+If you find bugs, features, or tech debt unrelated to current task:
+→ Use `/create_task` workflow, then continue research
+
+---
 
 ## Completion
 
-1. Update task status: `ready-for-review`
-2. Notify user: "Research RES-XXX complete. Ready for review."
+When exit criteria are met:
+
+1. If working on a task, set status to `ready-for-review`:
+
+   ```bash
+   node .dev_ops/scripts/devops.js update-task --id <TASK_ID> --status ready-for-review
+   ```
+
+2. Notify user: "Research complete. RES-XXX created. Ready for your review."
+
+3. **Stop.** User will review, then next steps can be taken (e.g., `/claim` for Plan).

@@ -1,39 +1,20 @@
 {
   "id": "TASK-001",
-  "columnId": "col-backlog",
+  "columnId": "col-plan",
   "title": "Document System Architecture",
-  "summary": "Document system architecture.\n\nStrategy:\n1. Analyze existing docs (README, docs/, *.md) and folder structure.\n2. Recursively identify ALL leaf components.\n3. Create `SPEC.md` for each component using the spec.md template.",
-  "priority": "high",
-  "updatedAt": "2026-01-30T22:26:38.429Z",
+  "summary": "Document system architecture.\n\nStrategy:\n1. Analyze existing docs (README, docs/, *.md) and folder structure.\n2. Recursively identify ALL leaf components.\n3. Create `SPEC.md` for each component using the spec.md template.\n\n## CRITICAL REQUIREMENT: DECISION TRACE\n\nYou MUST explicitly log your activity and decisions to the \"Decision Trace\" file.\n**Trace File Path**: `.dev_ops/tasks/TASK-001/trace.md`\n\n1.  **Initialize**: If the file is empty, start with a header.\n2.  **Log Live**: As you make decisions (e.g., \"Exploring file X\", \"Decided to refactor Y\", \"Found bug Z\"), append them to this file immediately.\n3.  **Format**: Use Markdown. Use H2/H3 for major steps and bullet points for actions.",
+  "updatedAt": "2026-01-31T22:15:59.912Z",
   "status": "todo",
-  "traceFile": ".dev_ops/activity/TASK-001.md",
+  "owner": "Nuno Moura",
   "agentHistory": [
     {
       "agentId": "system",
-      "sessionId": "1f5032cb-dd2f-4a02-a750-08a23d6bf673",
-      "agentName": "Antigravity",
-      "model": "Antigravity",
-      "phase": "Understand",
-      "startedAt": "2026-01-28T01:40:14.654Z",
-      "endedAt": "2026-01-28T01:57:32.819Z"
-    },
-    {
-      "agentId": "system",
-      "sessionId": "349435d1-38b2-4e53-82c9-d5d9d118b8e0",
-      "agentName": "Antigravity",
-      "model": "Antigravity",
-      "phase": "Understand",
-      "startedAt": "2026-01-29T11:26:22.841Z",
-      "endedAt": "2026-01-29T11:46:10.693Z"
-    },
-    {
-      "agentId": "system",
-      "sessionId": "86743afd-2a40-4b5a-ad31-6f25afa3ec37",
+      "sessionId": "aad56d1c-683f-4d1f-9e63-c8a7b94cfa21",
       "agentName": "Antigravity",
       "model": "Antigravity",
       "phase": "Plan",
-      "startedAt": "2026-01-29T23:03:56.091Z",
-      "endedAt": "2026-01-29T23:11:57.724Z"
+      "startedAt": "2026-01-31T22:12:40.509Z",
+      "endedAt": "2026-01-31T22:15:59.908Z"
     }
   ]
 }
