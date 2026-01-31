@@ -550,19 +550,19 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
       }
       .drag-spacer {
         content: '';
-        height: 2px; /* Thinner line as originally liked, but fully opaque */
-        margin: 4px 0;
+        height: 2px;
+        margin: 12px 0; /* Larger gap to push tasks apart */
         border-radius: 2px;
         background: var(--vscode-focusBorder);
         box-shadow: 0 0 2px var(--vscode-focusBorder);
         opacity: 1; 
-        animation: slideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        animation: slideIn 0.15s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         transform-origin: center;
         pointer-events: none;
       }
       @keyframes slideIn {
         from { height: 0; margin: 0; opacity: 0; }
-        to { height: 2px; margin: 4px 0; opacity: 1; }
+        to { height: 2px; margin: 12px 0; opacity: 1; }
       }
       
       .board-header {
@@ -1007,6 +1007,7 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
     <script>
       (function () {
         let popoverTimeout;
+        let dragSpacer = null;
         const ICONS = {
             INFO: '<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M8.49902 7.49998C8.49902 7.22384 8.27517 6.99998 7.99902 6.99998C7.72288 6.99998 7.49902 7.22384 7.49902 7.49998V10.5C7.49902 10.7761 7.72288 11 7.99902 11C8.27517 11 8.49902 10.7761 8.49902 10.5V7.49998ZM8.74807 5.50001C8.74807 5.91369 8.41271 6.24905 7.99903 6.24905C7.58535 6.24905 7.25 5.91369 7.25 5.50001C7.25 5.08633 7.58535 4.75098 7.99903 4.75098C8.41271 4.75098 8.74807 5.08633 8.74807 5.50001ZM8 1C4.13401 1 1 4.13401 1 8C1 11.866 4.13401 15 8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1ZM2 8C2 4.68629 4.68629 2 8 2C11.3137 2 14 4.68629 14 8C14 11.3137 11.3137 14 8 14C4.68629 14 2 11.3137 2 8Z"/></svg>',
             ACCOUNT: '<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M8 2C4.686 2 2 4.686 2 8C2 11.314 4.686 14 8 14C11.314 14 14 11.314 14 8C14 4.686 11.314 2 8 2ZM1 8C1 4.134 4.134 1 8 1C11.866 1 15 4.134 15 8C15 11.866 11.866 15 8 15C4.134 15 1 11.866 1 8ZM8 12.25C9.933 12.25 11.5 11.036 11.5 9.214C11.5 8.543 10.956 8 10.286 8H5.715C5.044 8 4.501 8.544 4.501 9.214C4.501 11.035 6.068 12.25 8.001 12.25H8ZM8 7.25C9.036 7.25 9.875 6.411 9.875 5.375C9.875 4.339 9.036 3.5 8 3.5C6.964 3.5 6.125 4.339 6.125 5.375C6.125 6.411 6.964 7.25 8 7.25Z"/></svg>',
@@ -1388,53 +1389,94 @@ function createDragPreview(count) {
 function handleDragEnd(card) {
   card.classList.remove('dragging');
   state.dragTaskIds = [];
+  if (dragSpacer) {
+    dragSpacer.remove();
+    dragSpacer = null;
+  }
 }
 
 function handleDragOver(event, columnEl) {
   event.preventDefault();
-  event.dataTransfer && (event.dataTransfer.dropEffect = 'move');
+  if (event.dataTransfer) {
+     event.dataTransfer.dropEffect = 'move';
+  }
   columnEl.classList.add('drop-target');
+
+  const taskList = columnEl.querySelector('.task-list');
+  if (!taskList) return;
+
+  const afterElement = getDragAfterElement(taskList, event.clientY);
+  
+  if (!dragSpacer) {
+    dragSpacer = document.createElement('div');
+    dragSpacer.className = 'drag-spacer';
+  }
+
+  if (afterElement) {
+    if (afterElement.previousElementSibling !== dragSpacer) {
+        taskList.insertBefore(dragSpacer, afterElement);
+    }
+  } else {
+    if (taskList.lastElementChild !== dragSpacer) {
+        taskList.appendChild(dragSpacer);
+    }
+  }
 }
 
-        function handleDrop(event, columnId, columnEl) {
-          event.preventDefault();
-          columnEl.classList.remove('drop-target');
-          if (!state.dragTaskIds.length) {
-            const payload = event.dataTransfer?.getData('text/plain');
-            if (payload) {
-              state.dragTaskIds = payload.split(',').filter(Boolean);
-            }
-          }
-          const taskIds = state.dragTaskIds.filter(Boolean);
-          state.dragTaskIds = [];
-          if (!taskIds.length) {
-            return;
-          }
+function getDragAfterElement(container, y) {
+  const draggableElements = [...container.querySelectorAll('.task-card:not(.dragging)')];
 
-          // Calculate insertion index
-          const taskList = columnEl.querySelector('.task-list');
-          // Exclude the cards we are dragging to avoid self-reference issues if moving in same column
-          const cards = Array.from(taskList.children).filter(c => 
-              c.classList.contains('task-card') && 
-              // Check if this card's ID is one of the ones being dragged
-              // We grab ID from dataset if possible, or query selector
-              !taskIds.includes(c.querySelector('.task-id-badge')?.textContent)
-          );
+  return draggableElements.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) {
+      return { offset: offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
 
-          const mouseY = event.clientY;
-          let newIndex = cards.length;
+function handleDrop(event, columnId, columnEl) {
+  event.preventDefault();
+  columnEl.classList.remove('drop-target');
+  
+  if (!state.dragTaskIds.length) {
+    const payload = event.dataTransfer?.getData('text/plain');
+    if (payload) {
+      state.dragTaskIds = payload.split(',').filter(Boolean);
+    }
+  }
+  const taskIds = state.dragTaskIds.filter(Boolean);
+  state.dragTaskIds = [];
+  
+  if (!taskIds.length) {
+     if (dragSpacer) { dragSpacer.remove(); dragSpacer = null; }
+     return;
+  }
 
-          for (let i = 0; i < cards.length; i++) {
-             const rect = cards[i].getBoundingClientRect();
-             const center = rect.top + rect.height / 2;
-             if (mouseY < center) {
-                newIndex = i;
-                break;
-             }
-          }
+  let newIndex = 0;
+  if (dragSpacer && dragSpacer.parentNode === columnEl.querySelector('.task-list')) {
+     let walker = dragSpacer.previousElementSibling;
+     while (walker) {
+         if (walker.classList.contains('task-card') && !walker.classList.contains('dragging') && !walker.classList.contains('drag-spacer')) {
+             newIndex++;
+         }
+         walker = walker.previousElementSibling;
+     }
+  } else {
+     const taskList = columnEl.querySelector('.task-list');
+     const cards = Array.from(taskList.children).filter(c => c.classList.contains('task-card') && !c.classList.contains('dragging'));
+     newIndex = cards.length;
+  }
 
-          vscode.postMessage({ type: 'moveTasks', taskIds, columnId, newIndex });
-        }
+  if (dragSpacer) {
+    dragSpacer.remove();
+    dragSpacer = null;
+  }
+
+  vscode.postMessage({ type: 'moveTasks', taskIds, columnId, newIndex });
+}
 
 function updateSelectionBanner() {
   if (!state.selection.size) {

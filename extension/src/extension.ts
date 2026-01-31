@@ -16,7 +16,8 @@ import { bindDevOpsViews } from './vscode/views';
 import { registerBoardCommands } from './vscode/commands';
 
 export async function activate(context: vscode.ExtensionContext) {
-  log('DevOps extension v0.0.1 activating...');
+  const timestamp = new Date().toISOString();
+  log(`DevOps extension v0.0.2 activating... (Build: ${timestamp}) [CACHE BUSTED]`);
   // Don't show activation message here - too noisy. User will see initialization prompt if needed.
   try {
     // Register DevOps: Initialize command first (always works)

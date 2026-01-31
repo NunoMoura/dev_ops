@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { readBoard, writeBoard, getBoardPath } from '../../services/board/boardPersistence';
+import { boardService } from '../../services/board/boardService';
 import { Task, ChecklistItem, COLUMN_FALLBACK_NAME, TaskStatus } from '../../types';
 import { getFontLink, getSharedStyles, getCSPMeta } from '../shared/styles';
 import { handleCardUpdateMessage, handleCardDeleteMessage } from '../../vscode/commands/sharedHandlers';
@@ -57,8 +58,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     _token: vscode.CancellationToken
   ): Promise<void> {
     webviewPanel.webview.options = { enableScripts: true };
-    // DEBUG: Verify if this code runs
-    vscode.window.showInformationMessage('DevOps Task Editor v0.0.3 Loaded');
+    console.log('DevOps Task Editor loaded');
     const taskId = this.getTaskIdFromUri(document.uri);
     // Get the provider from global instance or context if possible
     // For now, we assume provideTextDocumentContent already handles the read
@@ -110,11 +110,25 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
           vscode.commands.executeCommand('devops.refreshBoard');
           break;
         case 'delete':
-          await handleCardDeleteMessage(taskId, tempProvider, syncFilterUI);
-          // Check if task still exists
-          const boardAfter = await readBoard();
-          if (!boardAfter.items.find(t => t.id === taskId)) {
+          // Prompt for Archive vs Delete
+          const selection = await vscode.window.showInformationMessage(
+            "Do you want to Archive this task (keep record) or Delete it permanently?",
+            { modal: true },
+            "Archive",
+            "Delete"
+          );
+
+          if (selection === "Archive") {
+            await boardService.archiveTask(taskId);
+            vscode.window.showInformationMessage(`Task ${taskId} archived.`);
             webviewPanel.dispose();
+          } else if (selection === "Delete") {
+            await handleCardDeleteMessage(taskId, tempProvider, syncFilterUI);
+            // Check if task still exists
+            const boardAfter = await readBoard();
+            if (!boardAfter.items.find(t => t.id === taskId)) {
+              webviewPanel.dispose();
+            }
           }
           break;
       }
@@ -167,12 +181,22 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
     // Get status color for accent
     const statusColors: Record<string, string> = {
-      todo: '#6b7280',
-      in_progress: '#22c55e',
+      todo: '#6b7280', // Gray
+      in_progress: '#3b82f6', // Blue (Standard VSCode Info) or Green depending on pref. Using Blue for active.
+      // Wait, styles.ts has: READY: #3b82f6, AGENT_ACTIVE: #22c55e. 
+      // Let's align with the standard typically used. 
+      // User said "left highlight with the color dependent on the status".
+      // Let's use the map:
+      ready: '#3b82f6',
       needs_feedback: '#eab308',
-      blocked: '#ef4444'
+      blocked: '#ef4444',
+      done: '#3b82f6'
     };
-    const statusColor = statusColors[task.status || 'todo'] || statusColors.todo;
+    // Ensure we handle 'in_progress' and common ones
+    const activeStatusColor = (task.status === 'in_progress') ? '#22c55e' : (statusColors[task.status || 'todo'] || '#6b7280');
+
+    // Status color variable for CSS
+    const cssStatusColor = activeStatusColor;
 
     // Build lists for dropdowns
     const statusOptions = [
@@ -185,11 +209,10 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
     const phaseOptions = columns.map(c => ({ value: c.id, label: c.name }));
 
-    const ownerOptionsList = ['Unassigned', 'User', 'Antigravity'];
-    if (task.owner && !ownerOptionsList.includes(task.owner)) {
-      ownerOptionsList.push(task.owner);
-    }
-    const ownerOptions = ownerOptionsList.map(o => ({ value: o, label: o }));
+    // Metadata Values
+    const ownerName = task.owner || 'Unassigned';
+    const agentName = task.activeSession?.agent || 'None';
+    const modelName = task.activeSession?.model || 'None';
 
     // Page-specific styles
     const pageStyles = `<style>
@@ -220,110 +243,119 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         background: var(--vscode-scrollbarSlider-activeBackground);
       }
 
-      /* Status Line */
-      .status-bar {
-        height: 3px;
-        background: ${statusColor};
-        width: 100%;
-        position: fixed;
-        top: 0;
-        z-index: 100;
-      }
-
       .main-content {
         padding: 24px 32px;
-        margin-top: 4px; /* Space for status bar */
         max-width: 900px;
         margin-left: auto;
         margin-right: auto;
       }
 
-      /* Card Style - Mimic Sidebar Task */
-      .card-style {
-        background: var(--vscode-editor-background); /* Or distinct if needed */
-        border: 1px solid var(--vscode-widget-border);
-        border-left: 3px solid ${statusColor};
+      /* Unified Header Card */
+      .header-card {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 12px;
+        padding-left: 12px;
+        border-left: 3px solid ${cssStatusColor}; /* Status Color Border */
         border-radius: 6px;
-        padding: 8px 12px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
       }
 
-      /* Header Section */
-      .header-section {
+      .metadata-row {
         display: flex;
         align-items: center;
+        gap: 12px;
+        font-size: 11px;
+        color: var(--vscode-descriptionForeground);
+        opacity: 0.8;
+      }
+      .metadata-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .metadata-dot {
+        width: 3px;
+        height: 3px;
+        background: currentColor;
+        border-radius: 50%;
+        opacity: 0.5;
+      }
+
+      .header-top-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
         gap: 16px;
-        margin-bottom: 32px;
-      }
-      
-      .title-container {
-        flex: 1;
-        display: flex;
-        align-items: center;
       }
 
-      .title-input {
+      /* Seamless Title Input */
+      input.title-input {
+        flex: 1;
         width: 100%;
-        font-size: 18px;
+        background: transparent !important;
+        border: none !important;
+        outline: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        
+        font-size: 16px;
         font-weight: 600;
-        background: transparent;
-        border: none;
         color: var(--vscode-editor-foreground);
-        outline: none;
-        font-family: inherit;
-        padding: 2px 0;
+        line-height: 1.4;
+      }
+      input.title-input:focus {
+        opacity: 1;
+      }
+      input.title-input::placeholder {
+        color: var(--vscode-editor-foreground);
+        opacity: 0.4;
       }
 
       .task-id-badge {
         font-size: 12px;
         font-weight: 500;
-        color: var(--vscode-descriptionForeground);
+        color: ${cssStatusColor};
+        background: transparent !important;
+        border: 1px solid ${cssStatusColor} !important;
+        padding: 1px 7px;
+        border-radius: 10px;
         white-space: nowrap;
-        opacity: 0.9;
+        flex-shrink: 0;
+        align-self: flex-start;
       }
 
-      /* Metadata Dropdowns */
-      .metadata-section {
-        display: flex;
-        gap: 16px;
-        margin-bottom: 32px;
-        flex-wrap: wrap;
-      }
-
-      .filter-group {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        flex: 1;
-        min-width: 160px;
-      }
-
-      .filter-label {
-        font-size: 11px;
-        font-weight: 600;
-        color: var(--vscode-descriptionForeground);
-        text-transform: uppercase;
-        margin-left: 4px;
-      }
-
-      /* Dropdown Trigger as Card */
-      .dropdown-trigger {
+      /* Header Controls Row (Metadata) */
+      .header-controls {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+        font-size: 12px;
+      }
+
+      /* Minimal Dropdowns in Header */
+      .header-dropdown .dropdown-trigger {
+        display: flex;
+        align-items: center;
+        gap: 6px;
         cursor: pointer;
-        padding: 10px 12px;
-        font-size: 13px;
+        color: var(--vscode-descriptionForeground);
         user-select: none;
+        padding: 4px 0;
       }
-      .dropdown-trigger:hover {
-        background: var(--vscode-list-hoverBackground);
+      .header-dropdown .dropdown-trigger:hover {
+        color: var(--vscode-textLink-foreground);
       }
-      .dropdown-trigger::after {
+      .header-dropdown .dropdown-trigger span {
+        font-weight: 500;
+      }
+      .header-dropdown .dropdown-trigger::after {
         content: '';
         border: 4px solid transparent;
         border-top-color: currentColor;
-        margin-top: 4px; /* Move slightly down */
+        margin-top: 2px;
         opacity: 0.7;
       }
 
@@ -332,13 +364,13 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         position: absolute;
         top: 100%;
         left: 0;
-        width: 100%;
+        min-width: 150px;
         background: var(--vscode-dropdown-background);
         border: 1px solid var(--vscode-dropdown-border);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         z-index: 1000;
         margin-top: 4px;
-        border-radius: 6px;
+        border-radius: 4px;
         overflow: hidden;
       }
       .custom-dropdown {
@@ -348,9 +380,9 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         display: block;
       }
       .dropdown-item {
-        padding: 8px 12px;
+        padding: 6px 12px;
         cursor: pointer;
-        font-size: 13px;
+        font-size: 12px;
         color: var(--vscode-dropdown-foreground);
       }
       .dropdown-item:hover {
@@ -361,10 +393,23 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         color: var(--vscode-list-activeSelectionForeground);
       }
 
-      /* Sections */
-      .section {
+      /* Separator */
+      .header-separator {
+        height: 1px;
+        background-color: ${cssStatusColor}; /* Status Color Separator */
         margin-bottom: 32px;
+        opacity: 0.5;
+        width: 100%;
       }
+
+      /* Standard Content Sections (Instructions, Trace) */
+      .content-section {
+        margin-bottom: 32px;
+        padding-left: 12px;
+        border-left: 3px solid var(--vscode-panel-border); /* Neutral Grey Border */
+        border-radius: 6px;
+      }
+      
       .section-header {
         font-size: 11px;
         text-transform: uppercase;
@@ -372,27 +417,31 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         font-weight: 600;
         color: var(--vscode-descriptionForeground);
         margin-bottom: 12px;
-        margin-left: 4px;
       }
 
-      /* Instructions Input Card */
+      /* Instructions Input */
       .instructions-container {
-        padding: 0; /* Let textarea fill */
-        overflow: hidden; /* For border radius */
+        padding: 0;
       }
       textarea.instructions-input {
         width: 100%;
         min-height: 120px;
         background: transparent;
         color: var(--vscode-input-foreground);
-        border: none;
-        padding: 12px;
+        border: 1px solid transparent; /* Invisible border unless focused */
+        padding: 0;
         font-family: var(--vscode-editor-font-family);
         font-size: 13px;
         resize: vertical;
         outline: none;
         line-height: 1.5;
         display: block;
+      }
+      textarea.instructions-input:focus {
+        background: var(--vscode-input-background);
+        padding: 8px;
+        border-color: var(--vscode-focusBorder);
+        border-radius: 4px;
       }
 
       /* Trace Card */
@@ -441,25 +490,29 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         background: var(--vscode-errorForeground);
         color: var(--vscode-button-foreground);
       }
+      
+      /* Vertical Divider for Header Controls */
+      .v-divider {
+        width: 1px;
+        height: 12px;
+        background-color: var(--vscode-panel-border);
+      }
     </style>`;
 
-    const getDropdownHtml = (id: string, label: string, options: { value: string, label: string }[], current: string) => {
+    const getHeaderDropdown = (id: string, options: { value: string, label: string }[], current: string) => {
       const currentLabel = options.find(o => o.value === current)?.label || current;
       return `
-        <div class="filter-group">
-          <label class="filter-label">${label}</label>
-          <div class="custom-dropdown" id="${id}-dropdown">
-            <input type="hidden" id="${id}" value="${current}">
-            <div class="dropdown-trigger card-style" id="${id}-trigger" tabindex="0">
-              <span id="${id}-label">${currentLabel}</span>
-            </div>
-            <div class="dropdown-menu">
-              ${options.map(o => `
-                <div class="dropdown-item ${o.value === current ? 'active' : ''}" data-value="${o.value}">
-                  ${o.label}
-                </div>
-              `).join('')}
-            </div>
+        <div class="custom-dropdown header-dropdown" id="${id}-dropdown">
+          <input type="hidden" id="${id}" value="${current}">
+          <div class="dropdown-trigger" id="${id}-trigger" tabindex="0">
+            <span id="${id}-label">${currentLabel}</span>
+          </div>
+          <div class="dropdown-menu">
+            ${options.map(o => `
+              <div class="dropdown-item ${o.value === current ? 'active' : ''}" data-value="${o.value}">
+                ${o.label}
+              </div>
+            `).join('')}
           </div>
         </div>
       `;
@@ -478,38 +531,54 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 </head>
 <body>
   
-  <div class="status-bar"></div>
-
   <div class="main-content">
     
-    <!-- Header -->
-    <div class="header-section">
-      <div class="title-container card-style">
-        <input type="text" class="title-input" id="title" value="${task.title}" placeholder="Task Title">
+    <!-- Unified Header Card (Status Border) -->
+    <div class="header-card">
+      
+      <!-- Metadata Row (Owner • Agent • Model) -->
+      <div class="metadata-row">
+        <div class="metadata-item">
+          <span>Owner: ${ownerName}</span>
+        </div>
+        <div class="metadata-dot"></div>
+        <div class="metadata-item">
+          <span>Agent: ${agentName}</span>
+        </div>
+        <div class="metadata-dot"></div>
+        <div class="metadata-item">
+          <span>Model: ${modelName}</span>
+        </div>
       </div>
-      <div class="task-id-badge card-style">${task.id}</div>
+
+      <div class="header-top-row">
+        <input type="text" class="title-input" id="title" value="${task.title}" placeholder="TASK TITLE">
+        <div class="task-id-badge">${task.id}</div>
+      </div>
+      
+      <div class="header-controls">
+        ${getHeaderDropdown('status', statusOptions, task.status || 'todo')}
+        <div class="v-divider"></div>
+        ${getHeaderDropdown('column', phaseOptions, task.columnId || '')}
+      </div>
     </div>
 
-    <!-- Metadata Filters -->
-    <div class="metadata-section">
-      ${getDropdownHtml('status', 'Status', statusOptions, task.status || 'todo')}
-      ${getDropdownHtml('column', 'Phase', phaseOptions, task.columnId || '')}
-      ${getDropdownHtml('owner', 'Owner', ownerOptions, task.owner || 'Unassigned')}
-    </div>
+    <!-- Status Colored Separator -->
+    <div class="header-separator"></div>
 
-    <!-- Instructions -->
-    <div class="section">
+    <!-- Instructions (Neutral Border) -->
+    <div class="content-section">
       <div class="section-header">Agent Instructions</div>
-      <div class="instructions-container card-style">
+      <div class="instructions-container">
         <textarea id="summary" class="instructions-input" 
-          placeholder="Enter instructions...">${task.summary || ''}</textarea>
+          placeholder="Enter instructions (Markdown supported)...">${task.summary || ''}</textarea>
       </div>
     </div>
 
-    <!-- Trace -->
-    <div class="section">
+    <!-- Trace (Neutral Border) -->
+    <div class="content-section">
       <div class="section-header">Decision Trace</div>
-      <div class="trace-container card-style">
+      <div class="trace-container">
         <div class="trace-content">
           ${parsedTrace || '<div style="font-style:italic; opacity:0.6;">No activity recorded yet.</div>'}
         </div>
@@ -557,7 +626,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
     setupDropdown('status');
     setupDropdown('column');
-    setupDropdown('owner');
+    // Owner is now read-only metadata
 
     document.addEventListener('click', () => {
       document.querySelectorAll('.custom-dropdown').forEach(d => d.classList.remove('open'));
@@ -568,7 +637,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         title: document.getElementById('title').value,
         status: document.getElementById('status').value,
         columnId: document.getElementById('column').value,
-        owner: document.getElementById('owner').value,
+        // owner is read-only
         summary: document.getElementById('summary').value
       };
     }

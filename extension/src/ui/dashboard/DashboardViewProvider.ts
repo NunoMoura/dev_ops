@@ -23,7 +23,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
 
   private _isBoardOpen = false;
 
-  private _groupingMode: 'status' | 'phase' | 'owner' = 'phase';
+  private _groupingMode: 'status' | 'phase' = 'phase';
 
   constructor(private readonly _extensionUri: vscode.Uri) { }
 
@@ -249,29 +249,6 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
         tasks: tasks.filter(t => t.columnId === col.id)
       }));
       // Priority grouping removed - falling back to status if mapped locally or just skipping
-    } else if (this._groupingMode === 'owner') {
-      // Group by Human Owner only
-      const humans = new Map<string, Task[]>();
-
-      tasks.forEach(t => {
-        let ownerName = 'Unassigned';
-
-        if (t.owner) {
-          ownerName = t.owner;
-        } else if (t.assignee) {
-          ownerName = t.assignee;
-        }
-
-        if (!humans.has(ownerName)) { humans.set(ownerName, []); }
-        humans.get(ownerName)?.push(t);
-      });
-
-      groups = Array.from(humans.entries()).map(([name, humanTasks]) => ({
-        id: name.toLowerCase().replace(/\s+/g, '-'),
-        label: name,
-        color: 'var(--vscode-foreground)', // Neutral color for owner headers
-        tasks: humanTasks
-      })).sort((a, b) => a.label.localeCompare(b.label));
     } else {
       // Default: Group by Status (Neutral headers, task borders have color)
       groups = [
@@ -384,9 +361,9 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     .task[data-status="ready"] { border-left-color: #3b82f6; }
     .task[data-status="agent_active"] { border-left-color: #22c55e; } /* Kept for status mapping, displays as In Progress */
     .task[data-status="in_progress"] { border-left-color: #22c55e; }
-    .task[data-status="needs_feedback"] { border-left-color: #f97316; }
+    .task[data-status="needs_feedback"] { border-left-color: #eab308; }
     .task[data-status="blocked"] { border-left-color: #ef4444; }
-    .task[data-status="done"] { border-left-color: #6b7280; }
+    .task[data-status="done"] { border-left-color: #3b82f6; }
     
       /* Header Styles */
       .dashboard-header {
@@ -549,7 +526,6 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       <div class="dropdown-menu">
         <button class="dropdown-item ${this._groupingMode === 'status' ? 'active' : ''}" data-value="status">Status</button>
         <button class="dropdown-item ${this._groupingMode === 'phase' ? 'active' : ''}" data-value="phase">Phase</button>
-        <button class="dropdown-item ${this._groupingMode === 'owner' ? 'active' : ''}" data-value="owner">Owner</button>
       </div>
     </div>
 

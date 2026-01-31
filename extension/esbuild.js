@@ -167,7 +167,7 @@ async function main() {
 		sourcemap: !production,
 		sourcesContent: false,
 		platform: 'node',
-		outfile: 'dist/extension.js',
+		outfile: 'dist/devopsMain.js',
 		external: ['vscode'],
 		logLevel: 'silent',
 		plugins: [

@@ -1,6 +1,38 @@
 # Changelog
 
-## [0.1.0-dev] - Development
+## [0.0.2] - 2026-01-31
+
+### Added
+
+- **Task Details View**:
+  - Dedicated WebView with "Card" styling (6px rounded containers).
+  - Left-border status indicators matching Board/Sidebar.
+  - Pill-shaped Task ID badge and uppercase Title.
+- **Manual Task Ordering**: Drag and drop tasks in Board view with persistent ordering.
+- **Local Asset Loading**: Codicons and fonts now served locally from extension directory.
+- **Configuration Service**: Centralized `config.json` management under `src/services`.
+
+### Changed
+
+- **Project Structure**:
+  - Consolidated core utilities into `src/common`.
+  - Moved shared code to `src/infrastructure`.
+  - Standardized service interfaces.
+- **UI Refinements**:
+  - Removed **Task Priority** features (Filters, UI badges, Logic).
+  - Replaced CSS font icons with inline SVGs for reliable rendering.
+  - styling: Improved Dropdown alignment and removed redundant Status Bars.
+- **Onboarding**: Replaced "Bootstrap" workflow with direct installer task generation.
+
+### Fixed
+
+- **Board rendering**: Fixed HTML corruption and hover states in Kanban board.
+- **Drag & Drop**: Resolved visual flickering and state synchronization issues.
+- **Windows compatibility**: Fixed path rendering for local resources.
+
+---
+
+## [0.0.1] - Development
 
 > **Note:** This is the development version. Version only bumps on actual releases.
 
