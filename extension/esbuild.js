@@ -78,24 +78,27 @@ function validatePayload() {
 }
 
 /**
- * Copy framework assets from project root into dist/assets
+ * Copy static framework assets from project root into dist/assets
+ * This includes everything EXCEPT the built CLI tool
  */
-function copyAssets() {
+function copyStaticAssets() {
 	const projectRoot = path.join(__dirname, '..');
 	const assetsDir = path.join(__dirname, 'dist', 'assets');
 
 	// Validate payload before copying
 	validatePayload();
 
-	// Clean existing assets
-	if (fs.existsSync(assetsDir)) {
-		fs.rmSync(assetsDir, { recursive: true, force: true });
-	}
+	console.log('[assets] Copying static framework assets to dist/assets...');
 
-	console.log('[assets] Copying framework assets to dist/assets...');
+	// Ensure assets dir exists (don't wipe it whole, might be concurrent)
+	// ideally we only wipe at start of build process, not during copy
+	if (!fs.existsSync(assetsDir)) {
+		fs.mkdirSync(assetsDir, { recursive: true });
+	}
 
 	// Copy rules
 	const rulesDir = path.join(assetsDir, 'rules');
+	// Ensure subdir is clean if needed? For now just overwrite.
 	copyDir(path.join(projectRoot, 'payload', 'rules'), rulesDir);
 
 	copyDir(path.join(projectRoot, 'payload', 'workflows'), path.join(assetsDir, 'workflows'));
@@ -121,8 +124,14 @@ function copyAssets() {
 	fs.writeFileSync(path.join(assetsDir, 'version.json'), JSON.stringify(versionData, null, 4));
 	console.log(`[assets] Generated version.json (v${packageJson.version}) from package.json`);
 
-	console.log('[assets] Assets copied successfully');
+	console.log('[assets] Static assets copied successfully');
+}
 
+/**
+ * Copy the built CLI tool to assets
+ */
+function copyCliAssets() {
+	const assetsDir = path.join(__dirname, 'dist', 'assets');
 	// Copy built CLI script if it exists
 	const cliSrc = path.join(__dirname, 'dist', 'cli', 'devops.js');
 	if (fs.existsSync(cliSrc)) {
@@ -130,6 +139,8 @@ function copyAssets() {
 		fs.mkdirSync(scriptsDir, { recursive: true });
 		fs.copyFileSync(cliSrc, path.join(scriptsDir, 'devops.js'));
 		console.log('[assets] Copied devops.js CLI to assets/scripts');
+	} else {
+		console.warn('[assets] CLI artifact not found at ' + cliSrc);
 	}
 }
 
@@ -149,21 +160,38 @@ const esbuildProblemMatcherPlugin = {
 				console.error(`    ${location.file}:${location.line}:${location.column}:`);
 			});
 			console.log('[watch] build finished');
-			// Copy assets after each build
-			copyAssets();
 		});
 	},
 };
 
+/**
+ * Plugin to copy CLI assets after CLI build completes
+ */
+const copyCliPlugin = {
+	name: 'copy-cli-plugin',
+	setup(build) {
+		build.onEnd(() => {
+			copyCliAssets();
+		});
+	}
+};
+
 async function main() {
-	// Extension Build
+	// 1. Clean dist/assets at the start of the whole process ONLY
+	const assetsDir = path.join(__dirname, 'dist', 'assets');
+	if (fs.existsSync(assetsDir)) {
+		console.log('[build] Cleaning dist/assets...');
+		fs.rmSync(assetsDir, { recursive: true, force: true });
+	}
+
+	// 2. Extension Build Context
 	const ctx = await esbuild.context({
 		entryPoints: [
 			'src/extension.ts'
 		],
 		bundle: true,
 		format: 'cjs',
-		minify: false,
+		minify: false, // Minify intentionally disabled for debugging if needed, enable for prod if desired
 		sourcemap: !production,
 		sourcesContent: false,
 		platform: 'node',
@@ -172,27 +200,45 @@ async function main() {
 		logLevel: 'silent',
 		plugins: [
 			esbuildProblemMatcherPlugin,
+			// Extension build doesn't need to trigger asset copy automatically anymore
 		],
 	});
 
-	// CLI Build
+	// 3. CLI Build Context
 	const cliCtx = await esbuild.context({
 		entryPoints: ['src/cli/devops.ts'],
 		bundle: true,
 		platform: 'node',
 		outfile: 'dist/cli/devops.js', // Output to separate dir to avoid wipe
-		external: ['vscode'], // Ensure vscode is not bundled (should not be imported anyway)
+		external: ['vscode'],
 		logLevel: 'silent',
 		plugins: [
 			esbuildProblemMatcherPlugin,
+			copyCliPlugin // Update CLI assets whenever CLI rebuilds
 		],
 	});
 
 	if (watch) {
+		// Watch mode:
+		// 1. Copy static assets once
+		copyStaticAssets();
+
+		// 2. Start watchers
+		// CLI watcher will trigger copyCliAssets on change via plugin
+		// Extension watcher just rebuilds code
 		await Promise.all([ctx.watch(), cliCtx.watch()]);
 	} else {
+		// Production mode:
+		// 1. Build code concurrently
 		await Promise.all([ctx.rebuild(), cliCtx.rebuild()]);
+
+		// 2. Dispose contexts
 		await Promise.all([ctx.dispose(), cliCtx.dispose()]);
+
+		// 3. Copy ALL assets sequentially after builds are done
+		// This ensures dist/cli/devops.js exists before we try to copy it
+		copyStaticAssets();
+		copyCliAssets();
 	}
 }
 

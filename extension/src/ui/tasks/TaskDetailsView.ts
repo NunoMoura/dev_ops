@@ -105,6 +105,38 @@ function getCardHtml(): string {
   const styles = /* HTML */ `
     \u003cstyle\u003e
       /* Task-Details Specific Styles */
+      :root {
+        --status-color: var(--border-subtle);
+      }
+      body[data-status="todo"] { --status-color: var(--status-ready, #9ca3af); }
+      body[data-status="in_progress"] { --status-color: var(--status-agent-active, #22c55e); }
+      body[data-status="needs_feedback"] { --status-color: var(--status-needs-feedback, #f97316); }
+      body[data-status="blocked"] { --status-color: var(--status-blocked, #ef4444); }
+      body[data-status="done"] { --status-color: #3b82f6; }
+
+      .highlight-section {
+        margin-top: var(--space-xl);
+        padding-top: var(--space-sm);
+        border-left: 3px solid var(--status-color);
+        padding-left: var(--space-md);
+        transition: border-color 0.3s ease;
+      }
+
+      .highlight-section h3 {
+        font-size: var(--text-lg);
+        font-weight: var(--weight-semibold);
+        margin-bottom: var(--space-md);
+        margin-top: 0;
+      }
+      
+      .separator {
+        height: 1px;
+        background: var(--status-color);
+        opacity: 0.2;
+        margin: var(--space-lg) 0;
+        transition: background-color 0.3s ease;
+      }
+
       .row {
         display: flex;
         gap: var(--space-md);
@@ -149,6 +181,9 @@ function getCardHtml(): string {
       .feature-section {
         margin-top: var(--space-xl);
         padding-top: var(--space-lg);
+        border-left: 3px solid var(--status-color);
+        padding-left: var(--space-md);
+        transition: border-color 0.3s ease;
       }
       .feature-section h3 {
         font-size: var(--text-lg);
@@ -158,7 +193,7 @@ function getCardHtml(): string {
       }
       .owner-section {
         background: rgba(255, 255, 255, 0.03);
-        border: 1px solid var(--border-subtle);
+        border: 1px solid var(--status-color);
         border-radius: 6px;
         padding: var(--space-sm) var(--space-md);
         margin-bottom: var(--space-md);
@@ -650,7 +685,8 @@ function getCardHtml(): string {
           summaryInput.value = message.task.summary || '';
           tagsInput.value = message.task.tags || '';
           statusSelect.value = message.task.status || 'todo';
-          columnLabel.textContent = message.task.column ? 'Column: ' + message.task.column : '';
+          updateTheme(message.task.status);
+          columnLabel.textContent = message.task.column ? message.task.column : 'No Phase';
           
           // Owner Display
           if (message.task.owner && message.task.owner.developer) {
@@ -705,6 +741,10 @@ function getCardHtml(): string {
         };
       }
 
+      function updateTheme(status) {
+          document.body.setAttribute('data-status', status || 'todo');
+      }
+
       // Auto-save with debounce
       let saveTimeout;
       const saveIndicator = document.getElementById('saveIndicator');
@@ -727,7 +767,10 @@ function getCardHtml(): string {
         input.addEventListener('input', triggerAutoSave);
       });
       [statusSelect].forEach(select => {
-        select.addEventListener('change', triggerAutoSave);
+        select.addEventListener('change', (e) => {
+            updateTheme(e.target.value);
+            triggerAutoSave();
+        });
       });
 
       saveBtn.addEventListener('click', () => {
@@ -766,15 +809,16 @@ function getCardHtml(): string {
       <div id="empty-state">Select a task from the board to edit its details.</div>
       <form id="card-form" class="hidden" onsubmit="return false;">
         <h2>Task Details</h2>
-        <div
-          id="columnLabel"
-          style="margin-bottom: 8px; font-size: 12px; color: var(--vscode-descriptionForeground);"
-        ></div>
         
         <div id="feedbackBanner" class="selection-banner hidden" style="background: rgba(234, 179, 8, 0.15); border-color: #eab308; margin-bottom: 12px;">
             <span style="color: #eab308; font-size: 11px;">⚠️ Needs Feedback - Check Agent Inbox</span>
         </div>
 
+        <!-- Title Section -->
+        <label for="title">Title</label>
+        <input id="title" type="text" required />
+
+        <!-- Info/Owner Section (Under Title) -->
         <div id="ownerContainer" class="owner-section hidden">
             <div class="owner-info">
                 <span class="owner-label">Current Owner</span>
@@ -783,26 +827,40 @@ function getCardHtml(): string {
             <button id="openChatBtn" class="ghost hidden" type="button" style="font-size:10px;">Open Chat</button>
         </div>
 
-        <label for="title">Title</label>
-        <input id="title" type="text" required />
+        <div class="separator"></div>
 
-        <label for="summary">Summary</label>
-        <textarea id="summary"></textarea>
-
-        <label for="tags">Tags (comma separated)</label>
-        <input id="tags" type="text" />
-
-        <div class="row">
-        <div>
-            <label for="status">Status</label>
-            <select id="status">
-              <option value="todo">Start</option>
-              <option value="in_progress">In Progress</option>
-              <option value="needs_feedback">Needs Feedback</option>
-              <option value="blocked">Blocked</option>
-            </select>
-          </div>
+        <!-- Phase & Status Filters Section (Highlighted) -->
+        <div class="highlight-section">
+            <h3 style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--vscode-descriptionForeground);">Phase & Status</h3>
+            <div class="row" style="align-items: end;">
+                <div>
+                    <label for="status">Status</label>
+                    <select id="status">
+                      <option value="todo">Start</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="needs_feedback">Needs Feedback</option>
+                      <option value="blocked">Blocked</option>
+                      <option value="done">Done</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Current Phase</label>
+                    <div id="columnLabel" style="font-weight: 600; padding: 6px 0; border-bottom: 1px solid var(--border-subtle);"></div>
+                </div>
+            </div>
         </div>
+
+        <div class="separator"></div>
+
+        <!-- Agent Instruction Section (Summary) -->
+        <div class="highlight-section">
+            <label for="summary" style="font-size: var(--text-lg); font-weight: var(--weight-semibold); display: block; margin-bottom: var(--space-md);">Agent Instructions</label>
+            <textarea id="summary"></textarea>
+        </div>
+
+        <!-- Tags & Extras -->
+        <label for="tags">Tags</label>
+        <input id="tags" type="text" placeholder="bug, feature, enhancement" />
 
         <div class="feature-section">
           <div class="section-header">
