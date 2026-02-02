@@ -13,6 +13,15 @@ description: Implement production-ready code with tests. Use when writing code o
 - Implementing features or fixes
 - Writing tests (TDD workflow)
 
+## Planning Mode
+
+**Goal**: Plan the **Coding** steps to satisfy the **PLN-XXX** checklist.
+**Plan Content**:
+
+1. TDD strategy (specific tests to write).
+2. Files to create/modify (architecture check).
+3. Specific refactoring steps.
+
 ## How It Works
 
 | Input | Output | Next Steps |

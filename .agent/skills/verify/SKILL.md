@@ -14,6 +14,15 @@ description: Validate, document proof, and ship via PR. Use when testing or prep
 - Self-reviewing changes
 - Creating PRs
 
+## Planning Mode
+
+**Goal**: Plan the **Verification** strategy to populate **walkthrough.md**.
+**Plan Content**:
+
+1. Test commands to run (automated).
+2. Manual verification steps (UI/Human).
+3. Security/Edge-case checks.
+
 ## How It Works
 
 | Input | Output | Next Steps |

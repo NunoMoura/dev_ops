@@ -13,6 +13,15 @@ description: Research deeply before planning. Use when starting a new task, anal
 - Need to research before planning
 - Scoping work or analyzing requirements
 
+## Planning Mode
+
+**Goal**: Plan the **Reading/Research** strategy to populate the **RES-XXX** artifact.
+**Plan Content**:
+
+1. List of `SPEC.md` files to read.
+2. External documentation to query.
+3. Specific questions/assumptions to verify.
+
 ## How It Works
 
 | Input | Output | Next Steps |

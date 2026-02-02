@@ -13,6 +13,15 @@ description: Create implementation plans before building. Use when designing sol
 - Designing a solution
 - Breaking down work into implementable steps
 
+## Planning Mode
+
+**Goal**: Plan the **Design** strategy to populate the **PLN-XXX** artifact.
+**Plan Content**:
+
+1. List dependencies/SPEC files to check for impact.
+2. Identify incomplete requirements or ADRs needed.
+3. Outline the high-level approach for the checklist.
+
 ## How It Works
 
 | Input | Output | Next Steps |
