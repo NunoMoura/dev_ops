@@ -410,6 +410,10 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         border-radius: 6px;
       }
       
+      .highlight-section {
+        border-left-color: ${cssStatusColor} !important;
+      }
+      
       .section-header {
         font-size: 11px;
         text-transform: uppercase;
@@ -536,6 +540,11 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     <!-- Unified Header Card (Status Border) -->
     <div class="header-card">
       
+      <div class="header-top-row">
+        <input type="text" class="title-input" id="title" value="${task.title}" placeholder="TASK TITLE">
+        <div class="task-id-badge">${task.id}</div>
+      </div>
+
       <!-- Metadata Row (Owner • Agent • Model) -->
       <div class="metadata-row">
         <div class="metadata-item">
@@ -550,12 +559,14 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
           <span>Model: ${modelName}</span>
         </div>
       </div>
+    </div>
 
-      <div class="header-top-row">
-        <input type="text" class="title-input" id="title" value="${task.title}" placeholder="TASK TITLE">
-        <div class="task-id-badge">${task.id}</div>
-      </div>
-      
+    <!-- Status Colored Separator -->
+    <div class="header-separator"></div>
+
+    <!-- Phase & Status Section (New) -->
+    <div class="content-section highlight-section">
+      <div class="section-header">Phase & Status</div>
       <div class="header-controls">
         ${getHeaderDropdown('status', statusOptions, task.status || 'todo')}
         <div class="v-divider"></div>

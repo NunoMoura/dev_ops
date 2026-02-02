@@ -177,11 +177,12 @@ const copyCliPlugin = {
 };
 
 async function main() {
-	// 1. Clean dist/assets at the start of the whole process ONLY
-	const assetsDir = path.join(__dirname, 'dist', 'assets');
-	if (fs.existsSync(assetsDir)) {
-		console.log('[build] Cleaning dist/assets...');
-		fs.rmSync(assetsDir, { recursive: true, force: true });
+	// 1. Clean dist directory at the start of the whole process ONLY
+	// This ensures no stale artifacts remain, but complicates watch mode slightly
+	// (though watch mode normally runs in-memory or overwrites)
+	if (fs.existsSync('dist') && !watch) {
+		console.log('[build] Cleaning dist directory...');
+		fs.rmSync('dist', { recursive: true, force: true });
 	}
 
 	// 2. Extension Build Context

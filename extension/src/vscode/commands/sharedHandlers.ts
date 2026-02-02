@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import type { BoardTreeProvider } from '../../ui/board';
-import type { TaskDetailsPayload } from '../../ui/tasks';
+
 import type { MoveTasksRequest } from './types';
 import { readBoard, writeBoard, getWorkspaceRoot } from '../../services/board/boardPersistence';
 import { boardService } from '../../services/board/boardService';
-import { COLUMN_FALLBACK_NAME, Task } from '../../types';
+import { COLUMN_FALLBACK_NAME, Task, TaskDetailsPayload } from '../../types';
 import { formatError } from '../../infrastructure/errors';
 import { moveTasksToColumn } from '../../services/tasks';
 import { parseTags } from '../../services/tasks/taskUtils';

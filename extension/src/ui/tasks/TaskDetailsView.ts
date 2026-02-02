@@ -15,9 +15,11 @@ export type TaskDetailsPayload = {
   workflow?: string;              // DevOps workflow (e.g., /create_plan)
   upstream?: string[];            // Artifact dependencies
   downstream?: string[];          // Artifacts depending on this task
+  priority?: string;
   owner?: {                       // Task Ownership
     developer?: string;
-    agent?: string;
+    agent?: string; // Agent name
+    model?: string; // Model name
     type?: string;
     sessionId?: string;
   };
@@ -51,10 +53,13 @@ export class BoardTaskDetailsViewProvider implements vscode.WebviewViewProvider 
       enableScripts: true,
     };
     webviewView.webview.html = getCardHtml();
+    console.log('[TaskDetailsViewV3] Resolving WebviewView');
     webviewView.onDidDispose(() => {
       this.view = undefined;
+      console.log('[TaskDetailsViewV3] Webview Disposed');
     });
     webviewView.webview.onDidReceiveMessage((message: WebviewMessage) => {
+      console.log('[TaskDetailsViewV3] Received Message:', message.type);
       if (!message) {
         return;
       }
@@ -86,6 +91,7 @@ export class BoardTaskDetailsViewProvider implements vscode.WebviewViewProvider 
   }
 
   private postMessage(message: WebviewMessage): void {
+    console.log('[TaskDetailsViewV3] Posting Message:', message.type);
     this.view?.webview.postMessage(message);
   }
 }
@@ -103,7 +109,7 @@ export function registerTaskDetailsView(context: vscode.ExtensionContext): Board
 function getCardHtml(): string {
   // Use shared design system + task-details specific styles
   const styles = /* HTML */ `
-    \u003cstyle\u003e
+    <style>
       /* Task-Details Specific Styles */
       :root {
         --status-color: var(--border-subtle);
@@ -114,7 +120,7 @@ function getCardHtml(): string {
       body[data-status="blocked"] { --status-color: var(--status-blocked, #ef4444); }
       body[data-status="done"] { --status-color: #3b82f6; }
 
-      .highlight-section {
+      .highlight-section, .feature-section {
         margin-top: var(--space-xl);
         padding-top: var(--space-sm);
         border-left: 3px solid var(--status-color);
@@ -122,7 +128,7 @@ function getCardHtml(): string {
         transition: border-color 0.3s ease;
       }
 
-      .highlight-section h3 {
+      .highlight-section h3, .feature-section h3 {
         font-size: var(--text-lg);
         font-weight: var(--weight-semibold);
         margin-bottom: var(--space-md);
@@ -133,7 +139,7 @@ function getCardHtml(): string {
         height: 1px;
         background: var(--status-color);
         opacity: 0.2;
-        margin: var(--space-lg) 0;
+        margin: var(--space-xl) 0;
         transition: background-color 0.3s ease;
       }
 
@@ -141,7 +147,7 @@ function getCardHtml(): string {
         display: flex;
         gap: var(--space-md);
       }
-      .row \u003e div {
+      .row > div {
         flex: 1;
       }
       .actions {
@@ -178,19 +184,7 @@ function getCardHtml(): string {
         margin: 0;
         font-weight: var(--weight-normal);
       }
-      .feature-section {
-        margin-top: var(--space-xl);
-        padding-top: var(--space-lg);
-        border-left: 3px solid var(--status-color);
-        padding-left: var(--space-md);
-        transition: border-color 0.3s ease;
-      }
-      .feature-section h3 {
-        font-size: var(--text-lg);
-        font-weight: var(--weight-semibold);
-        font-weight: var(--weight-semibold);
-        margin-bottom: var(--space-md);
-      }
+
       .owner-section {
         background: rgba(255, 255, 255, 0.03);
         border: 1px solid var(--status-color);
@@ -305,6 +299,46 @@ function getCardHtml(): string {
       .icon-button.danger:hover {
         background: rgba(239, 68, 68, 0.1);
       }
+      
+      /* Status List Styles */
+      .status-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+      .status-option {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid var(--border-subtle);
+        transition: all 0.2s ease;
+        opacity: 0.7;
+        position: relative;
+        background: transparent;
+        color: var(--vscode-descriptionForeground);
+      }
+      .status-option:last-child {
+        border-bottom: none;
+      }
+      .status-option:hover {
+        opacity: 1;
+        background: var(--vscode-list-hoverBackground);
+      }
+      
+      /* Selected State */
+      .status-option.selected {
+        opacity: 1;
+        background: var(--status-color);
+        color: white;
+        font-weight: 600;
+        border-bottom-color: transparent;
+      }
+      .status-option.selected .status-label {
+        color: white;
+      }
+
       .feature-empty {
         font-size: var(--text-base);
         color: var(--vscode-descriptionForeground);
@@ -409,7 +443,35 @@ function getCardHtml(): string {
         background: rgba(239, 68, 68, 0.08); /* Red */
         color: var(--status-blocked);
       }
-    \u003c/style\u003e
+      /* Metadata Grid */
+      .metadata-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-sm);
+        margin-top: var(--space-sm);
+      }
+      .meta-item {
+        display: flex;
+        flex-direction: column;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border-subtle);
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: var(--text-sm);
+      }
+      .meta-label {
+        font-size: 10px;
+        color: var(--vscode-descriptionForeground);
+        text-transform: uppercase;
+        margin-bottom: 2px;
+      }
+      .meta-value {
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    </style>
   `;
 
   const script = /* HTML */ `
@@ -420,13 +482,13 @@ function getCardHtml(): string {
       const titleInput = document.getElementById('title');
       const summaryInput = document.getElementById('summary');
       const tagsInput = document.getElementById('tags');
-      const statusSelect = document.getElementById('status');
+      const statusList = document.getElementById('statusList');
       const columnLabel = document.getElementById('columnLabel');
+      const phaseLabel = document.getElementById('phaseLabel');
       const deleteBtn = document.getElementById('deleteBtn');
       const saveBtn = document.getElementById('saveBtn');
       const claimBtn = document.getElementById('claimBtn');
-      const ownerContainer = document.getElementById('ownerContainer');
-      const ownerNameEl = document.getElementById('ownerName');
+      const metadataContainer = document.getElementById('metadataContainer');
       const featureTasksContainer = document.getElementById('featureTasksContainer');
       const addFeatureTaskBtn = document.getElementById('addFeatureTask');
       const upstreamContainer = document.getElementById('upstreamArtifacts');
@@ -463,7 +525,7 @@ function getCardHtml(): string {
         }
       }
       const ITEM_STATUS_OPTIONS = [
-        { value: 'todo', label: 'Todo' },
+        { value: 'todo', label: 'Start (Todo)' },
         { value: 'in_progress', label: 'In Progress' },
         { value: 'needs_feedback', label: 'Needs Feedback' },
         { value: 'blocked', label: 'Blocked' },
@@ -666,6 +728,36 @@ function getCardHtml(): string {
 
       renderFeatureTasks();
 
+      function renderStatusList(currentStatus) {
+        statusList.innerHTML = '';
+        ITEM_STATUS_OPTIONS.forEach(opt => {
+           const div = document.createElement('div');
+           div.className = 'status-option';
+           div.dataset.value = opt.value;
+           
+           if (opt.value === currentStatus) {
+             div.classList.add('selected');
+             div.style.backgroundColor = 'var(--status-color)'; 
+             div.style.borderColor = 'var(--status-color)';
+           }
+           
+           // Status Label
+           const span = document.createElement('span');
+           span.className = 'status-label';
+           span.textContent = opt.label;
+           div.appendChild(span);
+           
+           // Click Handler
+           div.addEventListener('click', () => {
+             updateTheme(opt.value);
+             renderStatusList(opt.value);
+             triggerAutoSave();
+           });
+           
+           statusList.appendChild(div);
+        });
+      }
+
       window.addEventListener('message', (event) => {
         const message = event.data;
         if (!message) {
@@ -684,29 +776,53 @@ function getCardHtml(): string {
           titleInput.value = message.task.title || '';
           summaryInput.value = message.task.summary || '';
           tagsInput.value = message.task.tags || '';
-          statusSelect.value = message.task.status || 'todo';
-          updateTheme(message.task.status);
-          columnLabel.textContent = message.task.column ? message.task.column : 'No Phase';
           
-          // Owner Display
-          if (message.task.owner && message.task.owner.developer) {
-              ownerContainer.classList.remove('hidden');
-              let ownerHtml = '👤 ' + message.task.owner.developer;
-              if (message.task.owner.agent) {
-                  ownerHtml += \` <span class="agent-active">⚡ \${message.task.owner.agent} Active</span>\`;
-              }
-              ownerNameEl.innerHTML = ownerHtml;
-              
-              claimBtn.textContent = "Re-Claim Task";
-              
-              // Agent Chat Button
-              const agentBtn = document.getElementById('openChatBtn');
-              if (agentBtn) agentBtn.classList.remove('hidden');
+          updateTheme(message.task.status);
+          renderStatusList(message.task.status || 'todo');
+          
+          if (phaseLabel) {
+             const phaseText = message.task.column ? message.task.column : 'No Phase';
+             phaseLabel.textContent = 'Phase: ' + phaseText;
+             phaseLabel.style.display = 'inline-block';
+          }
+          
+          // Metadata Display (Owner, Agent, Model)
+          let metadataHtml = '';
+          const owner = message.task.owner;
+          
+          if (owner) {
+             if (owner.developer) {
+                metadataHtml += \`<div class="meta-item"><span class="meta-label">Owner</span><span class="meta-value">👤 \${owner.developer}</span></div>\`;
+             }
+             if (owner.agent) {
+                metadataHtml += \`<div class="meta-item"><span class="meta-label">Agent</span><span class="meta-value">⚡ \${owner.agent}</span></div>\`;
+             }
+             if (owner.model) {
+                metadataHtml += \`<div class="meta-item"><span class="meta-label">Model</span><span class="meta-value">🤖 \${owner.model}</span></div>\`;
+             }
+             
+             if (owner.developer || owner.agent) {
+                 claimBtn.textContent = "Re-Claim Task";
+             } else {
+                 claimBtn.textContent = "Start Task";
+             }
           } else {
-              ownerContainer.classList.add('hidden');
-              claimBtn.textContent = "Start Task";
-              const agentBtn = document.getElementById('openChatBtn');
-              if (agentBtn) agentBtn.classList.add('hidden');
+             claimBtn.textContent = "Start Task";
+          }
+          
+          // Agent Chat Button Logic
+          const agentBtn = document.getElementById('openChatBtn');
+          if (owner && (owner.developer || owner.agent)) {
+             if (agentBtn) agentBtn.classList.remove('hidden');
+          } else {
+             if (agentBtn) agentBtn.classList.add('hidden');
+          }
+
+          metadataContainer.innerHTML = metadataHtml;
+          if (metadataHtml) {
+            metadataContainer.classList.remove('hidden');
+          } else {
+            metadataContainer.classList.add('hidden');
           }
 
           // Feedback Banner
@@ -727,6 +843,12 @@ function getCardHtml(): string {
         }
       });
 
+      function getSelectedStatusValue() {
+          const selected = statusList.querySelector('.selected');
+          if (!selected) return 'todo';
+          return selected.dataset.value; 
+      }
+
       function collectTaskPayload() {
         if (!currentTaskId) {
           return undefined;
@@ -736,13 +858,27 @@ function getCardHtml(): string {
           title: titleInput.value,
           summary: summaryInput.value,
           tags: tagsInput.value,
-          status: statusSelect.value,
+          status: getSelectedStatusValue(),
           featureTasks: serializeFeatureTasks(),
         };
       }
 
       function updateTheme(status) {
-          document.body.setAttribute('data-status', status || 'todo');
+          const s = status || 'todo';
+          document.body.setAttribute('data-status', s);
+          // Also update selected item style if direct call
+          const options = statusList.querySelectorAll('.status-option');
+          options.forEach(opt => {
+              if (opt.dataset.value === s) {
+                  opt.classList.add('selected');
+                  opt.style.backgroundColor = 'var(--status-color)';
+                  opt.style.borderColor = 'var(--status-color)';
+              } else {
+                  opt.classList.remove('selected');
+                  opt.style.backgroundColor = '';
+                  opt.style.borderColor = '';
+              }
+          });
       }
 
       // Auto-save with debounce
@@ -765,12 +901,6 @@ function getCardHtml(): string {
       // Attach auto-save to all inputs
       [titleInput, summaryInput, tagsInput].forEach(input => {
         input.addEventListener('input', triggerAutoSave);
-      });
-      [statusSelect].forEach(select => {
-        select.addEventListener('change', (e) => {
-            updateTheme(e.target.value);
-            triggerAutoSave();
-        });
       });
 
       saveBtn.addEventListener('click', () => {
@@ -813,44 +943,35 @@ function getCardHtml(): string {
         <div id="feedbackBanner" class="selection-banner hidden" style="background: rgba(234, 179, 8, 0.15); border-color: #eab308; margin-bottom: 12px;">
             <span style="color: #eab308; font-size: 11px;">⚠️ Needs Feedback - Check Agent Inbox</span>
         </div>
-
+        
+        <div style="font-size: 9px; color: var(--vscode-disabledForeground); text-align: right; margin-bottom: 5px;">Build: ${new Date().toISOString()} (UI Refactor vFinal)</div>
+        
         <!-- Title Section -->
-        <label for="title">Title</label>
-        <input id="title" type="text" required />
-
-        <!-- Info/Owner Section (Under Title) -->
-        <div id="ownerContainer" class="owner-section hidden">
-            <div class="owner-info">
-                <span class="owner-label">Current Owner</span>
-                <span id="ownerName" class="owner-name"></span>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+            <label for="title">Title</label>
+            <div style="display: flex; align-items: baseline; gap: 8px;">
+                <input id="title" type="text" style="font-size: 16px; font-weight: 600;" required />
             </div>
-            <button id="openChatBtn" class="ghost hidden" type="button" style="font-size:10px;">Open Chat</button>
+            <!-- Phase Info (New Location) -->
+            <div id="phaseLabel" style="font-size: 11px; color: var(--vscode-descriptionForeground); background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; align-self: start; display: none;"></div>
+        </div>
+
+        <!-- Metadata Section (Under Title) -->
+        <div id="metadataContainer" class="metadata-grid hidden"></div>
+        
+         <div style="display: flex; gap: 8px; margin-top: 8px;">
+            <button id="openChatBtn" class="ghost hidden" type="button" style="font-size:10px; width: auto; padding: 2px 8px;">Open Chat</button>
         </div>
 
         <div class="separator"></div>
 
-        <!-- Phase & Status Filters Section (Highlighted) -->
+        <!-- Status Section (Renamed from Phase & Status) -->
         <div class="highlight-section">
-            <h3 style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--vscode-descriptionForeground);">Phase & Status</h3>
-            <div class="row" style="align-items: end;">
-                <div>
-                    <label for="status">Status</label>
-                    <select id="status">
-                      <option value="todo">Start</option>
-                      <option value="in_progress">In Progress</option>
-                      <option value="needs_feedback">Needs Feedback</option>
-                      <option value="blocked">Blocked</option>
-                      <option value="done">Done</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Current Phase</label>
-                    <div id="columnLabel" style="font-weight: 600; padding: 6px 0; border-bottom: 1px solid var(--border-subtle);"></div>
-                </div>
+            <h3 style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--vscode-descriptionForeground);">Status</h3>
+            <div id="statusList" class="status-list">
+               <!-- Auto populated -->
             </div>
         </div>
-
-        <div class="separator"></div>
 
         <!-- Agent Instruction Section (Summary) -->
         <div class="highlight-section">
@@ -882,6 +1003,8 @@ function getCardHtml(): string {
           <p class="section-hint">Use the checklist to track progress without confusing parent tasks.</p>
           <div id="featureTasksContainer" class="feature-task-list"></div>
         </div>
+        
+        <div class="separator"></div>
 
         <div class="actions">
           <button id="saveBtn" type="button" class="btn-ghost">Save</button>

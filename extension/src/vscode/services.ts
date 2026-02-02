@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { BoardPanelManager, createBoardPanelManager, BoardTreeProvider, BoardNode } from '../ui/board';
 import { DashboardViewProvider } from '../ui/dashboard';
 import { MetricsViewProvider } from '../ui/metrics';
-import { BoardTaskDetailsViewProvider, registerTaskDetailsView } from '../ui/tasks';
+
 import { StatusBarManager, createStatusBar } from '../ui/statusBar';
 import { readBoard } from '../services/board/boardPersistence';
 import { boardService } from '../services/board/boardService';
@@ -14,7 +14,8 @@ export type DevOpsExtensionServices = DevOpsCommandServices & {
     syncFilterUI: () => void;
     dashboard: DashboardViewProvider;
     metricsView: MetricsViewProvider;
-    taskDetails: BoardTaskDetailsViewProvider;
+
+    // taskDetails removed
     // Included specifically for type compatibility in other modules if needed
     provider: BoardTreeProvider;
     boardView: vscode.TreeView<BoardNode>;
@@ -35,16 +36,8 @@ export async function initializeDevOpsServices(context: vscode.ExtensionContext)
         vscode.window.registerWebviewViewProvider('devopsMetricsView', metricsView)
     );
 
-    // Task Details View (Sidebar)
-    const taskDetails = registerTaskDetailsView(context);
-    context.subscriptions.push(
-        taskDetails.onDidRequestClaim((taskId) => {
-            vscode.commands.executeCommand('devops.claimTask', { id: taskId });
-        }),
-        taskDetails.onDidRequestDelete((taskId) => {
-            vscode.commands.executeCommand('devops.deleteTask', { id: taskId });
-        })
-    );
+    // Task Details View (Sidebar) - REMOVED
+
 
     const boardPanelManager = createBoardPanelManager(context);
 
@@ -66,7 +59,6 @@ export async function initializeDevOpsServices(context: vscode.ExtensionContext)
         boardView: undefined as unknown as vscode.TreeView<BoardNode>,
         dashboard,
         metricsView,
-        taskDetails,
         boardPanelManager,
         statusBar,
         syncFilterUI,

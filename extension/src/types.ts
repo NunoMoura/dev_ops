@@ -213,3 +213,28 @@ export const DEFAULT_COLUMN_BLUEPRINTS: ReadonlyArray<Column> = [
 ];
 
 
+
+// ============================================================================
+// UI Payload Types
+// ============================================================================
+
+export type TaskDetailsPayload = {
+  id: string;
+  title: string;
+  summary?: string;
+  tags?: string; // Comma separated string for UI
+  columnId?: string;              // Column determines workflow phase
+  status?: string;                // Autonomy state: ready, agent_active, needs_feedback, blocked, done
+  column?: string;                // Column display name
+  workflow?: string;              // DevOps workflow (e.g., /create_plan)
+  upstream?: string[];            // Artifact dependencies
+  downstream?: string[];          // Artifacts depending on this task
+  priority?: string;
+  owner?: {                       // Task Ownership
+    developer?: string;
+    agent?: string; // Agent name
+    model?: string; // Model name
+    type?: string;
+    sessionId?: string;
+  };
+};

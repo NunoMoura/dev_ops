@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { TaskDetailsPayload } from '../../ui/tasks';
+import { TaskDetailsPayload } from '../../types';
 import { Task, COLUMN_FALLBACK_NAME } from '../../types';
 import { isDefined } from '../../services/tasks/taskUtils';
 
