@@ -103,7 +103,6 @@ export class BoardPanelManager {
       vscode.ViewColumn.One,
       {
         enableScripts: true,
-        retainContextWhenHidden: true,
         localResourceRoots: [this.extensionUri],
       }
     );
@@ -587,14 +586,14 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
         padding: 6px 14px;
         background: var(--vscode-button-background);
         color: var(--vscode-button-foreground);
-        border: none;
-        border-radius: 2px;
+        border: 1px solid transparent;
+        border-radius: 4px; /* Consistent radius */
         font-weight: 500;
         cursor: pointer;
-        transition: background 0.1s;
+        transition: all 0.2s ease;
         font-family: inherit;
         text-transform: none;
-        font-size: 11px;
+        font-size: 12px; /* Consistent font size */
         position: relative;
         box-shadow: none;
       }
@@ -617,11 +616,11 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
         background: var(--vscode-input-background);
         color: var(--vscode-input-foreground);
         border: 1px solid var(--vscode-input-border);
-        border-radius: 4px;
-        padding: 4px 8px 4px 24px;
+        border-radius: 4px; /* Consistent radius */
+        padding: 6px 8px 6px 24px; /* Consistent vertical padding */
         font-family: inherit;
-        font-size: 11px;
-        width: 180px;
+        font-size: 12px; /* Consistent font size */
+        width: 300px;
         outline: none;
       }
       .search-box input:focus {
@@ -955,7 +954,7 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
               <input type="text" id="search-input" placeholder="Search tasks..." />
             </div>
             <button id="addTaskBtn" class="add-task-button" type="button" title="Create Task">
-             <span class="codicon codicon-plus"></span> New Task
+             New Task
             </button>
           </div>
         </div>

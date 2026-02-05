@@ -73,7 +73,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       }
       const board = await readBoard();
       const traceContent = await this.readTraceFile(taskId);
-      webviewPanel.webview.html = this.getEditorHtml(task, board.columns, traceContent);
+      webviewPanel.webview.html = this.getEditorHtml(task, board.columns, traceContent, webviewPanel.webview);
     };
 
     // Initial render
@@ -166,48 +166,53 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     return `<html><body><h2 style="color:red">${message}</h2></body></html>`;
   }
 
-  private getEditorHtml(task: Task, columns: Array<{ id: string; name: string }>, traceMarkdown: string): string {
-    const statusLabel = {
-      todo: 'Todo',
-      in_progress: 'In Progress',
-      needs_feedback: 'Needs Feedback',
-      blocked: 'Blocked',
-      done: 'Done',
-      archived: 'Archived'
-    }[task.status || 'todo'] || task.status;
-
+  private getEditorHtml(task: Task, columns: Array<{ id: string; name: string }>, traceMarkdown: string, webview: vscode.Webview): string {
     // Simple Markdown parsing for Trace
     const parsedTrace = this.parseTraceMarkdown(traceMarkdown);
 
     // Get status color for accent
     const statusColors: Record<string, string> = {
       todo: '#6b7280', // Gray
-      in_progress: '#3b82f6', // Blue (Standard VSCode Info) or Green depending on pref. Using Blue for active.
-      // Wait, styles.ts has: READY: #3b82f6, AGENT_ACTIVE: #22c55e. 
-      // Let's align with the standard typically used. 
-      // User said "left highlight with the color dependent on the status".
-      // Let's use the map:
-      ready: '#3b82f6',
-      needs_feedback: '#eab308',
-      blocked: '#ef4444',
-      done: '#3b82f6'
+      in_progress: '#22c55e', // Green
+      ready: '#3b82f6', // Blue
+      needs_feedback: '#eab308', // Yellow
+      blocked: '#ef4444', // Red
+      done: '#3b82f6', // Blue
+      archived: '#6b7280'
     };
-    // Ensure we handle 'in_progress' and common ones
-    const activeStatusColor = (task.status === 'in_progress') ? '#22c55e' : (statusColors[task.status || 'todo'] || '#6b7280');
 
-    // Status color variable for CSS
+    const currentStatus = task.status || 'todo';
+    const activeStatusColor = statusColors[currentStatus] || '#6b7280';
     const cssStatusColor = activeStatusColor;
 
-    // Build lists for dropdowns
+    // Status Options
     const statusOptions = [
-      { value: 'todo', label: 'Todo' },
-      { value: 'in_progress', label: 'In Progress' },
-      { value: 'needs_feedback', label: 'Needs Feedback' },
-      { value: 'blocked', label: 'Blocked' },
-      { value: 'done', label: 'Done' }
+      { value: 'todo', label: 'Todo', color: statusColors['todo'] },
+      { value: 'in_progress', label: 'In Progress', color: statusColors['in_progress'] },
+      { value: 'needs_feedback', label: 'Needs Feedback', color: statusColors['needs_feedback'] },
+      { value: 'blocked', label: 'Blocked', color: statusColors['blocked'] },
+      { value: 'done', label: 'Done', color: statusColors['done'] }
     ];
 
-    const phaseOptions = columns.map(c => ({ value: c.id, label: c.name }));
+    // Status Chips HTML Generator
+    const getStatusChips = () => {
+      return statusOptions.map(opt => {
+        const isSelected = opt.value === currentStatus;
+        // Default style
+        let style = 'color: var(--vscode-descriptionForeground); border-bottom: 2px solid transparent;';
+        // Active style
+        if (isSelected) {
+          style = `color: var(--vscode-foreground); border-bottom: 2px solid ${opt.color}; font-weight: 600;`;
+        }
+
+        return `<div class="status-chip" 
+                     data-value="${opt.value}" 
+                     data-color="${opt.color}"
+                     style="${style}">
+                  ${opt.label}
+                </div>`;
+      }).join('');
+    };
 
     // Metadata Values
     const ownerName = task.owner || 'Unassigned';
@@ -255,7 +260,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         display: flex;
         flex-direction: column;
         gap: 12px;
-        margin-bottom: 12px;
+        margin-bottom: 24px;
         padding-left: 12px;
         border-left: 3px solid ${cssStatusColor}; /* Status Color Border */
         border-radius: 6px;
@@ -326,71 +331,23 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         align-self: flex-start;
       }
 
-      /* Header Controls Row (Metadata) */
-      .header-controls {
+      /* Status Chips Row */
+      .status-chips-container {
         display: flex;
+        gap: 16px;
         align-items: center;
         flex-wrap: wrap;
-        gap: 16px;
-        font-size: 12px;
-      }
-
-      /* Minimal Dropdowns in Header */
-      .header-dropdown .dropdown-trigger {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        cursor: pointer;
-        color: var(--vscode-descriptionForeground);
-        user-select: none;
-        padding: 4px 0;
-      }
-      .header-dropdown .dropdown-trigger:hover {
-        color: var(--vscode-textLink-foreground);
-      }
-      .header-dropdown .dropdown-trigger span {
-        font-weight: 500;
-      }
-      .header-dropdown .dropdown-trigger::after {
-        content: '';
-        border: 4px solid transparent;
-        border-top-color: currentColor;
-        margin-top: 2px;
-        opacity: 0.7;
-      }
-
-      .dropdown-menu {
-        display: none;
-        position: absolute;
-        top: 100%;
-        left: 0;
-        min-width: 150px;
-        background: var(--vscode-dropdown-background);
-        border: 1px solid var(--vscode-dropdown-border);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        z-index: 1000;
         margin-top: 4px;
-        border-radius: 4px;
-        overflow: hidden;
       }
-      .custom-dropdown {
-        position: relative;
-      }
-      .custom-dropdown.open .dropdown-menu {
-        display: block;
-      }
-      .dropdown-item {
-        padding: 6px 12px;
+      .status-chip {
         cursor: pointer;
+        padding: 4px 0;
         font-size: 12px;
-        color: var(--vscode-dropdown-foreground);
+        user-select: none;
+        transition: all 0.2s ease;
       }
-      .dropdown-item:hover {
-        background: var(--vscode-list-hoverBackground);
-      }
-      .dropdown-item.active {
-        background: var(--vscode-list-activeSelectionBackground);
-        color: var(--vscode-list-activeSelectionForeground);
+      .status-chip:hover {
+        opacity: 0.8;
       }
 
       /* Separator */
@@ -406,12 +363,8 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       .content-section {
         margin-bottom: 32px;
         padding-left: 12px;
-        border-left: 3px solid var(--vscode-panel-border); /* Neutral Grey Border */
+        border-left: 3px solid ${cssStatusColor}; /* Status Color Border */
         border-radius: 6px;
-      }
-      
-      .highlight-section {
-        border-left-color: ${cssStatusColor} !important;
       }
       
       .section-header {
@@ -473,54 +426,38 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         display: flex;
         justify-content: flex-end;
         gap: 12px;
-        border-top: 1px solid var(--vscode-panel-border);
         padding-top: 24px;
         margin-top: 48px;
       }
       .btn {
         padding: 6px 14px;
-        border: none;
+        border: 1px solid transparent; 
         border-radius: 4px;
         cursor: pointer;
         font-size: 12px;
         font-family: inherit;
         font-weight: 500;
+        transition: all 0.2s ease;
       }
       .btn-primary {
         background: var(--vscode-button-background);
         color: var(--vscode-button-foreground);
+        border: 1px solid var(--vscode-button-background);
       }
+      .btn-primary:hover {
+        background: var(--vscode-button-hoverBackground);
+      }
+      /* Modified Delete Button */
       .btn-danger {
-        background: var(--vscode-errorForeground);
-        color: var(--vscode-button-foreground);
+        background: transparent;
+        border: 1px solid #ef4444; 
+        color: #ef4444;
       }
-      
-      /* Vertical Divider for Header Controls */
-      .v-divider {
-        width: 1px;
-        height: 12px;
-        background-color: var(--vscode-panel-border);
+      .btn-danger:hover {
+        background: #ef4444; 
+        color: #ffffff;
       }
     </style>`;
-
-    const getHeaderDropdown = (id: string, options: { value: string, label: string }[], current: string) => {
-      const currentLabel = options.find(o => o.value === current)?.label || current;
-      return `
-        <div class="custom-dropdown header-dropdown" id="${id}-dropdown">
-          <input type="hidden" id="${id}" value="${current}">
-          <div class="dropdown-trigger" id="${id}-trigger" tabindex="0">
-            <span id="${id}-label">${currentLabel}</span>
-          </div>
-          <div class="dropdown-menu">
-            ${options.map(o => `
-              <div class="dropdown-item ${o.value === current ? 'active' : ''}" data-value="${o.value}">
-                ${o.label}
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `;
-    };
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -528,7 +465,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
   <meta charset="UTF-8">
   ${getCSPMeta()}
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  ${getFontLink()}
+  ${getFontLink(webview, this.context.extensionUri)}
   <title>${task.title}</title>
   ${getSharedStyles()}
   ${pageStyles}
@@ -561,23 +498,23 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       </div>
     </div>
 
-    <!-- Status Colored Separator -->
+    <!-- Top Status Colored Separator -->
     <div class="header-separator"></div>
 
-    <!-- Phase & Status Section (New) -->
-    <div class="content-section highlight-section">
-      <div class="section-header">Phase & Status</div>
-      <div class="header-controls">
-        ${getHeaderDropdown('status', statusOptions, task.status || 'todo')}
-        <div class="v-divider"></div>
-        ${getHeaderDropdown('column', phaseOptions, task.columnId || '')}
+    <!-- Status Section (Renamed from Phase & Status) -->
+    <div class="content-section">
+      <div class="section-header">Status</div>
+      <div class="status-chips-container" id="status-chips">
+        ${getStatusChips()}
       </div>
+      <input type="hidden" id="status" value="${currentStatus}">
     </div>
 
-    <!-- Status Colored Separator -->
-    <div class="header-separator"></div>
+    <!-- Hidden column input to maintain value if needed or we could expose it separately if requested, but request said 'Phase & Status' renamed to 'Status' and implies simplified -->
+    <!-- We keep the value in hidden input so it persists if we save -->
+    <input type="hidden" id="column" value="${task.columnId || ''}">
 
-    <!-- Instructions (Neutral Border) -->
+    <!-- Agent Instructions (Status Border) -->
     <div class="content-section">
       <div class="section-header">Agent Instructions</div>
       <div class="instructions-container">
@@ -586,7 +523,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       </div>
     </div>
 
-    <!-- Trace (Neutral Border) -->
+    <!-- Decision Trace (Status Border) -->
     <div class="content-section">
       <div class="section-header">Decision Trace</div>
       <div class="trace-container">
@@ -595,6 +532,9 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         </div>
       </div>
     </div>
+
+    <!-- Bottom Status Colored Separator -->
+    <div class="header-separator"></div>
 
     <!-- Footer -->
     <div class="actions-footer">
@@ -606,49 +546,40 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
   <script>
     const vscode = acquireVsCodeApi();
     
-    function setupDropdown(id) {
-      const container = document.getElementById(id + '-dropdown');
-      const trigger = document.getElementById(id + '-trigger');
-      const input = document.getElementById(id);
-      const label = document.getElementById(id + '-label');
-      const items = container.querySelectorAll('.dropdown-item');
-
-      trigger.addEventListener('click', (e) => {
-        document.querySelectorAll('.custom-dropdown').forEach(d => {
-          if (d !== container) d.classList.remove('open');
-        });
-        container.classList.toggle('open');
-        e.stopPropagation();
+    // Status Chip Logic
+    const statusInput = document.getElementById('status');
+    const chipsContainer = document.getElementById('status-chips');
+    
+    chipsContainer.addEventListener('click', (e) => {
+      const chip = e.target.closest('.status-chip');
+      if (!chip) return;
+      
+      const val = chip.dataset.value;
+      const color = chip.dataset.color;
+      
+      // Update Input
+      statusInput.value = val;
+      
+      // Update UI (Optimistic)
+      document.querySelectorAll('.status-chip').forEach(c => {
+        c.style.fontWeight = 'normal';
+        c.style.borderBottomColor = 'transparent';
+        c.style.color = 'var(--vscode-descriptionForeground)';
       });
-
-      items.forEach(item => {
-        item.addEventListener('click', (e) => {
-          const value = item.dataset.value;
-          input.value = value;
-          label.innerText = item.innerText;
-          items.forEach(i => i.classList.remove('active'));
-          item.classList.add('active');
-          container.classList.remove('open');
-          triggerUpdate();
-          e.stopPropagation();
-        });
-      });
-    }
-
-    setupDropdown('status');
-    setupDropdown('column');
-    // Owner is now read-only metadata
-
-    document.addEventListener('click', () => {
-      document.querySelectorAll('.custom-dropdown').forEach(d => d.classList.remove('open'));
+      
+      chip.style.fontWeight = '600';
+      chip.style.borderBottomColor = color;
+      chip.style.color = 'var(--vscode-foreground)';
+      
+      // Trigger update
+      triggerUpdate();
     });
 
     function collect() {
       return {
         title: document.getElementById('title').value,
-        status: document.getElementById('status').value,
+        status: statusInput.value,
         columnId: document.getElementById('column').value,
-        // owner is read-only
         summary: document.getElementById('summary').value
       };
     }

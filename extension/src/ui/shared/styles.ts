@@ -410,5 +410,5 @@ export function getSharedStyles(): string {
 // ============================================================================
 
 export function getCSPMeta(): string {
-  return `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src vscode-resource: data:; font-src https://fonts.gstatic.com; style-src 'unsafe-inline' https://fonts.googleapis.com; script-src 'unsafe-inline';" />`;
+  return `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src vscode-resource: https: data:; font-src vscode-resource: https: data:; style-src 'unsafe-inline' vscode-resource: https:; script-src 'unsafe-inline' vscode-resource:; worker-src 'none'; connect-src https:;" />`;
 }

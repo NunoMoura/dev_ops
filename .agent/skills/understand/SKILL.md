@@ -3,125 +3,104 @@ name: understand
 description: Research deeply before planning. Use when starting a new task, analyzing requirements, or scoping work.
 ---
 
-# Understand
+# Understand Phase
 
 > Know more about the problem than the person who wrote the trigger doc.
 
-## When to Use This Skill
+## Phase Constraints (Non-Negotiable)
 
-- Task is in Understand column (if applicable)
-- Need to research before planning
-- Scoping work or analyzing requirements
+| ✅ ALLOWED | ❌ FORBIDDEN |
+|------------|--------------|
+| Read SPEC.md files | Open code files |
+| Web/external research | Write any code |
+| Create RES-XXX artifact | Move to Plan without RES-XXX |
+| Update existing SPEC.md | Skip scope definition |
 
-## Planning Mode
-
-**Goal**: Plan the **Reading/Research** strategy to populate the **RES-XXX** artifact.
-**Plan Content**:
-
-1. List of `SPEC.md` files to read.
-2. External documentation to query.
-3. Specific questions/assumptions to verify.
-
-## How It Works
-
-| Input | Output | Next Steps |
-|-------|--------|------------|
-| Trigger + SPEC.md files | RES-XXX research doc | Plan |
+**Required Deliverable**: `RES-XXX` in `.dev_ops/context/`
 
 ---
 
-## Step 1: Define Scope
+## Input → Output
 
-Document what's in and out of scope explicitly:
+| Input | Output | Next Phase |
+|-------|--------|------------|
+| Trigger doc + SPEC.md files | RES-XXX research doc | Plan |
 
-- **In Scope**: Components, files, and behaviors you will change
-- **Out of Scope**: Related areas you explicitly won't touch
+---
 
-## Step 2: Navigate SPEC.md Files
+## Steps
 
-**Do NOT open code files in this phase.** Work only with SPEC.md files.
+### 1. Define Scope
+
+Document explicitly:
+
+- **In Scope**: Components, files, behaviors to change
+- **Out of Scope**: Related areas you won't touch
+
+### 2. Navigate SPEC.md Files
+
+**Do NOT open code files.**
 
 ```bash
 find . -name SPEC.md
 grep -r "keyword" */SPEC.md
 ```
 
-Read matched SPEC.md files to understand:
+Read matched SPEC.md for:
 
-- `## Structure`: Folder/file layout and purposes
-- `## Key Exports`: Important interfaces exposed
-- `## Constraints`: Rules that cannot be violated
-- `## Dependencies`: Links to other SPEC.md files
+- `## Structure`: Layout and purposes
+- `## Key Exports`: Interfaces
+- `## Constraints`: Rules
+- `## Dependencies`: Links to other SPECs
 
-For each dependency, verify linked SPEC.md exists and interfaces are defined.
+### 3. External Research
 
-## Step 3: External Research
-
-- Library/framework documentation
-- Best practices and known issues
+- Library/framework docs
+- Best practices
 - Edge cases and constraints
 
-## Step 4: Challenge Assumptions
+### 4. Challenge Assumptions
 
 - Is this the right approach?
-- Are there simpler alternatives?
-- What constraints aren't written down?
+- Simpler alternatives?
+- Unwritten constraints?
 
-## Step 5: Update SPEC.md if Needed
+### 5. Update SPEC.md if Needed
 
-If you discover drift between SPECs and reality, update SPEC.md now.
+Fix drift between SPECs and reality now.
 
-## Step 6: Create Research Artifact
+### 6. Create Research Artifact
 
-Document findings using the research template: `.dev_ops/templates/artifacts/research.md`
-
----
-
-## Ralf Wiggum Loop
-
-Iterate autonomously until exit criteria are met:
-
-1. **Check**: Are all exit criteria satisfied?
-2. **If No**: Identify what's missing, research further, repeat
-3. **If Yes**: Proceed to Completion
-
-### When to Iterate
-
-- Scope unclear → revisit trigger doc, ask clarifying questions
-- SPEC.md missing info → search broader, check related components
-- Research incomplete → find more sources, document gaps
+Use template: `.dev_ops/templates/artifacts/research.md`
 
 ---
 
-## Exit Criteria (Self-Check)
+## Iterate (Ralf Wiggum Loop)
 
-Before notifying user, verify:
+1. Check exit criteria below
+2. If incomplete → identify gap, research more
+3. If complete → proceed to Completion
 
-- [ ] RES-XXX artifact file exists
-- [ ] `## Scope` section has explicit in/out
-- [ ] `## Research` section is populated
+---
+
+## Exit Criteria
+
+- [ ] RES-XXX artifact exists
+- [ ] `## Scope` has explicit in/out
+- [ ] `## Research` populated
 - [ ] Dependencies and risks documented
-- [ ] Can explain "what" and "why" clearly
+- [ ] Can explain "what" and "why"
 
 ---
 
 ## Out-of-Scope Discoveries
 
-If you find bugs, features, or tech debt unrelated to current task:
-→ Use `/create_task` workflow, then continue research
+Found unrelated bugs/features? → `/create_task`, then continue
 
 ---
 
 ## Completion
 
-When exit criteria are met:
-
-1. If working on a task, set status to `ready-for-review`:
-
-   ```bash
-   node .dev_ops/scripts/devops.js update-task --id <TASK_ID> --status ready-for-review
-   ```
-
-2. Notify user: "Research complete. RES-XXX created. Ready for your review."
-
-3. **Stop.** User will review, then next steps can be taken (e.g., `/claim` for Plan).
+1. Set task status: `ready-for-review`
+2. Notify user: "Research complete. RES-XXX ready for review."
+3. **Stop.** Wait for user review.

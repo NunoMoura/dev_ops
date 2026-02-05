@@ -3,6 +3,6 @@
   "columnId": "col-backlog",
   "title": "Define Project Standards",
   "summary": "Define technical and product standards.\n\nStrategy:\n1. Analyze existing docs and tech stack constraints.\n2. Create `.dev_ops/docs/project_standards.md` using the project_standards.md template.\n\n## CRITICAL REQUIREMENT: DECISION TRACE\n\nYou MUST explicitly log your activity and decisions to the \"Decision Trace\" file.\n**Trace File Path**: `.dev_ops/tasks/TASK-004/trace.md`\n\n1.  **Initialize**: If the file is empty, start with a header.\n2.  **Log Live**: As you make decisions (e.g., \"Exploring file X\", \"Decided to refactor Y\", \"Found bug Z\"), append them to this file immediately.\n3.  **Format**: Use Markdown. Use H2/H3 for major steps and bullet points for actions.",
-  "updatedAt": "2026-02-01T22:00:28.436Z",
+  "updatedAt": "2026-02-03T01:50:48.294Z",
   "status": "in_progress"
 }

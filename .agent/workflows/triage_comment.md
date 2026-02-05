@@ -7,9 +7,16 @@ category: manual
 
 Analyze PR comment and take appropriate action.
 
+---
+
 ## Step 1: Analyze
 
-Understand `{{user_input}}`. Review Architecture docs and ADRs.
+Understand `{{user_input}}`:
+
+- Review Architecture docs
+- Check ADRs for context
+
+---
 
 ## Step 2: Categorize
 
@@ -18,6 +25,8 @@ Understand `{{user_input}}`. Review Architecture docs and ADRs.
 | Bug/Feature | Create task |
 | Quick Fix | Fix now |
 | Dismiss | Reply & Close |
+
+---
 
 ## Step 3: Action
 
@@ -34,3 +43,10 @@ node .dev_ops/scripts/devops.js create-task \
 ### Option B: Respond
 
 Reply in PR with action taken.
+
+---
+
+## Outputs
+
+- Task created (if applicable)
+- PR comment addressed

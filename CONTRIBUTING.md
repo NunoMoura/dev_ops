@@ -175,9 +175,9 @@ project rather than the framework repo itself.
 git clone https://github.com/nicknish/react-todomvc.git ~/test-project
 cd ~/test-project
 
-# Build and install the extension
+# Build and package the extension (creates .vsix)
 cd /path/to/dev_ops/extension
-pnpm run package
+pnpm run dist
 code --install-extension dev-ops-*.vsix
 
 # Open test project in VS Code

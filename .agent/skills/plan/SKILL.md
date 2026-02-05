@@ -3,102 +3,88 @@ name: plan
 description: Create implementation plans before building. Use when designing solutions or breaking down work into steps.
 ---
 
-# Plan
+# Plan Phase
 
 > A plan so clear any developer could execute it.
 
-## When to Use This Skill
+## Phase Constraints (Non-Negotiable)
 
-- Task is in Plan column (if applicable)
-- Designing a solution
-- Breaking down work into implementable steps
+| ✅ ALLOWED | ❌ FORBIDDEN |
+|------------|--------------|
+| Read SPEC.md files | Open code files |
+| Read RES-XXX research | Write any code |
+| Create PLN-XXX artifact | Make architecture changes |
+| Define acceptance criteria | Skip dependency analysis |
 
-## Planning Mode
+**Required Deliverable**: `PLN-XXX` in `.dev_ops/context/`
 
-**Goal**: Plan the **Design** strategy to populate the **PLN-XXX** artifact.
-**Plan Content**:
+---
 
-1. List dependencies/SPEC files to check for impact.
-2. Identify incomplete requirements or ADRs needed.
-3. Outline the high-level approach for the checklist.
+## Input → Output
 
-## How It Works
-
-| Input | Output | Next Steps |
+| Input | Output | Next Phase |
 |-------|--------|------------|
 | RES-XXX + SPEC.md files | PLN-XXX implementation plan | Build |
 
 ---
 
-## Step 1: Review Research
+## Steps
 
-Internalize findings from RES-XXX:
+### 1. Review Research
+
+Internalize RES-XXX:
 
 - Scope boundaries
 - Affected components
 - Risks and edge cases
 - Recommended approach
 
-## Step 2: Analyze Impact via SPEC.md
+### 2. Analyze Impact via SPEC.md
 
-**Work only with SPEC.md files. Do NOT open code files.**
+**Do NOT open code files.**
 
-1. Read affected SPEC.md: Check `## Dependencies` section
+1. Read affected SPEC.md `## Dependencies`
 2. Check dependents: `grep -r "your-component" */SPEC.md`
-3. Validate interfaces: Ensure changes won't break dependent SPECs
+3. Validate interfaces won't break
 
-## Step 3: Create Implementation Plan
+### 3. Create Implementation Plan
 
-Create PLN-XXX using template: `.dev_ops/templates/artifacts/plan.md`
+Use template: `.dev_ops/templates/artifacts/plan.md`
 
 Required sections:
 
 - **Goal**: High-level objective
-- **Checklist**: Ordered work items, dependencies first, each tagged `[test]` or `[code]`
-- **Acceptance Criteria**: Testable success conditions
+- **Checklist**: Ordered items, `[test]` or `[code]` tagged
+- **Acceptance Criteria**: Testable conditions
 - **Verification**: Commands and manual checks
 
-## Step 4: Add ADR if Making Decision
+### 4. Add ADR if Needed
 
-If plan involves architectural decisions, prepare ADR row for SPEC.md:
+Architectural decision? Prepare ADR row for SPEC.md.
 
-```markdown
-| ADR-XXX | Decision summary | [Research link](...) |
-```
+### 5. Anticipate Problems
 
-## Step 5: Anticipate Problems
-
-Document potential blockers:
+Document:
 
 - External dependencies
-- Areas of uncertainty
+- Uncertainty areas
 - Performance concerns
 
 ---
 
-## Ralf Wiggum Loop
+## Iterate (Ralf Wiggum Loop)
 
-Iterate autonomously until exit criteria are met:
-
-1. **Check**: Are all exit criteria satisfied?
-2. **If No**: Identify what's missing, refine plan, repeat
-3. **If Yes**: Proceed to Completion
-
-### When to Iterate
-
-- Checklist incomplete → add missing items
-- Acceptance criteria vague → make them testable
-- Dependencies unclear → review SPEC.md again
+1. Check exit criteria below
+2. If incomplete → refine plan
+3. If complete → proceed to Completion
 
 ---
 
-## Exit Criteria (Self-Check)
+## Exit Criteria
 
-Before notifying user, verify:
-
-- [ ] PLN-XXX artifact file exists
-- [ ] `## Goal` section is clear and specific
-- [ ] `## Checklist` has ordered items with `[test]`/`[code]` tags
+- [ ] PLN-XXX artifact exists
+- [ ] `## Goal` is clear and specific
+- [ ] `## Checklist` has ordered, tagged items
 - [ ] `## Acceptance Criteria` are testable
 - [ ] `## Verification` steps defined
 - [ ] Another dev could execute without clarification
@@ -107,21 +93,12 @@ Before notifying user, verify:
 
 ## Out-of-Scope Discoveries
 
-If you find bugs, features, or tech debt unrelated to current task:
-→ Use `/create_task` workflow, then continue planning
+Found unrelated bugs/features? → `/create_task`, then continue
 
 ---
 
 ## Completion
 
-When exit criteria are met:
-
-1. If working on a task, set status to `ready-for-review`:
-
-   ```bash
-   node .dev_ops/scripts/devops.js update-task --id <TASK_ID> --status ready-for-review
-   ```
-
-2. Notify user: "Plan complete. PLN-XXX created. Ready for your review."
-
-3. **Stop.** User will review, then next steps can be taken (e.g., `/claim` for Build).
+1. Set task status: `ready-for-review`
+2. Notify user: "Plan complete. PLN-XXX ready for review."
+3. **Stop.** Wait for user review.

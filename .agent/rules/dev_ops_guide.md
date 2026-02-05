@@ -7,30 +7,47 @@ description: Core DevOps behavioral invariants
 
 > **Document-first. Quality over speed. Understand before you build.**
 
-## Project Structure & Artifacts
+## Phase Guard (MANDATORY)
 
-- **Docs**: `.dev_ops/docs/` (Architecture, Specs)
-- **Mockups**: `.dev_ops/docs/ux/mockups/` (UI/UX Designs)
-- **Tasks**: `.dev_ops/tasks/` (JSON Metadata)
-- **Context**: `.dev_ops/context/` (Markdown Notes per Task)
-- **Templates**: `.dev_ops/templates/`
+> [!CAUTION]
+> **Before ANY work on a task, you MUST:**
+>
+> 1. Get phase from task JSON (`phase` field)
+> 2. Read `.agent/skills/{phase}/SKILL.md` completely
+> 3. Note the **Phase Constraints** table (allowed/forbidden actions)
+> 4. Note the **Required Deliverable** for this phase
+> 5. Only then proceed with phase-appropriate actions
+>
+> **Skipping this = phase violation. STOP and read the skill first.**
 
-## Core Philosophy
+### IDE Mode Behavior
 
-SPEC.md files define requirements. Code matches specs. Verify confirms the match.
+| Mode | Behavior |
+|------|----------|
+| **Plan Mode** | Break down all steps to achieve phase deliverable, present plan for approval before execution |
+| **Fast Mode** | Jump directly to creating phase artifacts and completing exit criteria |
 
-| Phase | Works With | Code Access |
-|-------|------------|-------------|
-| Understand | SPEC.md + Research | ❌ None |
-| Plan | SPEC.md only | ❌ None |
-| Build | Code + SPEC.md | ✅ Write to match spec |
-| Verify | Tests + SPEC.md | ✅ Confirm match |
+### Phase Violations
+
+If you find yourself:
+- Opening code files in Understand/Plan → **STOP**, read skill constraints
+- Writing code before Build phase → **STOP**, wrong phase
+- Skipping required deliverable → **STOP**, phase incomplete
+
+---
 
 ## Phase Flow
 
 ```text
 Understand → Plan → Build → Verify → Done
 ```
+
+| Phase | Works With | Code Access | Deliverable |
+|-------|------------|-------------|-------------|
+| Understand | SPEC.md + Research | ❌ None | RES-XXX |
+| Plan | SPEC.md + RES-XXX | ❌ None | PLN-XXX |
+| Build | Code + PLN-XXX | ✅ Write | Code + Tests |
+| Verify | Tests + SPEC.md | ✅ Minor fixes | walkthrough.md + PR |
 
 | Phase | Key Question | Skill |
 |-------|--------------|-------|
@@ -39,85 +56,78 @@ Understand → Plan → Build → Verify → Done
 | Build | Would I be proud to ship this? | `build` |
 | Verify | Have I proven correctness? | `verify` |
 
-### Utility Workflow
+---
 
-| Workflow | Purpose | When to Use |
-|----------|---------|-------------|
-| `/create_task` | Create tasks for future work | When you discover bugs, features, or issues during any phase |
+## Project Structure
 
-## SPEC.md Navigation (RLM Pattern)
+| Path | Purpose |
+|------|---------|
+| `.dev_ops/docs/` | Architecture, Specs |
+| `.dev_ops/docs/ux/mockups/` | UI/UX Designs |
+| `.dev_ops/tasks/` | Task JSON Metadata |
+| `.dev_ops/context/` | Phase artifacts (RES-XXX, PLN-XXX) |
+| `.dev_ops/templates/` | Document templates |
 
-Use RLM-style decomposition when exploring code:
+---
 
-1. **Discover**: `find . -name SPEC.md`
-2. **Filter**: `grep -r "keyword" */SPEC.md`
-3. **Drill**: Read specific SPEC.md for component details
-4. **Implement**: Only open code files when details are needed (Build phase)
+## Core Philosophy
 
-### Cross-SPEC Validation (Understand Phase)
+SPEC.md → Code → Verify loop:
+- SPEC.md files define requirements
+- Code matches specs
+- Verify confirms the match
 
-- Check that `### Dependencies` links point to existing SPECs
-- Verify interface compatibility (expected functions exist in dependent SPEC)
+---
 
-### SPEC Maintenance (Build Phase)
-
-- If folder lacks SPEC.md, create from template
-- If adding folder/file, add row to `## Structure` table
-- If making decision, add ADR row
-- If adding key export, add to `## Key Exports`
-
-## Phase Entry
-
-When entering a phase, **read the corresponding skill**:
-
-```bash
-# Skills are in .agent/skills/
-view_file .agent/skills/<name>/SKILL.md
-```
-
-## Session Model (User-as-PM)
+## Session Model
 
 - One agent session = one phase
-- Agent iterates autonomously (Ralf Wiggum loop) until exit criteria met
+- Iterate autonomously until exit criteria met (Ralf Wiggum loop)
 - End with `notify_user` when phase complete
-- User reviews, then opens new chat + `/claim TASK-XXX` for next phase
+- User reviews → new session for next phase
+
+---
 
 ## Movement Rules
 
-- **Forward**: Complete exit criteria → next phase
-- **Backward**: Missing context or research → return to earlier phase
-- **Create task for blockers**: Unrelated issues become new tasks
+| Direction | When |
+|-----------|------|
+| **Forward** | Exit criteria complete |
+| **Backward** | Missing context → return to earlier phase |
+| **New Task** | Unrelated issues → `/create_task` |
+
+---
+
+## SPEC.md Navigation
+
+1. **Discover**: `find . -name SPEC.md`
+2. **Filter**: `grep -r "keyword" */SPEC.md`
+3. **Drill**: Read specific SPEC.md for details
+4. **Implement**: Only open code files in Build phase
+
+### SPEC Maintenance (Build Phase Only)
+
+- Missing SPEC.md → create from template
+- Adding folder/file → add to `## Structure`
+- Making decision → add ADR row
+- Adding export → add to `## Key Exports`
+
+---
 
 ## Quality Standards
 
-**Code**: Production-ready, handles errors, tested behavior
-**Docs**: Accurate, actionable, current
-**Decisions**: Documented in ADRs with rationale
-**Activity**: Agents MUST log key decisions in real-time to the Decision Trace
+| Area | Standard |
+|------|----------|
+| Code | Production-ready, error handling, tested |
+| Docs | Accurate, actionable, current |
+| Decisions | Documented in ADRs |
+| Activity | Log decisions to Decision Trace |
 
-
-## Task Structure
-
-> TASK = pointer, not content
-
-Tasks reference docs (`trigger`, `upstream`), not duplicate them.
-
-## Available Skills
-
-| Skill | Purpose |
-|-------|---------|
-| `understand` | Deep research and scope definition |
-| `plan` | Create implementation plan |
-| `build` | TDD implementation |
-| `verify` | Validation and PR creation |
+---
 
 ## Project Standards
 
-Before significant changes, check `.dev_ops/docs/project_standards.md` for:
+Before significant changes, check `.dev_ops/docs/project_standards.md`:
+- Constraints, Tech Stack, Patterns, Anti-Patterns
 
-- **Constraints**: Rules that cannot be violated
-- **Tech Stack**: Locked technology decisions
-- **Patterns**: Required architectural patterns
-- **Anti-Patterns**: Explicitly forbidden practices
-
-If work would violate a project standard, **stop and flag to user**.
+If work violates a standard → **stop and flag to user**.
