@@ -73,6 +73,11 @@ suite('taskPresentation - buildTaskTooltip', () => {
         assert.ok(tooltip.includes('Workflow: feature'));
     });
 
+    test('includes dependsOn count when set', () => {
+        const task = createTask({ dependsOn: ['TASK-002', 'TASK-003'] });
+        const tooltip = buildTaskTooltip(task, 'Backlog');
+        assert.ok(tooltip.includes('Depends On: 2 task(s)'));
+    });
 
 });
 
@@ -138,6 +143,20 @@ suite('taskPresentation - buildCardPayload', () => {
         assert.strictEqual(payload.summary, undefined);
         assert.strictEqual(payload.tags, undefined);
         // priority removed
+    });
+
+    test('includes dependsOn when set', () => {
+        const task = createTask({ dependsOn: ['TASK-002', 'TASK-003'] });
+        const payload = buildCardPayload(task, 'Build');
+
+        assert.deepStrictEqual(payload.dependsOn, ['TASK-002', 'TASK-003']);
+    });
+
+    test('dependsOn is undefined when not set', () => {
+        const task = createTask();
+        const payload = buildCardPayload(task, 'Build');
+
+        assert.strictEqual(payload.dependsOn, undefined);
     });
 });
 

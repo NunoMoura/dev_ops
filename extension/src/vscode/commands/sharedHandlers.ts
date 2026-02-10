@@ -121,6 +121,11 @@ export async function handleCardUpdateMessage(
 
         if (update.status !== undefined) { updates.status = update.status as any; }
 
+        // Persist dependency changes
+        if ('dependsOn' in update) {
+            updates.dependsOn = update.dependsOn?.length ? update.dependsOn : undefined;
+        }
+
         await boardService.updateTask(update.id, updates);
 
         // Refresh UI

@@ -13,6 +13,7 @@ export type TaskDetailsPayload = {
   status?: string;                // Autonomy state: ready, agent_active, needs_feedback, blocked, done
   column?: string;                // Column display name
   workflow?: string;              // DevOps workflow (e.g., /create_plan)
+  dependsOn?: string[];           // Task dependencies (TASK-XXX IDs)
 
   priority?: string;
   owner?: {                       // Task Ownership
@@ -409,6 +410,66 @@ function getCardHtml(): string {
         background: rgba(20, 184, 166, 0.08);
         border-color: rgba(20, 184, 166, 0.4);
       }
+      /* Dependencies Section */
+      .dep-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+        margin-bottom: var(--space-sm);
+        min-height: 24px;
+      }
+      .dep-badge {
+        background: rgba(139, 92, 246, 0.12);
+        border: 1px solid rgba(139, 92, 246, 0.25);
+        border-radius: 4px;
+        padding: 2px var(--space-md);
+        font-size: var(--text-sm);
+        color: #a78bfa;
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-xs);
+        cursor: default;
+      }
+      .dep-badge .dep-remove-btn {
+        background: none;
+        border: none;
+        color: var(--status-blocked);
+        cursor: pointer;
+        font-size: var(--text-lg);
+        padding: 0 2px;
+        line-height: 1;
+      }
+      .dep-add-row {
+        display: flex;
+        gap: var(--space-xs);
+        align-items: center;
+      }
+      .dep-add-row input {
+        flex: 1;
+        margin-bottom: 0;
+        font-size: var(--text-sm);
+      }
+      .dep-add-btn {
+        background: transparent;
+        border: 1px dashed rgba(139, 92, 246, 0.3);
+        border-radius: 4px;
+        padding: 2px var(--space-md);
+        font-size: var(--text-sm);
+        color: #a78bfa;
+        cursor: pointer;
+        transition: all var(--transition-fast) ease;
+        white-space: nowrap;
+      }
+      .dep-add-btn:hover {
+        background: rgba(139, 92, 246, 0.08);
+        border-color: rgba(139, 92, 246, 0.4);
+      }
+      .dep-empty {
+        font-size: var(--text-sm);
+        color: var(--vscode-descriptionForeground);
+        opacity: 0.7;
+        padding: var(--space-xs) 0;
+      }
       /* Status indicator at top */
       .status-indicator {
         display: inline-flex;
@@ -491,6 +552,10 @@ function getCardHtml(): string {
       const addFeatureTaskBtn = document.getElementById('addFeatureTask');
       let currentTaskId;
       let featureTasks = [];
+      let currentDependsOn = [];
+      const depsContainer = document.getElementById('depsContainer');
+      const depInput = document.getElementById('depInput');
+      const addDepBtn = document.getElementById('addDepBtn');
 
       function renderArtifacts() {
         // Artifacts section removed — lineage lives on documents/artifacts, not tasks
@@ -699,6 +764,54 @@ function getCardHtml(): string {
 
       renderFeatureTasks();
 
+      function renderDependencies() {
+        if (!depsContainer) return;
+        depsContainer.innerHTML = '';
+        if (!currentDependsOn.length) {
+          const empty = document.createElement('div');
+          empty.className = 'dep-empty';
+          empty.textContent = 'No dependencies';
+          depsContainer.appendChild(empty);
+          return;
+        }
+        currentDependsOn.forEach((depId, index) => {
+          const badge = document.createElement('span');
+          badge.className = 'dep-badge';
+          badge.textContent = depId;
+          const removeBtn = document.createElement('button');
+          removeBtn.type = 'button';
+          removeBtn.className = 'dep-remove-btn';
+          removeBtn.textContent = '\u00d7';
+          removeBtn.title = 'Remove dependency';
+          removeBtn.addEventListener('click', () => {
+            currentDependsOn.splice(index, 1);
+            renderDependencies();
+            triggerAutoSave();
+          });
+          badge.appendChild(removeBtn);
+          depsContainer.appendChild(badge);
+        });
+      }
+
+      addDepBtn?.addEventListener('click', () => {
+        const val = depInput?.value?.trim();
+        if (val && !currentDependsOn.includes(val)) {
+          currentDependsOn.push(val);
+          depInput.value = '';
+          renderDependencies();
+          triggerAutoSave();
+        }
+      });
+
+      depInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addDepBtn?.click();
+        }
+      });
+
+      renderDependencies();
+
       function renderStatusList(currentStatus) {
         statusList.innerHTML = '';
         ITEM_STATUS_OPTIONS.forEach(opt => {
@@ -805,8 +918,10 @@ function getCardHtml(): string {
           }
 
           featureTasks = cloneFeatureTasks(message.task.featureTasks);
+          currentDependsOn = Array.isArray(message.task.dependsOn) ? [...message.task.dependsOn] : [];
 
           renderFeatureTasks();
+          renderDependencies();
           renderArtifacts();
           form.classList.remove('hidden');
           emptyState.classList.add('hidden');
@@ -830,6 +945,7 @@ function getCardHtml(): string {
           tags: tagsInput.value,
           status: getSelectedStatusValue(),
           featureTasks: serializeFeatureTasks(),
+          dependsOn: currentDependsOn.length ? [...currentDependsOn] : undefined,
         };
       }
 
@@ -949,10 +1065,19 @@ function getCardHtml(): string {
             <textarea id="summary"></textarea>
         </div>
 
+        <!-- Dependencies Section -->
+        <div class="highlight-section">
+            <h3 style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--vscode-descriptionForeground);">Dependencies</h3>
+            <div id="depsContainer" class="dep-list"></div>
+            <div class="dep-add-row">
+                <input id="depInput" type="text" placeholder="TASK-XXX" />
+                <button id="addDepBtn" type="button" class="dep-add-btn">Add</button>
+            </div>
+        </div>
+
         <!-- Tags & Extras -->
         <label for="tags">Tags</label>
         <input id="tags" type="text" placeholder="bug, feature, enhancement" />
-
 
 
         <div class="feature-section">

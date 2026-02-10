@@ -108,22 +108,18 @@ export class HandoffNotificationService {
         fromPhase: string,
         toPhase: string
     ): Promise<void> {
-        const message = `${task.id} ready for ${toPhase}. Continue?`;
+        // Auto-copy claim command to clipboard
+        const claimCommand = `/claim ${task.id}`;
+        await vscode.env.clipboard.writeText(claimCommand);
+
+        const message = `${task.id} ready for ${toPhase} — 📋 Copied "${claimCommand}" to clipboard`;
         const action = await vscode.window.showInformationMessage(
             message,
-            'Copy Command',
             'View Task',
             'Dismiss'
         );
 
-        if (action === 'Copy Command') {
-            const command = `/pick_task ${task.id}`;
-            await vscode.env.clipboard.writeText(command);
-            vscode.window.showInformationMessage(
-                `Command copied! Open a new chat and paste.`
-            );
-        } else if (action === 'View Task') {
-            // Trigger focus on the task in board view
+        if (action === 'View Task') {
             vscode.commands.executeCommand('devops.focusTask', task.id);
         }
     }
