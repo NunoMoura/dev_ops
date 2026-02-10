@@ -378,7 +378,7 @@ export function applyPlanTask(
   item.tags = planTask.tags ?? item.tags;
   item.entryPoints = entryPoints ?? item.entryPoints;
   item.acceptanceCriteria = planTask.acceptanceCriteria ?? item.acceptanceCriteria;
-  item.upstream = planTask.upstream ?? planTask.dependencies ?? item.upstream;
+  // upstream/downstream removed from tasks — lineage lives on documents/artifacts
   item.risks = risks ?? item.risks;
   // Convert string[] checklist to ChecklistItem[] format
   if (planTask.checklist) {

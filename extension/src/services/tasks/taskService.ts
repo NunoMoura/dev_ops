@@ -108,7 +108,8 @@ export class CoreTaskService {
     public async createTask(
         columnId: string,
         title: string,
-        summary?: string
+        summary?: string,
+        dependsOn?: string[]
     ): Promise<Task> {
         const board = await this.readBoard();
 
@@ -129,7 +130,8 @@ export class CoreTaskService {
             title,
             summary: (summary || '') + '\n\n' + getAgentInstructions(newId, 'Unknown'), // Phase unknown at creation
             updatedAt: new Date().toISOString(),
-            status: 'todo'
+            status: 'todo',
+            ...(dependsOn?.length ? { dependsOn } : {}),
         };
 
         // Update board view (in-memory)

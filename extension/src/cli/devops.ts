@@ -59,13 +59,22 @@ program
     .requiredOption('--title <title>', 'task title')
     .option('--summary <summary>', 'task summary')
     .option('--column <column>', 'column ID', 'col-backlog')
+    .option('--depends-on <ids>', 'comma-separated TASK-XXX IDs this task depends on')
     .action(async (options) => {
+        const dependsOn = options.dependsOn
+            ? options.dependsOn.split(',').map((s: string) => s.trim()).filter(Boolean)
+            : undefined;
         const task = await taskService.createTask(
             options.column,
             options.title,
-            options.summary
+            options.summary,
+            dependsOn
         );
-        console.log(`Created Task: ${task.id}`);
+        if (task.dependsOn?.length) {
+            console.log(`Created Task: ${task.id} (depends on: ${task.dependsOn.join(', ')})`);
+        } else {
+            console.log(`Created Task: ${task.id}`);
+        }
     });
 
 program

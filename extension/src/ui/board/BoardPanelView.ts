@@ -28,8 +28,7 @@ export type BoardViewTask = {
     model: string;
     phase: string;
   };
-  upstream?: string[];
-  downstream?: string[];
+
   checklistTotal?: number;
   checklistDone?: number;
 };
@@ -223,8 +222,7 @@ export class BoardPanelManager {
           model: t.agentHistory[t.agentHistory.length - 1].model || 'Unknown',
           phase: t.agentHistory[t.agentHistory.length - 1].phase || 'Unknown'
         } : undefined),
-        upstream: t.upstream,
-        downstream: t.downstream,
+
         checklistTotal: t.checklist?.length,
         checklistDone: t.checklist?.filter(i => i.done).length
       }))

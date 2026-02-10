@@ -242,8 +242,7 @@ export class BoardTreeProvider implements vscode.TreeDataProvider<BoardNode> {
           status: task.status,
           tags: task.tags,
           updatedAt: task.updatedAt,
-          upstream: task.upstream,
-          downstream: task.downstream,
+
           checklistTotal,
           checklistDone,
         });

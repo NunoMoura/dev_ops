@@ -13,8 +13,7 @@ export type TaskDetailsPayload = {
   status?: string;                // Autonomy state: ready, agent_active, needs_feedback, blocked, done
   column?: string;                // Column display name
   workflow?: string;              // DevOps workflow (e.g., /create_plan)
-  upstream?: string[];            // Artifact dependencies
-  downstream?: string[];          // Artifacts depending on this task
+
   priority?: string;
   owner?: {                       // Task Ownership
     developer?: string;
@@ -386,8 +385,7 @@ function getCardHtml(): string {
         align-items: center;
         gap: var(--space-xs);
       }
-      .artifact-badge.upstream::before { content: "↑"; opacity: 0.7; }
-      .artifact-badge.downstream::before { content: "↓"; opacity: 0.7; }
+
       .artifact-badge .remove-btn {
         background: none;
         border: none;
@@ -491,38 +489,11 @@ function getCardHtml(): string {
       const metadataContainer = document.getElementById('metadataContainer');
       const featureTasksContainer = document.getElementById('featureTasksContainer');
       const addFeatureTaskBtn = document.getElementById('addFeatureTask');
-      const upstreamContainer = document.getElementById('upstreamArtifacts');
-      const downstreamContainer = document.getElementById('downstreamArtifacts');
-
       let currentTaskId;
       let featureTasks = [];
-      let upstreamArtifacts = [];
-      let downstreamArtifacts = [];
 
       function renderArtifacts() {
-        // Render upstream
-        upstreamContainer.innerHTML = '';
-        upstreamArtifacts.forEach((artifact, index) => {
-          const badge = document.createElement('span');
-          badge.className = 'artifact-badge upstream';
-          badge.textContent = artifact;
-          upstreamContainer.appendChild(badge);
-        });
-        if (!upstreamArtifacts.length) {
-          upstreamContainer.innerHTML = '<span style="font-size:11px;color:var(--vscode-descriptionForeground);">None</span>';
-        }
-        
-        // Render downstream
-        downstreamContainer.innerHTML = '';
-        downstreamArtifacts.forEach((artifact, index) => {
-          const badge = document.createElement('span');
-          badge.className = 'artifact-badge downstream';
-          badge.textContent = artifact;
-          downstreamContainer.appendChild(badge);
-        });
-        if (!downstreamArtifacts.length) {
-          downstreamContainer.innerHTML = '<span style="font-size:11px;color:var(--vscode-descriptionForeground);">None</span>';
-        }
+        // Artifacts section removed — lineage lives on documents/artifacts, not tasks
       }
       const ITEM_STATUS_OPTIONS = [
         { value: 'todo', label: 'Start (Todo)' },
@@ -834,8 +805,7 @@ function getCardHtml(): string {
           }
 
           featureTasks = cloneFeatureTasks(message.task.featureTasks);
-          upstreamArtifacts = Array.isArray(message.task.upstream) ? [...message.task.upstream] : [];
-          downstreamArtifacts = Array.isArray(message.task.downstream) ? [...message.task.downstream] : [];
+
           renderFeatureTasks();
           renderArtifacts();
           form.classList.remove('hidden');
@@ -983,17 +953,7 @@ function getCardHtml(): string {
         <label for="tags">Tags</label>
         <input id="tags" type="text" placeholder="bug, feature, enhancement" />
 
-        <div class="feature-section">
-          <div class="section-header">
-            <h3>Linked Artifacts</h3>
-          </div>
-          <div class="artifacts-section">
-            <label>Upstream (reads from)</label>
-            <div id="upstreamArtifacts" class="artifact-list"></div>
-            <label>Downstream (produces)</label>
-            <div id="downstreamArtifacts" class="artifact-list"></div>
-          </div>
-        </div>
+
 
         <div class="feature-section">
           <div class="section-header">

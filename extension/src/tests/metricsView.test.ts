@@ -133,8 +133,7 @@ suite('MetricsView - TaskDetailsPayload', () => {
         status?: string;
         column?: string;
         workflow?: string;
-        upstream?: string[];
-        downstream?: string[];
+
     }
 
     test('can construct minimal payload', () => {
@@ -158,12 +157,9 @@ suite('MetricsView - TaskDetailsPayload', () => {
             status: 'agent_active',
             column: 'Build',
             workflow: 'feature',
-            upstream: ['TASK-000'],
-            downstream: ['TASK-002'],
         };
         assert.strictEqual(payload.priority, 'high');
         assert.strictEqual(payload.column, 'Build');
-        assert.deepStrictEqual(payload.upstream, ['TASK-000']);
     });
 });
 

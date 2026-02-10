@@ -59,10 +59,6 @@ export type Task = {
   assignee?: string;             // Agent or human assigned to task
   dependsOn?: string[];           // TASK-XXX IDs that must complete before this task starts
 
-  // Artifact dependencies (mirrors feature.md upstream/downstream)
-  upstream?: string[];           // Artifacts this task depends on (e.g., RESEARCH-001)
-  downstream?: string[];         // Artifacts that will depend on this task's output
-
   // DevOps workflow
   workflow?: string;             // /create_plan, /research, etc.
   entryPoints?: string[];        // Files involved in this task
@@ -156,8 +152,7 @@ export type ImportedTask = {
   tags?: string[];
   entryPoints?: string[];
   acceptanceCriteria?: string[];
-  upstream?: string[];
-  downstream?: string[];
+
   risks?: string[];
   checklist?: string[];
   status?: TaskStatus;
@@ -168,7 +163,7 @@ export type ImportedTask = {
   dependencies?: string[];
 };
 
-export type TaskListKey = 'entryPoints' | 'acceptanceCriteria' | 'upstream' | 'checklist' | 'risks' | 'dependencies';
+export type TaskListKey = 'entryPoints' | 'acceptanceCriteria' | 'checklist' | 'risks' | 'dependencies';
 
 export type ParsedPlan = {
   title?: string;
@@ -225,8 +220,6 @@ export type TaskDetailsPayload = {
   status?: string;                // Autonomy state: ready, agent_active, needs_feedback, blocked, done
   column?: string;                // Column display name
   workflow?: string;              // DevOps workflow (e.g., /create_plan)
-  upstream?: string[];            // Artifact dependencies
-  downstream?: string[];          // Artifacts depending on this task
   dependsOn?: string[];           // Task dependencies (TASK-XXX IDs)
   priority?: string;
   owner?: {                       // Task Ownership

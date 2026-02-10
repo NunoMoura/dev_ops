@@ -73,11 +73,7 @@ suite('taskPresentation - buildTaskTooltip', () => {
         assert.ok(tooltip.includes('Workflow: feature'));
     });
 
-    test('shows upstream count when set', () => {
-        const task = createTask({ upstream: ['TASK-002', 'TASK-003'] });
-        const tooltip = buildTaskTooltip(task, 'Backlog');
-        assert.ok(tooltip.includes('Upstream: 2'));
-    });
+
 });
 
 suite('taskPresentation - buildTaskDetail', () => {
@@ -102,15 +98,7 @@ suite('taskPresentation - buildTaskDetail', () => {
         assert.ok(detail.includes('- [ ] Write code'));
     });
 
-    test('includes upstream/downstream', () => {
-        const task = createTask({
-            upstream: ['TASK-002'],
-            downstream: ['TASK-004', 'TASK-005'],
-        });
-        const detail = buildTaskDetail(task, 'Build');
-        assert.ok(detail.includes('Upstream: TASK-002'));
-        assert.ok(detail.includes('Downstream: TASK-004, TASK-005'));
-    });
+
 
     test('includes risks when set', () => {
         const task = createTask({ risks: ['May cause downtime'] });
@@ -129,8 +117,6 @@ suite('taskPresentation - buildCardPayload', () => {
             // priority removed
             status: 'in_progress',
             workflow: 'feature',
-            upstream: ['TASK-000'],
-            downstream: ['TASK-999'],
         });
 
         const payload = buildCardPayload(task, 'Implementation');
@@ -143,8 +129,6 @@ suite('taskPresentation - buildCardPayload', () => {
         assert.strictEqual(payload.status, 'in_progress');
         assert.strictEqual(payload.column, 'Implementation');
         assert.strictEqual(payload.workflow, 'feature');
-        assert.deepStrictEqual(payload.upstream, ['TASK-000']);
-        assert.deepStrictEqual(payload.downstream, ['TASK-999']);
     });
 
     test('handles undefined optional fields', () => {

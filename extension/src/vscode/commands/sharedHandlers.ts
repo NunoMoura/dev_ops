@@ -118,8 +118,7 @@ export async function handleCardUpdateMessage(
         if (update.tags !== undefined) { updates.tags = parseTags(update.tags); }
         // priority update removed
         if (update.workflow !== undefined) { updates.workflow = update.workflow; }
-        if (update.upstream !== undefined) { updates.upstream = update.upstream; }
-        if (update.downstream !== undefined) { updates.downstream = update.downstream; }
+
         if (update.status !== undefined) { updates.status = update.status as any; }
 
         await boardService.updateTask(update.id, updates);

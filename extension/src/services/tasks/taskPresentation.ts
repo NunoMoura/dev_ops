@@ -25,7 +25,7 @@ export function buildTaskTooltip(task: Task, columnName: string): string {
     task.updatedAt ? `Updated: ${task.updatedAt}` : undefined,
     task.contextFile ? `Plan: ${task.contextFile}` : undefined,
     task.acceptanceCriteria?.length ? `Acceptance Criteria: ${task.acceptanceCriteria.length}` : undefined,
-    task.upstream?.length ? `Upstream: ${task.upstream.length}` : undefined,
+
     task.dependsOn?.length ? `Depends On: ${task.dependsOn.length} task(s)` : undefined,
   ];
   return lines.filter(isDefined).join('\n');
@@ -53,12 +53,7 @@ export function buildTaskDetail(task: Task, columnName: string): string {
   if (task.dependsOn?.length) {
     detail.push('', `Depends On: ${task.dependsOn.join(', ')}`);
   }
-  if (task.upstream?.length) {
-    detail.push('', `Upstream: ${task.upstream.join(', ')}`);
-  }
-  if (task.downstream?.length) {
-    detail.push('', `Downstream: ${task.downstream.join(', ')}`);
-  }
+
   if (task.risks?.length) {
     detail.push('', 'Risks:');
     task.risks.forEach((risk) => detail.push(`- ${risk}`));
@@ -77,13 +72,12 @@ export function buildCardPayload(task: Task, columnName: string): TaskDetailsPay
     status: task.status,
     column: columnName,
     workflow: task.workflow,
-    upstream: task.upstream,
-    downstream: task.downstream,
+
     dependsOn: task.dependsOn,
   };
 }
 
-// Legacy FeatureTask normalization removed - use upstream/downstream on Task instead
+
 
 
 export function buildCodexPrompt(task: Task, columnName: string): string {
@@ -95,8 +89,7 @@ export function buildCodexPrompt(task: Task, columnName: string): string {
     `Status: ${task.status ?? 'ready'}`,
     task.workflow ? `Workflow: ${task.workflow}` : undefined,
     task.tags?.length ? `Tags: ${task.tags.join(', ')}` : undefined,
-    task.upstream?.length ? `Upstream: ${task.upstream.join(', ')}` : undefined,
-    task.downstream?.length ? `Downstream: ${task.downstream.join(', ')}` : undefined,
+
     task.updatedAt ? `Updated: ${task.updatedAt}` : undefined,
     task.contextFile ? `Context File: ${task.contextFile}` : undefined,
   ].filter(isDefined);
