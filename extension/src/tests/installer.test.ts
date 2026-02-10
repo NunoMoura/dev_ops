@@ -117,3 +117,51 @@ suite('Installer - Result Structure', () => {
         assert.ok(Array.isArray(result.filesUpdated));
     });
 });
+
+// ── Bootstrap Task Selection Tests ──────────────────────────────────────────
+// We test the pure task-selection logic via getTasksForProjectType().
+// CoreBootstrapService is constructed with null-ish deps since we never call
+// createBootstrapTasks() — we only inspect the returned array.
+
+suite('Bootstrap - Task Selection by Project Type', () => {
+    // Minimal stubs — we only exercise getTasksForProjectType()
+    const nullWorkspace: any = { root: '/tmp/test' };
+    const nullTaskService: any = {};
+    const extPath = '/tmp/ext';
+
+    // Local import (inline re-require to keep test file self-contained)
+    const { CoreBootstrapService } = require('../services/setup/bootstrap');
+
+    test('greenfield creates exactly 3 define-first tasks', () => {
+        const svc = new CoreBootstrapService(nullWorkspace, nullTaskService, extPath, 'greenfield');
+        const tasks = svc.getTasksForProjectType();
+        assert.strictEqual(tasks.length, 3);
+        assert.deepStrictEqual(
+            tasks.map((t: any) => t.title),
+            ['Define Product Requirements', 'Define System Architecture', 'Define Project Standards']
+        );
+    });
+
+    test('brownfield creates exactly 4 analyze-first tasks', () => {
+        const svc = new CoreBootstrapService(nullWorkspace, nullTaskService, extPath, 'brownfield');
+        const tasks = svc.getTasksForProjectType();
+        assert.strictEqual(tasks.length, 4);
+        assert.deepStrictEqual(
+            tasks.map((t: any) => t.title),
+            ['Document System Architecture', 'Define Product Requirements', 'Define Project Standards', 'Configure Project Rules']
+        );
+    });
+
+    test('fresh creates 0 tasks (empty board)', () => {
+        const svc = new CoreBootstrapService(nullWorkspace, nullTaskService, extPath, 'fresh');
+        const tasks = svc.getTasksForProjectType();
+        assert.strictEqual(tasks.length, 0);
+    });
+
+    test('undefined projectType defaults to brownfield tasks', () => {
+        const svc = new CoreBootstrapService(nullWorkspace, nullTaskService, extPath, undefined);
+        const tasks = svc.getTasksForProjectType();
+        assert.strictEqual(tasks.length, 4);
+        assert.strictEqual(tasks[0].title, 'Document System Architecture');
+    });
+});

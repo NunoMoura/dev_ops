@@ -12,7 +12,7 @@ import { log, error as logError } from '../../infrastructure/logger';
 
 import { Workspace } from '../../types';
 import { CoreTaskService } from '../../services/tasks/taskService';
-import { CoreBootstrapService } from '../../services/setup/bootstrap';
+import { CoreBootstrapService, ProjectType } from '../../services/setup/bootstrap';
 import fg from 'fast-glob';
 
 // Framework version from package.json
@@ -458,6 +458,18 @@ export async function install(
     const updatedCount = allUpdatedFiles.length;
     const skippedCount = allSkippedFiles.length;
 
+    // Build dynamic task list for success message
+    const tempBootstrap = new CoreBootstrapService(
+        new NodeWorkspace(projectRoot),
+        new CoreTaskService(new NodeWorkspace(projectRoot)),
+        extensionPath,
+        options.projectType as ProjectType | undefined
+    );
+    const bootstrapTasks = tempBootstrap.getTasksForProjectType();
+    const taskListStr = bootstrapTasks.length > 0
+        ? bootstrapTasks.map(t => `- ${t.title}`).join('\n')
+        : '_(Empty board — you chose Fresh Start)_';
+
     const message = wasUpgrade
         ? `Upgraded from ${installedVersion} to ${FRAMEWORK_VERSION}. Updated ${updatedCount} files.`
         : `Welcome to the DevOps Framework! 🚀
@@ -465,11 +477,7 @@ export async function install(
 The framework has been successfully initialized. We have created a backlog of tasks to get your project set up.
 
 **Backlog Tasks Created:**
-- Document System Architecture
-- Define Product Requirements
-- Define User Personas & Stories
-- Define Project Standards
-- Configure Project Rules
+${taskListStr}
 
 **Next Step:**
 1. Open the **DevOps Board** to see these tasks.
@@ -491,7 +499,7 @@ Let the agents handle the heavy lifting!`;
         // 2. Create Bootstrap Tasks directly
         log('[installer] Creating bootstrap tasks...');
         const taskService = new CoreTaskService(workspace);
-        const bootstrapService = new CoreBootstrapService(workspace, taskService, extensionPath);
+        const bootstrapService = new CoreBootstrapService(workspace, taskService, extensionPath, options.projectType as ProjectType | undefined);
 
         await bootstrapService.createBootstrapTasks();
         log('[installer] Bootstrap tasks created.');
