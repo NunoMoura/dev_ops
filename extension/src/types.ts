@@ -57,7 +57,7 @@ export type Task = {
   updatedAt?: string;
   status?: TaskStatus;           // Autonomy state (default: ready)
   assignee?: string;             // Agent or human assigned to task
-  blockedBy?: string;            // Task ID blocking this one
+  dependsOn?: string[];           // TASK-XXX IDs that must complete before this task starts
 
   // Artifact dependencies (mirrors feature.md upstream/downstream)
   upstream?: string[];           // Artifacts this task depends on (e.g., RESEARCH-001)
@@ -67,11 +67,8 @@ export type Task = {
   workflow?: string;             // /create_plan, /research, etc.
   entryPoints?: string[];        // Files involved in this task
 
-  // Prerequisites (must be met before starting)
-  prerequisites?: {
-    tasks?: string[];            // TASK-XXX that must be done first
-    approvals?: string[];        // Human approvals needed
-  };
+  // Human approvals required before starting (task dependencies use dependsOn)
+  requiredApprovals?: string[];
 
   // Completion criteria (definition of done)
   completionCriteria?: {
@@ -166,6 +163,7 @@ export type ImportedTask = {
   status?: TaskStatus;
   context?: string;
   contextRange?: { startLine: number; endLine: number };
+  dependsOn?: string[];           // TASK-XXX IDs that must complete first
   // Legacy fields for backward compatibility with plan import
   dependencies?: string[];
 };
@@ -229,6 +227,7 @@ export type TaskDetailsPayload = {
   workflow?: string;              // DevOps workflow (e.g., /create_plan)
   upstream?: string[];            // Artifact dependencies
   downstream?: string[];          // Artifacts depending on this task
+  dependsOn?: string[];           // Task dependencies (TASK-XXX IDs)
   priority?: string;
   owner?: {                       // Task Ownership
     developer?: string;

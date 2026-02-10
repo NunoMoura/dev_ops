@@ -22,6 +22,19 @@ node .dev_ops/scripts/devops.js claim-task --id <TASK_ID>
 
 ---
 
+## Step 1.5: Check Dependencies
+
+> [!WARNING]
+> If the task has `dependsOn` entries, verify they are complete.
+
+1. Check if task has `dependsOn` field with task IDs
+2. If any dependency task is NOT `done` or `archived`:
+   - List the blocking tasks
+   - Consider working on blockers first
+   - Use `--force` only for debugging/special cases
+
+---
+
 ## Step 2: Read Phase from Task (MANDATORY)
 
 > [!CAUTION]

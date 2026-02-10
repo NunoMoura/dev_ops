@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { TaskDetailsPayload } from '../../types';
 import { Task, COLUMN_FALLBACK_NAME } from '../../types';
-import { isDefined } from '../../services/tasks/taskUtils';
+import { isDefined, getBlockingTasks } from '../../services/tasks/taskUtils';
 
 export function buildTaskDescription(task: Task): string | undefined {
   const parts = [
@@ -26,6 +26,7 @@ export function buildTaskTooltip(task: Task, columnName: string): string {
     task.contextFile ? `Plan: ${task.contextFile}` : undefined,
     task.acceptanceCriteria?.length ? `Acceptance Criteria: ${task.acceptanceCriteria.length}` : undefined,
     task.upstream?.length ? `Upstream: ${task.upstream.length}` : undefined,
+    task.dependsOn?.length ? `Depends On: ${task.dependsOn.length} task(s)` : undefined,
   ];
   return lines.filter(isDefined).join('\n');
 }
@@ -48,6 +49,9 @@ export function buildTaskDetail(task: Task, columnName: string): string {
   if (task.checklist?.length) {
     detail.push('', 'Checklist:');
     task.checklist.forEach((item) => detail.push(`- [${item.done ? 'x' : ' '}] ${item.text}`));
+  }
+  if (task.dependsOn?.length) {
+    detail.push('', `Depends On: ${task.dependsOn.join(', ')}`);
   }
   if (task.upstream?.length) {
     detail.push('', `Upstream: ${task.upstream.join(', ')}`);
@@ -75,6 +79,7 @@ export function buildCardPayload(task: Task, columnName: string): TaskDetailsPay
     workflow: task.workflow,
     upstream: task.upstream,
     downstream: task.downstream,
+    dependsOn: task.dependsOn,
   };
 }
 

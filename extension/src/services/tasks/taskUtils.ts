@@ -139,3 +139,34 @@ export function createTaskId(board: Board): string {
   return `TASK-${num.toString().padStart(3, '0')}`;
 }
 
+// ============================================================================
+// Task Dependency Utilities
+// ============================================================================
+
+/**
+ * Get incomplete tasks that block this task from starting.
+ * A task is considered complete if status is 'done' or 'archived'.
+ */
+export function getBlockingTasks(task: Task, allTasks: Task[]): Task[] {
+  if (!task.dependsOn?.length) {
+    return [];
+  }
+  const dependencyIds = new Set(task.dependsOn);
+  return allTasks.filter(
+    (t) => dependencyIds.has(t.id) && t.status !== 'done' && t.status !== 'archived'
+  );
+}
+
+/**
+ * Get tasks that depend on this task (computed reverse dependency).
+ */
+export function getDependentTasks(taskId: string, allTasks: Task[]): Task[] {
+  return allTasks.filter((t) => t.dependsOn?.includes(taskId));
+}
+
+/**
+ * Check if a task is blocked by incomplete dependencies.
+ */
+export function isTaskBlocked(task: Task, allTasks: Task[]): boolean {
+  return getBlockingTasks(task, allTasks).length > 0;
+}
