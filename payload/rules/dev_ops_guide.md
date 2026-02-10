@@ -19,6 +19,16 @@ description: Core DevOps behavioral invariants
 > 5. Only then proceed with phase-appropriate actions
 >
 > **Skipping this = phase violation. STOP and read the skill first.**
+>
+> **Task Descriptions vs Phase Constraints:**
+>
+> 1. **Declarative vs Imperative**:
+>    * Tasks define **WHAT** (Goal/Deliverable).
+>    * Skills define **HOW** (Steps/Process).
+>
+> 2. **Phase Supremacy**:
+>    * If a task description contains imperative steps (e.g., "Step 1: Create file X") that conflict with the Phase Skill (e.g., "Understand Phase = Research only"), the **Phase Skill WINS**.
+>    * Ignore the specific steps in the task and follow the Phase Skill's process to achieve the goal.
 
 ### IDE Mode Behavior
 

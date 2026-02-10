@@ -9,68 +9,34 @@ export type ProjectType = 'greenfield' | 'brownfield' | 'fresh';
 const GREENFIELD_TASKS: { title: string; summary: string }[] = [
     {
         title: 'Define Product Requirements',
-        summary:
-            'Define what the product will do.\n\n' +
-            'Strategy:\n' +
-            '1. Discuss goals and scope with the user.\n' +
-            '2. Create `.dev_ops/docs/prd.md` using the prd.md template.\n' +
-            '3. Request user review.'
+        summary: 'Collaborate with the user to understand the project goals and scope. Research the requirements and creating a Product Requirement Document (PRD) to serve as the foundation for the project.'
     },
     {
         title: 'Define System Architecture',
-        summary:
-            'Design the system architecture.\n\n' +
-            'Strategy:\n' +
-            '1. Based on the PRD, identify key components.\n' +
-            '2. Create `SPEC.md` for each component using the spec.md template.\n' +
-            '3. Document component interactions and data flow.'
+        summary: 'Design the system architecture based on the approved PRD. Identify key components, interactions, and data flows, and document them in `SPEC.md` files.'
     },
     {
         title: 'Define Project Standards',
-        summary:
-            'Define coding standards and conventions.\n\n' +
-            'Strategy:\n' +
-            '1. Based on the chosen tech stack, define conventions.\n' +
-            '2. Create `.dev_ops/docs/project_standards.md` using the project_standards.md template.'
+        summary: 'Establish coding standards and conventions for the project based on the chosen technology stack. Document these in `.dev_ops/docs/project_standards.md`.'
     }
 ];
 
 const BROWNFIELD_TASKS: { title: string; summary: string }[] = [
     {
         title: 'Document System Architecture',
-        summary:
-            'Document system architecture.\n\n' +
-            'Strategy:\n' +
-            '1. Analyze existing docs (README, docs/, *.md) and folder structure.\n' +
-            '2. Recursively identify ALL leaf components.\n' +
-            '3. Create `SPEC.md` for each component using the spec.md template.'
+        summary: 'Analyze the existing codebase and documentation to understand the current architecture. Document the findings by creating `SPEC.md` files for key components.'
     },
     {
         title: 'Define Product Requirements',
-        summary:
-            'Define Product Requirements.\n\n' +
-            'Strategy:\n' +
-            '1. Analyze existing docs and codebase to understand intent.\n' +
-            '2. Create/update `.dev_ops/docs/prd.md` using the prd.md template.\n' +
-            '3. Request user review.'
+        summary: 'Analyze existing documentation and code to understand the product intent. Create or update the Product Requirement Document (PRD) to align with the current state.'
     },
     {
         title: 'Define Project Standards',
-        summary:
-            'Define technical and product standards.\n\n' +
-            'Strategy:\n' +
-            '1. Analyze existing docs and tech stack constraints.\n' +
-            '2. Create `.dev_ops/docs/project_standards.md` using the project_standards.md template.'
+        summary: 'Analyze the existing codebase to identify established patterns and standards. Document these in `.dev_ops/docs/project_standards.md`.'
     },
     {
         title: 'Configure Project Rules',
-        summary:
-            'Configure agent rules.\n\n' +
-            'Strategy:\n' +
-            '1. Detect tech stack (languages, frameworks, tools).\n' +
-            '2. Select matching templates from `.dev_ops/templates/rules/`.\n' +
-            '3. Create rules in `.agent/rules/` (or `.cursor/rules/`).\n' +
-            '4. Customize rules to match project conventions.'
+        summary: 'Detect the technology stack and configure appropriate agent rules. Create and customize rules in `.agent/rules/` to match project conventions.'
     }
 ];
 
