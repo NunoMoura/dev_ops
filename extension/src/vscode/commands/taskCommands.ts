@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { detectAgentEnvironment } from '../../infrastructure/integrations/environment';
 import type { BoardTreeProvider, BoardNode } from '../../ui/board';
 import type { DevOpsCommandServices } from './types';
 import { registerDevOpsCommand, getTaskFromNode } from './utils';
@@ -596,7 +597,15 @@ async function handleClaimTask(
         return;
     }
 
-    await boardService.claimTask(taskId, { owner: 'User' });
+    // Detect agent environment and pass driver info so activeSession is populated
+    const env = await detectAgentEnvironment();
+    await boardService.claimTask(taskId, {
+        owner: 'User',
+        driver: {
+            agent: env.agentName || env.agent || 'Unknown',
+            model: env.model || 'Unknown',
+        }
+    });
 
     await provider.refresh();
     vscode.window.showInformationMessage(`✅ Claimed ${taskId}`);

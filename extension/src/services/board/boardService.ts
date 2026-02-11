@@ -211,7 +211,7 @@ export class BoardService {
         // Update task data
         if (task.columnId !== columnId) {
             task.columnId = columnId;
-            task.status = 'todo'; // Reset status on move?
+            // Preserve existing status on cross-column move (don't reset to 'todo')
             task.updatedAt = new Date().toISOString();
             await this.store.saveTask(task);
         }

@@ -110,4 +110,43 @@ suite('BoardService', () => {
         // Since we claimed it, it has an activeSession, so pickNextTask should skip it (based on our boardService logic updates)
         assert.strictEqual(pickedId, null);
     });
+
+    test('reorderTask preserves task status on cross-column move', async () => {
+        // Add a plan column to enable cross-column reorder
+        mockBoard.columns.push({ id: 'col-plan', name: 'Plan', position: 4 });
+
+        const id = await service.createTask({
+            title: 'In Progress Task',
+            columnId: 'col-understand'
+        });
+
+        // Set task to in_progress
+        await service.claimTask(id, { driver: { agent: 'Test Agent', model: 'Test Model' } });
+        assert.strictEqual(mockBoard.items[0].status, 'in_progress');
+
+        // Reorder to Plan column
+        await service.reorderTask(id, 'col-plan', 0);
+
+        const task = mockBoard.items[0];
+        // Status should still be in_progress, not reset to 'todo'
+        assert.strictEqual(task.status, 'in_progress');
+        assert.strictEqual(task.columnId, 'col-plan');
+    });
+
+    test('claimTask does not change column for non-backlog tasks', async () => {
+        // Add a plan column
+        mockBoard.columns.push({ id: 'col-plan', name: 'Plan', position: 4 });
+
+        const id = await service.createTask({
+            title: 'Task in Plan',
+            columnId: 'col-plan'
+        });
+
+        await service.claimTask(id, { driver: { agent: 'Test Agent', model: 'Test Model' } });
+
+        const task = mockBoard.items[0];
+        // Task should remain in Plan, not be auto-promoted to Understand
+        assert.strictEqual(task.columnId, 'col-plan');
+        assert.strictEqual(task.status, 'in_progress');
+    });
 });

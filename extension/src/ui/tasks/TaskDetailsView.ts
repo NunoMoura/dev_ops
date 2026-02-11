@@ -138,7 +138,7 @@ function getCardHtml(): string {
       .separator {
         height: 1px;
         background: var(--status-color);
-        opacity: 0.2;
+        opacity: 0.3;
         margin: var(--space-xl) 0;
         transition: background-color 0.3s ease;
       }

@@ -355,7 +355,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         height: 1px;
         background-color: ${cssStatusColor}; /* Status Color Separator */
         margin-bottom: 32px;
-        opacity: 0.5;
+        opacity: 0.3;
         width: 100%;
       }
 
@@ -615,7 +615,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     // Ideally we want to identify "blocks"
     // Heuristic: ## Headers start new items. Bullet points in between.
 
-    const lines = md.split('\\n');
+    const lines = md.split('\n');
     let html = '';
     let inItem = false;
 

@@ -62,6 +62,14 @@ export function buildTaskDetail(task: Task, columnName: string): string {
 }
 
 export function buildCardPayload(task: Task, columnName: string): TaskDetailsPayload {
+  // Build owner metadata from task.owner (string) and task.activeSession
+  const ownerPayload = (task.owner || task.activeSession) ? {
+    developer: task.owner || undefined,
+    agent: task.activeSession?.agent || undefined,
+    model: task.activeSession?.model || undefined,
+    sessionId: task.activeSession?.id || undefined,
+  } : undefined;
+
   return {
     id: task.id,
     title: task.title,
@@ -72,7 +80,7 @@ export function buildCardPayload(task: Task, columnName: string): TaskDetailsPay
     status: task.status,
     column: columnName,
     workflow: task.workflow,
-
+    owner: ownerPayload,
     dependsOn: task.dependsOn,
   };
 }
