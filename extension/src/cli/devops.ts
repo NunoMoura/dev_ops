@@ -79,9 +79,9 @@ program
 
 program
     .command('claim-task')
-    .description('Claim a task and move it to In Progress (or specified column)')
+    .description('Claim a task and set it to In Progress')
     .option('--id <id>', 'Task ID (e.g. TASK-123)')
-    .option('--column <column>', 'Target column ID', 'col-understand')
+    .option('--column <column>', 'Target column ID (only moves if explicitly provided)')
     .action(async (options) => {
         let taskId = options.id;
 
@@ -95,6 +95,7 @@ program
             console.log(`Auto-selected Task: ${taskId}`);
         }
 
+        // Only move if column was explicitly provided by the user
         if (options.column) {
             await taskService.moveTask(taskId, options.column);
         }

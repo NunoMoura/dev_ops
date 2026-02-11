@@ -623,10 +623,10 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       if (line.startsWith('# ')) {
         // Main Header - ignore or special style
       } else if (line.startsWith('> Created:')) {
-        html += `<div class="trace-date">\${line.replace('> Created:', '').trim()}</div>`;
+        html += `<div class="trace-date">${line.replace('> Created:', '').trim()}</div>`;
       } else if (line.startsWith('## ') || line.startsWith('### ')) {
         if (inItem) { html += '</div></div>'; }
-        html += `<div class="trace-item"><div class="trace-content"><h3>\${line.replace(/#+\\s/, '')}</h3>`;
+        html += `<div class="trace-item"><div class="trace-content"><h3>${line.replace(/#+\s/, '')}</h3>`;
         inItem = true;
       } else if (line.trim().startsWith('- ')) {
         if (!inItem) {
@@ -634,9 +634,9 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
           html += `<div class="trace-item"><div class="trace-content">`;
           inItem = true;
         }
-        html += `<li>\${line.replace('- ', '')}</li>`;
+        html += `<li>${line.replace('- ', '')}</li>`;
       } else {
-        if (inItem && line.trim()) { html += `<p>\${line}</p>`; }
+        if (inItem && line.trim()) { html += `<p>${line}</p>`; }
       }
     });
 
