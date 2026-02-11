@@ -13,6 +13,7 @@ Create tasks for discovered bugs, features, or tech debt during any phase.
 
 - `title`: Brief description
 - `summary`: What you discovered and why it matters
+- `depends-on` *(optional)*: Comma-separated TASK-XXX IDs this task depends on
 
 ---
 
@@ -23,7 +24,8 @@ node .dev_ops/scripts/devops.js create-task \
   --title "<Brief description>" \
   --summary "<What you discovered and why it matters>" \
   --priority <low|medium|high> \
-  --column col-backlog
+  --column col-backlog \
+  --depends-on "TASK-001,TASK-002"   # optional
 ```
 
 ---
