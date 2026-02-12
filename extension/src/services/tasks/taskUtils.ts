@@ -16,7 +16,7 @@ export function compareTasks(a: Task, b: Task): number {
  */
 export function getColumnRank(columnId?: string): number {
   switch (columnId) {
-    case 'col-build':
+    case 'col-implement':
       return 0;  // Active work first
     case 'col-verify':
       return 1;  // Verification next

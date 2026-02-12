@@ -23,7 +23,7 @@ const DEFAULT_COLUMNS = [
     { id: 'col-backlog', name: 'Backlog' },
     { id: 'col-understand', name: 'Understand' },
     { id: 'col-plan', name: 'Plan' },
-    { id: 'col-build', name: 'Build' },
+    { id: 'col-implement', name: 'Implement' },
     { id: 'col-verify', name: 'Verify' },
     { id: 'col-done', name: 'Done' }
 ];

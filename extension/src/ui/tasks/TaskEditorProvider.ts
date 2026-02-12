@@ -131,6 +131,20 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
             }
           }
           break;
+        case 'approvePlan':
+          // 1. Move to Implement
+          await boardService.moveTask(taskId, 'col-implement');
+
+          // 2. Start Agent Session
+          // await vscode.commands.executeCommand('devops.startAgentSession', undefined, { taskId, phase: 'Implement' });
+          // Actually, let's just show a message or let the user know, because startAgentSession might be async or complex here.
+          // Better: We trigger the command.
+          vscode.commands.executeCommand('devops.startAgentSession', undefined, { taskId, phase: 'Implement' });
+
+          vscode.window.showInformationMessage(`Plan Approved. Task ${taskId} moved to Implement phase.`);
+          await updateWebview();
+          vscode.commands.executeCommand('devops.refreshBoard');
+          break;
       }
     });
   }
@@ -538,6 +552,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
     <!-- Footer -->
     <div class="actions-footer">
+      ${task.columnId === 'col-plan' ? `<button id="approvePlanBtn" class="btn btn-primary" style="background: #22c55e; border-color: #22c55e;">Approve Plan & Start Implement</button>` : ''}
       <button id="saveBtn" class="btn btn-primary">Save Changes</button>
       <button id="deleteBtn" class="btn btn-danger">Delete Task</button>
     </div>
@@ -602,6 +617,10 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     
     document.getElementById('deleteBtn').addEventListener('click', () => {
       vscode.postMessage({ type: 'delete' });
+    });
+
+    document.getElementById('approvePlanBtn')?.addEventListener('click', () => {
+      vscode.postMessage({ type: 'approvePlan' });
     });
   </script>
 </body>

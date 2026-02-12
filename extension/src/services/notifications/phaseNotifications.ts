@@ -14,7 +14,7 @@ const PHASE_INFO: Record<string, { name: string; position: number }> = {
     'col-backlog': { name: 'Backlog', position: 1 },
     'col-understand': { name: 'Understand', position: 2 },
     'col-plan': { name: 'Plan', position: 3 },
-    'col-build': { name: 'Build', position: 4 },
+    'col-implement': { name: 'Implement', position: 4 },
     'col-verify': { name: 'Verify', position: 5 },
     'col-done': { name: 'Done', position: 6 },
 };

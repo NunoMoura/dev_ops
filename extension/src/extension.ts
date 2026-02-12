@@ -14,6 +14,9 @@ import { checkAndUpdateFramework } from './vscode/framework';
 import { initializeDevOpsServices } from './vscode/services';
 import { bindDevOpsViews } from './vscode/views';
 import { registerBoardCommands } from './vscode/commands';
+import { ActivityWatcher } from './services/monitor/ActivityWatcher';
+import { boardService } from './services/board/boardService';
+
 
 export async function activate(context: vscode.ExtensionContext) {
   const timestamp = new Date().toISOString();
@@ -71,6 +74,10 @@ export async function activate(context: vscode.ExtensionContext) {
     // Also watch for updates to refresh dashboard and metrics
 
     registerBoardCommands(context, services, services.syncFilterUI);
+
+    // Watch for code activity to auto-promote tasks from Plan -> Implement
+    context.subscriptions.push(new ActivityWatcher(boardService));
+
 
     // Initialize Session Bridge
     const sessionBridge = new SessionBridge(context);

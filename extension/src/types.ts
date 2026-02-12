@@ -200,7 +200,7 @@ export const DEFAULT_COLUMN_BLUEPRINTS: ReadonlyArray<Column> = [
   { id: 'col-backlog', name: 'Backlog', position: 1 },
   { id: 'col-understand', name: 'Understand', position: 2 },
   { id: 'col-plan', name: 'Plan', position: 3 },
-  { id: 'col-build', name: 'Build', position: 4 },
+  { id: 'col-implement', name: 'Implement', position: 4 },
   { id: 'col-verify', name: 'Verify', position: 5 },
   { id: 'col-done', name: 'Done', position: 6 },
 ];

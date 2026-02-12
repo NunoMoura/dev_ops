@@ -50,21 +50,19 @@ If you find yourself:
 ## Phase Flow
 
 ```text
-Understand → Plan → Build → Verify → Done
+Understand → Plan → Implement → Verify → Done
 ```
 
 | Phase | Works With | Code Access | Deliverable |
 |-------|------------|-------------|-------------|
 | Understand | SPEC.md + Research | ❌ None | RES-XXX |
 | Plan | SPEC.md + RES-XXX | ❌ None | PLN-XXX |
-| Build | Code + PLN-XXX | ✅ Write | Code + Tests |
+| Implement | Code + PLN-XXX | ✅ Write | Code + Tests |
 | Verify | Tests + SPEC.md | ✅ Minor fixes | walkthrough.md + PR |
 
-| Phase | Key Question | Skill |
-|-------|--------------|-------|
 | Understand | Do I fully grasp the problem? | `understand` |
-| Plan | Could another dev build this from my plan? | `plan` |
-| Build | Would I be proud to ship this? | `build` |
+| Plan | Could another dev build this from my plan? | `plan_and_implement` |
+| Implement | Would I be proud to ship this? | `plan_and_implement` |
 | Verify | Have I proven correctness? | `verify` |
 
 ---
