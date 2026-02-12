@@ -21,10 +21,10 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
     const scriptsDir = path.join(devOpsDir, 'scripts');
     const boardPath = path.join(devOpsDir, 'board.json');
     const projectVersionPath = path.join(devOpsDir, 'version.json');
+    const configPath = path.join(devOpsDir, 'config.json');
 
     // Detect IDE to check correct folder
-    const agentDir = path.join(workspaceRoot, '.agent');
-    const cursorDir = path.join(workspaceRoot, '.cursor');
+    const currentIDE = detectIDE();
 
     let needsUpdate = false;
     let updateType: 'missing' | 'outdated' = 'missing';
@@ -64,6 +64,24 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
         reason = `version mismatch: project (${projectVersion}) vs bundled (${bundledVersion})`;
     }
 
+    // Determine target IDEs to check
+    // 1. Start with current IDE
+    const targetIDEs = new Set<string>([currentIDE]);
+
+    // 2. Add IDEs from config.json if available
+    try {
+        if (fs.existsSync(configPath)) {
+            const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            if (Array.isArray(configData.selectedIDEs)) {
+                configData.selectedIDEs.forEach((ide: string) => targetIDEs.add(ide));
+            }
+        }
+    } catch (e) {
+        log(`Failed to read project config: ${e}`);
+    }
+
+    const selectedIDEs = Array.from(targetIDEs);
+
     // Source paths for verification
     const assetsDir = path.join(context.extensionPath, 'dist', 'assets');
     const scriptsSource = path.join(assetsDir, 'scripts');
@@ -79,58 +97,72 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
         reason = 'missing .dev_ops/scripts';
     }
 
-    // Check 2: .agent exists but rules or workflows missing (only on DevOps projects)
-    if (isDevOpsProject && fs.existsSync(agentDir)) {
-        const rulesDir = path.join(agentDir, 'rules');
-        const workflowsDir = path.join(agentDir, 'workflows');
+    // Check 2: Check each target IDE folder
+    for (const ide of selectedIDEs) {
+        if (ide === 'antigravity') {
+            const agentDir = path.join(workspaceRoot, '.agent');
+            const rulesDir = path.join(agentDir, 'rules');
+            const workflowsDir = path.join(agentDir, 'workflows');
 
-        const rulesMissing = !fs.existsSync(rulesDir) || fs.readdirSync(rulesDir).length === 0;
-        const workflowsMissing = !fs.existsSync(workflowsDir) || fs.readdirSync(workflowsDir).length === 0;
+            // Check if root folder is missing OR subdirs are empty
+            const isAgentMissing = !fs.existsSync(agentDir);
+            const rulesMissing = !fs.existsSync(rulesDir) || fs.readdirSync(rulesDir).length === 0;
+            const workflowsMissing = !fs.existsSync(workflowsDir) || fs.readdirSync(workflowsDir).length === 0;
 
-        if (rulesMissing || workflowsMissing) {
-            // Only flag if sources exist
-            const canInstallRules = fs.existsSync(rulesSource);
-            const canInstallWorkflows = fs.existsSync(workflowsSource);
+            if (isAgentMissing || rulesMissing || workflowsMissing) {
+                const canInstallRules = fs.existsSync(rulesSource);
+                const canInstallWorkflows = fs.existsSync(workflowsSource);
 
-            if ((rulesMissing && canInstallRules) || (workflowsMissing && canInstallWorkflows)) {
-                needsUpdate = true;
-                if (updateType !== 'outdated') { updateType = 'missing'; }
+                if ((isAgentMissing || rulesMissing) && canInstallRules) {
+                    needsUpdate = true;
+                    itemsToUpdate.push('rules');
+                }
+                if ((isAgentMissing || workflowsMissing) && canInstallWorkflows) {
+                    needsUpdate = true;
+                    itemsToUpdate.push('workflows');
+                }
 
-                if (rulesMissing && canInstallRules) { itemsToUpdate.push('rules'); }
-                if (workflowsMissing && canInstallWorkflows) { itemsToUpdate.push('workflows'); }
+                if (needsUpdate) {
+                    if (updateType !== 'outdated') { updateType = 'missing'; }
+                    const newReason = 'missing .agent configuration';
+                    if (!reason.includes(newReason)) {
+                        reason = reason ? `${reason}, ${newReason}` : newReason;
+                    }
+                }
+            }
+        } else if (ide === 'cursor') {
+            const cursorDir = path.join(workspaceRoot, '.cursor');
+            const rulesDir = path.join(cursorDir, 'rules');
+            const commandsDir = path.join(cursorDir, 'commands');
 
-                const newReason = 'missing/empty .agent directories';
-                reason = reason ? `${reason}, ${newReason}` : newReason;
+            const isCursorMissing = !fs.existsSync(cursorDir);
+            const rulesMissing = !fs.existsSync(rulesDir) || fs.readdirSync(rulesDir).length === 0;
+            const commandsMissing = !fs.existsSync(commandsDir) || fs.readdirSync(commandsDir).length === 0;
+
+            if (isCursorMissing || rulesMissing || commandsMissing) {
+                const canInstallRules = fs.existsSync(rulesSource);
+                const canInstallWorkflows = fs.existsSync(workflowsSource);
+
+                if ((isCursorMissing || rulesMissing) && canInstallRules) {
+                    needsUpdate = true;
+                    itemsToUpdate.push('rules');
+                }
+                if ((isCursorMissing || commandsMissing) && canInstallWorkflows) {
+                    needsUpdate = true;
+                    itemsToUpdate.push('commands');
+                }
+
+                if (needsUpdate) {
+                    if (updateType !== 'outdated') { updateType = 'missing'; }
+                    const newReason = 'missing .cursor configuration';
+                    if (!reason.includes(newReason)) {
+                        reason = reason ? `${reason}, ${newReason}` : newReason;
+                    }
+                }
             }
         }
     }
 
-    // Check 3: .cursor exists but rules or commands missing (only on DevOps projects)
-    if (isDevOpsProject && fs.existsSync(cursorDir)) {
-        const rulesDir = path.join(cursorDir, 'rules');
-        const commandsDir = path.join(cursorDir, 'commands');
-
-        const rulesMissing = !fs.existsSync(rulesDir) || fs.readdirSync(rulesDir).length === 0;
-        const workflowsMissing = !fs.existsSync(commandsDir) || fs.readdirSync(commandsDir).length === 0;
-
-        if (rulesMissing || workflowsMissing) {
-            // Only flag if sources exist
-            const canInstallRules = fs.existsSync(rulesSource);
-            // Workflows source maps to commands in Cursor
-            const canInstallWorkflows = fs.existsSync(workflowsSource);
-
-            if ((rulesMissing && canInstallRules) || (workflowsMissing && canInstallWorkflows)) {
-                needsUpdate = true;
-                if (updateType !== 'outdated') { updateType = 'missing'; }
-
-                if (rulesMissing && canInstallRules) { itemsToUpdate.push('rules'); }
-                if (workflowsMissing && canInstallWorkflows) { itemsToUpdate.push('commands'); }
-
-                const newReason = 'missing/empty .cursor directories';
-                reason = reason ? `${reason}, ${newReason}` : newReason;
-            }
-        }
-    }
 
     if (needsUpdate) {
         log(`Detected project needing framework update: ${reason}`);
@@ -153,13 +185,13 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
         } else {
             title = '⚠️ Missing DevOps Components';
             // Build descriptive message for user
-            const itemDescriptions: string[] = [];
-            if (itemsToUpdate.includes('scripts')) { itemDescriptions.push('• Scripts (Automation tools)'); }
-            if (itemsToUpdate.includes('rules')) { itemDescriptions.push('• Rules (AI assistant guidelines)'); }
+            const itemDescriptions: Set<string> = new Set();
+            if (itemsToUpdate.includes('scripts')) { itemDescriptions.add('• Scripts (Automation tools)'); }
+            if (itemsToUpdate.includes('rules')) { itemDescriptions.add('• Rules (AI assistant guidelines)'); }
             if (itemsToUpdate.includes('workflows') || itemsToUpdate.includes('commands')) {
-                itemDescriptions.push('• Workflows (slash commands for your IDE)');
+                itemDescriptions.add('• Workflows (slash commands for your IDE)');
             }
-            message = `The following components are missing from this project:\n${itemDescriptions.join('\n')}\n\nDo you want to install them?`;
+            message = `The following components are missing from this project:\n${Array.from(itemDescriptions).join('\n')}\n\nDo you want to install them?`;
         }
 
         // Ask for user authorization
@@ -190,8 +222,11 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
                 progress.report({ message: 'Installing...' });
 
                 try {
-                    // Run initialization
-                    await vscode.commands.executeCommand('devops.initialize', { silent: true });
+                    // Run initialization - Pass selectedIDEs to ensure they are restored
+                    await vscode.commands.executeCommand('devops.initialize', {
+                        silent: true,
+                        selectedIDEs: selectedIDEs
+                    });
                     log('Framework files updated successfully');
                     installSuccess = true;
                 } catch (error) {
@@ -237,6 +272,17 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
 
     // After ensuring files exist, check if they are customized
     checkForUncustomizedRules(workspaceRoot);
+}
+
+function detectIDE(): string {
+    const appName = vscode.env.appName || '';
+    if (appName.includes('Cursor')) {
+        return 'cursor';
+    }
+    if (appName.includes('Antigravity') || vscode.extensions.getExtension('google.antigravity')) {
+        return 'antigravity';
+    }
+    return 'antigravity';
 }
 
 /**
