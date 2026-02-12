@@ -192,7 +192,7 @@ export const DEFAULT_COLUMN_NAME = 'Backlog';
  * | Backlog    | Work not yet started              | -             |
  * | Understand | Research + docs, question decisions | RES-XXX       |
  * | Plan       | Acceptance criteria, test design  | PLN-XXX       |
- * | Build      | Tests first, then code (TDD)      | -             |
+ * | Implement  | Tests first, then code (TDD)      | -             |
  * | Verify     | Validation, walkthrough, PR       | VAL-XXX, PR   |
  * | Done       | Completed work                    | -             |
  */

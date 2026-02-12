@@ -20,7 +20,7 @@ const PHASE_INFO: Record<string, { name: string; position: number }> = {
 };
 
 /**
- * Check if movement is backward (e.g., Build → Plan).
+ * Check if movement is backward (e.g., Implement → Plan).
  */
 function isBackwardMovement(fromColumnId: string | undefined, toColumnId: string): boolean {
     if (!fromColumnId) {

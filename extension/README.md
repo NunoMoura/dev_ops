@@ -7,7 +7,7 @@ Part of the DevOps Framework for structured task management and artifact trackin
 
 - **Board storage** in `dev_ops/board.json`, automatically created with
   default columns if missing
-- **6-column workflow**: Backlog → Understand → Plan → Build → Verify → Done
+- **6-column workflow**: Backlog → Understand → Plan → Implement → Verify → Done
 - **Dual views**: List view for compact navigation, Board view for drag-and-drop
 - **Task dependencies**: Track upstream (inputs) and downstream (outputs) artifacts
 - **Agent-ready commands** for automation integration
@@ -43,7 +43,7 @@ Part of the DevOps Framework for structured task management and artifact trackin
     { "id": "col-backlog", "name": "Backlog", "position": 1 },
     { "id": "col-understand", "name": "Understand", "position": 2 },
     { "id": "col-plan", "name": "Plan", "position": 3 },
-    { "id": "col-build", "name": "Build", "position": 4 },
+    { "id": "col-implement", "name": "Implement", "position": 4 },
     { "id": "col-verify", "name": "Verify", "position": 5 },
     { "id": "col-done", "name": "Done", "position": 6 }
   ],
@@ -89,7 +89,7 @@ Tasks don't have a separate `status` field. The column determines status:
 | Backlog | Not started |
 | Understand | Researching, creating RES-XXX |
 | Plan | Creating PLN-XXX with checklist |
-| Build | TDD implementation |
+| Implement | TDD implementation |
 | Verify | Quality gates, PR |
 | Done | Complete |
 
