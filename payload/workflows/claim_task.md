@@ -41,7 +41,7 @@ node .dev_ops/scripts/devops.js claim-task --id <TASK_ID>
 > **DO NOT skip this step.**
 
 1. Get task metadata (includes `phase` field)
-2. Note the current phase: `understand`, `plan`, `build`, or `verify`
+2. Note the current phase: `understand`, `plan`, `implement`, or `verify`
 
 ---
 

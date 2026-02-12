@@ -33,7 +33,7 @@ Select phase based on MCP capabilities:
 |-------------|-------|
 | Documentation, Research | `understand` |
 | Planning, PM | `plan` |
-| Code gen, DBs | `build` |
+| Code gen, DBs | `implement` |
 | PRs, Testing | `verify` |
 
 ---
