@@ -19,8 +19,8 @@ import {
 import { Board, Column, Task } from '../types';
 
 suite('boardData - getColumnRank', () => {
-    test('returns 0 for col-build (active work)', () => {
-        assert.strictEqual(getColumnRank('col-build'), 0);
+    test('returns 0 for col-implement (active work)', () => {
+        assert.strictEqual(getColumnRank('col-implement'), 0);
     });
 
     test('returns 1 for col-verify', () => {
@@ -295,15 +295,15 @@ suite('boardData - createTaskId', () => {
 suite('boardData - compareTasks', () => {
     test('sorts by column rank first', () => {
         const taskA: Task = { id: '1', columnId: 'col-backlog', title: 'A' };
-        const taskB: Task = { id: '2', columnId: 'col-build', title: 'B' };
+        const taskB: Task = { id: '2', columnId: 'col-implement', title: 'B' };
         assert.ok(compareTasks(taskA, taskB) > 0); // backlog comes after build
     });
 
     // Priority sort test removed
 
     test('sorts by updatedAt when column equal', () => {
-        const taskA: Task = { id: '1', columnId: 'col-build', title: 'A', updatedAt: '2024-01-02' };
-        const taskB: Task = { id: '2', columnId: 'col-build', title: 'B', updatedAt: '2024-01-01' };
+        const taskA: Task = { id: '1', columnId: 'col-implement', title: 'A', updatedAt: '2024-01-02' };
+        const taskB: Task = { id: '2', columnId: 'col-implement', title: 'B', updatedAt: '2024-01-01' };
         assert.ok(compareTasks(taskA, taskB) > 0); // newer comes after older
     });
 });

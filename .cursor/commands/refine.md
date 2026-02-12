@@ -1,24 +1,41 @@
 ---
-description: Iteratively improve work based on feedback (Ralph Wiggum Loop)
-category: Maintenance
+description: Iteratively improve work based on feedback
+category: maintenance
 ---
 
-# Refine Phase Workflow
+# Refine
 
-Iteratively improve work based on feedback (Ralph Wiggum Loop).
+Iterate on work using the Ralf Wiggum Loop.
+
+---
 
 ## Step 1: Analyze Feedback
 
-Analyze provided feedback against `task.md`, `implementation_plan.md`, or codebase.
+Compare feedback against:
 
-## Step 2: Refine
+- `task.md`
+- `implementation_plan.md`
+- Current codebase
+
+---
+
+## Step 2: Apply Refinements
 
 ```bash
 node .dev_ops/scripts/devops.js refine-phase --feedback "{{user_input}}"
 ```
 
+---
+
 ## Step 3: Verify & Report
 
-1. Verify changes matching feedback.
-2. Notify user of refinements.
-3. Keep task status as `in_progress` until fully satisfied.
+1. Verify changes match feedback
+2. Notify user of refinements
+3. Keep status `in_progress` until satisfied
+
+---
+
+## Outputs
+
+- Refined artifacts/code
+- Updated task status

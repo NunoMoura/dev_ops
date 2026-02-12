@@ -153,7 +153,7 @@ suite('MetricsView - TaskDetailsPayload', () => {
             summary: 'Summary text',
             tags: 'tag1, tag2',
             priority: 'high',
-            columnId: 'col-build',
+            columnId: 'col-implement',
             status: 'agent_active',
             column: 'Build',
             workflow: 'feature',

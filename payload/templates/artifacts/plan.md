@@ -18,7 +18,7 @@ upstream: []           # Documentation and research (e.g., DOC-XXX, RES-XXX)
 ## Checklist
 
 <!-- Agent works through these sequentially. Types: code, test -->
-<!-- SPEC.md updates happen during Build phase as files are created/modified -->
+<!-- SPEC.md updates happen during Implement phase as files are created/modified -->
 
 - [ ] **[test]** Description of test to add
   - Files: `tests/path/test_file.py`

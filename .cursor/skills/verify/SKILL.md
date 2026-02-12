@@ -3,71 +3,77 @@ name: verify
 description: Validate, document proof, and ship via PR. Use when testing or preparing work for review.
 ---
 
-# Verify
+# Verify Phase
 
 > Prove it works. Code matches what SPEC.md defines.
 
-## When to Use This Skill
+## Phase Constraints (Non-Negotiable)
 
-- Task is in Verify column (if applicable)
-- Testing and validating code
-- Self-reviewing changes
-- Creating PRs
+| ✅ ALLOWED | ❌ FORBIDDEN |
+|------------|--------------|
+| Run tests | Make code changes (except minor fixes) |
+| Self-review code | Add new features |
+| Create walkthrough | Skip security check |
+| Create PR | Submit without proof |
 
-## How It Works
-
-| Input | Output | Next Steps |
-|-------|--------|------------|
-| Code + tests + SPEC.md | walkthrough.md, PR | Done |
+**Required Deliverable**: `walkthrough.md` with test evidence + PR
 
 ---
 
-## Step 1: Validate
+## Input → Output
 
-Run the full test suite with coverage:
+| Input | Output | Next Phase |
+|-------|--------|------------|
+| Code + tests + SPEC.md | walkthrough.md + PR | Done |
+
+---
+
+## Steps
+
+### 1. Validate
+
+Run full test suite with coverage:
 
 ```bash
 pytest tests/ -v --cov  # Python
 npm test                # JavaScript/TypeScript
 ```
 
-Verify all acceptance criteria from PLN-XXX are met.
+Verify all PLN-XXX acceptance criteria met.
 
-## Step 2: Self-Review
+### 2. Self-Review
 
-Read your code as if someone else wrote it:
+Read code as if someone else wrote it:
 
-- Is the logic clear?
-- Are variable names descriptive?
-- Would a new team member understand this?
+- Is logic clear?
+- Are names descriptive?
+- Would a new team member understand?
 
-## Step 3: SPEC.md Verification
+### 3. SPEC.md Verification
 
-Check that SPEC.md accurately reflects what was built:
+Check SPEC.md matches what was built:
 
-- `## Structure` table lists all new folders/files
-- `## Key Exports` lists important exports
-- `## Dependencies` links are valid
+- `## Structure` lists all new files
+- `## Key Exports` lists exports
+- `## Dependencies` links valid
 
-## Step 4: Security Check
+### 4. Security Check
 
-- No secrets or credentials in code
-- All user inputs validated
+- No secrets in code
+- Inputs validated
 - No injection vulnerabilities
-- Sensitive data properly handled
+- Sensitive data handled properly
 
-## Step 5: Create Walkthrough
+### 5. Create Walkthrough
 
-Document what you did using: `.dev_ops/templates/artifacts/walkthrough.md`
-
-Include:
+Use artifact template. Include:
 
 - **What was done**: Summary of changes
 - **Why**: Business/technical rationale
 - **Test results**: Output of test runs
 - **Screenshots**: If UI changes
 
-## Step 6: Create PR
+### 6. Create PR
 
 ```bash
 git push origin feature/TASK-XXX
@@ -75,55 +81,36 @@ git push origin feature/TASK-XXX
 
 ---
 
-## Ralf Wiggum Loop
+## Iterate (Ralf Wiggum Loop)
 
-Iterate autonomously until exit criteria are met:
+1. Check exit criteria below
+2. If minor issue → fix and re-check
+3. If major issue → return to Build
+4. If complete → proceed to Completion
 
-1. **Check**: Are all exit criteria satisfied?
-2. **If No**: Identify what's failing, fix it, repeat
-3. **If Yes**: Proceed to Completion
-
-### When to Iterate
-
-- Tests fail → return to fix (stay in Verify for minor, return to Build for major)
-- Security issue found → fix and re-check
-- Walkthrough incomplete → add missing sections
-- PR not ready → complete remaining steps
-
-**Minor issues are iteration triggers. Major issues return to Build.**
+**Minor issues = iteration. Major issues = back to Build.**
 
 ---
 
-## Exit Criteria (Self-Check)
+## Exit Criteria
 
-Before notifying user, verify:
-
-- [ ] All tests pass with coverage report generated
+- [ ] All tests pass with coverage
 - [ ] Self-review completed
 - [ ] SPEC.md matches implementation
 - [ ] Security checklist passed
 - [ ] walkthrough.md created with proof
-- [ ] PR created or code ready to push
+- [ ] PR created or ready to push
 
 ---
 
 ## Out-of-Scope Discoveries
 
-If you find bugs, features, or tech debt unrelated to current task:
-→ Use `/create_task` workflow, then continue verification
+Found unrelated bugs/features? → `/create_task`, then continue
 
 ---
 
 ## Completion
 
-When exit criteria are met:
-
-1. If working on a task, set status to `ready-for-review`:
-
-   ```bash
-   node .dev_ops/scripts/devops.js update-task --id <TASK_ID> --status ready-for-review
-   ```
-
-2. Notify user: "Verification complete. walkthrough.md and PR ready. Ready for your final review."
-
-3. **Stop.** User will review. If approved, task moves to Done.
+1. Set task status: `ready-for-review`
+2. Notify user: "Verification complete. walkthrough.md and PR ready."
+3. **Stop.** Wait for final user review.

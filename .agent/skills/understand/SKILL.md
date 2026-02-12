@@ -16,7 +16,7 @@ description: Research deeply before planning. Use when starting a new task, anal
 | Create RES-XXX artifact | Move to Plan without RES-XXX |
 | Update existing SPEC.md | Skip scope definition |
 
-**Required Deliverable**: `RES-XXX` in `.dev_ops/context/`
+**Required Deliverable**: `RES-XXX` in `.dev_ops/tasks/TASK-XXX/`
 
 ---
 

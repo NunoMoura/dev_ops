@@ -41,9 +41,9 @@ description: Core DevOps behavioral invariants
 
 If you find yourself:
 
-- Opening code files in Understand/Plan → **STOP**, read skill constraints
-- Writing code before Build phase → **STOP**, wrong phase
-- Skipping required deliverable → **STOP**, phase incomplete
+* Opening code files in Understand/Plan → **STOP**, read skill constraints
+* Writing code before Implement phase → **STOP**, wrong phase
+* Skipping required deliverable → **STOP**, phase incomplete
 
 ---
 
@@ -61,8 +61,8 @@ Understand → Plan → Implement → Verify → Done
 | Verify | Tests + SPEC.md | ✅ Minor fixes | walkthrough.md + PR |
 
 | Understand | Do I fully grasp the problem? | `understand` |
-| Plan | Could another dev build this from my plan? | `plan_and_implement` |
-| Implement | Would I be proud to ship this? | `plan_and_implement` |
+| Plan | Could another dev build this from my plan? | `plan` |
+| Implement | Would I be proud to ship this? | `implement` |
 | Verify | Have I proven correctness? | `verify` |
 
 ---
@@ -73,8 +73,7 @@ Understand → Plan → Implement → Verify → Done
 |------|---------|
 | `.dev_ops/docs/` | Architecture, Specs |
 | `.dev_ops/docs/ux/mockups/` | UI/UX Designs |
-| `.dev_ops/tasks/` | Task JSON Metadata |
-| `.dev_ops/context/` | Phase artifacts (RES-XXX, PLN-XXX) |
+| `.dev_ops/tasks/TASK-XXX/` | Task metadata + phase artifacts (RES-XXX, PLN-XXX) |
 | `.dev_ops/templates/` | Document templates |
 
 ---
@@ -83,18 +82,18 @@ Understand → Plan → Implement → Verify → Done
 
 SPEC.md → Code → Verify loop:
 
-- SPEC.md files define requirements
-- Code matches specs
-- Verify confirms the match
+* SPEC.md files define requirements
+* Code matches specs
+* Verify confirms the match
 
 ---
 
 ## Session Model
 
-- One agent session = one phase
-- Iterate autonomously until exit criteria met (Ralf Wiggum loop)
-- End with `notify_user` when phase complete
-- User reviews → new session for next phase
+* One agent session = one phase
+* Iterate autonomously until exit criteria met (Ralf Wiggum loop)
+* End with `notify_user` when phase complete
+* User reviews → new session for next phase
 
 ---
 
@@ -113,14 +112,14 @@ SPEC.md → Code → Verify loop:
 1. **Discover**: `find . -name SPEC.md`
 2. **Filter**: `grep -r "keyword" */SPEC.md`
 3. **Drill**: Read specific SPEC.md for details
-4. **Implement**: Only open code files in Build phase
+4. **Implement**: Only open code files in Implement phase
 
-### SPEC Maintenance (Build Phase Only)
+### SPEC Maintenance (Implement Phase Only)
 
-- Missing SPEC.md → create from template
-- Adding folder/file → add to `## Structure`
-- Making decision → add ADR row
-- Adding export → add to `## Key Exports`
+* Missing SPEC.md → create from template
+* Adding folder/file → add to `## Structure`
+* Making decision → add ADR row
+* Adding export → add to `## Key Exports`
 
 ---
 
@@ -139,6 +138,6 @@ SPEC.md → Code → Verify loop:
 
 Before significant changes, check `.dev_ops/docs/project_standards.md`:
 
-- Constraints, Tech Stack, Patterns, Anti-Patterns
+* Constraints, Tech Stack, Patterns, Anti-Patterns
 
 If work violates a standard → **stop and flag to user**.

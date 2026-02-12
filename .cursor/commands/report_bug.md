@@ -7,13 +7,17 @@ category: guided
 
 Create BUG-XXX artifact to track a bug.
 
+---
+
 ## Step 1: Check Duplicates
 
 ```bash
 node .dev_ops/scripts/devops.js detect
 ```
 
-Check `board.json` output for similar issues.
+Check output for similar issues.
+
+---
 
 ## Step 2: Create Report
 
@@ -21,7 +25,14 @@ Check `board.json` output for similar issues.
 cp .dev_ops/templates/artifacts/bug.md .dev_ops/docs/BUG-XXX.md
 ```
 
-Fill sections: Status, Symptoms, Steps, Expected vs Actual.
+Fill sections:
+
+- Status
+- Symptoms
+- Steps to reproduce
+- Expected vs Actual
+
+---
 
 ## Step 3: Create Task
 
@@ -32,6 +43,8 @@ node .dev_ops/scripts/devops.js create-task \
   --priority medium \
   --column col-backlog
 ```
+
+---
 
 ## Outputs
 

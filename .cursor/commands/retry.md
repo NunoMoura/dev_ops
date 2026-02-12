@@ -1,28 +1,47 @@
 ---
-description: Reset the current phase and start over (Ralph Wiggum Loop)
-category: Maintenance
+description: Reset the current phase and start over
+category: maintenance
 ---
 
-# Retry Phase Workflow
+# Retry
 
-Reset the current phase and start over (Ralph Wiggum Loop).
+Reset and restart the current phase.
+
+---
 
 ## Step 1: Identify Failure
 
-Determine reason for retry (Error, Test Failure, Instruction).
+Determine reason for retry:
+
+- Error encountered
+- Test failure
+- User instruction
+
+---
 
 ## Step 2: Clean Up
 
-- Revert git changes.
-- Reset `task.md` items.
-- Archive failed `implementation_plan.md`.
+- Revert git changes
+- Reset `task.md` items
+- Archive failed `implementation_plan.md`
 
-## Step 3: Retry
+---
+
+## Step 3: Reset Phase
 
 ```bash
 node .dev_ops/scripts/devops.js retry-phase
 ```
 
+---
+
 ## Step 4: Execute
 
-Restart phase execution with corrected approach.
+Restart phase with corrected approach.
+
+---
+
+## Outputs
+
+- Clean state for retry
+- Previous attempt archived

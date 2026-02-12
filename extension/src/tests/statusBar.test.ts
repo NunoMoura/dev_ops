@@ -9,7 +9,7 @@ suite('StatusBar - Board Statistics', () => {
     function calculateStats(board: Board): { total: number; inProgress: number; blocked: number } {
         const total = board.items.length;
         const inProgress = board.items.filter(
-            (t) => t.columnId === 'col-inprogress' || t.columnId === 'col-build'
+            (t) => t.columnId === 'col-inprogress' || t.columnId === 'col-implement'
         ).length;
         const blocked = board.items.filter(
             (t) => t.status === 'blocked'
@@ -31,7 +31,7 @@ suite('StatusBar - Board Statistics', () => {
             columns: [],
             items: [
                 { id: '1', columnId: 'col-backlog', title: 'A' },
-                { id: '2', columnId: 'col-build', title: 'B' },
+                { id: '2', columnId: 'col-implement', title: 'B' },
                 { id: '3', columnId: 'col-done', title: 'C' },
             ],
         };
@@ -45,8 +45,8 @@ suite('StatusBar - Board Statistics', () => {
             columns: [],
             items: [
                 { id: '1', columnId: 'col-backlog', title: 'A' },
-                { id: '2', columnId: 'col-build', title: 'B' },
-                { id: '3', columnId: 'col-build', title: 'C' },
+                { id: '2', columnId: 'col-implement', title: 'B' },
+                { id: '3', columnId: 'col-implement', title: 'C' },
             ],
         };
         const stats = calculateStats(board);
@@ -59,8 +59,8 @@ suite('StatusBar - Board Statistics', () => {
             columns: [],
             items: [
                 { id: '1', columnId: 'col-backlog', title: 'A', status: 'blocked' },
-                { id: '2', columnId: 'col-build', title: 'B', status: 'in_progress' },
-                { id: '3', columnId: 'col-build', title: 'C', status: 'blocked' },
+                { id: '2', columnId: 'col-implement', title: 'B', status: 'in_progress' },
+                { id: '3', columnId: 'col-implement', title: 'C', status: 'blocked' },
             ],
         };
         const stats = calculateStats(board);

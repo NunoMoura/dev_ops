@@ -19,6 +19,16 @@ description: Core DevOps behavioral invariants
 > 5. Only then proceed with phase-appropriate actions
 >
 > **Skipping this = phase violation. STOP and read the skill first.**
+>
+> **Task Descriptions vs Phase Constraints:**
+>
+> 1. **Declarative vs Imperative**:
+>    * Tasks define **WHAT** (Goal/Deliverable).
+>    * Skills define **HOW** (Steps/Process).
+>
+> 2. **Phase Supremacy**:
+>    * If a task description contains imperative steps (e.g., "Step 1: Create file X") that conflict with the Phase Skill (e.g., "Understand Phase = Research only"), the **Phase Skill WINS**.
+>    * Ignore the specific steps in the task and follow the Phase Skill's process to achieve the goal.
 
 ### IDE Mode Behavior
 
@@ -30,8 +40,9 @@ description: Core DevOps behavioral invariants
 ### Phase Violations
 
 If you find yourself:
+
 - Opening code files in Understand/Plan → **STOP**, read skill constraints
-- Writing code before Build phase → **STOP**, wrong phase
+- Writing code before Implement phase → **STOP**, wrong phase
 - Skipping required deliverable → **STOP**, phase incomplete
 
 ---
@@ -39,21 +50,19 @@ If you find yourself:
 ## Phase Flow
 
 ```text
-Understand → Plan → Build → Verify → Done
+Understand → Plan → Implement → Verify → Done
 ```
 
 | Phase | Works With | Code Access | Deliverable |
 |-------|------------|-------------|-------------|
 | Understand | SPEC.md + Research | ❌ None | RES-XXX |
 | Plan | SPEC.md + RES-XXX | ❌ None | PLN-XXX |
-| Build | Code + PLN-XXX | ✅ Write | Code + Tests |
+| Implement | Code + PLN-XXX | ✅ Write | Code + Tests |
 | Verify | Tests + SPEC.md | ✅ Minor fixes | walkthrough.md + PR |
 
-| Phase | Key Question | Skill |
-|-------|--------------|-------|
 | Understand | Do I fully grasp the problem? | `understand` |
-| Plan | Could another dev build this from my plan? | `plan` |
-| Build | Would I be proud to ship this? | `build` |
+| Plan | Could another dev build this from my plan? | `plan_and_implement` |
+| Implement | Would I be proud to ship this? | `plan_and_implement` |
 | Verify | Have I proven correctness? | `verify` |
 
 ---
@@ -64,8 +73,7 @@ Understand → Plan → Build → Verify → Done
 |------|---------|
 | `.dev_ops/docs/` | Architecture, Specs |
 | `.dev_ops/docs/ux/mockups/` | UI/UX Designs |
-| `.dev_ops/tasks/` | Task JSON Metadata |
-| `.dev_ops/context/` | Phase artifacts (RES-XXX, PLN-XXX) |
+| `.dev_ops/tasks/TASK-XXX/` | Task metadata + phase artifacts (RES-XXX, PLN-XXX) |
 | `.dev_ops/templates/` | Document templates |
 
 ---
@@ -73,6 +81,7 @@ Understand → Plan → Build → Verify → Done
 ## Core Philosophy
 
 SPEC.md → Code → Verify loop:
+
 - SPEC.md files define requirements
 - Code matches specs
 - Verify confirms the match
@@ -103,9 +112,9 @@ SPEC.md → Code → Verify loop:
 1. **Discover**: `find . -name SPEC.md`
 2. **Filter**: `grep -r "keyword" */SPEC.md`
 3. **Drill**: Read specific SPEC.md for details
-4. **Implement**: Only open code files in Build phase
+4. **Implement**: Only open code files in Implement phase
 
-### SPEC Maintenance (Build Phase Only)
+### SPEC Maintenance (Implement Phase Only)
 
 - Missing SPEC.md → create from template
 - Adding folder/file → add to `## Structure`
@@ -128,6 +137,7 @@ SPEC.md → Code → Verify loop:
 ## Project Standards
 
 Before significant changes, check `.dev_ops/docs/project_standards.md`:
+
 - Constraints, Tech Stack, Patterns, Anti-Patterns
 
 If work violates a standard → **stop and flag to user**.

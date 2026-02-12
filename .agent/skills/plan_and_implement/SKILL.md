@@ -39,11 +39,11 @@ description: Seamlessly plan and implement solutions. Combines Planning and Buil
 **Always start here.**
 
 - Analyze requirements
-- Create `PLN-XXX` in `.dev_ops/context/`
+- Create `PLN-XXX` in `.dev_ops/tasks/TASK-XXX/`
 - Define checklist
 - **Self-Review**: Ensure plan is solid.
 
-### 2. Implement (The Build Loop)
+### 2. Implement (The Implementation Loop)
 
 **Seamless Transition:** Once you have a plan, **immediately** start executing it.
 

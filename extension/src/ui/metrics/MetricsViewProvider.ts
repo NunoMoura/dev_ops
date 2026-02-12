@@ -109,7 +109,7 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
             phases: {
                 Understand: 0,
                 Plan: 0,
-                Build: 0,
+                Implement: 0,
                 Verify: 0,
                 Done: 0
             }
@@ -158,8 +158,8 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
                 totals.phases.Understand++;
             } else if (colId.includes('plan')) {
                 totals.phases.Plan++;
-            } else if (colId.includes('build')) {
-                totals.phases.Build++;
+            } else if (colId.includes('implement')) {
+                totals.phases.Implement++;
             } else if (colId.includes('verify')) {
                 totals.phases.Verify++;
             } else if (colId.includes('done')) {
@@ -298,7 +298,7 @@ export class MetricsViewProvider implements vscode.WebviewViewProvider {
                     <div class="sparkline-header">Phase Distribution</div>
                     ${this.renderBar('Understand', totals.phases.Understand, 10)}
                     ${this.renderBar('Plan', totals.phases.Plan, 10)}
-                    ${this.renderBar('Build', totals.phases.Build, 10)}
+                    ${this.renderBar('Implement', totals.phases.Implement, 10)}
                     ${this.renderBar('Verify', totals.phases.Verify, 10)}
                     ${this.renderBar('Done', totals.phases.Done, 10)}
                 </div>
