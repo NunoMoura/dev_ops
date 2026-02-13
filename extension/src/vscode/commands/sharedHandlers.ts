@@ -120,6 +120,7 @@ export async function handleCardUpdateMessage(
         if (update.workflow !== undefined) { updates.workflow = update.workflow; }
 
         if (update.status !== undefined) { updates.status = update.status as any; }
+        if (update.chatHistory !== undefined) { updates.chatHistory = update.chatHistory; }
 
         // Persist dependency changes
         if ('dependsOn' in update) {

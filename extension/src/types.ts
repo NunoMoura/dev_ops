@@ -47,6 +47,13 @@ export type ChecklistItem = {
   done: boolean;
 };
 
+export type ChatMessage = {
+  id: string;
+  sender: 'user' | 'agent';
+  text: string;
+  timestamp: number; // Unix timestamp
+};
+
 export type Task = {
   id: string;                    // TASK-XXX format
   columnId: string;              // Current column (workflow phase)
@@ -87,6 +94,7 @@ export type Task = {
   owner?: string;                // Human Developer responsible (e.g. "Nuno")
   activeSession?: AgentSession;  // Current active agent execution
   agentHistory?: AgentActivity[]; // History of past sessions
+  chatHistory?: ChatMessage[];   // History of user-agent chat
   traceFile?: string;            // Path to current decision trace
 };
 
@@ -229,4 +237,5 @@ export type TaskDetailsPayload = {
     type?: string;
     sessionId?: string;
   };
+  chatHistory?: ChatMessage[];
 };

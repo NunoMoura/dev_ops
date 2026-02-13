@@ -1,20 +1,20 @@
 ---
 name: understand
-description: Research deeply before planning. Use when starting a new task, analyzing requirements, or scoping work.
+description: Research deeply before planning. Focus on "Zoom-Out" context loading via SPEC headers.
 ---
 
 # Understand Phase
 
 > Know more about the problem than the person who wrote the trigger doc.
 
-## Phase Constraints (Non-Negotiable)
+## Phase Constraints
 
 | ✅ ALLOWED | ❌ FORBIDDEN |
 |------------|--------------|
-| Read SPEC.md files | Open code files |
+| Read `SPEC.md` Metadata (Headers) | Read full implementation files (>100 lines) |
 | Web/external research | Write any code |
-| Create RES-XXX artifact | Move to Plan without RES-XXX |
-| Update existing SPEC.md | Skip scope definition |
+| Create `RES-XXX` artifact | Move to Plan without `RES-XXX` |
+| `grep` / `find` | Skip scope definition |
 
 **Required Deliverable**: `RES-XXX` in `.dev_ops/tasks/TASK-XXX/`
 
@@ -24,83 +24,53 @@ description: Research deeply before planning. Use when starting a new task, anal
 
 | Input | Output | Next Phase |
 |-------|--------|------------|
-| Trigger doc + SPEC.md files | RES-XXX research doc | Plan |
+| Trigger + `SPEC.md` Headers | `RES-XXX` research doc | Plan |
 
 ---
 
 ## Steps
 
-### 1. Define Scope
+### 1. RLM Zoom-Out (Map the Territory)
 
-Document explicitly:
+* **Action**: Locate the relevant `SPEC.md` files.
+* **Command**: `find . -name SPEC.md`
+* **Constraint**: Do not open them yet. Just list them to understand the landscape.
 
-- **In Scope**: Components, files, behaviors to change
-- **Out of Scope**: Related areas you won't touch
+### 2. Context Loading (Metadata)
 
-### 2. Navigate SPEC.md Files
+* **Action**: Read the *frontmatter* and *headers* of the relevant `SPEC.md` files.
+* **Focus**: `description`, `## Architecture`, `## Dependencies`.
+* **Goal**: precise mental map of components without token overload.
 
-**Do NOT open code files.**
+### 3. Define Scope
 
-```bash
-find . -name SPEC.md
-grep -r "keyword" */SPEC.md
-```
+Document explicitly in `RES-XXX`:
 
-Read matched SPEC.md for:
+* **In Scope**: Which `SPEC.md` files will need updating?
+* **Out of Scope**: Related components you will NOT touch.
 
-- `## Structure`: Layout and purposes
-- `## Key Exports`: Interfaces
-- `## Constraints`: Rules
-- `## Dependencies`: Links to other SPECs
+### 4. External Research
 
-### 3. External Research
+* Library/framework docs
+* Best practices
+* Edge cases and constraints
 
-- Library/framework docs
-- Best practices
-- Edge cases and constraints
-
-### 4. Challenge Assumptions
-
-- Is this the right approach?
-- Simpler alternatives?
-- Unwritten constraints?
-
-### 5. Update SPEC.md if Needed
-
-Fix drift between SPECs and reality now.
-
-### 6. Create Research Artifact
+### 5. Create Research Artifact
 
 Use template: `.dev_ops/templates/artifacts/research.md`
 
 ---
 
-## Iterate (Ralf Wiggum Loop)
-
-1. Check exit criteria below
-2. If incomplete → identify gap, research more
-3. If complete → proceed to Completion
-
----
-
 ## Exit Criteria
 
-- [ ] RES-XXX artifact exists
-- [ ] `## Scope` has explicit in/out
-- [ ] `## Research` populated
-- [ ] Dependencies and risks documented
-- [ ] Can explain "what" and "why"
+* [ ] `RES-XXX` artifact exists.
+* [ ] Scope defined (Which Specs?).
+* [ ] Dependencies mapped (Which Child Specs?).
+* [ ] "What" and "Why" are clear.
 
 ---
 
-## Out-of-Scope Discoveries
+## Next Phase
 
-Found unrelated bugs/features? → `/create_task`, then continue
-
----
-
-## Completion
-
-1. Set task status: `ready-for-review`
-2. Notify user: "Research complete. RES-XXX ready for review."
-3. **Stop.** Wait for user review.
+* **Success**: `/plan` (Move to Plan).
+* **Review**: Set status to `ready-for-review` if user input is needed.

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as cp from 'child_process';
 import { Board, Task, Column, TaskStatus } from '../../types';
 import { readBoard, writeBoard, saveTask, deleteTask, getBoardPath, readCurrentTask, writeCurrentTask, clearCurrentTask, archiveTaskBundle } from './boardPersistence';
 
@@ -176,8 +177,77 @@ export class BoardService {
             targetColumn.taskIds.push(taskId);
         }
 
+        if (!targetColumn.taskIds.includes(taskId)) {
+            targetColumn.taskIds.push(taskId);
+        }
+
         await this.updateTask(taskId, { columnId, status: 'todo' });
         await this.store.writeBoard(board);
+
+        // Check if moving to 'Done' column
+        if (targetColumn.id === 'col-done' || targetColumn.name.toLowerCase() === 'done') {
+            await this.handleTaskCompletion(taskId);
+        }
+    }
+
+    /**
+     * Handle task completion: Create PR from Verify Walkthrough
+     */
+    private async handleTaskCompletion(taskId: string): Promise<void> {
+        try {
+            const task = await this.getTask(taskId);
+            if (!task) return;
+
+            // 1. Find latest Verify Session
+            const verifySession = task.agentHistory?.slice().reverse().find(h =>
+                h.phase?.toLowerCase() === 'verify' || h.phase?.toLowerCase() === 'verification'
+            );
+
+            if (!verifySession) {
+                vscode.window.showWarningMessage('No Verify phase found. Skipping PR creation.');
+                return;
+            }
+
+            // 2. Locate Walkthrough
+            const homeDir = process.env.HOME || process.env.USERPROFILE;
+            if (!homeDir || !verifySession.sessionId) return;
+
+            const brainDir = path.join(homeDir, '.gemini', 'antigravity', 'brain');
+            // We need to find the session folder. The session ID in history might be just the ID or full path.
+            // SessionBridge extracts generic ID. Let's try to find it.
+            // The session ID is usually the folder name in brain.
+            const sessionDir = path.join(brainDir, verifySession.sessionId);
+            const walkthroughPath = path.join(sessionDir, 'walkthrough.md');
+
+            if (!fs.existsSync(walkthroughPath)) {
+                vscode.window.showWarningMessage(`Walkthrough not found at ${walkthroughPath}. Skipping PR creation.`);
+                return;
+            }
+
+            // 3. Create PR
+            const workspaceRoot = getRoot();
+            if (!workspaceRoot) return;
+
+            const prTitle = `[${taskId}] ${task.title}`;
+            const prBodyFile = walkthroughPath;
+
+            vscode.window.showInformationMessage(`Creating PR for ${taskId}...`);
+
+            cp.exec(`gh pr create --title "${prTitle}" --body-file "${prBodyFile}"`, { cwd: workspaceRoot }, (err, stdout, stderr) => {
+                if (err) {
+                    console.error('PR Creation Failed:', stderr);
+                    vscode.window.showErrorMessage(`Failed to create PR: ${stderr}`);
+                } else {
+                    console.log('PR Created:', stdout);
+                    vscode.window.showInformationMessage(`✅ PR Created: ${stdout.trim()}`);
+                }
+            });
+
+        } catch (e) {
+            console.error('Error handling task completion:', e);
+            vscode.window.showErrorMessage('Error creating PR. Check extension logs.');
+        }
+
     }
 
     /**

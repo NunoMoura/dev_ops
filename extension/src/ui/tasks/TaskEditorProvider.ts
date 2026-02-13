@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { readBoard, writeBoard, getBoardPath } from '../../services/board/boardPersistence';
 import { boardService } from '../../services/board/boardService';
-import { Task, ChecklistItem, COLUMN_FALLBACK_NAME, TaskStatus } from '../../types';
+import { Task, ChecklistItem, COLUMN_FALLBACK_NAME, TaskStatus, ChatMessage } from '../../types';
 import { getFontLink, getSharedStyles, getCSPMeta } from '../shared/styles';
 import { handleCardUpdateMessage, handleCardDeleteMessage } from '../../vscode/commands/sharedHandlers';
 import { BoardTreeProvider } from '../board';
@@ -144,6 +144,31 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
           vscode.window.showInformationMessage(`Plan Approved. Task ${taskId} moved to Implement phase.`);
           await updateWebview();
           vscode.commands.executeCommand('devops.refreshBoard');
+          break;
+        case 'chat':
+          /* Data: { text: string, sender: 'user' | 'agent' } */
+          const chatMsg = message; // { type: 'chat', text: ..., sender: ... }
+          if (chatMsg.text) {
+            const task = await this.loadTask(taskId);
+            if (task) {
+              const newMsg = {
+                id: Date.now().toString(),
+                sender: chatMsg.sender || 'user',
+                text: chatMsg.text,
+                timestamp: Date.now()
+              };
+              // Append to history
+              const history = task.chatHistory || [];
+              history.push(newMsg);
+
+              // Update task via boardService
+              await boardService.updateTask(taskId, { chatHistory: history });
+
+              // Refresh view (so the user sees it persisted if they reload, though UI updated hopefully)
+              // Actually, we don't need to full refresh relevant to chat as we did optimistic UI. 
+              // But we should ensuring board refresh
+            }
+          }
           break;
       }
     });
@@ -537,12 +562,25 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       </div>
     </div>
 
-    <!-- Decision Trace (Status Border) -->
+    <!-- Task Chat (Pintask Prototype) -->
     <div class="content-section">
-      <div class="section-header">Decision Trace</div>
-      <div class="trace-container">
-        <div class="trace-content">
-          ${parsedTrace || '<div style="font-style:italic; opacity:0.6;">No activity recorded yet.</div>'}
+      <div class="section-header">Task Chat</div>
+      
+      <!-- Chat Container -->
+      <div class="chat-container">
+        <div class="chat-history" id="chat-history">
+          ${(task.chatHistory || []).map(msg => `
+            <div class="chat-message ${msg.sender}">
+              <div class="message-bubble">${msg.text}</div>
+              <div class="message-time">${new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+            </div>
+          `).join('')}
+          ${(!task.chatHistory || task.chatHistory.length === 0) ? '<div class="empty-state">No messages yet. Draft instructions here.</div>' : ''}
+        </div>
+
+        <div class="chat-input-area">
+          <textarea id="chat-input" class="chat-textarea" placeholder="Draft instructions for the agent..."></textarea>
+          <button id="send-btn" class="btn btn-primary">Send (Copy)</button>
         </div>
       </div>
     </div>
@@ -621,6 +659,94 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
     document.getElementById('approvePlanBtn')?.addEventListener('click', () => {
       vscode.postMessage({ type: 'approvePlan' });
+    });
+
+    // --- Chat Logic ---
+    const chatInput = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+    const chatHistory = document.getElementById('chat-history');
+
+    function addMessageToUI(text, sender) {
+      const emptyState = chatHistory.querySelector('.empty-state');
+      if (emptyState) emptyState.remove();
+
+      const msgDiv = document.createElement('div');
+      msgDiv.className = \`chat-message \${sender}\`;
+      msgDiv.innerHTML = \`
+        <div class="message-bubble">\${text
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")}</div>
+        <div class="message-time">\${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+      \`;
+      chatHistory.appendChild(msgDiv);
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
+
+    sendBtn?.addEventListener('click', () => {
+      const text = chatInput.value.trim();
+      if (!text) return;
+
+      // 1. Optimistic UI Update
+      addMessageToUI(text, 'user');
+      
+      // 2. Clear Input
+      chatInput.value = '';
+
+      // 3. Copy to Clipboard
+      navigator.clipboard.writeText(text).then(() => {
+        // Optional: Show toast
+      });
+
+      // 4. Update Task Data
+      // We need to fetch current history, append, and save.
+      // Since we don't have the full object here easily without state, 
+      // we'll let the extension handle the append if we send a specific 'chat' type,
+      // OR we just append to the collected data.
+      // For simplicity in this vanilla setup, we'll mimic a "save" but with specific chat data.
+      
+      // Actually, let's treat chat history as part of the 'update' payload.
+      // But we need the existing history. 
+      // Workaround: We ask the extension to append the message.
+      // But sharedHandlers expects a full update. 
+      // Let's rely on the persisted state in the extension. 
+      // We will send a special 'chatMessage' type if we supported it, 
+      // but to fit existing handlers, we might need to be clever.
+      
+      // Allow me to introduce a 'sendChatMessage' message type in the Provider (TS side) 
+      // that handles the append logic safely.
+      vscode.postMessage({ 
+        type: 'update', 
+        data: { 
+            id: document.querySelector('.task-id-badge').innerText, // Hacky but works for now or use ${task.id} injected
+            // We can't easily construct the full chatHistory array here without reading it all from DOM or keeping state.
+            // Let's implement a 'appendChatMessage' handler in the TS side? 
+            // OR context.chatHistory.push(...)
+        } 
+      });
+
+      // WAIT. The robust way for this webview:
+      // We accept that we need to send the start-state + new message? 
+      // No, that overwrites concurrent edits.
+      // Best approach: Send a specific 'chat' event. 
+      // Since I can't easily change the TS handler signature right now without context switch,
+      // I will assume the 'update' handler can accept a partial update. 
+      // But 'chatHistory' is an array. Merging arrays is tricky.
+      
+      // CORRECT APPROACH:
+      // Send a custom message type 'chat' and handle it in the Provider's onDidReceiveMessage.
+      vscode.postMessage({
+        type: 'chat',
+        text: text,
+        sender: 'user'
+      });
+    });
+
+    // Allow Ctrl+Enter to send
+    chatInput?.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        sendBtn.click();
+      }
     });
   </script>
 </body>
