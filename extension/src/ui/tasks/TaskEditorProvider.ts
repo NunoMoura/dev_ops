@@ -326,14 +326,60 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         max-height: 40vh; /* Don't take more than 40% of screen */
       }
 
-      /* Header Card */
+      /* Section Containers (Header, Status, To-Do) */
+      .section-card {
+        position: relative;
+        overflow: hidden;
+        border-radius: 6px;
+        background: var(--vscode-editor-background); /* Or sidebar background? */
+        /* Border? User liked the board cards which have a border. */
+        /* Let's strictly follow the "highlight" request first. */
+        padding: 12px;
+        padding-left: 16px;
+        margin-bottom: 24px;
+      }
+      .section-card::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: ${cssStatusColor};
+      }
+
+      /* Header Card (uses section-card) */
       .header-card {
         display: flex;
         flex-direction: column;
         gap: 12px;
-        margin-bottom: 24px;
-        /* Border removed from header */
       }
+      
+      /* Status Section (uses section-card) */
+      .status-section {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      /* Section card style handles borders/padding */
+      .todo-section {
+        display: flex;
+        flex-direction: column;
+        max-height: 400px; /* Limit height */
+        overflow-y: auto;  /* Scroll if needed */
+      }
+      
+      /* ... other styles ... */
+      
+      /* Chat Auto-grow fix */
+      .chat-textarea {
+        /* ... */
+        min-height: 40px;
+        max-height: 320px;
+        overflow-y: hidden;
+      }
+      /* ... */
 
       .metadata-row {
         display: flex;
@@ -639,7 +685,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     <div class="scrollable-content">
       
       <!-- Header -->
-      <div class="header-card">
+      <div class="header-card section-card">
         <div class="header-top-row">
           <input type="text" class="title-input" id="title" value="${task.title}" placeholder="TASK TITLE">
           <div class="header-actions">
@@ -659,16 +705,16 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       </div>
 
       <!-- Status Chips -->
-      <div class="status-chips-container" id="status-chips">
+      <div class="status-section section-card" id="status-chips">
         ${getStatusChips()}
       </div>
       <input type="hidden" id="status" value="${currentStatus}">
       <input type="hidden" id="column" value="${task.columnId || ''}">
 
       <!-- To-Do List (Checklist Mode) -->
-      <div class="content-section todo-section">
+      <div class="content-section todo-section section-card">
         <div class="section-header">
-          <span>To-Do List</span>
+          <span>TO-DO</span>
           <button class="toggle-btn" id="toggle-edit-mode">Edit Raw Markdown</button>
         </div>
         
@@ -902,9 +948,17 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     
     chatInput?.addEventListener('input', function() {
       this.style.height = 'auto';
-      this.style.height = (this.scrollHeight) + 'px';
+      const newHeight = this.scrollHeight;
+      this.style.height = newHeight + 'px';
+      if (newHeight > 320) {
+        this.style.overflowY = 'auto';
+      } else {
+        this.style.overflowY = 'hidden';
+      }
+      
       if (this.value === '') {
-          this.style.height = '40px'; // Reset on clear if needed, though scrollHeight handles it mostly
+          this.style.height = '40px'; 
+          this.style.overflowY = 'hidden';
       }
     });
 
