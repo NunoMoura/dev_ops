@@ -330,7 +330,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       .section-card {
         position: relative;
         overflow: hidden;
-        border-radius: 6px;
+        border-radius: 8px;
         background: var(--vscode-editor-background); /* Or sidebar background? */
         /* Border? User liked the board cards which have a border. */
         /* Let's strictly follow the "highlight" request first. */
@@ -344,7 +344,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         left: 0;
         top: 0;
         bottom: 0;
-        width: 4px;
+        width: 3px;
         background: ${cssStatusColor};
       }
 
