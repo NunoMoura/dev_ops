@@ -577,9 +577,9 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         font-family: inherit;
         font-size: 13px;
         resize: none;
-        height: 40px;
         min-height: 40px;
         max-height: 320px; /* Approx 16 lines */
+        overflow-y: hidden; /* Hide scrollbar initially */
         outline: none;
       }
       .chat-textarea:focus { border-color: var(--vscode-focusBorder); }
@@ -589,15 +589,15 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         height: 40px; /* Match input height */
         border-radius: 4px;
         border: none;
-        background: #D6336C; /* Pink */
-        color: #fff;
+        background: var(--vscode-focusBorder); /* Dynamic focus color */
+        color: var(--vscode-button-foreground);
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
       }
       .send-btn:hover { opacity: 0.9; }
-      .send-btn svg { width: 16px; height: 16px; fill: currentColor; }
+      .send-btn svg { width: 20px; height: 20px; fill: currentColor; } /* Slightly larger for icon */
       
       .toggle-btn {
         background: none;
@@ -613,7 +613,8 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       }
       
       .todo-section {
-        border-left: 3px solid ${cssStatusColor};
+        border-left: 4px solid ${cssStatusColor};
+        border-radius: 4px; /* Rounded highlight */
         padding-left: 12px;
         margin-bottom: 24px;
       }
@@ -711,7 +712,17 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       <div class="chat-input-wrapper">
         <textarea id="chat-input" class="chat-textarea" placeholder="Message agent..."></textarea>
         <button id="send-btn" class="send-btn">
-          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+          <!-- DevOps Icon -->
+          <svg width="20" height="20" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+            <g transform="translate(8, 10)">
+               <rect x="0" y="0" width="50" height="45" rx="8"/>
+               <rect x="0" y="55" width="50" height="45" rx="8"/>
+               <rect x="0" y="110" width="50" height="45" rx="8"/>
+               <rect x="60" y="27" width="50" height="45" rx="8"/>
+               <rect x="60" y="82" width="50" height="45" rx="8"/>
+               <rect x="120" y="55" width="50" height="45" rx="8"/>
+            </g>
+          </svg>
         </button>
       </div>
     </div>
@@ -886,8 +897,17 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       vscode.postMessage({ type: 'approvePlan' });
     });
 
-    // --- Chat Logic ---
+    // --- Chat Auto-Grow ---
     const chatInput = document.getElementById('chat-input');
+    
+    chatInput?.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = (this.scrollHeight) + 'px';
+      if (this.value === '') {
+          this.style.height = '40px'; // Reset on clear if needed, though scrollHeight handles it mostly
+      }
+    });
+
     const sendBtn = document.getElementById('send-btn');
     const chatHistory = document.getElementById('chat-history');
 

@@ -578,10 +578,16 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
         font-size: 18px;
         font-weight: 600;
         color: var(--vscode-foreground);
+        display: flex;
+        align-items: center;
+      }
+      .board-logo {
+        height: 24px;
+        width: auto;
       }
 
       .add-task-button {
-        height: 40px; /* Match new standard */
+        height: 32px; /* Lighter standard */
         padding: 0 16px;
         display: flex;
         align-items: center;
@@ -622,7 +628,7 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
         font-family: inherit;
         font-size: 13px;
         width: 300px;
-        height: 40px; /* Match height */
+        height: 32px; /* Lighter height */
         outline: none;
       }
       .search-box input:focus {
@@ -643,9 +649,9 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
         border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: 4px;
         padding: 0 8px;
-        font-family: inherit;
+         font-family: inherit;
         font-size: 13px;
-        height: 40px;
+        height: 32px;
         outline: none;
       }
       
@@ -950,9 +956,9 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
     <body>
       <div class="board-wrapper">
         <div class="board-header">
-          <div class="header-left">
-             <h2 class="board-title">DevOps Board</h2>
-          </div>
+          <h1 class="board-title">
+             <img src="${logoUri}" alt="DevOps Board" class="board-logo">
+          </h1>
           <div class="header-controls">
             <div class="search-box">
              <span class="codicon codicon-search"></span>
