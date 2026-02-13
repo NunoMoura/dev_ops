@@ -51,8 +51,7 @@ description: Execute the changes defined in `SPEC.md`. Strict adherence to the S
 
 ### 4. Review (The "Checkbox")
 
-* **Action**: Ensure strict compliance with `SPEC.md`.
-* **Note**: If the code works but contradicts the Spec, **STOP**. You must update the Spec in the Plan phase (or request a Plan phase). Code must match Spec.
+* **Self-Correction**: If you find bugs or missing implementation details, you may fix them, but you MUST set the task status to `needs_feedback` and ask the user for clarification if the fix corresponds to a change in the Plan or Spec.hase (or request a Plan phase). Code must match Spec.
 
 ### 5. Stop (The "Sleep")
 

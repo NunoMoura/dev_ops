@@ -72,5 +72,5 @@ Use template: `.dev_ops/templates/artifacts/research.md`
 
 ## Next Phase
 
-* **Success**: `/plan` (Move to Plan).
-* **Review**: Set status to `ready-for-review` if user input is needed.
+* **Success**: `/plan` (Move to Plan)
+*   **Review**: Set status to `needs_feedback` if user input is needed.

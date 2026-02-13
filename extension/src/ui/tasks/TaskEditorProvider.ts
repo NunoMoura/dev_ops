@@ -237,17 +237,13 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     const getStatusChips = () => {
       return statusOptions.map(opt => {
         const isSelected = opt.value === currentStatus;
-        // Default style
-        let style = 'color: var(--vscode-descriptionForeground); border-bottom: 2px solid transparent;';
-        // Active style
-        if (isSelected) {
-          style = `color: var(--vscode-foreground); border-bottom: 2px solid ${opt.color}; font-weight: 600;`;
-        }
+        // Styles are handled by CSS class 'status-chip' and 'active'
+        const activeClass = isSelected ? 'active' : '';
+        // Inject color var for active state if needed, but sticky css is better
 
-        return `<div class="status-chip" 
+        return `<div class="status-chip ${activeClass}" 
                      data-value="${opt.value}" 
-                     data-color="${opt.color}"
-                     style="${style}">
+                     data-color="${opt.color}">
                   ${opt.label}
                 </div>`;
       }).join('');
@@ -261,13 +257,24 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     // Page-specific styles
     const pageStyles = `<style>
       /* Page-specific overrides */
+      :root {
+        --chat-bg: var(--vscode-editor-background);
+        --chat-bubble-user: var(--vscode-button-secondaryBackground);
+        --chat-bubble-user-fg: var(--vscode-button-secondaryForeground);
+        --chat-bubble-agent: var(--vscode-editor-inactiveSelectionBackground);
+        --chat-bubble-agent-fg: var(--vscode-editor-foreground);
+      }
+
       body {
         padding: 0; 
         margin: 0;
         font-family: var(--vscode-font-family);
         background-color: var(--vscode-editor-background);
         color: var(--vscode-editor-foreground);
-        overflow-y: overlay;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
       }
 
       /* Custom Scrollbar */
@@ -287,21 +294,41 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         background: var(--vscode-scrollbarSlider-activeBackground);
       }
 
-      .main-content {
-        padding: 24px 32px;
+      /* Layout Containers */
+      .main-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
         max-width: 900px;
-        margin-left: auto;
-        margin-right: auto;
+        margin: 0 auto;
+        width: 100%;
+        position: relative;
       }
 
-      /* Unified Header Card */
+      .scrollable-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px 32px;
+        padding-bottom: 0; /* Space is handled by chat container top padding/margin */
+      }
+
+      .fixed-chat-area {
+        flex-shrink: 0;
+        background: var(--vscode-editor-background);
+        border-top: 1px solid var(--vscode-widget-border);
+        display: flex;
+        flex-direction: column;
+        max-height: 40vh; /* Don't take more than 40% of screen */
+      }
+
+      /* Header Card */
       .header-card {
         display: flex;
         flex-direction: column;
         gap: 12px;
         margin-bottom: 24px;
         padding-left: 12px;
-        border-left: 3px solid ${cssStatusColor}; /* Status Color Border */
+        border-left: 3px solid ${cssStatusColor};
         border-radius: 6px;
       }
 
@@ -343,69 +370,52 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         padding: 0 !important;
         margin: 0 !important;
         box-shadow: none !important;
-        
-        font-size: 16px;
+        font-size: 18px;
         font-weight: 600;
         color: var(--vscode-editor-foreground);
         line-height: 1.4;
       }
-      input.title-input:focus {
-        opacity: 1;
-      }
-      input.title-input::placeholder {
-        color: var(--vscode-editor-foreground);
-        opacity: 0.4;
-      }
+      input.title-input:focus { opacity: 1; }
+      input.title-input::placeholder { color: var(--vscode-editor-foreground); opacity: 0.4; }
 
       .task-id-badge {
         font-size: 12px;
         font-weight: 500;
         color: ${cssStatusColor};
-        background: transparent !important;
         border: 1px solid ${cssStatusColor} !important;
         padding: 1px 7px;
         border-radius: 10px;
         white-space: nowrap;
-        flex-shrink: 0;
-        align-self: flex-start;
       }
 
-      /* Status Chips Row */
+      /* Status Chips */
       .status-chips-container {
         display: flex;
-        gap: 16px;
+        gap: 12px;
         align-items: center;
         flex-wrap: wrap;
-        margin-top: 4px;
+        margin-bottom: 24px;
       }
       .status-chip {
         cursor: pointer;
-        padding: 4px 0;
-        font-size: 12px;
-        user-select: none;
+        padding: 4px 10px;
+        font-size: 11px;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        background: var(--vscode-badge-background);
+        color: var(--vscode-badge-foreground);
+        opacity: 0.7;
         transition: all 0.2s ease;
       }
-      .status-chip:hover {
-        opacity: 0.8;
+      .status-chip.active {
+        opacity: 1;
+        font-weight: 600;
+        background: ${cssStatusColor};
+        color: #fff; /* Assuming dark mode usually, or we can use contrast color */
       }
+      .status-chip:hover { opacity: 1; }
 
-      /* Separator */
-      .header-separator {
-        height: 1px;
-        background-color: ${cssStatusColor}; /* Status Color Separator */
-        margin-bottom: 32px;
-        opacity: 0.3;
-        width: 100%;
-      }
-
-      /* Standard Content Sections (Instructions, Trace) */
-      .content-section {
-        margin-bottom: 32px;
-        padding-left: 12px;
-        border-left: 3px solid ${cssStatusColor}; /* Status Color Border */
-        border-radius: 6px;
-      }
-      
+      /* Instructions / Checklist */
       .section-header {
         font-size: 11px;
         text-transform: uppercase;
@@ -413,88 +423,167 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         font-weight: 600;
         color: var(--vscode-descriptionForeground);
         margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .checklist-container {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      
+      .checklist-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 4px 6px;
+        border-radius: 4px;
+        transition: background 0.1s;
+      }
+      .checklist-item:hover {
+        background: var(--vscode-toolbar-hoverBackground);
+      }
+      .checklist-checkbox {
+        margin-top: 3px;
+        cursor: pointer;
+      }
+      .checklist-text {
+        font-size: 13px;
+        line-height: 1.5;
+        flex: 1;
+        outline: none;
+        border: 1px solid transparent;
+      }
+      .checklist-text:focus {
+        border-color: var(--vscode-focusBorder);
+        background: var(--vscode-input-background);
+      }
+      .checklist-text.done {
+        text-decoration: line-through;
+        opacity: 0.6;
       }
 
-      /* Instructions Input */
-      .instructions-container {
-        padding: 0;
+      .raw-instructions-container {
+        display: none; /* Toggled */
+        margin-top: 8px;
       }
       textarea.instructions-input {
         width: 100%;
-        min-height: 120px;
-        background: transparent;
+        min-height: 150px;
+        background: var(--vscode-input-background);
         color: var(--vscode-input-foreground);
-        border: 1px solid transparent; /* Invisible border unless focused */
-        padding: 0;
+        border: 1px solid var(--vscode-widget-border);
+        padding: 8px;
         font-family: var(--vscode-editor-font-family);
         font-size: 13px;
         resize: vertical;
-        outline: none;
-        line-height: 1.5;
-        display: block;
-      }
-      textarea.instructions-input:focus {
-        background: var(--vscode-input-background);
-        padding: 8px;
-        border-color: var(--vscode-focusBorder);
-        border-radius: 4px;
       }
 
-      /* Trace Card */
-      .trace-container {
-        min-height: 100px;
-      }
-      .trace-content {
-        font-size: 13px;
-        line-height: 1.5;
-        color: var(--vscode-editor-foreground);
-      }
-      .trace-item {
-        margin-bottom: 16px;
-        padding-left: 12px;
-        border-left: 2px solid var(--vscode-panel-border);
-      }
-      .trace-date {
-        font-size: 10px;
-        opacity: 0.6;
-        margin-bottom: 4px;
-      }
-
-      /* Footer */
-      .actions-footer {
+      /* Chat Area */
+      .chat-history {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px 32px;
         display: flex;
-        justify-content: flex-end;
+        flex-direction: column;
+        justify-content: flex-end; /* Bubbles start from bottom? No, they stack up. But if empty, start top. */
+        /* Actually "growing up" means align-items flex-end? No.
+           It means the latest message is at the bottom. Standard chat behavior.
+           But visually sticking to the bottom. */
+        min-height: 100px; /* Force some height */
+      }
+      
+      .chat-message {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 12px;
+        max-width: 85%;
+      }
+      .chat-message.user {
+        align-self: flex-end;
+        align-items: flex-end;
+      }
+      .chat-message.agent {
+        align-self: flex-start;
+        align-items: flex-start;
+      }
+      
+      .message-bubble {
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+      .chat-message.user .message-bubble {
+        background: var(--chat-bubble-user);
+        color: var(--chat-bubble-user-fg);
+      }
+      .chat-message.agent .message-bubble {
+        background: var(--chat-bubble-agent);
+        color: var(--chat-bubble-agent-fg);
+      }
+      
+      .message-time {
+        font-size: 10px;
+        opacity: 0.5;
+        margin-top: 2px;
+        padding: 0 2px;
+      }
+
+      .chat-input-wrapper {
+        padding: 16px 32px;
+        background: var(--vscode-editor-background);
+        border-top: 1px solid var(--vscode-widget-border);
+        display: flex;
         gap: 12px;
-        padding-top: 24px;
-        margin-top: 48px;
+        align-items: flex-end;
       }
-      .btn {
-        padding: 6px 14px;
-        border: 1px solid transparent; 
+      
+      .chat-textarea {
+        flex: 1;
+        background: var(--vscode-input-background);
+        color: var(--vscode-input-foreground);
+        border: 1px solid var(--vscode-widget-border);
         border-radius: 4px;
-        cursor: pointer;
-        font-size: 12px;
+        padding: 8px;
         font-family: inherit;
-        font-weight: 500;
-        transition: all 0.2s ease;
+        font-size: 13px;
+        resize: none;
+        height: 40px;
+        min-height: 40px;
+        max-height: 120px;
+        outline: none;
       }
-      .btn-primary {
-        background: var(--vscode-button-background);
-        color: var(--vscode-button-foreground);
-        border: 1px solid var(--vscode-button-background);
+      .chat-textarea:focus { border-color: var(--vscode-focusBorder); }
+
+      .send-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 4px;
+        border: none;
+        background: ${cssStatusColor}; /* Theme match */
+        color: #fff;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
-      .btn-primary:hover {
-        background: var(--vscode-button-hoverBackground);
+      .send-btn:hover { opacity: 0.9; }
+      .send-btn svg { width: 16px; height: 16px; fill: currentColor; }
+      
+      .toggle-btn {
+        background: none;
+        border: none;
+        color: var(--vscode-textLink-foreground);
+        cursor: pointer;
+        font-size: 10px;
       }
-      /* Modified Delete Button */
-      .btn-danger {
-        background: transparent;
-        border: 1px solid #ef4444; 
-        color: #ef4444;
-      }
-      .btn-danger:hover {
-        background: #ef4444; 
-        color: #ffffff;
+      .toggle-btn:hover { text-decoration: underline; }
+
+      .empty-state {
+        display: none; /* Hidden by default */
       }
     </style>`;
 
@@ -511,129 +600,234 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 </head>
 <body>
   
-  <div class="main-content">
+  <div class="main-container">
     
-    <!-- Unified Header Card (Status Border) -->
-    <div class="header-card">
+    <!-- Scrollable Top Section (Header, Status, Instructions, Trace? No trace in new design? Trace is good.) -->
+    <div class="scrollable-content">
       
-      <div class="header-top-row">
-        <input type="text" class="title-input" id="title" value="${task.title}" placeholder="TASK TITLE">
-        <div class="task-id-badge">${task.id}</div>
-      </div>
-
-      <!-- Metadata Row (Owner • Agent • Model) -->
-      <div class="metadata-row">
-        <div class="metadata-item">
-          <span>Owner: ${ownerName}</span>
+      <!-- Header -->
+      <div class="header-card">
+        <div class="header-top-row">
+          <input type="text" class="title-input" id="title" value="${task.title}" placeholder="TASK TITLE">
+          <div class="task-id-badge">${task.id}</div>
         </div>
-        <div class="metadata-dot"></div>
-        <div class="metadata-item">
-          <span>Agent: ${agentName}</span>
-        </div>
-        <div class="metadata-dot"></div>
-        <div class="metadata-item">
-          <span>Model: ${modelName}</span>
+        <div class="metadata-row">
+          <div class="metadata-item"><span>Owner: ${ownerName}</span></div>
+          <div class="metadata-dot"></div>
+          <div class="metadata-item"><span>Agent: ${agentName}</span></div>
         </div>
       </div>
-    </div>
 
-    <!-- Top Status Colored Separator -->
-    <div class="header-separator"></div>
-
-    <!-- Status Section (Renamed from Phase & Status) -->
-    <div class="content-section">
-      <div class="section-header">Status</div>
+      <!-- Status Chips -->
       <div class="status-chips-container" id="status-chips">
         ${getStatusChips()}
       </div>
       <input type="hidden" id="status" value="${currentStatus}">
-    </div>
+      <input type="hidden" id="column" value="${task.columnId || ''}">
 
-    <!-- Hidden column input to maintain value if needed or we could expose it separately if requested, but request said 'Phase & Status' renamed to 'Status' and implies simplified -->
-    <!-- We keep the value in hidden input so it persists if we save -->
-    <input type="hidden" id="column" value="${task.columnId || ''}">
+      <!-- Agent Instructions (Checklist Mode) -->
+      <div class="content-section">
+        <div class="section-header">
+          <span>Agent Instructions</span>
+          <button class="toggle-btn" id="toggle-edit-mode">Edit Raw Markdown</button>
+        </div>
+        
+        <!-- Interactive Checklist Render -->
+        <div class="checklist-container" id="checklist-view">
+          <!-- Populated by JS -->
+        </div>
 
-    <!-- Agent Instructions (Status Border) -->
-    <div class="content-section">
-      <div class="section-header">Agent Instructions</div>
-      <div class="instructions-container">
-        <textarea id="summary" class="instructions-input" 
-          placeholder="Enter instructions (Markdown supported)...">${task.summary || ''}</textarea>
+        <!-- Raw Editor (Hidden by default) -->
+        <div class="raw-instructions-container" id="raw-editor-container">
+           <textarea id="summary" class="instructions-input" 
+            placeholder="- [ ] Add items here...">${task.summary || ''}</textarea>
+        </div>
       </div>
-    </div>
 
-    <!-- Task Chat (Pintask Prototype) -->
-    <div class="content-section">
-      <div class="section-header">Task Chat</div>
+      <!-- Trace (Optional, keeping it as it was useful) -->
+      ${traceMarkdown ? `
+      <div class="content-section">
+        <div class="section-header">Decision Trace</div>
+         <div class="trace-content">${parsedTrace}</div>
+      </div>` : ''}
+
+       <!-- Footer Actions -->
+      <div class="actions-footer">
+        ${task.columnId === 'col-plan' ? `<button id="approvePlanBtn" class="btn btn-primary">Approve</button>` : ''}
+        <button id="saveBtn" class="btn btn-primary">Save</button>
+        <button id="deleteBtn" class="btn btn-danger">Archive/Delete</button>
+      </div>
       
-      <!-- Chat Container -->
-      <div class="chat-container">
-        <div class="chat-history" id="chat-history">
-          ${(task.chatHistory || []).map(msg => `
-            <div class="chat-message ${msg.sender}">
-              <div class="message-bubble">${msg.text}</div>
-              <div class="message-time">${new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-            </div>
-          `).join('')}
-          ${(!task.chatHistory || task.chatHistory.length === 0) ? '<div class="empty-state">No messages yet. Draft instructions here.</div>' : ''}
-        </div>
+    </div> <!-- End Scrollable -->
 
-        <div class="chat-input-area">
-          <textarea id="chat-input" class="chat-textarea" placeholder="Draft instructions for the agent..."></textarea>
-          <button id="send-btn" class="btn btn-primary">Send (Copy)</button>
-        </div>
+    <!-- Sticky Chat Area -->
+    <div class="fixed-chat-area">
+      <div class="chat-history" id="chat-history">
+        ${(task.chatHistory || []).map(msg => `
+          <div class="chat-message ${msg.sender}">
+            <div class="message-bubble">${msg.text}</div>
+            <div class="message-time">${new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+          </div>
+        `).join('')}
+      </div>
+      
+      <div class="chat-input-wrapper">
+        <textarea id="chat-input" class="chat-textarea" placeholder="Message agent..."></textarea>
+        <button id="send-btn" class="send-btn">
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+        </button>
       </div>
     </div>
 
-    <!-- Bottom Status Colored Separator -->
-    <div class="header-separator"></div>
-
-    <!-- Footer -->
-    <div class="actions-footer">
-      ${task.columnId === 'col-plan' ? `<button id="approvePlanBtn" class="btn btn-primary" style="background: #22c55e; border-color: #22c55e;">Approve Plan & Start Implement</button>` : ''}
-      <button id="saveBtn" class="btn btn-primary">Save Changes</button>
-      <button id="deleteBtn" class="btn btn-danger">Delete Task</button>
-    </div>
   </div>
 
   <script>
     const vscode = acquireVsCodeApi();
     
-    // Status Chip Logic
+    // --- State ---
     const statusInput = document.getElementById('status');
-    const chipsContainer = document.getElementById('status-chips');
+    const summaryInput = document.getElementById('summary');
+    const checklistContainer = document.getElementById('checklist-view');
+    const rawEditorContainer = document.getElementById('raw-editor-container');
+    const toggleEditBtn = document.getElementById('toggle-edit-mode');
     
-    chipsContainer.addEventListener('click', (e) => {
+    // --- Status Chips ---
+    document.getElementById('status-chips').addEventListener('click', (e) => {
       const chip = e.target.closest('.status-chip');
       if (!chip) return;
       
       const val = chip.dataset.value;
-      const color = chip.dataset.color;
       
       // Update Input
       statusInput.value = val;
       
-      // Update UI (Optimistic)
-      document.querySelectorAll('.status-chip').forEach(c => {
-        c.style.fontWeight = 'normal';
-        c.style.borderBottomColor = 'transparent';
-        c.style.color = 'var(--vscode-descriptionForeground)';
-      });
+      // Update visuals
+      document.querySelectorAll('.status-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
       
-      chip.style.fontWeight = '600';
-      chip.style.borderBottomColor = color;
-      chip.style.color = 'var(--vscode-foreground)';
-      
-      // Trigger update
+      // Save immediately? Or just trigger update?
       triggerUpdate();
     });
+
+    // --- Checklist Logic ---
+    function renderChecklist() {
+      const text = summaryInput.value;
+      const lines = text.split('\\n');
+      let html = '';
+      
+      lines.forEach((line, index) => {
+        const trimmed = line.trim();
+        // Check for - [ ] or - [x]
+        const isTask = trimmed.startsWith('- [ ]') || trimmed.startsWith('- [x]');
+        
+        if (isTask) {
+          const isChecked = trimmed.startsWith('- [x]');
+          const content = line.replace(/- \[[ x]\]/, '').trim();
+          html += \`<div class="checklist-item">\` +
+              \`<input type="checkbox" class="checklist-checkbox" data-index="\${index}" \${isChecked ? 'checked' : ''}>\` +
+              \`<div class="checklist-text \${isChecked ? 'done' : ''}" contenteditable="true" data-index="\${index}">\${content}</div>\` +
+            \`</div>\`;
+        } else if (trimmed.length > 0) {
+           // Render non-task lines as text (unless empty)
+           html += \`<div style="padding:4px 6px; font-size:13px; opacity:0.8">\${line}</div>\`;
+        }
+      });
+      
+      if (!html) html = '<div style="opacity:0.5; font-size:12px; font-style:italic">No instructions. Edit to add "- [ ] Task".</div>';
+      
+      checklistContainer.innerHTML = html;
+      
+      // Re-attach listeners based on new DOM
+      attachChecklistListeners();
+    }
+    
+    function attachChecklistListeners() {
+       // Checkbox Toggles
+       checklistContainer.querySelectorAll('.checklist-checkbox').forEach(cb => {
+         cb.addEventListener('change', (e) => {
+           const index = parseInt(e.target.dataset.index);
+           const isChecked = e.target.checked;
+           updateLine(index, isChecked);
+         });
+       });
+       
+       // Content Edits (Editable Text)
+       checklistContainer.querySelectorAll('.checklist-text').forEach(div => {
+         div.addEventListener('input', (e) => {
+            const index = parseInt(e.target.dataset.index);
+            updateLineContent(index, e.target.innerText);
+         });
+       });
+    }
+    
+    function updateLine(index, checked) {
+       const lines = summaryInput.value.split('\\n');
+       if (index >= 0 && index < lines.length) {
+         const line = lines[index];
+         const prefix = checked ? '- [x]' : '- [ ]';
+         lines[index] = line.replace(/- \[[ x]\]/, prefix);
+         summaryInput.value = lines.join('\\n');
+         triggerUpdate();
+         
+         const textDiv = checklistContainer.querySelector(\`.checklist-text[data-index="\${index}"]\`);
+         if (textDiv) {
+             if(checked) textDiv.classList.add('done');
+             else textDiv.classList.remove('done');
+         }
+       }
+    }
+
+    function updateLineContent(index, newText) {
+       const lines = summaryInput.value.split('\\n');
+       if (index >= 0 && index < lines.length) {
+         const line = lines[index];
+         const match = line.match(/^(- \[[ x]\]\s*)/);
+         if (match) {
+             lines[index] = match[1] + newText;
+         } else {
+             lines[index] = newText;
+         }
+         summaryInput.value = lines.join('\\n');
+         
+         clearTimeout(timeout);
+         timeout = setTimeout(triggerUpdate, 1000);
+       }
+    }
+
+    // Toggle Mode
+    toggleEditBtn.addEventListener('click', () => {
+       const isRaw = rawEditorContainer.style.display === 'block';
+       if (isRaw) {
+         // Switch to View
+         rawEditorContainer.style.display = 'none';
+         checklistContainer.style.display = 'flex';
+         toggleEditBtn.textContent = 'Edit Raw Markdown';
+         renderChecklist();
+       } else {
+         // Switch to Edit
+         rawEditorContainer.style.display = 'block';
+         checklistContainer.style.display = 'none';
+         toggleEditBtn.textContent = 'View Checklist';
+       }
+    });
+    
+    // Initial Render
+    renderChecklist();
+    
+    // Sync Raw Edits to Render when typing in Raw Mode
+    summaryInput.addEventListener('input', () => {
+         clearTimeout(timeout);
+         timeout = setTimeout(triggerUpdate, 1000);
+    });
+
+    // --- Collection & Updates ---
 
     function collect() {
       return {
         title: document.getElementById('title').value,
         status: statusInput.value,
         columnId: document.getElementById('column').value,
-        summary: document.getElementById('summary').value
+        summary: summaryInput.value
       };
     }
 
@@ -641,12 +835,10 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       vscode.postMessage({ type: 'update', data: collect() });
     }
 
-    let timeout;
-    ['title', 'summary'].forEach(id => {
-      document.getElementById(id)?.addEventListener('input', () => {
+    var timeout;
+    document.getElementById('title').addEventListener('input', () => {
         clearTimeout(timeout);
         timeout = setTimeout(triggerUpdate, 1000);
-      });
     });
 
     document.getElementById('saveBtn').addEventListener('click', () => {
@@ -667,9 +859,6 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     const chatHistory = document.getElementById('chat-history');
 
     function addMessageToUI(text, sender) {
-      const emptyState = chatHistory.querySelector('.empty-state');
-      if (emptyState) emptyState.remove();
-
       const msgDiv = document.createElement('div');
       msgDiv.className = \`chat-message \${sender}\`;
       msgDiv.innerHTML = \`
@@ -682,59 +871,16 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       chatHistory.appendChild(msgDiv);
       chatHistory.scrollTop = chatHistory.scrollHeight;
     }
+    
+    chatHistory.scrollTop = chatHistory.scrollHeight;
 
     sendBtn?.addEventListener('click', () => {
       const text = chatInput.value.trim();
       if (!text) return;
 
-      // 1. Optimistic UI Update
       addMessageToUI(text, 'user');
-      
-      // 2. Clear Input
       chatInput.value = '';
 
-      // 3. Copy to Clipboard
-      navigator.clipboard.writeText(text).then(() => {
-        // Optional: Show toast
-      });
-
-      // 4. Update Task Data
-      // We need to fetch current history, append, and save.
-      // Since we don't have the full object here easily without state, 
-      // we'll let the extension handle the append if we send a specific 'chat' type,
-      // OR we just append to the collected data.
-      // For simplicity in this vanilla setup, we'll mimic a "save" but with specific chat data.
-      
-      // Actually, let's treat chat history as part of the 'update' payload.
-      // But we need the existing history. 
-      // Workaround: We ask the extension to append the message.
-      // But sharedHandlers expects a full update. 
-      // Let's rely on the persisted state in the extension. 
-      // We will send a special 'chatMessage' type if we supported it, 
-      // but to fit existing handlers, we might need to be clever.
-      
-      // Allow me to introduce a 'sendChatMessage' message type in the Provider (TS side) 
-      // that handles the append logic safely.
-      vscode.postMessage({ 
-        type: 'update', 
-        data: { 
-            id: document.querySelector('.task-id-badge').innerText, // Hacky but works for now or use ${task.id} injected
-            // We can't easily construct the full chatHistory array here without reading it all from DOM or keeping state.
-            // Let's implement a 'appendChatMessage' handler in the TS side? 
-            // OR context.chatHistory.push(...)
-        } 
-      });
-
-      // WAIT. The robust way for this webview:
-      // We accept that we need to send the start-state + new message? 
-      // No, that overwrites concurrent edits.
-      // Best approach: Send a specific 'chat' event. 
-      // Since I can't easily change the TS handler signature right now without context switch,
-      // I will assume the 'update' handler can accept a partial update. 
-      // But 'chatHistory' is an array. Merging arrays is tricky.
-      
-      // CORRECT APPROACH:
-      // Send a custom message type 'chat' and handle it in the Provider's onDidReceiveMessage.
       vscode.postMessage({
         type: 'chat',
         text: text,
@@ -742,7 +888,6 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       });
     });
 
-    // Allow Ctrl+Enter to send
     chatInput?.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         sendBtn.click();

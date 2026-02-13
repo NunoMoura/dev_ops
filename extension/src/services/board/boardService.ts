@@ -181,7 +181,14 @@ export class BoardService {
             targetColumn.taskIds.push(taskId);
         }
 
-        await this.updateTask(taskId, { columnId, status: 'todo' });
+        // Update task data
+        // Only reset status if moving to Backlog (reset to todo)
+        // Otherwise preserve current status (e.g. in_progress, needs_feedback)
+        if (columnId === 'col-backlog' || targetColumn.name.toLowerCase() === 'backlog') {
+            await this.updateTask(taskId, { columnId, status: 'todo' });
+        } else {
+            await this.updateTask(taskId, { columnId });
+        }
         await this.store.writeBoard(board);
 
         // Check if moving to 'Done' column
@@ -196,7 +203,7 @@ export class BoardService {
     private async handleTaskCompletion(taskId: string): Promise<void> {
         try {
             const task = await this.getTask(taskId);
-            if (!task) return;
+            if (!task) { return; }
 
             // 1. Find latest Verify Session
             const verifySession = task.agentHistory?.slice().reverse().find(h =>
@@ -210,7 +217,7 @@ export class BoardService {
 
             // 2. Locate Walkthrough
             const homeDir = process.env.HOME || process.env.USERPROFILE;
-            if (!homeDir || !verifySession.sessionId) return;
+            if (!homeDir || !verifySession.sessionId) { return; }
 
             const brainDir = path.join(homeDir, '.gemini', 'antigravity', 'brain');
             // We need to find the session folder. The session ID in history might be just the ID or full path.
@@ -226,7 +233,7 @@ export class BoardService {
 
             // 3. Create PR
             const workspaceRoot = getRoot();
-            if (!workspaceRoot) return;
+            if (!workspaceRoot) { return; }
 
             const prTitle = `[${taskId}] ${task.title}`;
             const prBodyFile = walkthroughPath;

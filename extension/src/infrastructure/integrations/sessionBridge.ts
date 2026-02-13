@@ -105,7 +105,7 @@ export class SessionBridge {
     private async appendTraceLink(taskId: string, uri: vscode.Uri, label: string) {
         try {
             const root = this.getWorkspaceRoot();
-            if (!root) return;
+            if (!root) { return; }
 
             const tracePath = path.join(root, '.dev_ops', 'tasks', taskId, 'trace.md');
             if (fs.existsSync(tracePath)) {
