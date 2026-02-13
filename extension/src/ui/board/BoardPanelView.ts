@@ -581,7 +581,10 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
       }
 
       .add-task-button {
-        padding: 6px 14px;
+        height: 40px; /* Match new standard */
+        padding: 0 16px;
+        display: flex;
+        align-items: center;
         background: var(--vscode-button-background);
         color: var(--vscode-button-foreground);
         border: 1px solid transparent;
@@ -591,7 +594,7 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
         transition: all 0.2s ease;
         font-family: inherit;
         text-transform: none;
-        font-size: 12px; /* Consistent font size */
+        font-size: 13px; /* Slightly larger */
         position: relative;
         box-shadow: none;
       }
@@ -613,12 +616,13 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
       .search-box input {
         background: var(--vscode-input-background);
         color: var(--vscode-input-foreground);
-        border: 1px solid var(--vscode-input-border);
-        border-radius: 4px; /* Consistent radius */
-        padding: 6px 8px 6px 24px; /* Consistent vertical padding */
+        border: 1px solid rgba(255, 255, 255, 0.15); /* Match Chat Box styling */
+        border-radius: 4px;
+        padding: 0 8px 0 32px; /* Center text vertically */
         font-family: inherit;
-        font-size: 12px; /* Consistent font size */
+        font-size: 13px;
         width: 300px;
+        height: 40px; /* Match height */
         outline: none;
       }
       .search-box input:focus {
@@ -626,19 +630,22 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
       }
       .search-box .codicon-search {
         position: absolute;
-        left: 6px;
-        font-size: 12px;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 14px;
         color: var(--vscode-input-placeholderForeground);
         pointer-events: none;
       }
       select {
         background: var(--vscode-dropdown-background);
         color: var(--vscode-dropdown-foreground);
-        border: 1px solid var(--vscode-dropdown-border);
+        border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: 4px;
-        padding: 4px;
+        padding: 0 8px;
         font-family: inherit;
-        font-size: 11px;
+        font-size: 13px;
+        height: 40px;
         outline: none;
       }
       

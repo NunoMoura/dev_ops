@@ -109,27 +109,32 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
           await updateWebview();
           vscode.commands.executeCommand('devops.refreshBoard');
           break;
-        case 'delete':
-          // Prompt for Archive vs Delete
-          const selection = await vscode.window.showInformationMessage(
-            "Do you want to Archive this task (keep record) or Delete it permanently?",
-            { modal: true },
-            "Archive",
-            "Delete"
-          );
+        case 'openActions':
+          // Show Quick Pick for actions
+          const action = await vscode.window.showQuickPick(['Archive Task', 'Delete Task'], {
+            placeHolder: 'Task Actions'
+          });
 
-          if (selection === "Archive") {
+          if (action === 'Archive Task') {
             await boardService.archiveTask(taskId);
             vscode.window.showInformationMessage(`Task ${taskId} archived.`);
             webviewPanel.dispose();
-          } else if (selection === "Delete") {
-            await handleCardDeleteMessage(taskId, tempProvider, syncFilterUI);
-            // Check if task still exists
-            const boardAfter = await readBoard();
-            if (!boardAfter.items.find(t => t.id === taskId)) {
+            vscode.commands.executeCommand('devops.refreshBoard');
+          } else if (action === 'Delete Task') {
+            // Confirm delete
+            const confirm = await vscode.window.showWarningMessage(
+              `Are you sure you want to permanently delete task ${taskId}?`,
+              { modal: true },
+              "Delete"
+            );
+            if (confirm === "Delete") {
+              await handleCardDeleteMessage(taskId, tempProvider, syncFilterUI);
               webviewPanel.dispose();
             }
           }
+          break;
+        case 'delete':
+          // Legacy handler, just in case
           break;
         case 'approvePlan':
           // 1. Move to Implement
@@ -327,9 +332,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         flex-direction: column;
         gap: 12px;
         margin-bottom: 24px;
-        padding-left: 12px;
-        border-left: 3px solid ${cssStatusColor};
-        border-radius: 6px;
+        /* Border removed from header */
       }
 
       .metadata-row {
@@ -377,6 +380,29 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       }
       input.title-input:focus { opacity: 1; }
       input.title-input::placeholder { color: var(--vscode-editor-foreground); opacity: 0.4; }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .action-menu-btn {
+        background: transparent;
+        border: none;
+        color: var(--vscode-foreground);
+        cursor: pointer;
+        padding: 4px;
+        font-size: 16px;
+        line-height: 1;
+        border-radius: 4px;
+        opacity: 0.7;
+      }
+      .action-menu-btn:hover {
+        background: var(--vscode-toolbar-hoverBackground);
+        opacity: 1;
+      }
+
 
       .task-id-badge {
         font-size: 12px;
@@ -545,7 +571,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         flex: 1;
         background: var(--vscode-input-background);
         color: var(--vscode-input-foreground);
-        border: 1px solid var(--vscode-widget-border);
+        border: 1px solid rgba(255, 255, 255, 0.15); /* Lighter grey highlight */
         border-radius: 4px;
         padding: 8px;
         font-family: inherit;
@@ -553,17 +579,17 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         resize: none;
         height: 40px;
         min-height: 40px;
-        max-height: 120px;
+        max-height: 320px; /* Approx 16 lines */
         outline: none;
       }
       .chat-textarea:focus { border-color: var(--vscode-focusBorder); }
 
       .send-btn {
-        width: 36px;
-        height: 36px;
+        width: 40px;
+        height: 40px; /* Match input height */
         border-radius: 4px;
         border: none;
-        background: ${cssStatusColor}; /* Theme match */
+        background: #D6336C; /* Pink */
         color: #fff;
         cursor: pointer;
         display: flex;
@@ -584,6 +610,12 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
       .empty-state {
         display: none; /* Hidden by default */
+      }
+      
+      .todo-section {
+        border-left: 3px solid ${cssStatusColor};
+        padding-left: 12px;
+        margin-bottom: 24px;
       }
     </style>`;
 
@@ -609,7 +641,14 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       <div class="header-card">
         <div class="header-top-row">
           <input type="text" class="title-input" id="title" value="${task.title}" placeholder="TASK TITLE">
-          <div class="task-id-badge">${task.id}</div>
+          <div class="header-actions">
+            <div class="task-id-badge">${task.id}</div>
+            <button id="action-menu-btn" class="action-menu-btn" title="More options">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
+              </svg>
+            </button>
+          </div>
         </div>
         <div class="metadata-row">
           <div class="metadata-item"><span>Owner: ${ownerName}</span></div>
@@ -625,10 +664,10 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       <input type="hidden" id="status" value="${currentStatus}">
       <input type="hidden" id="column" value="${task.columnId || ''}">
 
-      <!-- Agent Instructions (Checklist Mode) -->
-      <div class="content-section">
+      <!-- To-Do List (Checklist Mode) -->
+      <div class="content-section todo-section">
         <div class="section-header">
-          <span>Agent Instructions</span>
+          <span>To-Do List</span>
           <button class="toggle-btn" id="toggle-edit-mode">Edit Raw Markdown</button>
         </div>
         
@@ -653,9 +692,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
        <!-- Footer Actions -->
       <div class="actions-footer">
-        ${task.columnId === 'col-plan' ? `<button id="approvePlanBtn" class="btn btn-primary">Approve</button>` : ''}
-        <button id="saveBtn" class="btn btn-primary">Save</button>
-        <button id="deleteBtn" class="btn btn-danger">Archive/Delete</button>
+        ${task.columnId === 'col-plan' ? `<button id="approvePlanBtn" class="btn btn-primary" style="background-color: #D6336C; border: none;">Approve Implementation Plan</button>` : ''}
       </div>
       
     </div> <!-- End Scrollable -->
@@ -841,12 +878,8 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         timeout = setTimeout(triggerUpdate, 1000);
     });
 
-    document.getElementById('saveBtn').addEventListener('click', () => {
-      vscode.postMessage({ type: 'save', data: collect() });
-    });
-    
-    document.getElementById('deleteBtn').addEventListener('click', () => {
-      vscode.postMessage({ type: 'delete' });
+    document.getElementById('action-menu-btn').addEventListener('click', () => {
+      vscode.postMessage({ type: 'openActions' });
     });
 
     document.getElementById('approvePlanBtn')?.addEventListener('click', () => {

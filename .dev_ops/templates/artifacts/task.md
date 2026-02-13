@@ -19,7 +19,7 @@ artifacts:             # Pointers to ephemeral artifact content
 
 <!-- TASK is a minimal pointer, not a data store.
 Ephemeral content lives in RES/PLN artifacts.
-SPEC.md files are updated during Build phase to reflect changes. -->
+SPEC.md files are updated during Implement phase to reflect changes. -->
 
 ## Context
 

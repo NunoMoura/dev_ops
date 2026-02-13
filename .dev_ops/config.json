@@ -2,10 +2,9 @@
   "developer": {
     "name": "Nuno Moura"
   },
-  "projectType": "brownfield",
-  "githubWorkflowsEnabled": false,
+  "projectType": "greenfield",
+  "githubWorkflowsEnabled": true,
   "selectedIDEs": [
-    "antigravity",
-    "cursor"
+    "antigravity"
   ]
 }

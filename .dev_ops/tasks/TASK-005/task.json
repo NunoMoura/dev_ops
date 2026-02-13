@@ -1,8 +1,0 @@
-{
-  "id": "TASK-005",
-  "columnId": "col-backlog",
-  "title": "Configure Project Rules",
-  "summary": "Configure agent rules.\n\nStrategy:\n1. Detect tech stack (languages, frameworks, tools).\n2. Select matching templates from `.dev_ops/templates/rules/`.\n3. Create rules in `.agent/rules/` (or `.cursor/rules/`).\n4. Customize rules to match project conventions.\n\n## CRITICAL REQUIREMENT: DECISION TRACE\n\nYou MUST explicitly log your activity and decisions to the \"Decision Trace\" file.\n**Trace File Path**: `.dev_ops/tasks/TASK-005/trace.md`\n\n1.  **Initialize**: If the file is empty, start with a header.\n2.  **Log Live**: As you make decisions (e.g., \"Exploring file X\", \"Decided to refactor Y\", \"Found bug Z\"), append them to this file immediately.\n3.  **Format**: Use Markdown. Use H2/H3 for major steps and bullet points for actions.",
-  "updatedAt": "2026-02-01T21:54:06.743Z",
-  "status": "needs_feedback"
-}

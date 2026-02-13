@@ -3,34 +3,65 @@ title: "{{title}}"
 type: spec
 path: "{{path}}"
 status: draft
+description: "{{description}}" # Short summary for RLM Zoom-Out
 ---
 
 # {{title}}
 
 ## Overview
 
-<!-- What is this and why does it exist? -->
+<!-- 
+RLM CONTEXT: Read this section to understand the component's purpose.
+-->
 
-## Structure
+## Architecture
 
-| Name | Type | Purpose |
-|------|------|---------|
-| — | folder/file | — |
+<!-- 
+Optional: Mermaid diagram or text description of how this component works internally.
+-->
 
-## ADRs
+## API / Key Exports
 
-| ID | Decision | Research |
-|----|----------|----------|
-| — | — | — |
+<!-- 
+RLM CONTEXT: This is the Public Interface.
+Other components interact with this component via these exports.
+-->
 
-## Key Exports
+| Name | Type | Description |
+|------|------|-------------|
+| - | - | - |
 
-<!-- What does this expose to other components? -->
+## File Structure
+
+| Name | Purpose |
+|------|---------|
+| - | - |
 
 ## Constraints
 
-<!-- Rules that cannot be violated -->
+<!--
+RLM CONTEXT: Hard rules. The Implement Agent MUST follow these.
+-->
+
+1. <!-- Constraint 1 -->
+2. <!-- Constraint 2 -->
+
+## ADRs
+
+<!--
+RLM CONTEXT: Architectural context. The Plan Agent SHOULD read these before changing Constraints.
+The Implement Agent can typically SKIP this section.
+-->
+
+| ID | Decision | Reason |
+|----|----------|--------|
+| - | - | - |
 
 ## Dependencies
 
-<!-- Links to other SPEC.md files this depends on -->
+<!-- 
+RLM CONTEXT: Links to Child Specs or External Specs.
+If you need to change these, create a child task.
+-->
+
+* [Component Name](./path/to/child/SPEC.md)

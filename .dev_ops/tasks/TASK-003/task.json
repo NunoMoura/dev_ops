@@ -1,8 +1,8 @@
 {
   "id": "TASK-003",
   "columnId": "col-backlog",
-  "title": "Define User Personas & Stories",
-  "summary": "Define User Experience artifacts.\n\nStrategy:\n1. Analyze PRD and codebase.\n2. Create `.dev_ops/docs/user.md` (Personas) using the user.md template.\n3. Create `.dev_ops/docs/story.md` (User Stories) using the story.md template.\n4. Trace stories to PRD requirements.\n\n## CRITICAL REQUIREMENT: DECISION TRACE\n\nYou MUST explicitly log your activity and decisions to the \"Decision Trace\" file.\n**Trace File Path**: `.dev_ops/tasks/TASK-003/trace.md`\n\n1.  **Initialize**: If the file is empty, start with a header.\n2.  **Log Live**: As you make decisions (e.g., \"Exploring file X\", \"Decided to refactor Y\", \"Found bug Z\"), append them to this file immediately.\n3.  **Format**: Use Markdown. Use H2/H3 for major steps and bullet points for actions.",
-  "updatedAt": "2026-02-03T02:20:24.183Z",
-  "status": "done"
+  "title": "Define Project Standards",
+  "summary": "Establish coding standards and conventions for the project based on the chosen technology stack. Document these in `.dev_ops/docs/project_standards.md`.\n\n## CRITICAL REQUIREMENT: DECISION TRACE\n\nYou MUST explicitly log your activity and decisions to the \"Decision Trace\" file.\n**Trace File Path**: `.dev_ops/tasks/TASK-003/trace.md`\n\n1.  **Initialize**: If the file is empty, start with a header.\n2.  **Log Live**: As you make decisions (e.g., \"Exploring file X\", \"Decided to refactor Y\", \"Found bug Z\"), append them to this file immediately.\n3.  **Format**: Use Markdown. Use H2/H3 for major steps and bullet points for actions.",
+  "updatedAt": "2026-02-13T10:46:36.832Z",
+  "status": "todo"
 }
