@@ -269,6 +269,10 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         --chat-bubble-agent: var(--vscode-editor-inactiveSelectionBackground);
         --chat-bubble-agent-fg: var(--vscode-editor-foreground);
       }
+      
+      * {
+        box-sizing: border-box;
+      }
 
       body {
         padding: 0; 
@@ -313,8 +317,9 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       .scrollable-content {
         flex: 1;
         overflow-y: auto;
+        min-height: 0; /* Important for flex shrinking */
         padding: 24px 32px;
-        padding-bottom: 0; /* Space is handled by chat container top padding/margin */
+        padding-bottom: 0; 
       }
 
       .fixed-chat-area {
@@ -331,22 +336,14 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         position: relative;
         overflow: hidden;
         border-radius: 8px;
-        background: var(--vscode-editor-background); /* Or sidebar background? */
-        /* Border? User liked the board cards which have a border. */
-        /* Let's strictly follow the "highlight" request first. */
+        background: var(--vscode-editor-background); 
+        border: 1px solid var(--vscode-widget-border);
+        border-left: 2px solid ${cssStatusColor};
         padding: 12px;
         padding-left: 16px;
         margin-bottom: 24px;
       }
-      .section-card::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 3px;
-        background: ${cssStatusColor};
-      }
+      /* Highlight is now handled by border-left */
 
       /* Header Card (uses section-card) */
       .header-card {
@@ -360,6 +357,8 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         display: flex;
         align-items: center;
         flex-wrap: wrap;
+        border-left: none !important;
+        border: none !important;
       }
 
       /* Section card style handles borders/padding */
@@ -605,45 +604,146 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       }
 
       .chat-input-wrapper {
-        padding: 16px 32px;
+        padding: 16px 32px 32px 32px;
         background: var(--vscode-editor-background);
         border-top: 1px solid var(--vscode-widget-border);
         display: flex;
-        gap: 12px;
-        align-items: flex-end;
+        justify-content: center; /* Center the box */
+      }
+
+      .chat-box-container {
+        width: 100%;
+        max-width: 900px;
+        background: var(--vscode-editorWidget-background); /* Darker background */
+        border: 1px solid rgba(255, 255, 255, 0.2); /* Lighter grey border */
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        padding: 8px;
+        transition: border-color 0.2s;
+        position: relative;
+      }
+      /* Remove pink focus border */
+      .chat-box-container:focus-within {
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+      
+      .chat-box-container.drag-active {
+        border: 2px dashed var(--vscode-focusBorder);
+        background: var(--vscode-editor-hoverBackground);
+      }
+
+      .chat-attachments-area {
+        display: none; /* Hidden when empty */
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 4px;
+      }
+      
+      .attachment-thumb {
+        position: relative;
+        width: 60px;
+        height: 60px;
+        border-radius: 4px;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.2);
+        background: rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .attachment-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .attachment-thumb .file-icon {
+        font-size: 24px;
+        opacity: 0.7;
+      }
+      
+      .remove-attachment-btn {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        width: 16px;
+        height: 16px;
+        background: rgba(0,0,0,0.6);
+        color: white;
+        border-radius: 50%;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 10px;
+        line-height: 1;
+      }
+      .attachment-thumb:hover .remove-attachment-btn {
+        display: flex;
       }
       
       .chat-textarea {
-        flex: 1;
-        background: var(--vscode-input-background);
+        width: 100%;
+        background: transparent;
         color: var(--vscode-input-foreground);
-        border: 1px solid rgba(255, 255, 255, 0.15); /* Lighter grey highlight */
-        border-radius: 4px;
-        padding: 8px;
+        border: none;
+        padding: 4px;
         font-family: inherit;
         font-size: 13px;
         resize: none;
         min-height: 40px;
-        max-height: 320px; /* Approx 16 lines */
-        overflow-y: hidden; /* Hide scrollbar initially */
+        max-height: 320px;
+        overflow-y: hidden;
         outline: none;
       }
-      .chat-textarea:focus { border-color: var(--vscode-focusBorder); }
 
-      .send-btn {
-        width: 40px;
-        height: 40px; /* Match input height */
+      .chat-box-footer {
+        display: flex;
+        justify-content: space-between; /* Space between plus and send */
+        align-items: center;
+        padding-top: 4px;
+      }
+      
+      .left-actions {
+        display: flex;
+        gap: 8px;
+      }
+      
+      .icon-btn {
+        width: 32px;
+        height: 32px;
         border-radius: 4px;
         border: none;
-        background: var(--vscode-focusBorder); /* Dynamic focus color */
+        background: transparent;
+        color: var(--vscode-descriptionForeground);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+      }
+      .icon-btn:hover {
+        background: var(--vscode-toolbar-hoverBackground);
+        color: var(--vscode-foreground);
+      }
+
+      .send-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%; /* Circle button */
+        border: none;
+        background: var(--vscode-focusBorder);
         color: var(--vscode-button-foreground);
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
+        transition: opacity 0.2s;
       }
       .send-btn:hover { opacity: 0.9; }
-      .send-btn svg { width: 20px; height: 20px; fill: currentColor; } /* Slightly larger for icon */
+      .send-btn svg { width: 16px; height: 16px; fill: currentColor; }
       
       .toggle-btn {
         background: none;
@@ -659,8 +759,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       }
       
       .todo-section {
-        border-left: 4px solid ${cssStatusColor};
-        border-radius: 4px; /* Rounded highlight */
+        /* border-left and radius handled by section-card */
         padding-left: 12px;
         margin-bottom: 24px;
       }
@@ -756,20 +855,34 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       </div>
       
       <div class="chat-input-wrapper">
-        <textarea id="chat-input" class="chat-textarea" placeholder="Message agent..."></textarea>
-        <button id="send-btn" class="send-btn">
-          <!-- DevOps Icon -->
-          <svg width="20" height="20" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
-            <g transform="translate(8, 10)">
-               <rect x="0" y="0" width="50" height="45" rx="8"/>
-               <rect x="0" y="55" width="50" height="45" rx="8"/>
-               <rect x="0" y="110" width="50" height="45" rx="8"/>
-               <rect x="60" y="27" width="50" height="45" rx="8"/>
-               <rect x="60" y="82" width="50" height="45" rx="8"/>
-               <rect x="120" y="55" width="50" height="45" rx="8"/>
-            </g>
-          </svg>
-        </button>
+        <div class="chat-box-container" id="chat-drop-zone">
+          <div id="chat-attachments" class="chat-attachments-area"></div>
+          <textarea id="chat-input" class="chat-textarea" placeholder="Message agent..."></textarea>
+          
+          <div class="chat-box-footer">
+            <div class="left-actions">
+               <input type="file" id="file-input" multiple style="display:none">
+               <button id="add-file-btn" class="icon-btn" title="Add files">
+                 <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                   <path d="M8 3.5a.5.5 0 0 1 .5.5v3.5h3.5a.5.5 0 0 1 0 1H8.5v3.5a.5.5 0 0 1-1 0V8.5H4a.5.5 0 0 1 0-1h3.5V4a.5.5 0 0 1 .5-.5z"/>
+                 </svg>
+               </button>
+            </div>
+            
+            <button id="send-btn" class="send-btn" title="Send (Ctrl+Enter)">
+              <svg width="16" height="16" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                 <g transform="translate(8, 10) scale(0.9)">
+                   <rect x="0" y="0" width="50" height="45" rx="8"/>
+                   <rect x="0" y="55" width="50" height="45" rx="8"/>
+                   <rect x="0" y="110" width="50" height="45" rx="8"/>
+                   <rect x="60" y="27" width="50" height="45" rx="8"/>
+                   <rect x="60" y="82" width="50" height="45" rx="8"/>
+                   <rect x="120" y="55" width="50" height="45" rx="8"/>
+                 </g>
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -947,15 +1060,30 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     const chatInput = document.getElementById('chat-input');
     
     chatInput?.addEventListener('input', function() {
-      this.style.height = 'auto';
+      // Prevent jitter by locking wrapper height - now targeting the box container
+      // But actually, we don't need to lock the wrapper anymore if it's flex auto?
+      // Let's keep the logic safe.
+      const wrapper = this.closest('.chat-input-wrapper');
+      if (wrapper) {
+         // Lock wrapper height effectively
+         wrapper.style.minHeight = wrapper.offsetHeight + 'px';
+      }
+
+      // Auto-grow
+      this.style.height = 'auto'; 
       const newHeight = this.scrollHeight;
       this.style.height = newHeight + 'px';
-      if (newHeight > 320) {
+      
+      if (wrapper) wrapper.style.minHeight = '';
+
+      // Control scrollbar
+      if (newHeight >= 320) {
         this.style.overflowY = 'auto';
       } else {
         this.style.overflowY = 'hidden';
       }
       
+      // Reset if empty to default min-height
       if (this.value === '') {
           this.style.height = '40px'; 
           this.style.overflowY = 'hidden';
@@ -964,15 +1092,111 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
     const sendBtn = document.getElementById('send-btn');
     const chatHistory = document.getElementById('chat-history');
+    const fileInput = document.getElementById('file-input');
+    const addFileBtn = document.getElementById('add-file-btn');
+    const dropZone = document.getElementById('chat-drop-zone');
+    const attachmentsArea = document.getElementById('chat-attachments');
+    
+    let currentFiles = []; // { name, type, data }
 
-    function addMessageToUI(text, sender) {
+    // --- File Handling ---
+    addFileBtn.addEventListener('click', () => fileInput.click());
+    
+    fileInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+        fileInput.value = ''; // Reset
+    });
+    
+    // Drag & Drop
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-active');
+    });
+    
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-active');
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-active');
+        handleFiles(e.dataTransfer.files);
+    });
+
+    function handleFiles(fileList) {
+        if (!fileList || fileList.length === 0) return;
+        
+        Array.from(fileList).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                currentFiles.push({
+                    name: file.name,
+                    type: file.type,
+                    data: e.target.result // Base64
+                });
+                renderAttachments();
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function renderAttachments() {
+        if (currentFiles.length === 0) {
+            attachmentsArea.style.display = 'none';
+            attachmentsArea.innerHTML = '';
+            return;
+        }
+        
+        attachmentsArea.style.display = 'flex';
+        attachmentsArea.innerHTML = currentFiles.map((file, index) => {
+            const isImage = file.type.startsWith('image/');
+            const content = isImage 
+                ? \`<img src="\${file.data}" alt="\${file.name}">\`
+                : \`<div class="file-icon">📄</div>\`;
+                
+            return \`
+                <div class="attachment-thumb" title="\${file.name}">
+                   \${content}
+                   <div class="remove-attachment-btn" data-index="\${index}">✕</div>
+                </div>
+            \`;
+        }).join('');
+        
+        // Bind remove buttons
+        attachmentsArea.querySelectorAll('.remove-attachment-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(e.target.dataset.index);
+                currentFiles.splice(idx, 1);
+                renderAttachments();
+            });
+        });
+    }
+
+    function addMessageToUI(text, sender, files = []) {
       const msgDiv = document.createElement('div');
       msgDiv.className = \`chat-message \${sender}\`;
+      
+      // Render files if any in history (simple view)
+      let filesHtml = '';
+      if (files && files.length > 0) {
+          filesHtml = '<div class="message-files" style="display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap;">' + 
+            files.map(f => {
+                const isImage = f.type.startsWith('image/');
+                if (isImage) return \`<img src="\${f.data}" style="max-width:100px; border-radius:4px; border:1px solid rgba(255,255,255,0.1)">\`;
+                return \`<div style="font-size:11px; opacity:0.7">📄 \${f.name}</div>\`;
+            }).join('') + 
+          '</div>';
+      }
+      
       msgDiv.innerHTML = \`
-        <div class="message-bubble">\${text
+        <div class="message-bubble">
+          \${filesHtml}
+          \${text
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")}</div>
+          .replace(/>/g, "&gt;")}
+        </div>
         <div class="message-time">\${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
       \`;
       chatHistory.appendChild(msgDiv);
@@ -983,16 +1207,25 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
     sendBtn?.addEventListener('click', () => {
       const text = chatInput.value.trim();
-      if (!text) return;
+      if (!text && currentFiles.length === 0) return; // Allow sending just files
 
-      addMessageToUI(text, 'user');
+      addMessageToUI(text, 'user', currentFiles); // Optimistic Update
       chatInput.value = '';
-
+      
+      // Reset height
+      chatInput.style.height = 'auto';
+      
+      // Send
       vscode.postMessage({
         type: 'chat',
         text: text,
-        sender: 'user'
+        sender: 'user',
+        files: currentFiles // Send files
       });
+      
+      // Clear Attachments
+      currentFiles = [];
+      renderAttachments();
     });
 
     chatInput?.addEventListener('keydown', (e) => {

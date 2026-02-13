@@ -52,6 +52,7 @@ export type ChatMessage = {
   sender: 'user' | 'agent';
   text: string;
   timestamp: number; // Unix timestamp
+  files?: Array<{ name: string; type: string; data: string }>; // base64 data
 };
 
 export type Task = {
