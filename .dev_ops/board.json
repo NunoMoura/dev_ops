@@ -3,28 +3,49 @@
   "columns": [
     {
       "id": "col-backlog",
-      "name": "Backlog"
+      "name": "Backlog",
+      "taskIds": [
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-001"
+      ]
     },
     {
       "id": "col-understand",
-      "name": "Understand"
+      "name": "Understand",
+      "taskIds": []
     },
     {
       "id": "col-plan",
-      "name": "Plan"
+      "name": "Plan",
+      "taskIds": []
     },
     {
       "id": "col-implement",
-      "name": "Implement"
+      "name": "Implement",
+      "taskIds": [
+        "TASK-001",
+        "TASK-005"
+      ]
     },
     {
       "id": "col-verify",
-      "name": "Verify"
+      "name": "Verify",
+      "taskIds": []
     },
     {
       "id": "col-done",
-      "name": "Done"
+      "name": "Done",
+      "taskIds": []
     }
   ],
-  "items": []
+  "items": [
+    {
+      "id": "TASK-001",
+      "columnId": "col-backlog",
+      "title": "New Task",
+      "updatedAt": "2026-02-15T02:42:11.212Z"
+    }
+  ]
 }

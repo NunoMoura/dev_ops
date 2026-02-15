@@ -9355,7 +9355,7 @@ var CoreTaskService = class {
       items: []
     };
   }
-  async createTask(columnId, title, summary, dependsOn) {
+  async createTask(columnId, title, summary, dependsOn, checklist) {
     const board = await this.readBoard();
     let maxId = 0;
     board.items.forEach((t) => {
@@ -9375,8 +9375,9 @@ var CoreTaskService = class {
       summary: (summary || "") + "\n\n" + getAgentInstructions(newId, "Unknown"),
       // Phase unknown at creation
       updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
-      status: "todo",
-      ...dependsOn?.length ? { dependsOn } : {}
+      status: void 0,
+      ...dependsOn?.length ? { dependsOn } : {},
+      ...checklist?.length ? { checklist } : {}
     };
     board.items.push(newTask);
     await this.writeBoard(board);
@@ -9475,7 +9476,7 @@ var CoreTaskService = class {
   async pickNextTask() {
     const board = await this.readBoard();
     const backlogTasks = board.items.filter(
-      (t) => t.columnId === "col-backlog" && t.status === "todo" && !t.activeSession
+      (t) => t.columnId === "col-backlog" && !t.status && !t.activeSession
     );
     if (backlogTasks.length === 0) {
       return null;

@@ -3,7 +3,7 @@
     "name": "Nuno Moura"
   },
   "projectType": "greenfield",
-  "githubWorkflowsEnabled": true,
+  "githubWorkflowsEnabled": false,
   "selectedIDEs": [
     "antigravity"
   ]
