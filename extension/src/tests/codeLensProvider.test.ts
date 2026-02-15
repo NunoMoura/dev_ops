@@ -38,7 +38,7 @@ suite('CodeLensProvider - Task ID Regex', () => {
 suite('CodeLensProvider - Status Icons', () => {
     function getStatusIcon(status: string): string {
         const icons: Record<string, string> = {
-            'todo': '○',
+            'none': '○',
             'in_progress': '◉',
             'needs_feedback': '◐',
             'blocked': '●',
@@ -51,8 +51,8 @@ suite('CodeLensProvider - Status Icons', () => {
         assert.strictEqual(getStatusIcon('in_progress'), '◉');
     });
 
-    test('returns correct icon for todo', () => {
-        assert.strictEqual(getStatusIcon('todo'), '○');
+    test('returns correct icon for none', () => {
+        assert.strictEqual(getStatusIcon('none'), '○');
     });
 
     test('returns correct icon for needs_feedback', () => {
@@ -82,13 +82,13 @@ suite('CodeLensProvider - Task Title Format', () => {
 
     function formatTaskTitle(task: Task): string {
         const icons: Record<string, string> = {
-            'todo': '○',
+            'none': '○',
             'in_progress': '◉',
             'needs_feedback': '◐',
             'blocked': '●',
             'done': '✓',
         };
-        const status = icons[task.status || 'todo'] || '○';
+        const status = icons[task.status || 'none'] || '○';
         const priority = task.priority ? ` [${task.priority.toUpperCase()}]` : '';
         return `${status} ${task.title}${priority}`;
     }
@@ -128,7 +128,7 @@ suite('CodeLensProvider - Task Tooltip Format', () => {
         const lines = [
             `Task: ${task.title}`,
             `ID: ${task.id}`,
-            `Status: ${task.status || 'todo'}`,
+            `Status: ${task.status || 'none'}`,
             `Priority: ${task.priority}`,
         ];
 
@@ -144,11 +144,11 @@ suite('CodeLensProvider - Task Tooltip Format', () => {
     }
 
     test('includes basic task info', () => {
-        const task: Task = { id: 'TASK-001', title: 'Fix bug', status: 'todo', priority: 'medium' };
+        const task: Task = { id: 'TASK-001', title: 'Fix bug', status: 'none', priority: 'medium' };
         const tooltip = formatTaskTooltip(task);
         assert.ok(tooltip.includes('Task: Fix bug'));
         assert.ok(tooltip.includes('ID: TASK-001'));
-        assert.ok(tooltip.includes('Status: todo'));
+        assert.ok(tooltip.includes('Status: none'));
         assert.ok(tooltip.includes('Priority: medium'));
     });
 

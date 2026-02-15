@@ -419,7 +419,7 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
         background: var(--vscode-editor-background, rgba(0, 0, 0, 0.5));
       }
       /* Status-based left border colors */
-      .task-card[data-status="todo"] { border-left-color: #6b7280; }
+      .task-card[data-status="none"] { border-left-color: #6b7280; }
       .task-card[data-status="ready"] { border-left-color: #3b82f6; }
       .task-card[data-status="in_progress"], 
       .task-card[data-status="agent_active"] { border-left-color: #22c55e; }
@@ -582,8 +582,10 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
         align-items: center;
       }
       .board-logo {
-        height: 24px;
+        height: 32px; /* Increased size */
         width: auto;
+        margin-right: 8px;
+        vertical-align: middle;
       }
 
       .add-task-button {
@@ -910,7 +912,7 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
         display: inline-flex;
         align-items: center;
       }
-      .status-badge.status-todo { background: rgba(107, 114, 128, 0.15); color: #9ca3af; border: 1px solid rgba(107, 114, 128, 0.3); }
+      .status-badge.status-none { background: rgba(107, 114, 128, 0.15); color: #9ca3af; border: 1px solid rgba(107, 114, 128, 0.3); }
       .status-badge.status-ready { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
       .status-badge.status-in_progress { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
       .status-badge.status-needs_feedback { background: rgba(234, 179, 18, 0.15); color: #facd15; border: 1px solid rgba(234, 179, 8, 0.3); }
@@ -957,7 +959,8 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
       <div class="board-wrapper">
         <div class="board-header">
           <h1 class="board-title">
-             <img src="${logoUri}" alt="DevOps Board" class="board-logo">
+             <img src="${logoUri}" alt="DevOps Logo" class="board-logo">
+             DevOps
           </h1>
           <div class="header-controls">
             <div class="search-box">
@@ -1225,7 +1228,7 @@ function renderTaskCard(task, columnId) {
   const card = document.createElement('article');
   card.className = 'task-card';
   card.draggable = true;
-  card.dataset.status = task.status || 'todo';
+  card.dataset.status = task.status || 'none';
   if (state.selection.has(task.id)) {
     card.classList.add('selected');
   }
@@ -1273,7 +1276,7 @@ function renderTaskCard(task, columnId) {
   /* Removed: Upstream/Downstream artifacts, Progress Bars */
 
   // Footer: Status (Left) + Info Button (Right) - Matching Mockup
-  const status = task.status || 'ready';
+  const status = task.status || 'none';
   
   const footer = document.createElement('div');
   footer.className = 'card-footer';
@@ -1290,8 +1293,7 @@ function renderTaskCard(task, columnId) {
   statusSpan.className = 'status-badge status-' + (status === 'agent_active' ? 'in_progress' : status);
   
   const statusLabels = {
-    'todo': 'Todo',
-    'ready': 'Ready',
+    'none': 'None',
     'in_progress': 'In Progress',
     'agent_active': 'In Progress',
     'needs_feedback': 'Feedback',

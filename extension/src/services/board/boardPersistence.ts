@@ -426,7 +426,7 @@ export async function registerBoardWatchers(
 
   const patterns = [
     '.dev_ops/board.json',
-    '.dev_ops/tasks/**/*.json'
+    '.dev_ops/tasks/**' // Watch all files/folders in tasks dir to catch folder deletions
   ];
 
   let refreshHandle: NodeJS.Timeout | undefined;

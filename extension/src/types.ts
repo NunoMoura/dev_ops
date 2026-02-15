@@ -37,7 +37,7 @@ export interface Workspace {
 }
 
 
-export type TaskStatus = 'todo' | 'in_progress' | 'needs_feedback' | 'blocked' | 'done' | 'archived';
+export type TaskStatus = 'none' | 'in_progress' | 'needs_feedback' | 'blocked' | 'done' | 'archived';
 
 /**
  * Checklist item stored on a task.

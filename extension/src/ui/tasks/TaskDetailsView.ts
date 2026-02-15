@@ -114,7 +114,7 @@ function getCardHtml(): string {
       :root {
         --status-color: var(--border-subtle);
       }
-      body[data-status="todo"] { --status-color: var(--status-ready, #9ca3af); }
+      body[data-status="none"] { --status-color: var(--status-ready, #9ca3af); }
       body[data-status="in_progress"] { --status-color: var(--status-agent-active, #22c55e); }
       body[data-status="needs_feedback"] { --status-color: var(--status-needs-feedback, #f97316); }
       body[data-status="blocked"] { --status-color: var(--status-blocked, #ef4444); }
@@ -482,7 +482,7 @@ function getCardHtml(): string {
         margin-bottom: var(--space-lg);
         border-left: 4px solid var(--border-subtle);
       }
-      .status-indicator[data-status="todo"] {
+      .status-indicator[data-status="none"] {
         border-left-color: var(--status-ready);
         background: rgba(107, 114, 128, 0.08); /* Grey */
         color: var(--status-ready);
@@ -561,7 +561,7 @@ function getCardHtml(): string {
         // Artifacts section removed — lineage lives on documents/artifacts, not tasks
       }
       const ITEM_STATUS_OPTIONS = [
-        { value: 'todo', label: 'Start (Todo)' },
+        { value: 'none', label: 'Start (None)' },
         { value: 'in_progress', label: 'In Progress' },
         { value: 'needs_feedback', label: 'Needs Feedback' },
         { value: 'blocked', label: 'Blocked' },
@@ -573,7 +573,7 @@ function getCardHtml(): string {
       }
 
       function normalizeItemStatus(status) {
-        return ITEM_STATUS_OPTIONS.some((option) => option.value === status) ? status : 'todo';
+        return ITEM_STATUS_OPTIONS.some((option) => option.value === status) ? status : 'none';
       }
 
       function cloneFeatureTasks(input) {
@@ -626,7 +626,7 @@ function getCardHtml(): string {
           opt.textContent = option.label;
           statusSelect.appendChild(opt);
         });
-        statusSelect.value = item.status || 'todo';
+        statusSelect.value = item.status || 'none';
         statusSelect.addEventListener('change', (event) => {
           featureTasks[taskIndex].items[itemIndex].status = event.target.value;
           onStatusChange();
@@ -734,7 +734,7 @@ function getCardHtml(): string {
           addItemBtn.className = 'ghost-button';
           addItemBtn.textContent = 'Add Item';
           addItemBtn.addEventListener('click', () => {
-            featureTasks[taskIndex].items.push({ id: generateId('feature-item'), title: '', status: 'todo' });
+            featureTasks[taskIndex].items.push({ id: generateId('feature-item'), title: '', status: 'none' });
             renderFeatureTasks();
           });
           addItemRow.appendChild(addItemBtn);
@@ -862,7 +862,7 @@ function getCardHtml(): string {
           tagsInput.value = message.task.tags || '';
           
           updateTheme(message.task.status);
-          renderStatusList(message.task.status || 'todo');
+          renderStatusList(message.task.status || 'none');
           
           if (phaseLabel) {
              const phaseText = message.task.column ? message.task.column : 'No Phase';
@@ -930,7 +930,7 @@ function getCardHtml(): string {
 
       function getSelectedStatusValue() {
           const selected = statusList.querySelector('.selected');
-          if (!selected) return 'todo';
+          if (!selected) return 'none';
           return selected.dataset.value; 
       }
 
@@ -950,7 +950,7 @@ function getCardHtml(): string {
       }
 
       function updateTheme(status) {
-          const s = status || 'todo';
+          const s = status || 'none';
           document.body.setAttribute('data-status', s);
           // Also update selected item style if direct call
           const options = statusList.querySelectorAll('.status-option');

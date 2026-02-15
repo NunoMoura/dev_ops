@@ -91,8 +91,8 @@ export class BoardService {
         // Iterate through ordered IDs to find the first candidate
         for (const taskId of backlogColumn.taskIds) {
             const task = board.items.find(t => t.id === taskId);
-            // Check eligibility: Status 'todo' and no active session
-            if (task && (!task.status || task.status === 'todo') && !task.activeSession) {
+            // Check eligibility: No status set (pending/ready) and no active session
+            if (task && !task.status && !task.activeSession) {
                 return task.id;
             }
         }
@@ -185,7 +185,7 @@ export class BoardService {
         // Only reset status if moving to Backlog (reset to todo)
         // Otherwise preserve current status (e.g. in_progress, needs_feedback)
         if (columnId === 'col-backlog' || targetColumn.name.toLowerCase() === 'backlog') {
-            await this.updateTask(taskId, { columnId, status: 'todo' });
+            await this.updateTask(taskId, { columnId, status: undefined });
         } else {
             await this.updateTask(taskId, { columnId });
         }
@@ -288,7 +288,7 @@ export class BoardService {
         // Update task data
         if (task.columnId !== columnId) {
             task.columnId = columnId;
-            // Preserve existing status on cross-column move (don't reset to 'todo')
+            // Preserve existing status on cross-column move (don't reset to 'pending')
             task.updatedAt = new Date().toISOString();
             await this.store.saveTask(task);
         }
@@ -596,7 +596,7 @@ export class BoardService {
 
         // Clear active session, but KEEP owner (developer)
         task.activeSession = undefined;
-        task.status = 'todo';
+        task.status = undefined;
         task.updatedAt = new Date().toISOString();
 
         await this.store.writeBoard(board);
@@ -611,7 +611,7 @@ export class BoardService {
 
     /**
      * Mark a task as done.
-     * Sets status to 'todo' (neutral) and moves to Done column.
+     * Sets status to 'done' and moves to Done column.
      */
     async markDone(taskId: string): Promise<void> {
         const board = await this.store.readBoard();
@@ -626,7 +626,7 @@ export class BoardService {
             c.id === 'col-done' || c.name.toLowerCase() === 'done'
         );
 
-        task.status = 'todo'; // Neutral state for done items
+        task.status = 'done'; // Set directly to 'done' status
         if (doneColumn) {
             task.columnId = doneColumn.id;
         }
@@ -722,7 +722,7 @@ export class BoardService {
 
         for (const task of board.items) {
             // Status counts
-            const status = task.status || 'todo';
+            const status = task.status || 'none';
             statusCounts[status] = (statusCounts[status] || 0) + 1;
 
             // Column counts

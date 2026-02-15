@@ -6,21 +6,21 @@ import { Board, Task } from '../types';
 // so we test the pure logic patterns here.
 
 interface StatusMetrics {
-    statusCounts: { todo: number; in_progress: number; needs_feedback: number; blocked: number; done: number };
+    statusCounts: { none: number; in_progress: number; needs_feedback: number; blocked: number; done: number };
 }
 
 function calculateMetrics(board: Board | undefined): StatusMetrics {
     if (!board) {
         return {
-            statusCounts: { todo: 0, in_progress: 0, needs_feedback: 0, blocked: 0, done: 0 },
+            statusCounts: { none: 0, in_progress: 0, needs_feedback: 0, blocked: 0, done: 0 },
         };
     }
 
     const items = board.items || [];
-    const statusCounts = { todo: 0, in_progress: 0, needs_feedback: 0, blocked: 0, done: 0 };
+    const statusCounts = { none: 0, in_progress: 0, needs_feedback: 0, blocked: 0, done: 0 };
 
     items.forEach((task) => {
-        const status = task.status || 'todo';
+        const status = task.status || 'none';
         if (status in statusCounts) {
             statusCounts[status as keyof typeof statusCounts]++;
         }
@@ -32,7 +32,7 @@ function calculateMetrics(board: Board | undefined): StatusMetrics {
 suite('MetricsView - calculateMetrics', () => {
     test('returns zeros for undefined board', () => {
         const metrics = calculateMetrics(undefined);
-        assert.strictEqual(metrics.statusCounts.todo, 0);
+        assert.strictEqual(metrics.statusCounts.none, 0);
         assert.strictEqual(metrics.statusCounts.in_progress, 0);
         assert.strictEqual(metrics.statusCounts.needs_feedback, 0);
         assert.strictEqual(metrics.statusCounts.blocked, 0);
@@ -42,20 +42,20 @@ suite('MetricsView - calculateMetrics', () => {
     test('returns zeros for empty board', () => {
         const board: Board = { version: 1, columns: [], items: [] };
         const metrics = calculateMetrics(board);
-        assert.strictEqual(metrics.statusCounts.todo, 0);
+        assert.strictEqual(metrics.statusCounts.none, 0);
     });
 
-    test('counts todo tasks', () => {
+    test('counts none tasks', () => {
         const board: Board = {
             version: 1,
             columns: [],
             items: [
-                { id: '1', columnId: 'col-1', title: 'A', status: 'todo' },
-                { id: '2', columnId: 'col-1', title: 'B', status: 'todo' },
+                { id: '1', columnId: 'col-1', title: 'A', status: 'none' },
+                { id: '2', columnId: 'col-1', title: 'B', status: 'none' },
             ],
         };
         const metrics = calculateMetrics(board);
-        assert.strictEqual(metrics.statusCounts.todo, 2);
+        assert.strictEqual(metrics.statusCounts.none, 2);
     });
 
     test('counts in_progress tasks', () => {
@@ -84,7 +84,7 @@ suite('MetricsView - calculateMetrics', () => {
         assert.strictEqual(metrics.statusCounts.blocked, 3);
     });
 
-    test('defaults to todo for tasks without status', () => {
+    test('defaults to none for tasks without status', () => {
         const board: Board = {
             version: 1,
             columns: [],
@@ -94,7 +94,7 @@ suite('MetricsView - calculateMetrics', () => {
             ],
         };
         const metrics = calculateMetrics(board);
-        assert.strictEqual(metrics.statusCounts.todo, 2);
+        assert.strictEqual(metrics.statusCounts.none, 2);
     });
 
     test('counts mixed statuses', () => {
@@ -102,7 +102,7 @@ suite('MetricsView - calculateMetrics', () => {
             version: 1,
             columns: [],
             items: [
-                { id: '1', columnId: 'col-1', title: 'A', status: 'todo' },
+                { id: '1', columnId: 'col-1', title: 'A', status: undefined },
                 { id: '2', columnId: 'col-1', title: 'B', status: 'in_progress' },
                 { id: '3', columnId: 'col-1', title: 'C', status: 'needs_feedback' },
                 { id: '4', columnId: 'col-1', title: 'D', status: 'blocked' },
@@ -110,7 +110,7 @@ suite('MetricsView - calculateMetrics', () => {
             ],
         };
         const metrics = calculateMetrics(board);
-        assert.strictEqual(metrics.statusCounts.todo, 1);
+        assert.strictEqual(metrics.statusCounts.none, 1);
         assert.strictEqual(metrics.statusCounts.in_progress, 1);
         assert.strictEqual(metrics.statusCounts.needs_feedback, 1);
         assert.strictEqual(metrics.statusCounts.blocked, 1);

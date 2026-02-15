@@ -89,7 +89,7 @@ suite('BoardService', () => {
         await service.markDone(id);
 
         const task = mockBoard.items[0];
-        assert.strictEqual(task.status, 'todo');
+        assert.strictEqual(task.status, 'done');
         assert.strictEqual(task.columnId, 'col-done');
     });
 
@@ -128,7 +128,7 @@ suite('BoardService', () => {
         await service.reorderTask(id, 'col-plan', 0);
 
         const task = mockBoard.items[0];
-        // Status should still be in_progress, not reset to 'todo'
+        // Status should still be in_progress, not reset to 'pending'
         assert.strictEqual(task.status, 'in_progress');
         assert.strictEqual(task.columnId, 'col-plan');
     });

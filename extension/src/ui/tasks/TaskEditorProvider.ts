@@ -150,31 +150,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
           await updateWebview();
           vscode.commands.executeCommand('devops.refreshBoard');
           break;
-        case 'chat':
-          /* Data: { text: string, sender: 'user' | 'agent' } */
-          const chatMsg = message; // { type: 'chat', text: ..., sender: ... }
-          if (chatMsg.text) {
-            const task = await this.loadTask(taskId);
-            if (task) {
-              const newMsg = {
-                id: Date.now().toString(),
-                sender: chatMsg.sender || 'user',
-                text: chatMsg.text,
-                timestamp: Date.now()
-              };
-              // Append to history
-              const history = task.chatHistory || [];
-              history.push(newMsg);
 
-              // Update task via boardService
-              await boardService.updateTask(taskId, { chatHistory: history });
-
-              // Refresh view (so the user sees it persisted if they reload, though UI updated hopefully)
-              // Actually, we don't need to full refresh relevant to chat as we did optimistic UI. 
-              // But we should ensuring board refresh
-            }
-          }
-          break;
       }
     });
   }
@@ -231,7 +207,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
     // Status Options
     const statusOptions = [
-      { value: 'todo', label: 'Todo', color: statusColors['todo'] },
+      // Todo is default (no status), so we remove the explicit option
       { value: 'in_progress', label: 'In Progress', color: statusColors['in_progress'] },
       { value: 'needs_feedback', label: 'Needs Feedback', color: statusColors['needs_feedback'] },
       { value: 'blocked', label: 'Blocked', color: statusColors['blocked'] },
@@ -263,11 +239,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     const pageStyles = `<style>
       /* Page-specific overrides */
       :root {
-        --chat-bg: var(--vscode-editor-background);
-        --chat-bubble-user: var(--vscode-button-secondaryBackground);
-        --chat-bubble-user-fg: var(--vscode-button-secondaryForeground);
-        --chat-bubble-agent: var(--vscode-editor-inactiveSelectionBackground);
-        --chat-bubble-agent-fg: var(--vscode-editor-foreground);
+        --status-color: ${cssStatusColor};
       }
       
       * {
@@ -322,14 +294,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         padding-bottom: 0; 
       }
 
-      .fixed-chat-area {
-        flex-shrink: 0;
-        background: var(--vscode-editor-background);
-        border-top: 1px solid var(--vscode-widget-border);
-        display: flex;
-        flex-direction: column;
-        max-height: 40vh; /* Don't take more than 40% of screen */
-      }
+
 
       /* Section Containers (Header, Status, To-Do) */
       .section-card {
@@ -338,7 +303,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         border-radius: 8px;
         background: var(--vscode-editor-background); 
         border: 1px solid var(--vscode-widget-border);
-        border-left: 2px solid ${cssStatusColor};
+        border-left: 2px solid var(--status-color);
         padding: 12px;
         padding-left: 16px;
         margin-bottom: 24px;
@@ -371,12 +336,11 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       
       /* ... other styles ... */
       
-      /* Chat Auto-grow fix */
-      .chat-textarea {
-        /* ... */
-        min-height: 40px;
-        max-height: 320px;
-        overflow-y: hidden;
+
+      .checklist-text:focus {
+        border-color: var(--vscode-widget-border) !important;
+        background: var(--vscode-input-background);
+        box-shadow: 0 0 0 1px var(--vscode-widget-border) !important;
       }
       /* ... */
 
@@ -452,36 +416,38 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       .task-id-badge {
         font-size: 12px;
         font-weight: 500;
-        color: ${cssStatusColor};
-        border: 1px solid ${cssStatusColor} !important;
+        color: var(--status-color);
+        border: 1px solid var(--status-color) !important;
         padding: 1px 7px;
         border-radius: 10px;
         white-space: nowrap;
       }
 
-      /* Status Chips */
       .status-chips-container {
         display: flex;
-        gap: 12px;
+        gap: 8px;
         align-items: center;
-        flex-wrap: wrap;
-        margin-bottom: 24px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 2px; /* Scrollbar space if needed */
       }
       .status-chip {
         cursor: pointer;
-        padding: 4px 10px;
+        padding: 4px 12px;
         font-size: 11px;
-        border-radius: 12px;
-        border: 1px solid transparent;
+        border-radius: 4px; /* Rounded corners matching UI */
+        border: 1px solid var(--vscode-widget-border);
         background: var(--vscode-badge-background);
         color: var(--vscode-badge-foreground);
         opacity: 0.7;
         transition: all 0.2s ease;
+        white-space: nowrap;
+        flex-shrink: 0;
       }
       .status-chip.active {
         opacity: 1;
         font-weight: 600;
-        background: ${cssStatusColor};
+        background: var(--status-color);
         color: #fff; /* Assuming dark mode usually, or we can use contrast color */
       }
       .status-chip:hover { opacity: 1; }
@@ -499,6 +465,28 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         align-items: center;
       }
       
+      .checklist-header-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .icon-btn-small {
+        background: transparent;
+        border: none;
+        color: var(--vscode-descriptionForeground);
+        cursor: pointer;
+        padding: 2px;
+        border-radius: 4px;
+        display: flex; /* Ensure SVG is centered */
+        align-items: center; /* Vertical center */
+        justify-content: center; /* Horizontal center */
+      }
+      .icon-btn-small:hover {
+        background: var(--vscode-toolbar-hoverBackground);
+        color: var(--vscode-foreground);
+        border-color: var(--vscode-widget-border);
+      }
+      
       .checklist-container {
         display: flex;
         flex-direction: column;
@@ -507,17 +495,44 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       
       .checklist-item {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         gap: 8px;
         padding: 4px 6px;
         border-radius: 4px;
         transition: background 0.1s;
+        background: var(--vscode-editor-background); /* styling for drag */
+      }
+      .checklist-item.dragging {
+        opacity: 0.5;
+        background: var(--vscode-list-dropBackground);
       }
       .checklist-item:hover {
         background: var(--vscode-toolbar-hoverBackground);
       }
+      /* Make delete button always visible if that was the issue? User said checkbox/ordering. 
+         But let's keep delete on hover to reduce clutter unless requested. */
+      .checklist-item:hover .delete-btn {
+        opacity: 1;
+      }
+
+      .drag-handle {
+        cursor: grab;
+        color: var(--vscode-descriptionForeground);
+        opacity: 0.7; /* Increased from 0.5 and always visible */
+        font-size: 14px;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+      }
+      .drag-handle:hover { opacity: 1; }
+      
       .checklist-checkbox {
-        margin-top: 3px;
+         opacity: 1; /* Ensure visible */
+         cursor: pointer;
+      }
+
+      .checklist-checkbox {
+        margin: 0; /* reset */
         cursor: pointer;
       }
       .checklist-text {
@@ -526,14 +541,66 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         flex: 1;
         outline: none;
         border: 1px solid transparent;
+        min-width: 0; /* flex fix */
       }
       .checklist-text:focus {
-        border-color: var(--vscode-focusBorder);
+        border-color: var(--status-color);
         background: var(--vscode-input-background);
+        box-shadow: 0 0 0 1px var(--status-color);
       }
       .checklist-text.done {
         text-decoration: line-through;
         opacity: 0.6;
+      }
+      
+      .drag-spacer {
+        height: 2px;
+        margin: 4px 0;
+        background: var(--status-color);
+        border-radius: 2px;
+        opacity: 0.5;
+        pointer-events: none;
+      }
+
+      .add-item-btn {
+        margin-top: 8px;
+        background: transparent;
+        border: 1px dashed var(--vscode-widget-border);
+        color: var(--vscode-descriptionForeground);
+        cursor: pointer;
+        padding: 6px 12px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        font-size: 12px;
+        width: 100%;
+        justify-content: flex-start;
+        opacity: 0.7;
+        transition: all 0.2s;
+      }
+      .add-item-btn:hover {
+        background: var(--vscode-toolbar-hoverBackground);
+        border-color: var(--status-color);
+        color: var(--vscode-foreground);
+        opacity: 1;
+      }
+      
+      .delete-btn {
+        opacity: 0; /* Hidden by default */
+        background: transparent;
+        border: none;
+        color: var(--vscode-descriptionForeground); /* Subtle gray */
+        cursor: pointer;
+        padding: 4px; /* Slightly larger hit area */
+        border-radius: 4px;
+        transition: opacity 0.2s, color 0.2s, background 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .delete-btn:hover {
+        background: var(--vscode-toolbar-hoverBackground); 
+        color: #FFFFFF; /* White on hover */
       }
 
       .raw-instructions-container {
@@ -552,198 +619,11 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         resize: vertical;
       }
 
-      /* Chat Area */
-      .chat-history {
-        flex: 1;
-        overflow-y: auto;
-        padding: 16px 32px;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end; /* Bubbles start from bottom? No, they stack up. But if empty, start top. */
-        /* Actually "growing up" means align-items flex-end? No.
-           It means the latest message is at the bottom. Standard chat behavior.
-           But visually sticking to the bottom. */
-        min-height: 100px; /* Force some height */
       }
       
-      .chat-message {
-        display: flex;
-        flex-direction: column;
-        margin-bottom: 12px;
-        max-width: 85%;
+      .checklist-item .delete-btn {
+        margin-left: auto;
       }
-      .chat-message.user {
-        align-self: flex-end;
-        align-items: flex-end;
-      }
-      .chat-message.agent {
-        align-self: flex-start;
-        align-items: flex-start;
-      }
-      
-      .message-bubble {
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-size: 13px;
-        line-height: 1.4;
-      }
-      .chat-message.user .message-bubble {
-        background: var(--chat-bubble-user);
-        color: var(--chat-bubble-user-fg);
-      }
-      .chat-message.agent .message-bubble {
-        background: var(--chat-bubble-agent);
-        color: var(--chat-bubble-agent-fg);
-      }
-      
-      .message-time {
-        font-size: 10px;
-        opacity: 0.5;
-        margin-top: 2px;
-        padding: 0 2px;
-      }
-
-      .chat-input-wrapper {
-        padding: 16px 32px 32px 32px;
-        background: var(--vscode-editor-background);
-        border-top: 1px solid var(--vscode-widget-border);
-        display: flex;
-        justify-content: center; /* Center the box */
-      }
-
-      .chat-box-container {
-        width: 100%;
-        max-width: 900px;
-        background: var(--vscode-editorWidget-background); /* Darker background */
-        border: 1px solid rgba(255, 255, 255, 0.2); /* Lighter grey border */
-        border-radius: 8px;
-        display: flex;
-        flex-direction: column;
-        padding: 8px;
-        transition: border-color 0.2s;
-        position: relative;
-      }
-      /* Remove pink focus border */
-      .chat-box-container:focus-within {
-        border-color: rgba(255, 255, 255, 0.3);
-      }
-      
-      .chat-box-container.drag-active {
-        border: 2px dashed var(--vscode-focusBorder);
-        background: var(--vscode-editor-hoverBackground);
-      }
-
-      .chat-attachments-area {
-        display: none; /* Hidden when empty */
-        flex-wrap: wrap;
-        gap: 8px;
-        padding: 8px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        margin-bottom: 4px;
-      }
-      
-      .attachment-thumb {
-        position: relative;
-        width: 60px;
-        height: 60px;
-        border-radius: 4px;
-        overflow: hidden;
-        border: 1px solid rgba(255,255,255,0.2);
-        background: rgba(0,0,0,0.2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .attachment-thumb img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-      .attachment-thumb .file-icon {
-        font-size: 24px;
-        opacity: 0.7;
-      }
-      
-      .remove-attachment-btn {
-        position: absolute;
-        top: 2px;
-        right: 2px;
-        width: 16px;
-        height: 16px;
-        background: rgba(0,0,0,0.6);
-        color: white;
-        border-radius: 50%;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        font-size: 10px;
-        line-height: 1;
-      }
-      .attachment-thumb:hover .remove-attachment-btn {
-        display: flex;
-      }
-      
-      .chat-textarea {
-        width: 100%;
-        background: transparent;
-        color: var(--vscode-input-foreground);
-        border: none;
-        padding: 4px;
-        font-family: inherit;
-        font-size: 13px;
-        resize: none;
-        min-height: 40px;
-        max-height: 320px;
-        overflow-y: hidden;
-        outline: none;
-      }
-
-      .chat-box-footer {
-        display: flex;
-        justify-content: space-between; /* Space between plus and send */
-        align-items: center;
-        padding-top: 4px;
-      }
-      
-      .left-actions {
-        display: flex;
-        gap: 8px;
-      }
-      
-      .icon-btn {
-        width: 32px;
-        height: 32px;
-        border-radius: 4px;
-        border: none;
-        background: transparent;
-        color: var(--vscode-descriptionForeground);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-      }
-      .icon-btn:hover {
-        background: var(--vscode-toolbar-hoverBackground);
-        color: var(--vscode-foreground);
-      }
-
-      .send-btn {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%; /* Circle button */
-        border: none;
-        background: var(--vscode-focusBorder);
-        color: var(--vscode-button-foreground);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: opacity 0.2s;
-      }
-      .send-btn:hover { opacity: 0.9; }
-      .send-btn svg { width: 16px; height: 16px; fill: currentColor; }
       
       .toggle-btn {
         background: none;
@@ -789,7 +669,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
           <input type="text" class="title-input" id="title" value="${task.title}" placeholder="TASK TITLE">
           <div class="header-actions">
             <div class="task-id-badge">${task.id}</div>
-            <button id="action-menu-btn" class="action-menu-btn" title="More options">
+            <button type="button" id="action-menu-btn" class="action-menu-btn" title="More options">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                 <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
               </svg>
@@ -800,21 +680,26 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
           <div class="metadata-item"><span>Owner: ${ownerName}</span></div>
           <div class="metadata-dot"></div>
           <div class="metadata-item"><span>Agent: ${agentName}</span></div>
+          <div class="metadata-dot"></div>
+          <div class="metadata-item"><span>Model: ${modelName}</span></div>
+        </div>
+        
+        <!-- Status Chips (Moved Here) -->
+        <div class="status-chips-container" id="status-chips" style="margin-top:8px; gap:4px;">
+           ${getStatusChips()}
         </div>
       </div>
 
-      <!-- Status Chips -->
-      <div class="status-section section-card" id="status-chips">
-        ${getStatusChips()}
-      </div>
-      <input type="hidden" id="status" value="${currentStatus}">
-      <input type="hidden" id="column" value="${task.columnId || ''}">
+       <input type="hidden" id="status" value="${currentStatus}">
+       <input type="hidden" id="column" value="${task.columnId || ''}">
 
       <!-- To-Do List (Checklist Mode) -->
       <div class="content-section todo-section section-card">
         <div class="section-header">
-          <span>TO-DO</span>
-          <button class="toggle-btn" id="toggle-edit-mode">Edit Raw Markdown</button>
+          <span>CHECKLIST</span>
+          <div class="checklist-header-actions">
+             <!-- Actions moved to bottom or specific items -->
+          </div>
         </div>
         
         <!-- Interactive Checklist Render -->
@@ -822,9 +707,17 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
           <!-- Populated by JS -->
         </div>
 
-        <!-- Raw Editor (Hidden by default) -->
+        <!-- Add Button at Bottom -->
+        <button class="add-item-btn" id="add-checklist-item">
+           <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="margin-right:6px">
+             <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+           </svg>
+           Add item
+        </button>
+
+        <!-- Raw Editor (Hidden by default, removed button to toggle it for now per request) -->
         <div class="raw-instructions-container" id="raw-editor-container">
-           <textarea id="summary" class="instructions-input" 
+           <textarea id="summary" class="instructions-input" style="display:none"
             placeholder="- [ ] Add items here...">${task.summary || ''}</textarea>
         </div>
       </div>
@@ -843,188 +736,370 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       
     </div> <!-- End Scrollable -->
 
-    <!-- Sticky Chat Area -->
-    <div class="fixed-chat-area">
-      <div class="chat-history" id="chat-history">
-        ${(task.chatHistory || []).map(msg => `
-          <div class="chat-message ${msg.sender}">
-            <div class="message-bubble">${msg.text}</div>
-            <div class="message-time">${new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-          </div>
-        `).join('')}
-      </div>
-      
-      <div class="chat-input-wrapper">
-        <div class="chat-box-container" id="chat-drop-zone">
-          <div id="chat-attachments" class="chat-attachments-area"></div>
-          <textarea id="chat-input" class="chat-textarea" placeholder="Message agent..."></textarea>
-          
-          <div class="chat-box-footer">
-            <div class="left-actions">
-               <input type="file" id="file-input" multiple style="display:none">
-               <button id="add-file-btn" class="icon-btn" title="Add files">
-                 <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                   <path d="M8 3.5a.5.5 0 0 1 .5.5v3.5h3.5a.5.5 0 0 1 0 1H8.5v3.5a.5.5 0 0 1-1 0V8.5H4a.5.5 0 0 1 0-1h3.5V4a.5.5 0 0 1 .5-.5z"/>
-                 </svg>
-               </button>
-            </div>
-            
-            <button id="send-btn" class="send-btn" title="Send (Ctrl+Enter)">
-              <svg width="16" height="16" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
-                 <g transform="translate(8, 10) scale(0.9)">
-                   <rect x="0" y="0" width="50" height="45" rx="8"/>
-                   <rect x="0" y="55" width="50" height="45" rx="8"/>
-                   <rect x="0" y="110" width="50" height="45" rx="8"/>
-                   <rect x="60" y="27" width="50" height="45" rx="8"/>
-                   <rect x="60" y="82" width="50" height="45" rx="8"/>
-                   <rect x="120" y="55" width="50" height="45" rx="8"/>
-                 </g>
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
   </div>
 
-  <script>
+<script>
     const vscode = acquireVsCodeApi();
+    console.log('[DevOps Task Editor] Script Loaded - v0.0.4-ChecklistManager');
     
     // --- State ---
     const statusInput = document.getElementById('status');
-    const summaryInput = document.getElementById('summary');
+    const summaryInput = document.getElementById('summary'); // Hidden raw storage
     const checklistContainer = document.getElementById('checklist-view');
     const rawEditorContainer = document.getElementById('raw-editor-container');
-    const toggleEditBtn = document.getElementById('toggle-edit-mode');
-    
+    // const toggleEditBtn = document.getElementById('toggle-edit-mode'); // Removed for now
+
     // --- Status Chips ---
+    function updateTheme(color) {
+      document.documentElement.style.setProperty('--status-color', color);
+    }
+
     document.getElementById('status-chips').addEventListener('click', (e) => {
       const chip = e.target.closest('.status-chip');
       if (!chip) return;
       
       const val = chip.dataset.value;
+      const color = chip.dataset.color;
       
-      // Update Input
       statusInput.value = val;
       
-      // Update visuals
       document.querySelectorAll('.status-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
       
-      // Save immediately? Or just trigger update?
+      updateTheme(color);
       triggerUpdate();
     });
 
-    // --- Checklist Logic ---
-    function renderChecklist() {
-      const text = summaryInput.value;
-      const lines = text.split('\\n');
-      let html = '';
-      
-      lines.forEach((line, index) => {
-        const trimmed = line.trim();
-        // Check for - [ ] or - [x]
-        const isTask = trimmed.startsWith('- [ ]') || trimmed.startsWith('- [x]');
-        
-        if (isTask) {
-          const isChecked = trimmed.startsWith('- [x]');
-          const content = line.replace(/- \[[ x]\]/, '').trim();
-          html += \`<div class="checklist-item">\` +
-              \`<input type="checkbox" class="checklist-checkbox" data-index="\${index}" \${isChecked ? 'checked' : ''}>\` +
-              \`<div class="checklist-text \${isChecked ? 'done' : ''}" contenteditable="true" data-index="\${index}">\${content}</div>\` +
-            \`</div>\`;
-        } else if (trimmed.length > 0) {
-           // Render non-task lines as text (unless empty)
-           html += \`<div style="padding:4px 6px; font-size:13px; opacity:0.8">\${line}</div>\`;
+    // --- Checklist Manager ---
+    class ChecklistManager {
+        constructor(container, storageInput) {
+            this.container = container;
+            this.storageInput = storageInput;
+            this.items = []; // { id, text, checked, indent }
+            this.dragSrcEl = null;
+            this.dragSpacer = null;
+            
+            // Initial Parse
+            this.parse(this.storageInput.value);
+            this.render();
+            
+            // Listen for external updates (if any)
+            window.addEventListener('message', event => {
+                const message = event.data;
+                if (message.type === 'updateSummary') {
+                     if (message.summary !== this.serialize()) {
+                         this.parse(message.summary);
+                         this.render();
+                     }
+                }
+            });
         }
-      });
-      
-      if (!html) html = '<div style="opacity:0.5; font-size:12px; font-style:italic">No instructions. Edit to add "- [ ] Task".</div>';
-      
-      checklistContainer.innerHTML = html;
-      
-      // Re-attach listeners based on new DOM
-      attachChecklistListeners();
-    }
-    
-    function attachChecklistListeners() {
-       // Checkbox Toggles
-       checklistContainer.querySelectorAll('.checklist-checkbox').forEach(cb => {
-         cb.addEventListener('change', (e) => {
-           const index = parseInt(e.target.dataset.index);
-           const isChecked = e.target.checked;
-           updateLine(index, isChecked);
-         });
-       });
-       
-       // Content Edits (Editable Text)
-       checklistContainer.querySelectorAll('.checklist-text').forEach(div => {
-         div.addEventListener('input', (e) => {
-            const index = parseInt(e.target.dataset.index);
-            updateLineContent(index, e.target.innerText);
-         });
-       });
-    }
-    
-    function updateLine(index, checked) {
-       const lines = summaryInput.value.split('\\n');
-       if (index >= 0 && index < lines.length) {
-         const line = lines[index];
-         const prefix = checked ? '- [x]' : '- [ ]';
-         lines[index] = line.replace(/- \[[ x]\]/, prefix);
-         summaryInput.value = lines.join('\\n');
-         triggerUpdate();
-         
-         const textDiv = checklistContainer.querySelector(\`.checklist-text[data-index="\${index}"]\`);
-         if (textDiv) {
-             if(checked) textDiv.classList.add('done');
-             else textDiv.classList.remove('done');
-         }
-       }
+
+        generateId() {
+            return 'item-' + Math.random().toString(36).substr(2, 9);
+        }
+
+        parse(markdown) {
+            this.items = [];
+            if (!markdown) markdown = '';
+            const lines = markdown.split('\\n');
+            lines.forEach(line => {
+                // We want to preserve empty lines or treat them?
+                // For a task list, usually we filter empty.
+                const trimmed = line.trim();
+                if (!trimmed) {
+                    // Start fresh group? Or just ignore.
+                    // Let's ignore empty lines to prevent "ghost" items.
+                    return; 
+                }
+                
+                const match = line.match(/^(\s*)- \[(x| )\] (.*)$/);
+                if (match) {
+                    const indentRaw = match[1] || '';
+                    const isChecked = match[2] === 'x';
+                    const text = match[3];
+                    const indentLevel = Math.floor(indentRaw.replace(/\\t/g, '  ').length / 2);
+                    
+                    this.items.push({
+                        id: this.generateId(),
+                        type: 'task',
+                        text: text,
+                        checked: isChecked,
+                        indent: indentLevel
+                    });
+                } else {
+                    // Plain text line
+                    this.items.push({
+                        id: this.generateId(),
+                        type: 'text',
+                        text: line,
+                        checked: false,
+                        indent: 0
+                    });
+                }
+            });
+            
+            // Ensure at least one item if empty
+            if (this.items.length === 0) {
+                this.addItem(0, '');
+            }
+        }
+
+        serialize() {
+            return this.items.map(item => {
+                if (item.type === 'task') {
+                    const indent = '  '.repeat(item.indent);
+                    const mark = item.checked ? '[x]' : '[ ]';
+                    return \`\${indent}- \${mark} \${item.text}\`;
+                } else {
+                    return item.text;
+                }
+            }).join('\\n');
+        }
+
+        save() {
+            const md = this.serialize();
+            if (this.storageInput.value !== md) {
+                this.storageInput.value = md;
+                triggerUpdate();
+            }
+        }
+
+        render() {
+            this.container.innerHTML = '';
+            
+            this.items.forEach((item, index) => {
+                const el = this.createItemElement(item, index);
+                this.container.appendChild(el);
+            });
+        }
+
+        createItemElement(item, index) {
+            const div = document.createElement('div');
+            div.className = 'checklist-item';
+            div.draggable = true;
+            div.dataset.index = index;
+            div.dataset.id = item.id;
+            
+            // Indentation
+            const marginLeft = item.indent * 20;
+            div.style.marginLeft = \`\${marginLeft}px\`;
+
+            if (item.type === 'task') {
+                div.innerHTML = \`
+                    <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" class="checklist-checkbox" \${item.checked ? 'checked' : ''}>
+                    </div>
+                    <div class="checklist-text \${item.checked ? 'done' : ''}" contenteditable="true" placeholder="Task...">\${item.text}</div>
+                    <button class="delete-btn" title="Delete"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
+                \`;
+            } else {
+                div.innerHTML = \`
+                   <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
+                   <div style="width: 20px;"></div> <!-- Spacer -->
+                   <div class="checklist-text" contenteditable="true">\${item.text}</div>
+                   <button class="delete-btn" title="Delete"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
+                \`;
+            }
+
+            // Event Listeners
+            const checkbox = div.querySelector('.checklist-checkbox');
+            if (checkbox) {
+                checkbox.addEventListener('change', (e) => {
+                    item.checked = e.target.checked;
+                    const textDiv = div.querySelector('.checklist-text');
+                    if (item.checked) textDiv.classList.add('done');
+                    else textDiv.classList.remove('done');
+                    this.save();
+                });
+            }
+
+            const textDiv = div.querySelector('.checklist-text');
+            textDiv.addEventListener('input', (e) => {
+                item.text = e.target.innerText;
+                this.save(); 
+            });
+            
+            // Key navigation
+            textDiv.addEventListener('keydown', (e) => this.handleKeydown(e, item, index));
+
+            const deleteBtn = div.querySelector('.delete-btn');
+            deleteBtn.addEventListener('click', () => {
+                this.deleteItem(index);
+            });
+
+            // Drag Events
+            div.addEventListener('dragstart', (e) => this.handleDragStart(e, div, index));
+            div.addEventListener('dragend', (e) => this.handleDragEnd(e, div));
+            div.addEventListener('dragover', (e) => this.handleDragOver(e));
+            div.addEventListener('drop', (e) => this.handleDrop(e, index));
+
+            return div;
+        }
+
+        handleKeydown(e, item, index) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                // Add new item below
+                const nextIndex = index + 1;
+                this.addItem(nextIndex, '', item.indent);
+                this.render();
+                this.focusItem(nextIndex);
+            } else if (e.key === 'Backspace' && item.text === '') {
+                e.preventDefault();
+                // Delete empty item and focus previous
+                if (this.items.length > 1) {
+                    this.deleteItem(index);
+                    this.focusItem(index - 1);
+                }
+            } else if (e.key === 'Tab') {
+                e.preventDefault();
+                if (e.shiftKey) {
+                    // Outdent
+                    if (item.indent > 0) {
+                        item.indent--;
+                        this.render(); // Re-render to update margin
+                        this.save();
+                        this.focusItem(index);
+                    }
+                } else {
+                    // Indent
+                    item.indent++;
+                    this.render();
+                    this.save();
+                    this.focusItem(index);
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                this.focusItem(index - 1);
+            } else if (e.key === 'ArrowDown') {
+                 e.preventDefault();
+                 this.focusItem(index + 1);
+            }
+        }
+
+        addItem(index, text = '', indent = 0) {
+            this.items.splice(index, 0, {
+                id: this.generateId(),
+                type: 'task',
+                text: text,
+                checked: false,
+                indent: indent
+            });
+            this.save();
+        }
+
+        deleteItem(index) {
+            if (index >= 0 && index < this.items.length) {
+                this.items.splice(index, 1);
+                this.render();
+                this.save();
+            }
+        }
+
+        focusItem(index) {
+            setTimeout(() => {
+                const el = this.container.querySelector(\`.checklist-item[data-index="\${index}"] .checklist-text\`);
+                if (el) {
+                    el.focus();
+                    const range = document.createRange();
+                    const sel = window.getSelection();
+                    range.selectNodeContents(el);
+                    range.collapse(false);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+            }, 0);
+        }
+
+        // --- Drag and Drop ---
+        handleDragStart(e, el, index) {
+            this.dragSrcEl = el;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', index);
+            el.classList.add('dragging');
+        }
+
+        handleDragEnd(e, el) {
+            el.classList.remove('dragging');
+            if (this.dragSpacer) {
+                this.dragSpacer.remove();
+                this.dragSpacer = null;
+            }
+        }
+        
+        handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            
+            const afterElement = this.getDragAfterElement(e.clientY);
+            
+            if (!this.dragSpacer) {
+                this.dragSpacer = document.createElement('div');
+                this.dragSpacer.className = 'drag-spacer';
+            }
+            
+            if (afterElement) {
+                this.container.insertBefore(this.dragSpacer, afterElement);
+            } else {
+                this.container.appendChild(this.dragSpacer);
+            }
+        }
+        
+        getDragAfterElement(y) {
+             const draggableElements = [...this.container.querySelectorAll('.checklist-item:not(.dragging)')];
+             return draggableElements.reduce((closest, child) => {
+                 const box = child.getBoundingClientRect();
+                 const offset = y - box.top - box.height / 2;
+                 if (offset < 0 && offset > closest.offset) {
+                     return { offset: offset, element: child };
+                 } else {
+                     return closest;
+                 }
+             }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        handleDrop(e, targetIndex) {
+            e.preventDefault();
+            const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+            
+            // Logic based on spacer
+            const siblings = [...this.container.children];
+            const spacerIdx = siblings.indexOf(this.dragSpacer);
+            
+            let toIndex = 0;
+            let count = 0;
+            for(let i=0; i<siblings.length; i++) {
+                if (siblings[i] === this.dragSpacer) {
+                     toIndex = count;
+                     break;
+                }
+                if (siblings[i] !== this.dragSrcEl && siblings[i].classList.contains('checklist-item')) {
+                    count++;
+                }
+            }
+            
+            if (fromIndex !== toIndex) {
+                const item = this.items.splice(fromIndex, 1)[0];
+                this.items.splice(toIndex, 0, item);
+                this.render();
+                this.save();
+            }
+            
+            if (this.dragSpacer) this.dragSpacer.remove();
+            this.dragSpacer = null;
+        }
     }
 
-    function updateLineContent(index, newText) {
-       const lines = summaryInput.value.split('\\n');
-       if (index >= 0 && index < lines.length) {
-         const line = lines[index];
-         const match = line.match(/^(- \[[ x]\]\s*)/);
-         if (match) {
-             lines[index] = match[1] + newText;
-         } else {
-             lines[index] = newText;
-         }
-         summaryInput.value = lines.join('\\n');
-         
-         clearTimeout(timeout);
-         timeout = setTimeout(triggerUpdate, 1000);
-       }
-    }
+    // --- Init ---
+    const checklistManager = new ChecklistManager(checklistContainer, summaryInput);
 
-    // Toggle Mode
-    toggleEditBtn.addEventListener('click', () => {
-       const isRaw = rawEditorContainer.style.display === 'block';
-       if (isRaw) {
-         // Switch to View
-         rawEditorContainer.style.display = 'none';
-         checklistContainer.style.display = 'flex';
-         toggleEditBtn.textContent = 'Edit Raw Markdown';
-         renderChecklist();
-       } else {
-         // Switch to Edit
-         rawEditorContainer.style.display = 'block';
-         checklistContainer.style.display = 'none';
-         toggleEditBtn.textContent = 'View Checklist';
-       }
-    });
-    
-    // Initial Render
-    renderChecklist();
-    
-    // Sync Raw Edits to Render when typing in Raw Mode
-    summaryInput.addEventListener('input', () => {
-         clearTimeout(timeout);
-         timeout = setTimeout(triggerUpdate, 1000);
+    // Add New Item Button
+    document.getElementById('add-checklist-item').addEventListener('click', () => {
+        checklistManager.addItem(checklistManager.items.length);
+        checklistManager.render();
+        checklistManager.focusItem(checklistManager.items.length - 1);
     });
 
     // --- Collection & Updates ---
@@ -1055,184 +1130,6 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     document.getElementById('approvePlanBtn')?.addEventListener('click', () => {
       vscode.postMessage({ type: 'approvePlan' });
     });
-
-    // --- Chat Auto-Grow ---
-    const chatInput = document.getElementById('chat-input');
-    
-    chatInput?.addEventListener('input', function() {
-      // Prevent jitter by locking wrapper height - now targeting the box container
-      // But actually, we don't need to lock the wrapper anymore if it's flex auto?
-      // Let's keep the logic safe.
-      const wrapper = this.closest('.chat-input-wrapper');
-      if (wrapper) {
-         // Lock wrapper height effectively
-         wrapper.style.minHeight = wrapper.offsetHeight + 'px';
-      }
-
-      // Auto-grow
-      this.style.height = 'auto'; 
-      const newHeight = this.scrollHeight;
-      this.style.height = newHeight + 'px';
-      
-      if (wrapper) wrapper.style.minHeight = '';
-
-      // Control scrollbar
-      if (newHeight >= 320) {
-        this.style.overflowY = 'auto';
-      } else {
-        this.style.overflowY = 'hidden';
-      }
-      
-      // Reset if empty to default min-height
-      if (this.value === '') {
-          this.style.height = '40px'; 
-          this.style.overflowY = 'hidden';
-      }
-    });
-
-    const sendBtn = document.getElementById('send-btn');
-    const chatHistory = document.getElementById('chat-history');
-    const fileInput = document.getElementById('file-input');
-    const addFileBtn = document.getElementById('add-file-btn');
-    const dropZone = document.getElementById('chat-drop-zone');
-    const attachmentsArea = document.getElementById('chat-attachments');
-    
-    let currentFiles = []; // { name, type, data }
-
-    // --- File Handling ---
-    addFileBtn.addEventListener('click', () => fileInput.click());
-    
-    fileInput.addEventListener('change', (e) => {
-        handleFiles(e.target.files);
-        fileInput.value = ''; // Reset
-    });
-    
-    // Drag & Drop
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.classList.add('drag-active');
-    });
-    
-    dropZone.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('drag-active');
-    });
-    
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('drag-active');
-        handleFiles(e.dataTransfer.files);
-    });
-
-    function handleFiles(fileList) {
-        if (!fileList || fileList.length === 0) return;
-        
-        Array.from(fileList).forEach(file => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                currentFiles.push({
-                    name: file.name,
-                    type: file.type,
-                    data: e.target.result // Base64
-                });
-                renderAttachments();
-            };
-            reader.readAsDataURL(file);
-        });
-    }
-
-    function renderAttachments() {
-        if (currentFiles.length === 0) {
-            attachmentsArea.style.display = 'none';
-            attachmentsArea.innerHTML = '';
-            return;
-        }
-        
-        attachmentsArea.style.display = 'flex';
-        attachmentsArea.innerHTML = currentFiles.map((file, index) => {
-            const isImage = file.type.startsWith('image/');
-            const content = isImage 
-                ? \`<img src="\${file.data}" alt="\${file.name}">\`
-                : \`<div class="file-icon">📄</div>\`;
-                
-            return \`
-                <div class="attachment-thumb" title="\${file.name}">
-                   \${content}
-                   <div class="remove-attachment-btn" data-index="\${index}">✕</div>
-                </div>
-            \`;
-        }).join('');
-        
-        // Bind remove buttons
-        attachmentsArea.querySelectorAll('.remove-attachment-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const idx = parseInt(e.target.dataset.index);
-                currentFiles.splice(idx, 1);
-                renderAttachments();
-            });
-        });
-    }
-
-    function addMessageToUI(text, sender, files = []) {
-      const msgDiv = document.createElement('div');
-      msgDiv.className = \`chat-message \${sender}\`;
-      
-      // Render files if any in history (simple view)
-      let filesHtml = '';
-      if (files && files.length > 0) {
-          filesHtml = '<div class="message-files" style="display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap;">' + 
-            files.map(f => {
-                const isImage = f.type.startsWith('image/');
-                if (isImage) return \`<img src="\${f.data}" style="max-width:100px; border-radius:4px; border:1px solid rgba(255,255,255,0.1)">\`;
-                return \`<div style="font-size:11px; opacity:0.7">📄 \${f.name}</div>\`;
-            }).join('') + 
-          '</div>';
-      }
-      
-      msgDiv.innerHTML = \`
-        <div class="message-bubble">
-          \${filesHtml}
-          \${text
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")}
-        </div>
-        <div class="message-time">\${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-      \`;
-      chatHistory.appendChild(msgDiv);
-      chatHistory.scrollTop = chatHistory.scrollHeight;
-    }
-    
-    chatHistory.scrollTop = chatHistory.scrollHeight;
-
-    sendBtn?.addEventListener('click', () => {
-      const text = chatInput.value.trim();
-      if (!text && currentFiles.length === 0) return; // Allow sending just files
-
-      addMessageToUI(text, 'user', currentFiles); // Optimistic Update
-      chatInput.value = '';
-      
-      // Reset height
-      chatInput.style.height = 'auto';
-      
-      // Send
-      vscode.postMessage({
-        type: 'chat',
-        text: text,
-        sender: 'user',
-        files: currentFiles // Send files
-      });
-      
-      // Clear Attachments
-      currentFiles = [];
-      renderAttachments();
-    });
-
-    chatInput?.addEventListener('keydown', (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        sendBtn.click();
-      }
-    });
   </script>
 </body>
 </html>`;
@@ -1245,7 +1142,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     // Ideally we want to identify "blocks"
     // Heuristic: ## Headers start new items. Bullet points in between.
 
-    const lines = md.split('\n');
+    const lines = md.split('\\n');
     let html = '';
     let inItem = false;
 

@@ -78,7 +78,7 @@ export class DevOpsCodeLensProvider implements vscode.CodeLensProvider {
     }
 
     private formatTaskTitle(task: Task): string {
-        const status = this.getStatusIcon(task.status || 'todo');
+        const status = this.getStatusIcon(task.status || 'none');
         return `${status} ${task.title}`;
     }
 
@@ -86,7 +86,7 @@ export class DevOpsCodeLensProvider implements vscode.CodeLensProvider {
         const lines = [
             `Task: ${task.title}`,
             `ID: ${task.id}`,
-            `Status: ${task.status || 'todo'}`,
+            `Status: ${task.status || 'none'}`,
         ];
 
         if (task.owner) {
@@ -102,7 +102,7 @@ export class DevOpsCodeLensProvider implements vscode.CodeLensProvider {
 
     private getStatusIcon(status: string): string {
         const icons: Record<string, string> = {
-            'todo': '○',
+            'none': '○',
             'in_progress': '◉',
             'needs_feedback': '◐',
             'blocked': '●',

@@ -169,7 +169,7 @@ export function registerTaskCommands(
         context,
         'devops.setStatus',
         async (node?: BoardNode) => {
-            const statuses = ['todo', 'in_progress', 'needs_feedback', 'blocked'];
+            const statuses = ['in_progress', 'needs_feedback', 'blocked', 'done'];
             const picked = await vscode.window.showQuickPick(statuses, { placeHolder: 'Select new status' });
             if (picked) {
                 await handleSetStatus(picked, `Set to ${picked}`, provider, node);
@@ -250,7 +250,7 @@ export async function createTask(
         title: title,
         summary: summary,
         // priority removed
-        status: 'todo',
+        status: undefined,
         updatedAt: new Date().toISOString(),
     };
     board.items.push(task);
@@ -331,7 +331,7 @@ async function handleMoveTask(
 
     await boardService.moveTask(task.id, targetColumn.id);
 
-    // Status is auto-reset to 'todo' by boardService.moveTask
+    // Status is auto-reset to 'pending' by boardService.moveTask
 
     await provider.refresh();
     await appendTaskHistory(task, `Moved to column ${targetColumn.name || COLUMN_FALLBACK_NAME}`);

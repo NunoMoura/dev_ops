@@ -244,6 +244,33 @@ export async function handleBoardDeleteTasks(taskIds: string[], provider: BoardT
     if (confirmed !== 'Delete') {
         return;
     }
+
+    // Close any open editor tabs for these tasks to prevent stale state if IDs are reused
+    try {
+        const tabsToClose: vscode.Tab[] = [];
+        const allGroups = vscode.window.tabGroups.all;
+
+        for (const group of allGroups) {
+            for (const tab of group.tabs) {
+                // Check for Custom Text Editor tabs (Task Editor)
+                if (tab.input instanceof vscode.TabInputCustom && tab.input.viewType === 'devops.taskEditor') {
+                    const uriString = tab.input.uri.toString();
+                    // URI format: devops-task:/task/TASK-001.devops-task
+                    // See if any deleted Task ID is in the URI
+                    if (taskIds.some(id => uriString.includes(`${id}.devops-task`))) {
+                        tabsToClose.push(tab);
+                    }
+                }
+            }
+        }
+
+        if (tabsToClose.length > 0) {
+            await vscode.window.tabGroups.close(tabsToClose);
+        }
+    } catch (e) {
+        console.warn('Failed to close tabs for deleted tasks', e);
+    }
+
     try {
         for (const taskId of taskIds) {
             try {

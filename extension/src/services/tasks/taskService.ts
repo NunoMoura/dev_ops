@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { Board, Task, Column, DEFAULT_COLUMN_BLUEPRINTS, Workspace, ProgressReporter } from '../../types';
+import { Board, Task, Column, DEFAULT_COLUMN_BLUEPRINTS, Workspace, ProgressReporter, ChecklistItem } from '../../types';
 import { ProjectAuditService } from '../setup/projectAuditService';
 import { NodeWorkspace } from '../../infrastructure/nodeWorkspace';
 import { ConfigService } from '../setup/configService';
@@ -109,7 +109,8 @@ export class CoreTaskService {
         columnId: string,
         title: string,
         summary?: string,
-        dependsOn?: string[]
+        dependsOn?: string[],
+        checklist?: Array<{ text: string; done: boolean }>
     ): Promise<Task> {
         const board = await this.readBoard();
 
@@ -130,8 +131,9 @@ export class CoreTaskService {
             title,
             summary: (summary || '') + '\n\n' + getAgentInstructions(newId, 'Unknown'), // Phase unknown at creation
             updatedAt: new Date().toISOString(),
-            status: 'todo',
+            status: undefined,
             ...(dependsOn?.length ? { dependsOn } : {}),
+            ...(checklist?.length ? { checklist } : {})
         };
 
         // Update board view (in-memory)
@@ -263,7 +265,7 @@ export class CoreTaskService {
         // Basic fallback: just pick first todo item in backlog
         const backlogTasks = board.items.filter(t =>
             t.columnId === 'col-backlog' &&
-            t.status === 'todo' &&
+            !t.status &&
             !t.activeSession
         );
 

@@ -6,8 +6,8 @@ suite('Task filters', () => {
   const column: Column = { id: 'col-1', name: 'Implementation', position: 1 };
   const tasks: Task[] = [
     { id: '1', columnId: 'col-blocked', title: 'Ship auth', status: 'blocked' },
-    { id: '2', columnId: 'col-backlog', title: 'Write docs', status: 'todo' },
-    { id: '3', columnId: 'col-blocked', title: 'Tidy backlog', status: 'todo', tags: ['ops'] },
+    { id: '2', columnId: 'col-backlog', title: 'Write docs', status: undefined },
+    { id: '3', columnId: 'col-blocked', title: 'Tidy backlog', status: undefined, tags: ['ops'] },
   ];
 
   test('parseTaskFilter extracts text and tag tokens', () => {

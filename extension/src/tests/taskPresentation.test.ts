@@ -42,7 +42,7 @@ suite('taskPresentation - buildTaskDescription', () => {
     });
 
     test('joins parts with bullet separator', () => {
-        const task = createTask({ status: 'todo' });
+        const task = createTask({ status: 'in_progress' });
         const desc = buildTaskDescription(task);
         assert.ok(desc?.includes(' • '));
     });
