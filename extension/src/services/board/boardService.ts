@@ -467,24 +467,7 @@ export class BoardService {
                 startedAt: new Date().toISOString(),
             };
 
-            // Initialize Decision Trace
-            try {
-                const root = getRoot();
-                if (root) {
-                    const taskDir = path.join(root, '.dev_ops', 'tasks', taskId);
-                    if (!fs.existsSync(taskDir)) {
-                        await fs.promises.mkdir(taskDir, { recursive: true });
-                    }
-                    const tracePath = path.join(taskDir, 'trace.md');
-                    if (!fs.existsSync(tracePath)) {
-                        const header = `# Decision Trace: ${task.title}\n> Created: ${new Date().toLocaleString()}\n\n## Session Started (${options.driver.agent})\n- **Model**: ${options.driver.model}\n- **Phase**: ${task.columnId}\n\n`;
-                        await fs.promises.writeFile(tracePath, header, 'utf8');
-                        task.traceFile = `.dev_ops/tasks/${taskId}/trace.md`; // Relative path
-                    }
-                }
-            } catch (e) {
-                console.error('[BoardService] Failed to init trace file', e);
-            }
+
         }
 
         // 3. Auto-Promotion logic: Move from Backlog to Understand if claimed

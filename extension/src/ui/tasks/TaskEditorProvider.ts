@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { readBoard, writeBoard, getBoardPath } from '../../services/board/boardPersistence';
 import { boardService } from '../../services/board/boardService';
-import { Task, ChecklistItem, COLUMN_FALLBACK_NAME, TaskStatus, ChatMessage } from '../../types';
+import { Task, ChecklistItem, COLUMN_FALLBACK_NAME, TaskStatus } from '../../types';
 import { getFontLink, getSharedStyles, getCSPMeta } from '../shared/styles';
 import { handleCardUpdateMessage, handleCardDeleteMessage } from '../../vscode/commands/sharedHandlers';
 import { BoardTreeProvider } from '../board';
@@ -72,23 +72,11 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         return;
       }
       const board = await readBoard();
-      const traceContent = await this.readTraceFile(taskId);
-      webviewPanel.webview.html = this.getEditorHtml(task, board.columns, traceContent, webviewPanel.webview);
+      webviewPanel.webview.html = this.getEditorHtml(task, board.columns, webviewPanel.webview);
     };
 
     // Initial render
     await updateWebview();
-
-    // Watch for trace file changes
-    const tracePath = await this.getTraceFilePath(taskId);
-    if (tracePath) {
-      const watcher = vscode.workspace.createFileSystemWatcher(tracePath);
-      const changeListener = watcher.onDidChange(() => updateWebview());
-      webviewPanel.onDidDispose(() => {
-        changeListener.dispose();
-        watcher.dispose();
-      });
-    }
 
     // Handle messages
     webviewPanel.webview.onDidReceiveMessage(async (message) => {
@@ -164,21 +152,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     return board.items.find(t => t.id === taskId);
   }
 
-  private async getTraceFilePath(taskId: string): Promise<string | undefined> {
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (!workspaceFolders) { return undefined; }
-    // Assuming single root for now or first root containing .dev_ops
-    const root = workspaceFolders[0].uri.fsPath; // Simplification, robust logic is in boardStore
-    return path.join(root, '.dev_ops', 'tasks', taskId, 'trace.md');
-  }
 
-  private async readTraceFile(taskId: string): Promise<string> {
-    const tracePath = await this.getTraceFilePath(taskId);
-    if (tracePath && fs.existsSync(tracePath)) {
-      return fs.readFileSync(tracePath, 'utf8');
-    }
-    return '';
-  }
 
   // These are now handled by sharedHandlers
 
@@ -186,9 +160,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     return `<html><body><h2 style="color:red">${message}</h2></body></html>`;
   }
 
-  private getEditorHtml(task: Task, columns: Array<{ id: string; name: string }>, traceMarkdown: string, webview: vscode.Webview): string {
-    // Simple Markdown parsing for Trace
-    const parsedTrace = this.parseTraceMarkdown(traceMarkdown);
+  private getEditorHtml(task: Task, columns: Array<{ id: string; name: string }>, webview: vscode.Webview): string {
 
     // Get status color for accent
     const statusColors: Record<string, string> = {
@@ -523,6 +495,9 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         line-height: 1;
         display: flex;
         align-items: center;
+        justify-content: center;
+        height: 20px; /* Match checkbox height roughly or ensure centering */
+        width: 16px;
       }
       .drag-handle:hover { opacity: 1; }
       
@@ -638,11 +613,49 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         display: none; /* Hidden by default */
       }
       
-      .todo-section {
-        /* border-left and radius handled by section-card */
-        padding-left: 12px;
-        margin-bottom: 24px;
+      .description-input {
+        width: 100%;
+        min-height: 100px;
+        background: transparent;
+        color: var(--vscode-input-foreground);
+        border: none;
+        padding: 8px;
+        font-family: var(--vscode-editor-font-family);
+        font-size: 13px;
+        resize: vertical;
+        outline: none;
+        display: block;
       }
+      .description-input:focus {
+         background: var(--vscode-input-background);
+      }
+
+      .checklist-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        border-radius: 4px;
+        transition: background 0.1s;
+        background: var(--vscode-editor-background); 
+      }
+      .checklist-text {
+        font-size: 13px;
+        line-height: 1.5;
+        flex: 1;
+        outline: none;
+        border: 1px solid transparent;
+        min-width: 0;
+        padding-top: 1px; 
+      }
+      
+      .checkbox-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Reuse other styles */
     </style>`;
 
     return `<!DOCTYPE html>
@@ -660,7 +673,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
   
   <div class="main-container">
     
-    <!-- Scrollable Top Section (Header, Status, Instructions, Trace? No trace in new design? Trace is good.) -->
+    <!-- Scrollable Top Section -->
     <div class="scrollable-content">
       
       <!-- Header -->
@@ -690,6 +703,14 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         </div>
       </div>
 
+      <!-- Description Section -->
+      <div class="content-section description-section section-card">
+        <div class="section-header">
+          <span>CONTEXT / DESCRIPTION</span>
+        </div>
+        <textarea id="description" class="description-input" placeholder="Add context, instructions, or requirements here...">${task.summary || ''}</textarea>
+      </div>
+
        <input type="hidden" id="status" value="${currentStatus}">
        <input type="hidden" id="column" value="${task.columnId || ''}">
 
@@ -714,20 +735,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
            </svg>
            Add item
         </button>
-
-        <!-- Raw Editor (Hidden by default, removed button to toggle it for now per request) -->
-        <div class="raw-instructions-container" id="raw-editor-container">
-           <textarea id="summary" class="instructions-input" style="display:none"
-            placeholder="- [ ] Add items here...">${task.summary || ''}</textarea>
-        </div>
       </div>
-
-      <!-- Trace (Optional, keeping it as it was useful) -->
-      ${traceMarkdown ? `
-      <div class="content-section">
-        <div class="section-header">Decision Trace</div>
-         <div class="trace-content">${parsedTrace}</div>
-      </div>` : ''}
 
        <!-- Footer Actions -->
       <div class="actions-footer">
@@ -740,14 +748,14 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
 <script>
     const vscode = acquireVsCodeApi();
-    console.log('[DevOps Task Editor] Script Loaded - v0.0.4-ChecklistManager');
     
     // --- State ---
     const statusInput = document.getElementById('status');
-    const summaryInput = document.getElementById('summary'); // Hidden raw storage
+    const descriptionInput = document.getElementById('description');
     const checklistContainer = document.getElementById('checklist-view');
-    const rawEditorContainer = document.getElementById('raw-editor-container');
-    // const toggleEditBtn = document.getElementById('toggle-edit-mode'); // Removed for now
+    
+    // Initial Data
+    const initialChecklist = ${JSON.stringify(task.checklist || [])};
 
     // --- Status Chips ---
     function updateTheme(color) {
@@ -772,25 +780,26 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
     // --- Checklist Manager ---
     class ChecklistManager {
-        constructor(container, storageInput) {
+        constructor(container, items) {
             this.container = container;
-            this.storageInput = storageInput;
-            this.items = []; // { id, text, checked, indent }
+            this.items = items ? JSON.parse(JSON.stringify(items)) : []; // Deep copy
             this.dragSrcEl = null;
             this.dragSpacer = null;
             
-            // Initial Parse
-            this.parse(this.storageInput.value);
+            // Ensure ids
+            this.items.forEach(item => {
+                if (!item.id) item.id = this.generateId();
+                if (item.indent === undefined) item.indent = 0;
+            });
+            
             this.render();
             
-            // Listen for external updates (if any)
+            // Listen for external updates
             window.addEventListener('message', event => {
                 const message = event.data;
-                if (message.type === 'updateSummary') {
-                     if (message.summary !== this.serialize()) {
-                         this.parse(message.summary);
-                         this.render();
-                     }
+                if (message.type === 'updateChecklist') {
+                     this.items = message.checklist || [];
+                     this.render();
                 }
             });
         }
@@ -799,70 +808,8 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
             return 'item-' + Math.random().toString(36).substr(2, 9);
         }
 
-        parse(markdown) {
-            this.items = [];
-            if (!markdown) markdown = '';
-            const lines = markdown.split('\\n');
-            lines.forEach(line => {
-                // We want to preserve empty lines or treat them?
-                // For a task list, usually we filter empty.
-                const trimmed = line.trim();
-                if (!trimmed) {
-                    // Start fresh group? Or just ignore.
-                    // Let's ignore empty lines to prevent "ghost" items.
-                    return; 
-                }
-                
-                const match = line.match(/^(\s*)- \[(x| )\] (.*)$/);
-                if (match) {
-                    const indentRaw = match[1] || '';
-                    const isChecked = match[2] === 'x';
-                    const text = match[3];
-                    const indentLevel = Math.floor(indentRaw.replace(/\\t/g, '  ').length / 2);
-                    
-                    this.items.push({
-                        id: this.generateId(),
-                        type: 'task',
-                        text: text,
-                        checked: isChecked,
-                        indent: indentLevel
-                    });
-                } else {
-                    // Plain text line
-                    this.items.push({
-                        id: this.generateId(),
-                        type: 'text',
-                        text: line,
-                        checked: false,
-                        indent: 0
-                    });
-                }
-            });
-            
-            // Ensure at least one item if empty
-            if (this.items.length === 0) {
-                this.addItem(0, '');
-            }
-        }
-
-        serialize() {
-            return this.items.map(item => {
-                if (item.type === 'task') {
-                    const indent = '  '.repeat(item.indent);
-                    const mark = item.checked ? '[x]' : '[ ]';
-                    return \`\${indent}- \${mark} \${item.text}\`;
-                } else {
-                    return item.text;
-                }
-            }).join('\\n');
-        }
-
         save() {
-            const md = this.serialize();
-            if (this.storageInput.value !== md) {
-                this.storageInput.value = md;
-                triggerUpdate();
-            }
+            triggerUpdate();
         }
 
         render() {
@@ -882,38 +829,28 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
             div.dataset.id = item.id;
             
             // Indentation
-            const marginLeft = item.indent * 20;
+            const marginLeft = (item.indent || 0) * 20;
             div.style.marginLeft = \`\${marginLeft}px\`;
 
-            if (item.type === 'task') {
-                div.innerHTML = \`
-                    <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
-                    <div class="checkbox-wrapper">
-                        <input type="checkbox" class="checklist-checkbox" \${item.checked ? 'checked' : ''}>
-                    </div>
-                    <div class="checklist-text \${item.checked ? 'done' : ''}" contenteditable="true" placeholder="Task...">\${item.text}</div>
-                    <button class="delete-btn" title="Delete"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
-                \`;
-            } else {
-                div.innerHTML = \`
-                   <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
-                   <div style="width: 20px;"></div> <!-- Spacer -->
-                   <div class="checklist-text" contenteditable="true">\${item.text}</div>
-                   <button class="delete-btn" title="Delete"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
-                \`;
-            }
+            // HTML Structure
+            div.innerHTML = \`
+                <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" class="checklist-checkbox" \${item.done ? 'checked' : ''}>
+                </div>
+                <div class="checklist-text \${item.done ? 'done' : ''}" contenteditable="true" placeholder="Task...">\${item.text}</div>
+                <button class="delete-btn" title="Delete"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
+            \`;
 
             // Event Listeners
             const checkbox = div.querySelector('.checklist-checkbox');
-            if (checkbox) {
-                checkbox.addEventListener('change', (e) => {
-                    item.checked = e.target.checked;
-                    const textDiv = div.querySelector('.checklist-text');
-                    if (item.checked) textDiv.classList.add('done');
-                    else textDiv.classList.remove('done');
-                    this.save();
-                });
-            }
+            checkbox.addEventListener('change', (e) => {
+                item.done = e.target.checked;
+                const textDiv = div.querySelector('.checklist-text');
+                if (item.done) textDiv.classList.add('done');
+                else textDiv.classList.remove('done');
+                this.save();
+            });
 
             const textDiv = div.querySelector('.checklist-text');
             textDiv.addEventListener('input', (e) => {
@@ -944,14 +881,13 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
                 // Add new item below
                 const nextIndex = index + 1;
                 this.addItem(nextIndex, '', item.indent);
-                this.render();
                 this.focusItem(nextIndex);
             } else if (e.key === 'Backspace' && item.text === '') {
                 e.preventDefault();
                 // Delete empty item and focus previous
-                if (this.items.length > 1) {
+                if (this.items.length > 0) {
                     this.deleteItem(index);
-                    this.focusItem(index - 1);
+                    if (index > 0) this.focusItem(index - 1);
                 }
             } else if (e.key === 'Tab') {
                 e.preventDefault();
@@ -959,13 +895,13 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
                     // Outdent
                     if (item.indent > 0) {
                         item.indent--;
-                        this.render(); // Re-render to update margin
+                        this.render(); 
                         this.save();
                         this.focusItem(index);
                     }
                 } else {
                     // Indent
-                    item.indent++;
+                    item.indent = (item.indent || 0) + 1;
                     this.render();
                     this.save();
                     this.focusItem(index);
@@ -982,11 +918,11 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         addItem(index, text = '', indent = 0) {
             this.items.splice(index, 0, {
                 id: this.generateId(),
-                type: 'task',
                 text: text,
-                checked: false,
+                done: false,
                 indent: indent
             });
+            this.render();
             this.save();
         }
 
@@ -1064,10 +1000,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
             e.preventDefault();
             const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
             
-            // Logic based on spacer
             const siblings = [...this.container.children];
-            const spacerIdx = siblings.indexOf(this.dragSpacer);
-            
             let toIndex = 0;
             let count = 0;
             for(let i=0; i<siblings.length; i++) {
@@ -1093,12 +1026,11 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     }
 
     // --- Init ---
-    const checklistManager = new ChecklistManager(checklistContainer, summaryInput);
+    const checklistManager = new ChecklistManager(checklistContainer, initialChecklist);
 
     // Add New Item Button
     document.getElementById('add-checklist-item').addEventListener('click', () => {
         checklistManager.addItem(checklistManager.items.length);
-        checklistManager.render();
         checklistManager.focusItem(checklistManager.items.length - 1);
     });
 
@@ -1109,7 +1041,8 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         title: document.getElementById('title').value,
         status: statusInput.value,
         columnId: document.getElementById('column').value,
-        summary: summaryInput.value
+        summary: descriptionInput.value,
+        checklist: checklistManager.items
       };
     }
 
@@ -1119,6 +1052,12 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
     var timeout;
     document.getElementById('title').addEventListener('input', () => {
+        clearTimeout(timeout);
+        timeout = setTimeout(triggerUpdate, 1000);
+    });
+    
+    // Description Auto-save
+    descriptionInput.addEventListener('input', () => {
         clearTimeout(timeout);
         timeout = setTimeout(triggerUpdate, 1000);
     });
@@ -1135,39 +1074,5 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 </html>`;
   }
 
-  private parseTraceMarkdown(md: string): string {
-    if (!md) { return ''; }
 
-    // Simple parser: Split by double newline or header
-    // Ideally we want to identify "blocks"
-    // Heuristic: ## Headers start new items. Bullet points in between.
-
-    const lines = md.split('\\n');
-    let html = '';
-    let inItem = false;
-
-    lines.forEach(line => {
-      if (line.startsWith('# ')) {
-        // Main Header - ignore or special style
-      } else if (line.startsWith('> Created:')) {
-        html += `<div class="trace-date">${line.replace('> Created:', '').trim()}</div>`;
-      } else if (line.startsWith('## ') || line.startsWith('### ')) {
-        if (inItem) { html += '</div></div>'; }
-        html += `<div class="trace-item"><div class="trace-content"><h3>${line.replace(/#+\s/, '')}</h3>`;
-        inItem = true;
-      } else if (line.trim().startsWith('- ')) {
-        if (!inItem) {
-          // Orphan bullets
-          html += `<div class="trace-item"><div class="trace-content">`;
-          inItem = true;
-        }
-        html += `<li>${line.replace('- ', '')}</li>`;
-      } else {
-        if (inItem && line.trim()) { html += `<p>${line}</p>`; }
-      }
-    });
-
-    if (inItem) { html += '</div></div>'; }
-    return html;
-  }
 }

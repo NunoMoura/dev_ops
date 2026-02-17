@@ -116,11 +116,12 @@ export async function handleCardUpdateMessage(
         if (update.title !== undefined) { updates.title = update.title.trim() || 'Untitled'; }
         if (update.summary !== undefined) { updates.summary = update.summary.trim() || undefined; }
         if (update.tags !== undefined) { updates.tags = parseTags(update.tags); }
+        if (update.checklist !== undefined) { updates.checklist = update.checklist; }
         // priority update removed
         if (update.workflow !== undefined) { updates.workflow = update.workflow; }
 
         if (update.status !== undefined) { updates.status = update.status as any; }
-        if (update.chatHistory !== undefined) { updates.chatHistory = update.chatHistory; }
+
 
         // Persist dependency changes
         if ('dependsOn' in update) {

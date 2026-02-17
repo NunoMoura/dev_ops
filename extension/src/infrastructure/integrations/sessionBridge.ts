@@ -86,12 +86,6 @@ export class SessionBridge {
             const taskId = await boardService.getCurrentTask();
 
             if (taskId) {
-                // Link walkthrough in trace
-                const task = await boardService.getTask(taskId);
-                if (task) {
-                    await this.appendTraceLink(taskId, uri, 'Walkthrough');
-                }
-
                 // Unclaim the task (session completed)
                 await boardService.unclaimTask(taskId);
 
@@ -99,23 +93,6 @@ export class SessionBridge {
             }
         } catch (e) {
             logError('SessionBridge: Failed to handle walkthrough creation', e);
-        }
-    }
-
-    private async appendTraceLink(taskId: string, uri: vscode.Uri, label: string) {
-        try {
-            const root = this.getWorkspaceRoot();
-            if (!root) { return; }
-
-            const tracePath = path.join(root, '.dev_ops', 'tasks', taskId, 'trace.md');
-            if (fs.existsSync(tracePath)) {
-                // Formatting link: [Label](file://...)
-                // We use file:// URI for clickable links in VS Code markdown
-                const link = `\n- **Artifact**: [${label}](${uri.toString()})\n`;
-                await fs.promises.appendFile(tracePath, link, 'utf8');
-            }
-        } catch (e) {
-            logError(`SessionBridge: Failed to append trace link for ${taskId}`, e);
         }
     }
 

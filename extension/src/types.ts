@@ -45,15 +45,10 @@ export type TaskStatus = 'none' | 'in_progress' | 'needs_feedback' | 'blocked' |
 export type ChecklistItem = {
   text: string;
   done: boolean;
+  indent?: number; // Visual nesting level
 };
 
-export type ChatMessage = {
-  id: string;
-  sender: 'user' | 'agent';
-  text: string;
-  timestamp: number; // Unix timestamp
-  files?: Array<{ name: string; type: string; data: string }>; // base64 data
-};
+
 
 export type Task = {
   id: string;                    // TASK-XXX format
@@ -95,8 +90,7 @@ export type Task = {
   owner?: string;                // Human Developer responsible (e.g. "Nuno")
   activeSession?: AgentSession;  // Current active agent execution
   agentHistory?: AgentActivity[]; // History of past sessions
-  chatHistory?: ChatMessage[];   // History of user-agent chat
-  traceFile?: string;            // Path to current decision trace
+
 };
 
 export type AgentSession = {
@@ -116,7 +110,7 @@ export type AgentActivity = {
   startedAt: string;
   endedAt: string;
   summary?: string;              // Short summary of the session
-  traceFile?: string;            // Path to decision trace (e.g., .dev_ops/activity/TASK-001.md)
+
 };
 
 export type TaskSource = {
@@ -231,6 +225,7 @@ export type TaskDetailsPayload = {
   workflow?: string;              // DevOps workflow (e.g., /create_plan)
   dependsOn?: string[];           // Task dependencies (TASK-XXX IDs)
   priority?: string;
+  checklist?: ChecklistItem[];    // Executable checklist
   owner?: {                       // Task Ownership
     developer?: string;
     agent?: string; // Agent name
@@ -238,5 +233,5 @@ export type TaskDetailsPayload = {
     type?: string;
     sessionId?: string;
   };
-  chatHistory?: ChatMessage[];
+
 };
