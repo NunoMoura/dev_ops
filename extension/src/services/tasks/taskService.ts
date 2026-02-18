@@ -110,7 +110,8 @@ export class CoreTaskService {
         title: string,
         summary?: string,
         dependsOn?: string[],
-        checklist?: Array<{ text: string; done: boolean }>
+        checklist?: Array<{ text: string; done: boolean }>,
+        parentId?: string
     ): Promise<Task> {
         const board = await this.readBoard();
 
@@ -133,7 +134,8 @@ export class CoreTaskService {
             updatedAt: new Date().toISOString(),
             status: undefined,
             ...(dependsOn?.length ? { dependsOn } : {}),
-            ...(checklist?.length ? { checklist } : {})
+            ...(checklist?.length ? { checklist } : {}),
+            ...(parentId ? { parentId } : {})
         };
 
         // Update board view (in-memory)
@@ -145,7 +147,60 @@ export class CoreTaskService {
         // Save Task (persists item)
         await this.saveTask(newTask);
 
+        // If this is a sub-task, update the parent: add tracking checklist entry + block it
+        if (parentId) {
+            await this._linkChildToParent(board, parentId, newId, title);
+        }
+
         return newTask;
+    }
+
+    /**
+     * Links a newly created child task to its parent:
+     * - Validates maxDepth from decomposition config
+     * - Appends a tracking checklist entry to the parent
+     * - Sets parent status to 'blocked' if not already blocked or done
+     */
+    private async _linkChildToParent(board: Board, parentId: string, childId: string, childTitle: string): Promise<void> {
+        const parent = board.items.find(t => t.id === parentId);
+        if (!parent) {
+            console.warn(`[TaskService] Parent task ${parentId} not found — child ${childId} created without parent link.`);
+            return;
+        }
+
+        // Enforce maxDepth: walk the parent chain to compute depth
+        const configService = new ConfigService(this.workspace);
+        const config = await configService.readConfig();
+        const maxDepth = config.decomposition?.maxDepth ?? 2;
+
+        let depth = 1;
+        let current = parent;
+        while (current.parentId) {
+            const ancestor = board.items.find(t => t.id === current.parentId);
+            if (!ancestor) { break; }
+            depth++;
+            current = ancestor;
+        }
+        if (depth >= maxDepth) {
+            throw new Error(
+                `Cannot create sub-task of ${parentId}: max decomposition depth (${maxDepth}) reached. ` +
+                `Current chain is ${depth} level(s) deep. Increase decomposition.maxDepth in .dev_ops/config.json if needed.`
+            );
+        }
+
+        // Add tracking checklist entry
+        if (!parent.checklist) {
+            parent.checklist = [];
+        }
+        parent.checklist.push({ text: `${childId}: ${childTitle} → col-backlog`, done: false });
+
+        // Auto-block parent if it isn't already blocked or done
+        if (parent.status !== 'blocked' && parent.status !== 'done' && parent.status !== 'archived') {
+            parent.status = 'blocked';
+        }
+
+        parent.updatedAt = new Date().toISOString();
+        await this.saveTask(parent);
     }
 
     public async moveTask(taskId: string, columnId: string): Promise<void> {

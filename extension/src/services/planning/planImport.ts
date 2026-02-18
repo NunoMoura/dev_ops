@@ -104,6 +104,8 @@ export function normalizePlanTaskFromJson(input: any, index: number): ImportedTa
     dependencies: ensureStringArray(input?.dependencies),
     risks: ensureStringArray(input?.risks),
     checklist: ensureStringArray(input?.checklist),
+    dependsOn: ensureStringArray(input?.dependsOn),
+    parentId: typeof input?.parentId === 'string' ? input.parentId.trim() || undefined : undefined,
     context: typeof input?.context === 'string' ? input.context : undefined,
     contextRange: undefined,
   };

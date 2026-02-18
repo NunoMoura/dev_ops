@@ -60,6 +60,7 @@ program
     .option('--summary <summary>', 'task summary')
     .option('--column <column>', 'column ID', 'col-backlog')
     .option('--depends-on <ids>', 'comma-separated TASK-XXX IDs this task depends on')
+    .option('--parent-id <id>', 'parent TASK-XXX ID — creates this as a sub-task')
     .action(async (options) => {
         const dependsOn = options.dependsOn
             ? options.dependsOn.split(',').map((s: string) => s.trim()).filter(Boolean)
@@ -68,13 +69,18 @@ program
             options.column,
             options.title,
             options.summary,
-            dependsOn
+            dependsOn,
+            undefined,
+            options.parentId
         );
+        const parts: string[] = [`Created Task: ${task.id}`];
         if (task.dependsOn?.length) {
-            console.log(`Created Task: ${task.id} (depends on: ${task.dependsOn.join(', ')})`);
-        } else {
-            console.log(`Created Task: ${task.id}`);
+            parts.push(`(depends on: ${task.dependsOn.join(', ')})`);
         }
+        if (task.parentId) {
+            parts.push(`(sub-task of: ${task.parentId})`);
+        }
+        console.log(parts.join(' '));
     });
 
 program

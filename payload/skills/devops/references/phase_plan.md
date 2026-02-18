@@ -46,16 +46,35 @@
 
 * **Condition**: If the change requires updates to sub-components (child folders):
     1. **Stop**: Do not edit their files.
-    2. **Create Task**: Use `node .dev_ops/scripts/devops.js create-task` to create a new task for *each* affected child.
-        * Title: "Update [Child Name] Spec to match [Parent] changes"
-        * Trigger: The current task ID.
-    3. **Link**: Add the new Task IDs to the **Current Task's** `dependsOn` list (edit `.dev_ops/tasks/[ID]/task.md`).
+    2. **Create Sub-Task**: Use `node .dev_ops/scripts/devops.js create-task` with `--parent-id` to create a new task for *each* affected child.
+
+        ```bash
+        node .dev_ops/scripts/devops.js create-task \
+          --title "Implement [Child Name]" \
+          --parent-id TASK-XXX
+        ```
+
+        This automatically: sets `parentId` on the child, adds a tracking checklist entry to the parent, and blocks the parent.
+    3. **Order siblings** (optional): Use `--depends-on` to declare execution order between sibling tasks.
 * **Reference**: [Decomposition Rules](./decomposition_rules.md)
 
 ### 5. Review (The "Leaf vs Node")
 
 * **Leaf**: If no child tasks were created, you are a Leaf. → Move to **Implement**.
-* **Node**: If child tasks were created, you are a Node. → Mark as **Blocked** (or keep open) until children are done.
+* **Node**: If child tasks were created, you are a Node. → Parent is auto-blocked. Wait until all children reach Done, then move parent to **Verify**.
+
+### 6. Parent Lifecycle
+
+When a Node task decomposes:
+
+| State | Condition |
+|-------|-----------|
+| `blocked` | Auto-set when first child is created via `--parent-id` |
+| Stays in **Plan** | Parent waits while children flow independently through the pipeline |
+| Unblocked → **Verify** | When all children reach Done (auto if `autoUnblockParent: true` in config) |
+| **Done** | Parent validates the integrated result of all children |
+
+> The parent's `checklist` shows the tracking overview of child tasks and their current column.
 
 ---
 
@@ -107,7 +126,7 @@ Result: Parent spec updated, 3 child tasks created, parent marked as Blocked.
 
 * [ ] Current `SPEC.md` is updated and precise.
 * [ ] Child tasks created for all affected sub-components.
-* [ ] Current Task `dependsOn` updated (if Node).
+* [ ] Child tasks created with `--parent-id` for all affected sub-components (if Node).
 * [ ] NO code changes (only `SPEC.md` and `task.md`).
 
 ---

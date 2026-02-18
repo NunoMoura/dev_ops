@@ -64,8 +64,19 @@ All templates are in `./assets/`. Copy to the correct path based on type.
 **Steps**: Read spec headers → Analyze hierarchy → Update local `SPEC.md` → Decompose (delegate) → Review leaf vs node
 
 **Deliverable**: Updated `SPEC.md` + Child Tasks
-**Create tasks**: `node .dev_ops/scripts/devops.js create-task --title "..." --depends-on TASK-XXX`
+**Create sub-tasks**: `node .dev_ops/scripts/devops.js create-task --title "..." --parent-id TASK-XXX`
 **Full guide**: [phase_plan.md](./references/phase_plan.md) · **Rules**: [decomposition_rules.md](./references/decomposition_rules.md)
+
+### Task Composition
+
+> **Checklist items** = steps within one agent session. **Sub-tasks** = independent work items with their own pipeline.
+
+| Concept | When | CLI |
+|---------|------|-----|
+| Checklist item | Step done in one phase by one agent | Edit task card directly |
+| Sub-task | Step needs its own Understand→Verify cycle | `create-task --parent-id TASK-XXX` |
+
+When `--parent-id` is used: child gets `parentId` set, parent gets a tracking checklist entry, parent is auto-blocked. Parent unblocks when all children reach Done.
 
 ---
 

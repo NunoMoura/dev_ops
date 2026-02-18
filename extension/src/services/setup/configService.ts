@@ -6,11 +6,21 @@ export interface DeveloperConfig {
     email?: string;
 }
 
+export interface DecompositionConfig {
+    /** Maximum nesting depth for parent→child tasks (default: 2) */
+    maxDepth?: number;
+    /** Allow child tasks to skip Understand and start at Plan (default: false) */
+    childSkipUnderstand?: boolean;
+    /** Auto-move parent to Verify when all children reach Done (default: true) */
+    autoUnblockParent?: boolean;
+}
+
 export interface ProjectConfig {
     developer?: DeveloperConfig;
     projectType?: 'greenfield' | 'brownfield' | 'fresh' | 'skip';
     githubWorkflowsEnabled?: boolean;
     selectedIDEs?: string[];
+    decomposition?: DecompositionConfig;
     [key: string]: any;
 }
 
@@ -57,6 +67,15 @@ export class ConfigService {
                 ...updates.developer
             };
             delete (updates as any).developer;
+        }
+
+        // Handle nested decomposition update
+        if (updates.decomposition) {
+            config.decomposition = {
+                ...(config.decomposition || {}),
+                ...updates.decomposition
+            };
+            delete (updates as any).decomposition;
         }
 
         Object.assign(config, updates);

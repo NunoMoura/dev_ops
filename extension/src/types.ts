@@ -60,6 +60,7 @@ export type Task = {
   updatedAt?: string;
   status?: TaskStatus;           // Autonomy state (default: ready)
   assignee?: string;             // Agent or human assigned to task
+  parentId?: string;             // Parent TASK-XXX ID (null = top-level task)
   dependsOn?: string[];           // TASK-XXX IDs that must complete before this task starts
 
   // DevOps workflow
@@ -162,6 +163,7 @@ export type ImportedTask = {
   context?: string;
   contextRange?: { startLine: number; endLine: number };
   dependsOn?: string[];           // TASK-XXX IDs that must complete first
+  parentId?: string;             // Parent TASK-XXX ID (task composition)
   // Legacy fields for backward compatibility with plan import
   dependencies?: string[];
 };
@@ -224,6 +226,7 @@ export type TaskDetailsPayload = {
   column?: string;                // Column display name
   workflow?: string;              // DevOps workflow (e.g., /create_plan)
   dependsOn?: string[];           // Task dependencies (TASK-XXX IDs)
+  parentId?: string;             // Parent TASK-XXX ID (task composition)
   priority?: string;
   checklist?: ChecklistItem[];    // Executable checklist
   owner?: {                       // Task Ownership

@@ -8,6 +8,7 @@ column: col-backlog    # Current Board column
 status: ready          # ready | in_progress | needs_feedback | blocked | done
 priority: medium       # high | medium | low
 trigger: ""            # What spawned this task (PRD-XXX, FEAT-XXX, BUG-XXX)
+parentId: null         # Parent TASK-XXX ID (null = top-level task)
 dependsOn: []          # TASK-XXX IDs that must complete first
 artifacts:             # Pointers to ephemeral artifact content
   research: null       # RES-XXX - set by Understand phase
