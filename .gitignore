@@ -54,3 +54,9 @@ venv/
 
 
 .dev_ops/.tmp/
+
+# Generated
+.agent/
+.cursor/
+*.pdf
+.pdf_extracted.txt

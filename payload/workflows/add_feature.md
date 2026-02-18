@@ -12,7 +12,7 @@ Create FEAT-XXX and decompose into backlog tasks.
 ## Step 1: Create Feature Doc
 
 ```bash
-cp .dev_ops/templates/docs/feature.md .dev_ops/docs/FEAT-XXX.md
+cp .agent/skills/devops/assets/feature.md .dev_ops/docs/FEAT-XXX.md
 ```
 
 ---

@@ -1,9 +1,4 @@
----
-name: understand
-description: Research deeply before planning. Focus on "Zoom-Out" context loading via SPEC headers.
----
-
-# Understand Phase
+# Phase: Understand
 
 > Know more about the problem than the person who wrote the trigger doc.
 
@@ -57,7 +52,51 @@ Document explicitly in `RES-XXX`:
 
 ### 5. Create Research Artifact
 
-Use template: `.dev_ops/templates/artifacts/research.md`
+Use template: [research.md](../assets/research.md)
+
+---
+
+## Examples
+
+### Example 1: Researching a new feature
+
+User says: "Research how to add input validation to our API"
+
+Actions:
+
+1. Locate relevant `SPEC.md` files (e.g., API architecture).
+2. Check existing patterns in codebase (`src/api/validation.ts`).
+3. Research external libraries (if needed).
+4. Create `RES-XXX` with scope and recommendations.
+
+Result: `RES-042` created with scope, dependency map, and a recommendation to use `zod` for validation.
+
+### Example 2: Understanding legacy code
+
+User says: "Understand how the authentication flow works"
+
+Actions:
+
+1. Find auth-related specs (`find . -name "*auth*"`).
+2. Read `SPEC.md` headers for context.
+3. Targeted `grep` searches for usage patterns.
+4. Document findings in `RES-XXX`.
+
+Result: `RES-043` created documenting the auth flow across 3 components, with a dependency diagram.
+
+---
+
+## Troubleshooting
+
+### Error: "Scope too large"
+
+**Cause**: Trying to research the entire repository at once.
+**Solution**: Focus on one component or feature vertical. Use `find` to locate specific specs.
+
+### Error: "Missing SPEC.md"
+
+**Cause**: Component might be undocumented or new.
+**Solution**: Create a placeholder `SPEC.md` or research the nearest parent component.
 
 ---
 
@@ -72,5 +111,5 @@ Use template: `.dev_ops/templates/artifacts/research.md`
 
 ## Next Phase
 
-* **Success**: `/plan` (Move to Plan)
-*   **Review**: Set status to `needs_feedback` if user input is needed.
+* **Success**: Move to **Plan**.
+* **Review**: Set status to `needs_feedback` if user input is needed.

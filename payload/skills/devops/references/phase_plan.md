@@ -1,11 +1,6 @@
----
-name: plan
-description: Update `SPEC.md` and decompose tasks. Focus on architecture and recursive decomposition, NOT code writing.
----
+# Phase: Plan
 
-# Plan Phase
-
-> "The Spec is the Truth." - The Framework
+> "The Spec is the Truth." — The Framework
 
 ## Phase Constraints
 
@@ -45,7 +40,7 @@ description: Update `SPEC.md` and decompose tasks. Focus on architecture and rec
 ### 3. RLM Zoom-In (Update Local)
 
 * **Action**: Update the **Current Directory's** `SPEC.md` to reflect the new requirements.
-* **Constraint**: Do not update child specs. You are only responsible for *this* level of abstraction.
+* **Constraint**: You represent the *current level of abstraction*. Do not update child specs.
 
 ### 4. Recursive Decomposition (The "Delegate")
 
@@ -55,11 +50,56 @@ description: Update `SPEC.md` and decompose tasks. Focus on architecture and rec
         * Title: "Update [Child Name] Spec to match [Parent] changes"
         * Trigger: The current task ID.
     3. **Link**: Add the new Task IDs to the **Current Task's** `dependsOn` list (edit `.dev_ops/tasks/[ID]/task.md`).
+* **Reference**: [Decomposition Rules](./decomposition_rules.md)
 
 ### 5. Review (The "Leaf vs Node")
 
-* **Leaf**: If no child tasks were created, you are a Leaf. -> Move to **Implement**.
-* **Node**: If child tasks were created, you are a Node. -> Mark as **Blocked** (or keep open) until children are done.
+* **Leaf**: If no child tasks were created, you are a Leaf. → Move to **Implement**.
+* **Node**: If child tasks were created, you are a Node. → Mark as **Blocked** (or keep open) until children are done.
+
+---
+
+## Examples
+
+### Example 1: Updating a Component Spec
+
+User says: "Update the API spec to include input validation"
+
+Actions:
+
+1. Read `src/api/SPEC.md` headers.
+2. Add "Input Validation" section to `SPEC.md`.
+3. Create child tasks if multiple files/modules need substantial work.
+
+Result: `SPEC.md` updated with validation requirements. No code written.
+
+### Example 2: Decomposing a Feature
+
+User says: "Plan the new User Profile feature"
+
+Actions:
+
+1. Check for `RES-XXX` (loop back to Understand if missing).
+2. Create/Update `src/users/SPEC.md`.
+3. Identify dependencies (Database, Auth, Frontend).
+4. Create child tasks: "Implement User DB Schema", "Implement Profile API", "Implement Profile UI".
+5. Link child tasks to current task via `dependsOn`.
+
+Result: Parent spec updated, 3 child tasks created, parent marked as Blocked.
+
+---
+
+## Troubleshooting
+
+### Error: "Spec too vague"
+
+**Cause**: Missing requirements or research.
+**Solution**: Return to **Understand** phase. Mark task as `needs_feedback`.
+
+### Error: "Too many child tasks"
+
+**Cause**: Over-decomposition.
+**Solution**: Group related changes into a single task where possible (e.g., "Implement API & DB" if small).
 
 ---
 
@@ -74,6 +114,6 @@ description: Update `SPEC.md` and decompose tasks. Focus on architecture and rec
 
 ## Next Phase
 
-* **Leaf Success**: `/implement` (Go build the Spec).
-* **Node Success**: `/done` (Or wait if tracking).
-* **Failure**: `/understand` (Need more research).
+* **Leaf Success**: Move to **Implement** (Go build the Spec).
+* **Node Success**: Move to **Done** (Or wait if tracking).
+* **Failure**: Return to **Understand** (Need more research).

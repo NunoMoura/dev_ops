@@ -22,7 +22,7 @@ Check output for similar issues.
 ## Step 2: Create Report
 
 ```bash
-cp .dev_ops/templates/artifacts/bug.md .dev_ops/docs/BUG-XXX.md
+cp .agent/skills/devops/assets/bug.md .dev_ops/docs/BUG-XXX.md
 ```
 
 Fill sections:

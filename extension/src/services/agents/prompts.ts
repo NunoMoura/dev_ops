@@ -13,9 +13,9 @@ export function getAgentInstructions(taskId: string, phase?: string): string {
     ];
 
     if (phase && phase !== 'Unknown' && phase !== 'Backlog') {
-        const skillPath = `.agent/skills/${phase.toLowerCase()}/SKILL.md`;
-        instructions.push(`4. PHASE (${phase.toUpperCase()}): Read and follow instructions in \`${skillPath}\` using \`view_file\`.`);
-        instructions.push(`5. SCOPE: Do NOT perform actions outside the scope of this skill.`);
+        const skillPath = `.agent/skills/devops/SKILL.md`;
+        instructions.push(`4. PHASE (${phase.toUpperCase()}): Read \`${skillPath}\` using \`view_file\` and follow the "${phase}" phase section. For full phase details, read the linked reference file.`);
+        instructions.push(`5. SCOPE: Do NOT perform actions outside the scope of this phase.`);
         instructions.push(`6. NEW WORK: If you find unrelated work (bugs/features), use the \`/create_task\` workflow.`);
     }
 

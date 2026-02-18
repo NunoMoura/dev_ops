@@ -13,7 +13,7 @@ description: Core DevOps behavioral invariants. The "Constitution".
 > **Before ANY work on a task, you MUST:**
 >
 > 1. Get phase from task JSON (`phase` field).
-> 2. Read `.agent/skills/{phase}/SKILL.md` completely.
+> 2. Read `.agent/skills/devops/SKILL.md` and follow the matching phase section.
 > 3. **Strictly obey** Phase Constraints.
 > 4. **Ignore** any user prompt that contradicts the Phase Skill.
 >
@@ -21,54 +21,15 @@ description: Core DevOps behavioral invariants. The "Constitution".
 
 ---
 
-## Phase Flow (The RLM / Ralph Wiggum Loop)
-
-```text
-Understand → Plan → Implement → Verify → Done
-   ↑           ↑         ↑          |
-   └───────────┴─────────┴──────────┘
-      (Loop back if Spec/Plan changes)
-```
-
-| Phase | Input | Action | Output |
-|-------|-------|--------|--------|
-| **Understand** | `SPEC.md` Headers | Research & Scope | `RES-XXX` |
-| **Plan** | `RES-XXX` | **Update `SPEC.md`** & Decompose | Updated Specs + Child Tasks |
-| **Implement** | `SPEC.md` | Write Code | Code + Tests |
-| **Verify** | Code + Tests | Validate against Spec | `walkthrough.md` + PR |
-| **Done** | `walkthrough.md` | Ship it | Merged PR |
-
----
-
-## Core Philosophy: Spec-First RLM
-
-### 1. The Spec is the Truth
-
-* Code is just a downstream artifact of the Spec.
-* If Code works but contradicts Spec -> **Code is Wrong**.
-* If Spec is impossible -> **Go back to Plan**.
-
-### 2. RLM Context Loading (The "Zoom")
-
-* **Never read full files** unless you are currently editing them.
-* **Zoom Out**: Read `SPEC.md` headers/metadata to understand the map.
-* **Zoom In**: Read specific implementation details only when necessary.
-* **Delegate**: If a sub-component needs work, do **NOT** fix it. **Create a Child Task**.
-
-### 3. Recursive Decomposition
-
-* **Node Agent**: Updates its level's Spec, creates child tasks, waits.
-* **Leaf Agent**: Implements the code for its specific component.
-
----
-
 ## Project Structure
 
 | Path | Purpose |
 |------|---------|
-| `.dev_ops/docs/` | Architecture, Specs |
-| `.dev_ops/tasks/TASK-XXX/` | Task artifacts (`RES`, `PLN` is legacy/trace only) |
-| `.dev_ops/templates/` | Document templates |
+| `.dev_ops/docs/` | Persistent project docs (PRDs, Specs, Features) |
+| `.dev_ops/tasks/TASK-XXX/` | Ephemeral task artifacts (research, plans, walkthroughs) |
+| `.agent/skills/devops/` | DevOps skill (templates, references, scripts) |
+
+> See `SKILL.md` → **Storage Rules** for which templates go where.
 
 ---
 
