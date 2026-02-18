@@ -5,6 +5,7 @@ type: research
 lifecycle: ephemeral   # Archived with task on Done
 date: "{{date}}"       # Creation date (YYYY-MM-DD)
 status: Active         # Active | Complete
+storage: ".dev_ops/tasks/{{task_id}}/"
 task: ""               # Parent task (e.g., TASK-001)
 upstream: []           # Artifacts this depends on
 downstream: []         # Artifacts produced (e.g., DOC-XXX, PLN-XXX)

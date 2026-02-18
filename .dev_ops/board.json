@@ -40,12 +40,5 @@
       "taskIds": []
     }
   ],
-  "items": [
-    {
-      "id": "TASK-001",
-      "columnId": "col-backlog",
-      "title": "New Task",
-      "updatedAt": "2026-02-17T01:36:02.057Z"
-    }
-  ]
+  "items": []
 }

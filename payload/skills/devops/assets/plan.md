@@ -5,6 +5,7 @@ type: plan
 lifecycle: ephemeral   # Archived with task on Done
 date: "{{date}}"       # Creation date (YYYY-MM-DD)
 status: Draft          # Draft | Active | Complete
+storage: ".dev_ops/tasks/{{task_id}}/"
 task: ""               # Parent task (e.g., TASK-001)
 upstream: []           # Documentation and research (e.g., DOC-XXX, RES-XXX)
 ---

@@ -531,9 +531,24 @@ export class BoardService {
                         }
                     }
 
-                    // 3. Existing Specs
-                    if (projectContext.specs.length > 0) {
-                        hydrationContent += '\n### Existing Specifications (SPEC.md)\n';
+                    // 3. Specs
+                    // If the task has a primary spec, highlight it first.
+                    // Then list remaining specs as secondary context.
+                    const primarySpec = task.specPath;
+                    const otherSpecs = projectContext.specs.filter(s => s !== primarySpec);
+
+                    if (primarySpec) {
+                        hydrationContent += `\n### Primary Specification\n`;
+                        hydrationContent += `- [ ] [${primarySpec}](file://${path.join(root, primarySpec)})\n`;
+                    }
+
+                    if (otherSpecs.length > 0) {
+                        hydrationContent += `\n### Existing Specifications (SPEC.md)\n`;
+                        for (const spec of otherSpecs) {
+                            hydrationContent += `- [ ] [${spec}](file://${path.join(root, spec)})\n`;
+                        }
+                    } else if (!primarySpec && projectContext.specs.length > 0) {
+                        hydrationContent += `\n### Existing Specifications (SPEC.md)\n`;
                         for (const spec of projectContext.specs) {
                             hydrationContent += `- [ ] [${spec}](file://${path.join(root, spec)})\n`;
                         }

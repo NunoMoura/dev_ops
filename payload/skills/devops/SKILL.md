@@ -26,11 +26,18 @@ description: Complete DevOps workflow for agent-driven development. Manages the 
 | Type | Storage Path | Lifecycle | Templates |
 |------|-------------|-----------|-----------|
 | **Artifacts** | `.dev_ops/tasks/TASK-XXX/` | Ephemeral — archived when task is Done | `research.md`, `plan.md`, `walkthrough_template.md`, `pr_template.md` |
-| **Docs** | `.dev_ops/docs/` | Persistent — survives task lifecycle | `prd.md`, `feature.md`, `spec.md`, `persona.md`, `story.md`, `mockup.md`, `project_standards.md` |
+| **Docs** | `.dev_ops/docs/` | Persistent — survives task lifecycle | `prd.md`, `feature.md`, `persona.md`, `story.md`, `mockup.md`, `project_standards.md` |
 | **Bugs** | `.dev_ops/docs/` | Persistent — tracked independently | `bug.md` |
+| **Specs** | Next to the component they describe | Persistent — updated as component evolves | `spec.md` |
 | **Tasks** | `.dev_ops/tasks/TASK-XXX/` | Ephemeral — created by CLI | `task.md` |
 
-All templates are in `./assets/`. Copy to the correct path based on type.
+> **Important**: Look at the `storage` field in each template's frontmatter.
+>
+> * **Docs** (`.dev_ops/docs/`): PRD, Feature, Persona, Story, Mockup, Standards, Bug
+> * **Specs** (next to component): `SPEC.md` lives alongside the code it describes — like a README
+> * **Artifacts** (`.dev_ops/tasks/TASK-XXX/`): Research, Plan, Walkthrough
+>
+> **ALWAYS** create the file at the path specified in the template's `storage` field.
 
 ---
 
@@ -129,6 +136,26 @@ When `--parent-id` is used: child gets `parentId` set, parent gets a tracking ch
 **Deliverable**: Merged PR
 **Move task**: `node .dev_ops/scripts/devops.js move-task --id TASK-XXX --column col-done`
 **Full guide**: [phase_done.md](./references/phase_done.md) · **Checklist**: [shipping_checklist.md](./references/shipping_checklist.md)
+
+---
+
+## Spec Lifecycle
+
+> `SPEC.md` files are the **source of truth** for a component. They live next to the code they describe, like a README.
+
+| Trigger | Action | Phase |
+|---------|--------|-------|
+| New component or module introduced | Create `SPEC.md` from template next to the component | Plan |
+| Requirements change for existing component | Update the existing `SPEC.md` | Plan |
+| Code written to match spec | No spec change — spec is already the truth | Implement |
+| Code diverges from spec | Fix the code, not the spec (unless Plan approved a change) | Implement |
+| Verify that code matches spec | Review spec sections; bump `lastUpdated` | Verify |
+
+**Discover all specs**: `node .dev_ops/scripts/devops.js detect --scope architecture`
+
+**Find nearest spec for a path**: `node .dev_ops/scripts/devops.js scope <path>`
+
+**Create a new spec**: Use the `/create-spec` workflow or copy from [spec.md](./assets/spec.md)
 
 ---
 

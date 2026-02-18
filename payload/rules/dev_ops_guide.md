@@ -25,8 +25,9 @@ description: Core DevOps behavioral invariants. The "Constitution".
 
 | Path | Purpose |
 |------|---------|
-| `.dev_ops/docs/` | Persistent project docs (PRDs, Specs, Features) |
+| `.dev_ops/docs/` | Persistent project docs (PRDs, Features, Standards) |
 | `.dev_ops/tasks/TASK-XXX/` | Ephemeral task artifacts (research, plans, walkthroughs) |
+| `<component>/SPEC.md` | Specs live next to the code they describe (like READMEs) |
 | `.agent/skills/devops/` | DevOps skill (templates, references, scripts) |
 
 > See `SKILL.md` → **Storage Rules** for which templates go where.

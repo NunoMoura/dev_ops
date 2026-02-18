@@ -66,6 +66,7 @@ export type Task = {
   // DevOps workflow
   workflow?: string;             // /create_plan, /research, etc.
   entryPoints?: string[];        // Files involved in this task
+  specPath?: string;             // Primary SPEC.md this task is modifying (relative to workspace root)
 
   // Human approvals required before starting (task dependencies use dependsOn)
   requiredApprovals?: string[];

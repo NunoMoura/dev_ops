@@ -4,6 +4,8 @@ type: spec
 path: "{{path}}"
 status: draft
 description: "{{description}}" # Short summary for RLM Zoom-Out
+lastUpdated: "{{date}}"
+storage: "{{path}}"       # Lives next to the component it describes (like a README)
 ---
 
 # {{title}}

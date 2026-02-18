@@ -3,7 +3,7 @@ import { TaskContext } from './AgentAdapter';
 /**
  * Generates the standard system prompt for starting an agent session.
  * This ensures all agents (Antigravity, Cursor, etc.) receive consistent instructions
- * regarding behavioral expectations, specifically the "Decision Trace".
+ * regarding behavioral expectations, phase constraints, and task scope.
  */
 export function getAgentInstructions(taskId: string, phase?: string): string {
     const instructions = [
@@ -25,7 +25,7 @@ export function getAgentInstructions(taskId: string, phase?: string): string {
 /**
  * Generates the standard system prompt for starting an agent session.
  * This ensures all agents (Antigravity, Cursor, etc.) receive consistent instructions
- * regarding behavioral expectations, specifically the "Decision Trace".
+ * regarding behavioral expectations, phase constraints, and task scope.
  */
 export function getTaskStartPrompt(context: TaskContext): string {
     const instructions = getAgentInstructions(context.taskId, context.phase);

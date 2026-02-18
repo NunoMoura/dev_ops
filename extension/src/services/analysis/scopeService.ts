@@ -45,15 +45,13 @@ export class CoreScopeService {
     private async findNearestSpec(startPath: string): Promise<string | null> {
         let current = path.isAbsolute(startPath) ? startPath : path.resolve(this.root, startPath);
 
-        // If file, start from dirname
-        if (await this.workspace.exists(current)) {
-            // check if directory
-            // Actually workspace.exist doesn't tell if dir. 
-            // Let's assume input path. 
-            // If it ends in .md, use dirname.
-            if (current.endsWith('.md') || current.includes('.')) { // heuristic
-                current = path.dirname(current);
-            }
+        // If the path itself has a SPEC.md, start there.
+        // Otherwise treat it as a file and start from its parent directory.
+        // This avoids the fragile `includes('.')` heuristic that breaks on dotted dir names.
+        const directCandidate = path.join(current, 'SPEC.md');
+        if (!(await this.workspace.exists(directCandidate))) {
+            // current is likely a file — start from its directory
+            current = path.dirname(current);
         }
 
         while (current.startsWith(this.root)) {

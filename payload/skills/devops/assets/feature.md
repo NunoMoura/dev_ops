@@ -4,6 +4,7 @@ title: "{{title}}"         # Feature name
 type: feature
 date: "{{date}}"           # Creation date (YYYY-MM-DD)
 status: Draft              # Draft | Approved | In Progress | Complete
+storage: ".dev_ops/docs/"
 priority: Medium           # Low | Medium | High | Critical
 stories: []                # Related user stories (e.g., STORY-001)
 upstream: []               # Dependencies (e.g., PRD-001)

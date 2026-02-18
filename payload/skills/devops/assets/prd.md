@@ -4,6 +4,7 @@ title: "{{title}}"     # Product/Release name
 type: prd
 date: "{{date}}"       # Creation date (YYYY-MM-DD)
 status: Draft          # Draft | Approved | In Progress | Complete
+storage: ".dev_ops/docs/"
 owner: "{{owner}}"     # Product owner
 downstream: []         # STORY-XXX items derived from this
 ---

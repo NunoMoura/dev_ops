@@ -4,6 +4,7 @@ title: "{{title}}"         # Story name
 type: story
 date: "{{date}}"           # Creation date (YYYY-MM-DD)
 status: Draft              # Draft | Approved | In Progress | Complete
+storage: ".dev_ops/docs/"
 priority: Medium           # Low | Medium | High | Critical
 persona: "{{persona}}"     # User persona (e.g., project_manager)
 mockups: []                # Related mockups (e.g., mockups/filter-chips.png)

@@ -6,6 +6,7 @@ lifecycle: permanent   # Part of task record
 date: "{{date}}"       # Creation date (YYYY-MM-DD)
 status: draft          # draft | review | approved
 task: "{{task_id}}"    # TASK-XXX this walkthrough validates
+storage: ".dev_ops/tasks/{{task_id}}/"
 trigger: "{{trigger}}" # What spawned the original task
 ---
 
@@ -17,6 +18,12 @@ trigger: "{{trigger}}" # What spawned the original task
 ## Summary
 
 {{summary}}
+
+## Prior Phase Context
+
+<!-- What happened in Understand/Plan phases?
+     Briefly summarize research findings and design decisions to provide continuity.
+     This replaces the need for a separate trace.md. -->
 
 ## Changes
 

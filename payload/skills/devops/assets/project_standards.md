@@ -3,6 +3,7 @@ id: project-standards
 title: "Project Standards"
 type: project-standards
 date: "{{date}}"
+storage: ".dev_ops/docs/"
 ---
 
 # Project Standards

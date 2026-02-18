@@ -29,6 +29,7 @@
 ### 1. Read (The "Wake Up")
 
 * **Context**: Read the local `SPEC.md`.
+* **Trace**: If this is a rework or bugfix, read the previous `walkthrough.md` (if it exists) to understand what was verified last time.
 * **Focus**: Identify what parts of the `SPEC` are not yet implemented or need changing.
 * **Safety**: Do NOT read unrelated parts of the codebase.
 
