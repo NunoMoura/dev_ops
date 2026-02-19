@@ -16,8 +16,13 @@ export async function checkAndUpdateFramework(context: vscode.ExtensionContext):
     }
 
     const workspaceRoot = workspaceFolders[0].uri.fsPath;
-
     const devOpsDir = path.join(workspaceRoot, '.dev_ops');
+
+    // Strict Guard: If .dev_ops does NOT exist, do not attempt to "fix" missing components.
+    // This allows the Onboarding Wizard to handle fresh installs without interference.
+    if (!fs.existsSync(devOpsDir)) {
+        return;
+    }
     const scriptsDir = path.join(devOpsDir, 'scripts');
     const boardPath = path.join(devOpsDir, 'board.json');
     const projectVersionPath = path.join(devOpsDir, 'version.json');

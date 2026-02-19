@@ -456,11 +456,14 @@ export async function registerBoardWatchers(
 
   const patterns = [
     '.dev_ops/board.json',
-    '.dev_ops/tasks/**' // Watch all files/folders in tasks dir to catch folder deletions
+    '.dev_ops/tasks/*.json',
+    '.dev_ops/tasks/*/*.json',
+    '.dev_ops/tasks/*' // Catch folder creation/deletion immediately
   ];
 
   let refreshHandle: NodeJS.Timeout | undefined;
-  const scheduleRefresh = () => {
+  const scheduleRefresh = (uri: vscode.Uri) => {
+    // console.log('[BoardWatcher] File changed:', uri.fsPath);
     if (refreshHandle) { clearTimeout(refreshHandle); }
     refreshHandle = setTimeout(() => {
       refreshHandle = undefined;

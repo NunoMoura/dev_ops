@@ -10,7 +10,7 @@ import {
   COLUMN_FALLBACK_NAME,
   PLAN_EXTENSIONS,
 } from '../../types';
-import { readBoard, writeBoard, getWorkspaceRoot } from '../../services/board/boardPersistence';
+import { readBoard, writeBoard, getWorkspaceRoot, writeDecisionTrace } from '../../services/board/boardPersistence';
 import {
   appendParagraph,
   getNextColumnPosition,
@@ -387,7 +387,7 @@ export function applyPlanTask(
   if (planTask.checklist) {
     item.checklist = planTask.checklist.map((text): ChecklistItem => ({ text, done: false }));
   }
-  item.context = planTask.context ?? item.context;
+
   item.contextFile = planPath;
   item.contextRange = planTask.contextRange ?? item.contextRange;
   item.status = planTask.status ?? item.status;
@@ -449,5 +449,7 @@ export async function ensureTaskDocument(
     lines.push('', '## Entry Points');
     entryPoints.forEach((entry) => lines.push(`- ${entry} `));
   }
-  await fs.writeFile(docPath, lines.join('\n'), 'utf8');
+  // Write to decision_trace.md in the task bundle
+  const traceContent = lines.join('\n');
+  await writeDecisionTrace(task.id, traceContent);
 }

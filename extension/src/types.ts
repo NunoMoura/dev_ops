@@ -82,7 +82,7 @@ export type Task = {
   acceptanceCriteria?: string[];
   risks?: string[];
   checklist?: ChecklistItem[];   // Checklist items with completion status
-  context?: string;
+
   contextFile?: string;
   contextRange?: { startLine: number; endLine: number };
   source?: TaskSource;

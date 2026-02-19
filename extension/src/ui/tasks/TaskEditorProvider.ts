@@ -762,9 +762,9 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       <!-- Description Section -->
       <div class="content-section description-section section-card">
         <div class="section-header">
-          <span>CONTEXT / DESCRIPTION</span>
+          <span>DESCRIPTION</span>
         </div>
-        <textarea id="description" class="description-input" placeholder="Add context, instructions, or requirements here...">${escapeHtml(task.description || '')}</textarea>
+        <textarea id="description" class="description-input" placeholder="Add description, instructions, or requirements here...">${escapeHtml(task.description || '')}</textarea>
       </div>
 
        <input type="hidden" id="status" value="${currentStatus}">

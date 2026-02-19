@@ -110,8 +110,14 @@ export async function activate(context: vscode.ExtensionContext) {
     // registerAgentManager(context);
 
     // Check if existing .dev_ops/ needs framework files update
-    // Call without await to avoid blocking activation if UI is shown
-    checkAndUpdateFramework(context);
+    // Only run this if the framework is already installed to avoid race condition with Onboarding
+    const { isInstalled } = require('./services/setup/frameworkInstaller');
+    const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
+    if (root && isInstalled(root)) {
+      // Call without await to avoid blocking activation if UI is shown
+      checkAndUpdateFramework(context);
+    }
 
     // Listen for workspace folder changes and update framework
     context.subscriptions.push(
