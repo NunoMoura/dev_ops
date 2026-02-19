@@ -164,11 +164,6 @@
         "icon": "$(debug-restart)"
       },
       {
-        "command": "devops.refinePhase",
-        "title": "DevOps: Refine Phase",
-        "icon": "$(edit)"
-      },
-      {
         "command": "devops.deleteTask",
         "title": "DevOps: Delete Task",
         "icon": "$(trash)"

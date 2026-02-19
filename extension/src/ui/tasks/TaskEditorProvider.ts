@@ -180,17 +180,34 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         case 'delete':
           // Legacy handler, just in case
           break;
-        case 'approvePlan':
-          // 1. Move to Implement
-          await boardService.moveTask(taskId, 'col-implement');
+        case 'approveTask':
+          // Move task logic
+          let nextColumn = 'col-implement';
+          const currentTask = (await readBoard()).items.find(t => t.id === taskId);
+          const currentColumn = currentTask?.columnId;
 
-          // 2. Start Agent Session
+          if (currentColumn === 'col-plan') nextColumn = 'col-implement';
+          else if (currentColumn === 'col-implement') nextColumn = 'col-verify';
+          else if (currentColumn === 'col-verify') nextColumn = 'col-done';
+          else if (currentColumn === 'col-backlog') nextColumn = 'col-plan';
 
-          // Better: We trigger the command.
-          // 2. Start Agent Session -> Claim Task
+          await boardService.moveTask(taskId, nextColumn);
+
+          // Change status to in_progress or done
+          const newStatus = nextColumn === 'col-done' ? 'done' : 'in_progress';
+          await boardService.updateTask(taskId, { status: newStatus as TaskStatus });
+
           vscode.commands.executeCommand('devops.claimTask', { taskId });
 
-          vscode.window.showInformationMessage(`Plan Approved. Task ${taskId} moved to Implement phase.`);
+          vscode.window.showInformationMessage(`Task ${taskId} approved and moved to ${nextColumn}.`);
+          await updateWebview();
+          vscode.commands.executeCommand('devops.refreshBoard');
+          break;
+        case 'reviseTask':
+          // Change status back to in_progress
+          await boardService.updateTask(taskId, { status: 'in_progress' });
+          vscode.commands.executeCommand('devops.claimTask', { taskId });
+          vscode.window.showInformationMessage(`Task ${taskId} set to revise.`);
           await updateWebview();
           vscode.commands.executeCommand('devops.refreshBoard');
           break;
@@ -616,6 +633,42 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         opacity: 1;
       }
       
+      /* Footer Actions */
+      .actions-footer {
+        display: flex;
+        gap: 12px;
+        margin-top: 16px;
+      }
+      .actions-footer button {
+        height: 32px;
+        padding: 0 16px;
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        border: none;
+      }
+      .btn-primary {
+        background-color: var(--vscode-button-background);
+        color: var(--vscode-button-foreground);
+      }
+      .btn-primary:hover {
+        background-color: var(--vscode-button-hoverBackground);
+      }
+      .btn-secondary {
+        background-color: transparent;
+        color: var(--vscode-button-background);
+        border: 1px solid var(--vscode-button-background) !important;
+      }
+      .btn-secondary:hover {
+        background-color: var(--vscode-button-background);
+        color: var(--vscode-button-foreground);
+      }
+      
       .delete-btn {
         opacity: 0; /* Hidden by default */
         background: transparent;
@@ -794,9 +847,12 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       </div>
 
        <!-- Footer Actions -->
-      <div class="actions-footer">
-        ${task.columnId === 'col-plan' ? `<button id="approvePlanBtn" class="btn btn-primary" style="background-color: #D6336C; border: none;">Approve Implementation Plan</button>` : ''}
-      </div>
+       <div class="actions-footer">
+        ${currentStatus === 'needs_feedback' ? `
+          <button id="approveBtn" class="btn btn-primary">Approve</button>
+          <button id="reviseBtn" class="btn btn-secondary">Revise</button>
+        ` : ''}
+       </div>
       
     </div> <!-- End Scrollable -->
 
@@ -1105,7 +1161,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         status: statusInput.value,
         columnId: columnInput.value,
         description: descriptionInput.value,
-        checklist: checklistManager.getAll()
+        checklist: checklistManager.items // Fixed missing getAll() by directly using items
       };
     }
 
@@ -1129,8 +1185,12 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       vscode.postMessage({ type: 'openActions' });
     });
 
-    document.getElementById('approvePlanBtn')?.addEventListener('click', () => {
-      vscode.postMessage({ type: 'approvePlan' });
+    document.getElementById('approveBtn')?.addEventListener('click', () => {
+      vscode.postMessage({ type: 'approveTask' });
+    });
+
+    document.getElementById('reviseBtn')?.addEventListener('click', () => {
+      vscode.postMessage({ type: 'reviseTask' });
     });
   </script>
 </body>

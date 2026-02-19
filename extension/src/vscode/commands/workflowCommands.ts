@@ -37,15 +37,6 @@ export function registerWorkflowCommands(
 
     registerDevOpsCommand(
         context,
-        'devops.refinePhase',
-        async () => {
-            await handleRefinePhase();
-        },
-        'Unable to start refine phase',
-    );
-
-    registerDevOpsCommand(
-        context,
         'devops.retryPhase',
         async () => {
             await handleRetryPhase();
@@ -103,19 +94,6 @@ async function handleNextPhase(
 
     await provider.refresh();
     vscode.window.showInformationMessage(`→ ${task.id} moved to ${nextColumn.name}`);
-    vscode.window.showInformationMessage(`→ ${task.id} moved to ${nextColumn.name}`);
-}
-
-async function handleRefinePhase(): Promise<void> {
-    const rootPath = getWorkspaceRoot();
-    if (!rootPath) {
-        vscode.window.showErrorMessage('No workspace open');
-        return;
-    }
-    const rootUri = vscode.Uri.file(rootPath);
-    const uri = vscode.Uri.joinPath(rootUri, 'payload', 'workflows', 'refine.md');
-    await vscode.commands.executeCommand('markdown.showPreview', uri);
-    vscode.window.showInformationMessage('Ralph Wiggum Loop: Refine Phase Initiated');
 }
 
 async function handleRetryPhase(): Promise<void> {
