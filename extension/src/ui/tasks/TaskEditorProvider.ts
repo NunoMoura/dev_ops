@@ -186,10 +186,10 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
           const currentTask = (await readBoard()).items.find(t => t.id === taskId);
           const currentColumn = currentTask?.columnId;
 
-          if (currentColumn === 'col-plan') nextColumn = 'col-implement';
-          else if (currentColumn === 'col-implement') nextColumn = 'col-verify';
-          else if (currentColumn === 'col-verify') nextColumn = 'col-done';
-          else if (currentColumn === 'col-backlog') nextColumn = 'col-plan';
+          if (currentColumn === 'col-plan') { nextColumn = 'col-implement'; }
+          else if (currentColumn === 'col-implement') { nextColumn = 'col-verify'; }
+          else if (currentColumn === 'col-verify') { nextColumn = 'col-done'; }
+          else if (currentColumn === 'col-backlog') { nextColumn = 'col-plan'; }
 
           await boardService.moveTask(taskId, nextColumn);
 
@@ -969,7 +969,8 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
             const textDiv = div.querySelector('.checklist-text');
             textDiv.addEventListener('input', (e) => {
                 item.text = e.target.innerText;
-                this.save(); 
+                clearTimeout(this.saveTimeout);
+                this.saveTimeout = setTimeout(() => this.save(), 1000); 
             });
             
             // Key navigation
@@ -1001,7 +1002,12 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
                 // Delete empty item and focus previous
                 if (this.items.length > 0) {
                     this.deleteItem(index);
-                    if (index > 0) this.focusItem(index - 1);
+                    if (index > 0) {
+                        this.focusItem(index - 1);
+                    } else if (this.items.length > 0) {
+                        // If first item was deleted and others remain, focus new first
+                        this.focusItem(0);
+                    }
                 }
             } else if (e.key === 'Tab') {
                 e.preventDefault();
