@@ -1,6 +1,13 @@
 ---
 name: devops
-description: Complete DevOps workflow for agent-driven development. Manages the full lifecycle Understand → Plan → Implement → Verify → Done. Use when asked to "work on a task", "claim a task", "follow the process", or any phase-specific trigger (e.g. "analyze codebase", "create a plan", "implement this", "verify changes", "ship code"). Do NOT use for non-DevOps general coding.
+description: Orchestrates full-lifecycle software development (Understand -> Plan -> Implement -> Verify -> Done). Use when the user asks to "start a task", "fix a bug", "implement a feature", or manages the project board. Handles task creation, state management, and code delivery.
+license: MIT
+metadata:
+  author: Nuno Moura
+  version: 1.0.0
+  category: productivity
+  tags: [devops, workflow, automation, agent-driven]
+  documentation: https://github.com/NunoMoura/dev_ops
 ---
 
 # DevOps Workflow
@@ -33,7 +40,7 @@ Each task has a `decision_trace.md` in `.dev_ops/tasks/TASK-XXX/` that accumulat
 | Completing a phase | **Append** key decisions, rationale, and blockers |
 | Rework/bugfix | Read both `decision_trace.md` and previous artifacts |
 
-This is NOT context (provided by phase artifacts, docs, and specs). 
+This is NOT context (provided by phase artifacts, docs, and specs).
 This IS the agent's cross-session memory of *why* decisions were made.
 
 ### Artifacts
@@ -106,6 +113,23 @@ This IS the agent's cross-session memory of *why* decisions were made.
 | Sub-task | Step needs its own Understand→Verify cycle | `create-task --parent-id TASK-XXX` |
 
 When `--parent-id` is used: child gets `parentId` set, parent gets a tracking checklist entry, parent is auto-blocked. Parent unblocks when all children reach Done.
+
+### Task Management (Agent Capabilities)
+
+The agent can manage tasks using the following CLI commands:
+
+| Action | Command | Description |
+|--------|---------|-------------|
+| **Update** | `update-task --id <id> ...` | Update title, summary, status, or checklist. |
+| **Read** | `read-task --id <id>` | Get full task details as JSON. |
+| **List** | `list-tasks --status <status>` | List tasks, optionally filtered by status/column. |
+
+**Full Examples**:
+
+* [Task Management](./examples/task_management.md) — Creating, updating, and managing tasks.
+* [Product Documentation](./examples/product_docs.md) — PRD, Feature, Persona, User Stories, Mockups.
+* [Technical Artifacts](./examples/technical_artifacts.md) — Implementation Plans, Specs, Bug Reports, Tasks.
+* [Process Documentation](./examples/process_docs.md) — Project Standards, PR Templates.
 
 ---
 
@@ -220,3 +244,18 @@ Check `SPEC.md` for ambiguity. If unclear, go back to **Plan** or **Understand**
 ### "PR checks failed"
 
 Return to **Implement** or **Verify** to fix CI issues before shipping.
+
+### Skill Not Triggering
+
+* **Symptom**: Agent doesn't use `devops` tool when asked to "start a task".
+* **Solution**: Ensure you are using keywords like "task", "project", "plan", or "implement". explicit requests like "use devops skill" also work.
+
+### Task Update Failed
+
+* **Symptom**: `update-task` fails with "Task not found".
+* **Solution**: Verify the `TASK-XXX` ID exists using `./scripts/list-tasks.sh`.
+
+### Context Limit Reached
+
+* **Symptom**: Agent complains about too much output from `read-task`.
+* **Solution**: Use specific fields if possible, or break down the task if the checklist is too long.

@@ -237,6 +237,53 @@ export class CoreTaskService {
         await this.saveTask(task);
     }
 
+    public async updateTask(taskId: string, updates: Partial<{
+        title: string;
+        description: string;
+        status: Task['status'];
+        addChecklistItem: string;
+        checkChecklistItem: string; // Item text to mark as done
+    }>): Promise<void> {
+        const board = await this.readBoard();
+        const task = board.items.find(t => t.id === taskId);
+        if (!task) {
+            throw new Error(`Task ${taskId} not found`);
+        }
+
+        // Apply Updates
+        if (updates.title) { task.title = updates.title; }
+        if (updates.description) { task.description = updates.description; }
+        if (updates.status) { task.status = updates.status; }
+
+        // Checklist Operations
+        if (updates.addChecklistItem) {
+            if (!task.checklist) { task.checklist = []; }
+            task.checklist.push({ text: updates.addChecklistItem, done: false });
+        }
+
+        if (updates.checkChecklistItem) {
+            if (task.checklist) {
+                const item = task.checklist.find(i => i.text.trim() === updates.checkChecklistItem!.trim());
+                if (item) {
+                    item.done = true;
+                } else {
+                    console.warn(`Checklist item '${updates.checkChecklistItem}' not found in task ${taskId}`);
+                }
+            }
+        }
+
+        task.updatedAt = new Date().toISOString();
+
+        // If title changed, we might want to update the board view equivalent (though items are shared ref usually)
+        // With readBoard re-reading, we need to save to disk.
+
+        // Write to Board (Index) and Task File
+        // Note: readBoard returned a fresh object. We need to find the item in the board.items array to update it
+        // actually `task` is a reference to an object in `board.items`.
+        await this.writeBoard(board);
+        await this.saveTask(task);
+    }
+
     public async claimTask(taskId: string, driver: { agent: string; model: string; sessionId?: string; }, ownerOverride?: string): Promise<void> {
         const board = await this.readBoard();
         const task = board.items.find(t => t.id === taskId);

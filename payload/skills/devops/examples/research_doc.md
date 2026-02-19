@@ -42,6 +42,7 @@
 Found 3 different validation approaches in codebase:
 
 1. **Manual if/raise** in `src/api/endpoints/users.py:45`:
+
    ```python
    if not request.json.get('email'):
        raise ValueError("Email required")
@@ -50,6 +51,7 @@ Found 3 different validation approaches in codebase:
 2. **No validation** in `src/api/endpoints/products.py` - crashes on invalid input
 
 3. **Decorator pattern** in `src/api/endpoints/orders.py:12`:
+
    ```python
    @validate_json_schema(OrderSchema)
    def create_order(request):

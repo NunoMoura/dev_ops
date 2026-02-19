@@ -9237,6 +9237,13 @@ var ConfigService = class {
       };
       delete updates.developer;
     }
+    if (updates.decomposition) {
+      config.decomposition = {
+        ...config.decomposition || {},
+        ...updates.decomposition
+      };
+      delete updates.decomposition;
+    }
     Object.assign(config, updates);
     await this.writeConfig(config);
     return config;
@@ -9246,35 +9253,6 @@ var ConfigService = class {
     return config.developer?.name;
   }
 };
-
-// src/services/agents/prompts.ts
-function getAgentInstructions(taskId, phase) {
-  const tracePath = `.dev_ops/tasks/${taskId}/trace.md`;
-  let phaseInstructions = "";
-  if (phase && phase !== "Unknown" && phase !== "Backlog") {
-    const skillPath = `.agent/skills/${phase.toLowerCase()}/SKILL.md`;
-    phaseInstructions = `
-## CURRENT PHASE: ${phase.toUpperCase()}
-
-You are in the **${phase.toUpperCase()}** phase.
-**Requirement**: You must STRICTLY follow the instructions in \`${skillPath}\`.
-- Read this file using \`view_file\`.
-- Do NOT perform actions outside the scope of this skill.
-- If you find unrelated work (bugs/features), use the \`/create_task\` workflow.
-`;
-  }
-  return `
-## CRITICAL REQUIREMENT: DECISION TRACE
-
-You MUST explicitly log your activity and decisions to the "Decision Trace" file.
-**Trace File Path**: \`${tracePath}\`
-
-1.  **Initialize**: If the file is empty, start with a header.
-2.  **Log Live**: As you make decisions (e.g., "Exploring file X", "Decided to refactor Y", "Found bug Z"), append them to this file immediately.
-3.  **Format**: Use Markdown. Use H2/H3 for major steps and bullet points for actions.
-${phaseInstructions}
-`.trim();
-}
 
 // src/services/tasks/taskService.ts
 var CoreTaskService = class {
@@ -9355,7 +9333,7 @@ var CoreTaskService = class {
       items: []
     };
   }
-  async createTask(columnId, title, summary, dependsOn, checklist) {
+  async createTask(columnId, title, description, dependsOn, checklist, parentId) {
     const board = await this.readBoard();
     let maxId = 0;
     board.items.forEach((t) => {
@@ -9372,17 +9350,60 @@ var CoreTaskService = class {
       id: newId,
       columnId,
       title,
-      summary: (summary || "") + "\n\n" + getAgentInstructions(newId, "Unknown"),
-      // Phase unknown at creation
+      description: description || "",
       updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
       status: void 0,
       ...dependsOn?.length ? { dependsOn } : {},
-      ...checklist?.length ? { checklist } : {}
+      ...checklist?.length ? { checklist } : {},
+      ...parentId ? { parentId } : {}
     };
     board.items.push(newTask);
     await this.writeBoard(board);
     await this.saveTask(newTask);
+    if (parentId) {
+      await this._linkChildToParent(board, parentId, newId, title);
+    }
     return newTask;
+  }
+  /**
+   * Links a newly created child task to its parent:
+   * - Validates maxDepth from decomposition config
+   * - Appends a tracking checklist entry to the parent
+   * - Sets parent status to 'blocked' if not already blocked or done
+   */
+  async _linkChildToParent(board, parentId, childId, childTitle) {
+    const parent = board.items.find((t) => t.id === parentId);
+    if (!parent) {
+      console.warn(`[TaskService] Parent task ${parentId} not found \u2014 child ${childId} created without parent link.`);
+      return;
+    }
+    const configService = new ConfigService(this.workspace);
+    const config = await configService.readConfig();
+    const maxDepth = config.decomposition?.maxDepth ?? 2;
+    let depth = 1;
+    let current = parent;
+    while (current.parentId) {
+      const ancestor = board.items.find((t) => t.id === current.parentId);
+      if (!ancestor) {
+        break;
+      }
+      depth++;
+      current = ancestor;
+    }
+    if (depth >= maxDepth) {
+      throw new Error(
+        `Cannot create sub-task of ${parentId}: max decomposition depth (${maxDepth}) reached. Current chain is ${depth} level(s) deep. Increase decomposition.maxDepth in .dev_ops/config.json if needed.`
+      );
+    }
+    if (!parent.checklist) {
+      parent.checklist = [];
+    }
+    parent.checklist.push({ text: `${childId}: ${childTitle} \u2192 col-backlog`, done: false });
+    if (parent.status !== "blocked" && parent.status !== "done" && parent.status !== "archived") {
+      parent.status = "blocked";
+    }
+    parent.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    await this.saveTask(parent);
   }
   async moveTask(taskId, columnId) {
     const board = await this.readBoard();
@@ -9405,6 +9426,41 @@ var CoreTaskService = class {
       targetColumn.taskIds.push(taskId);
     }
     task.columnId = columnId;
+    task.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    await this.writeBoard(board);
+    await this.saveTask(task);
+  }
+  async updateTask(taskId, updates) {
+    const board = await this.readBoard();
+    const task = board.items.find((t) => t.id === taskId);
+    if (!task) {
+      throw new Error(`Task ${taskId} not found`);
+    }
+    if (updates.title) {
+      task.title = updates.title;
+    }
+    if (updates.description) {
+      task.description = updates.description;
+    }
+    if (updates.status) {
+      task.status = updates.status;
+    }
+    if (updates.addChecklistItem) {
+      if (!task.checklist) {
+        task.checklist = [];
+      }
+      task.checklist.push({ text: updates.addChecklistItem, done: false });
+    }
+    if (updates.checkChecklistItem) {
+      if (task.checklist) {
+        const item = task.checklist.find((i) => i.text.trim() === updates.checkChecklistItem.trim());
+        if (item) {
+          item.done = true;
+        } else {
+          console.warn(`Checklist item '${updates.checkChecklistItem}' not found in task ${taskId}`);
+        }
+      }
+    }
     task.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
     await this.writeBoard(board);
     await this.saveTask(task);
@@ -9466,9 +9522,9 @@ var CoreTaskService = class {
       if (!await this.workspace.exists(bundleDir)) {
         await this.workspace.mkdir(bundleDir);
       }
-      const contextPath = path3.join(bundleDir, "context.md");
-      if (!await this.workspace.exists(contextPath)) {
-        await this.workspace.writeFile(contextPath, "");
+      const tracePath = path3.join(bundleDir, "decision_trace.md");
+      if (!await this.workspace.exists(tracePath)) {
+        await this.workspace.writeFile(tracePath, "");
       }
     } catch (e) {
     }
@@ -9524,10 +9580,9 @@ var CoreScopeService = class {
   }
   async findNearestSpec(startPath) {
     let current = path4.isAbsolute(startPath) ? startPath : path4.resolve(this.root, startPath);
-    if (await this.workspace.exists(current)) {
-      if (current.endsWith(".md") || current.includes(".")) {
-        current = path4.dirname(current);
-      }
+    const directCandidate = path4.join(current, "SPEC.md");
+    if (!await this.workspace.exists(directCandidate)) {
+      current = path4.dirname(current);
     }
     while (current.startsWith(this.root)) {
       const candidate = path4.join(current, "SPEC.md");
@@ -9631,19 +9686,24 @@ program2.command("detect").description("Detect project stack, docs, and tests (J
     console.log(JSON.stringify(detection, null, 2));
   }
 });
-program2.command("create-task").description("Create a new task on the board").requiredOption("--title <title>", "task title").option("--summary <summary>", "task summary").option("--column <column>", "column ID", "col-backlog").option("--depends-on <ids>", "comma-separated TASK-XXX IDs this task depends on").action(async (options) => {
+program2.command("create-task").description("Create a new task on the board").requiredOption("--title <title>", "task title").option("--summary <summary>", "task summary").option("--column <column>", "column ID", "col-backlog").option("--depends-on <ids>", "comma-separated TASK-XXX IDs this task depends on").option("--parent-id <id>", "parent TASK-XXX ID \u2014 creates this as a sub-task").action(async (options) => {
   const dependsOn = options.dependsOn ? options.dependsOn.split(",").map((s) => s.trim()).filter(Boolean) : void 0;
   const task = await taskService.createTask(
     options.column,
     options.title,
     options.summary,
-    dependsOn
+    dependsOn,
+    void 0,
+    options.parentId
   );
+  const parts = [`Created Task: ${task.id}`];
   if (task.dependsOn?.length) {
-    console.log(`Created Task: ${task.id} (depends on: ${task.dependsOn.join(", ")})`);
-  } else {
-    console.log(`Created Task: ${task.id}`);
+    parts.push(`(depends on: ${task.dependsOn.join(", ")})`);
   }
+  if (task.parentId) {
+    parts.push(`(sub-task of: ${task.parentId})`);
+  }
+  console.log(parts.join(" "));
 });
 program2.command("claim-task").description("Claim a task and set it to In Progress").option("--id <id>", "Task ID (e.g. TASK-123)").option("--column <column>", "Target column ID (only moves if explicitly provided)").action(async (options) => {
   let taskId = options.id;
@@ -9669,6 +9729,42 @@ program2.command("claim-task").description("Claim a task and set it to In Progre
 program2.command("move-task").description("Move a task to a different column").requiredOption("--id <id>", "Task ID").requiredOption("--column <column>", "Target column ID").action(async (options) => {
   await taskService.moveTask(options.id, options.column);
   console.log(`Moved Task: ${options.id} -> ${options.column}`);
+});
+program2.command("update-task").description("Update an existing task (title, summary, status, checklist)").requiredOption("--id <id>", "Task ID").option("--title <title>", "New task title").option("--summary <summary>", "New task summary/description").option("--status <status>", "New status (todo, in_progress, done, blocked)").option("--add-checklist <item>", "Add a new checklist item").option("--check-item <item>", "Mark a checklist item as done (fuzzy match text)").action(async (options) => {
+  try {
+    await taskService.updateTask(options.id, {
+      title: options.title,
+      description: options.summary,
+      status: options.status,
+      addChecklistItem: options.addChecklist,
+      checkChecklistItem: options.checkItem
+    });
+    console.log(`Updated Task: ${options.id}`);
+  } catch (error) {
+    console.error(`Failed to update task: ${error.message}`);
+    process.exit(1);
+  }
+});
+program2.command("read-task").description("Get task details as JSON").requiredOption("--id <id>", "Task ID").action(async (options) => {
+  const board = await taskService.readBoard();
+  const task = board.items.find((t) => t.id === options.id);
+  if (task) {
+    console.log(JSON.stringify(task, null, 2));
+  } else {
+    console.error(`Task ${options.id} not found`);
+    process.exit(1);
+  }
+});
+program2.command("list-tasks").description("List tasks with optional filtering").option("--column <column>", "Filter by column ID").option("--status <status>", "Filter by status").action(async (options) => {
+  const board = await taskService.readBoard();
+  let tasks = board.items;
+  if (options.column) {
+    tasks = tasks.filter((t) => t.columnId === options.column);
+  }
+  if (options.status) {
+    tasks = tasks.filter((t) => t.status === options.status);
+  }
+  console.log(JSON.stringify(tasks, null, 2));
 });
 program2.command("scope").description("RLM: Get scope and dependencies for a path").argument("<path>", "Path to component or file").action(async (targetPath) => {
   const scopeService = new CoreScopeService(workspace, cwd);

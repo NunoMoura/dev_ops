@@ -124,7 +124,64 @@ program
     });
 
 
+program
+    .command('update-task')
+    .description('Update an existing task (title, summary, status, checklist)')
+    .requiredOption('--id <id>', 'Task ID')
+    .option('--title <title>', 'New task title')
+    .option('--summary <summary>', 'New task summary/description')
+    .option('--status <status>', 'New status (todo, in_progress, done, blocked)')
+    .option('--add-checklist <item>', 'Add a new checklist item')
+    .option('--check-item <item>', 'Mark a checklist item as done (fuzzy match text)')
+    .action(async (options) => {
+        try {
+            await taskService.updateTask(options.id, {
+                title: options.title,
+                description: options.summary,
+                status: options.status,
+                addChecklistItem: options.addChecklist,
+                checkChecklistItem: options.checkItem
+            });
+            console.log(`Updated Task: ${options.id}`);
+        } catch (error: any) {
+            console.error(`Failed to update task: ${error.message}`);
+            process.exit(1);
+        }
+    });
 
+program
+    .command('read-task')
+    .description('Get task details as JSON')
+    .requiredOption('--id <id>', 'Task ID')
+    .action(async (options) => {
+        const board = await taskService.readBoard();
+        const task = board.items.find(t => t.id === options.id);
+        if (task) {
+            console.log(JSON.stringify(task, null, 2));
+        } else {
+            console.error(`Task ${options.id} not found`);
+            process.exit(1);
+        }
+    });
+
+program
+    .command('list-tasks')
+    .description('List tasks with optional filtering')
+    .option('--column <column>', 'Filter by column ID')
+    .option('--status <status>', 'Filter by status')
+    .action(async (options) => {
+        const board = await taskService.readBoard();
+        let tasks = board.items;
+
+        if (options.column) {
+            tasks = tasks.filter(t => t.columnId === options.column);
+        }
+        if (options.status) {
+            tasks = tasks.filter(t => t.status === options.status);
+        }
+
+        console.log(JSON.stringify(tasks, null, 2));
+    });
 program
     .command('scope')
     .description('RLM: Get scope and dependencies for a path')
