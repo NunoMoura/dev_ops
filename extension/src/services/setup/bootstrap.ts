@@ -6,75 +6,38 @@ export type ProjectType = 'greenfield' | 'brownfield' | 'fresh';
 
 // ── Task definitions per project type ────────────────────────────────────────
 
-const GREENFIELD_TASKS: { title: string; summary: string; checklist: { text: string; done: boolean }[] }[] = [
+const GREENFIELD_TASKS: { title: string; description: string }[] = [
     {
-        title: 'Define Project Structure',
-        summary: 'Establish the core structure and requirements for the new project.',
-        checklist: [
-            { text: 'Collaborate with the user to understand project goals and scope', done: false },
-            { text: 'Research functional and non-functional requirements', done: false },
-            { text: 'Create Product Requirement Document (PRD)', done: false },
-            { text: 'Create initial folder structure', done: false }
-        ]
+        title: 'Define Product Requirements',
+        description: 'Collaborate with the user to understand the product vision, goals, and scope. Research functional and non-functional requirements. Create a Product Requirement Document (PRD) in .dev_ops/docs/.'
     },
     {
-        title: 'Define System Architecture',
-        summary: 'Design the system architecture based on the approved PRD.',
-        checklist: [
-            { text: 'Identify key system components', done: false },
-            { text: 'Define data flows and interactions', done: false },
-            { text: 'Document architecture in SPEC.md', done: false }
-        ]
+        title: 'Scaffold Project & Create Specs',
+        description: 'Create the initial project folder structure with one folder per major component. Create a SPEC.md file for each component defining its purpose, API, constraints, and dependencies.'
     },
     {
         title: 'Define Project Standards',
-        summary: 'Establish coding standards and conventions.',
-        checklist: [
-            { text: 'Define coding style (linting, formatting)', done: false },
-            { text: 'Document standards in .dev_ops/docs/project_standards.md', done: false },
-            { text: 'Configure project-level rules', done: false }
-        ]
+        description: 'Establish coding standards, linting, and conventions. Document in .dev_ops/docs/project_standards.md.'
     }
 ];
 
-const BROWNFIELD_TASKS: { title: string; summary: string; checklist: { text: string; done: boolean }[] }[] = [
+const BROWNFIELD_TASKS: { title: string; description: string }[] = [
     {
-        title: 'Document System Architecture',
-        summary: 'Analyze and document the existing system architecture.',
-        checklist: [
-            { text: 'Analyze existing codebase structure', done: false },
-            { text: 'Identify key components and dependencies', done: false },
-            { text: 'Create SPEC.md files for core components', done: false }
-        ]
+        title: 'Analyze Codebase & Create Specs',
+        description: 'Analyze the existing codebase. Identify component boundaries and dependencies. Create a SPEC.md for each major component documenting its architecture, API, and constraints.'
     },
     {
-        title: 'Define Product Requirements',
-        summary: 'Align on product requirements based on current state.',
-        checklist: [
-            { text: 'Analyze existing documentation', done: false },
-            { text: 'Create/Update Product Requirement Document (PRD)', done: false }
-        ]
+        title: 'Document Product Requirements',
+        description: 'Review existing documentation and codebase to understand current product scope. Create or update the PRD in .dev_ops/docs/.'
     },
     {
-        title: 'Define Project Standards',
-        summary: 'Formalize existing patterns into standards.',
-        checklist: [
-            { text: 'Identify established coding patterns', done: false },
-            { text: 'Document standards in .dev_ops/docs/project_standards.md', done: false }
-        ]
-    },
-    {
-        title: 'Configure Project Rules',
-        summary: 'Configure agent rules for the existing codebase.',
-        checklist: [
-            { text: 'Detect technology stack', done: false },
-            { text: 'Create and customize rules in .agent/rules/', done: false }
-        ]
+        title: 'Formalize Project Standards',
+        description: 'Identify established coding patterns. Document standards and configure linting in .dev_ops/docs/project_standards.md.'
     }
 ];
 
 // Fresh Start → empty board (no tasks)
-const FRESH_TASKS: { title: string; summary: string; checklist: { text: string; done: boolean }[] }[] = [];
+const FRESH_TASKS: { title: string; description: string }[] = [];
 
 export class CoreBootstrapService {
     constructor(
@@ -98,12 +61,12 @@ export class CoreBootstrapService {
             .filter(t => !taskExists(t.title));
 
         for (const t of tasksToCreate) {
-            await this.taskService.createTask('col-backlog', t.title, t.summary, undefined, t.checklist);
+            await this.taskService.createTask('col-backlog', t.title, t.description);
         }
     }
 
     /** Return the appropriate task set for the configured project type. */
-    public getTasksForProjectType(): { title: string; summary: string; checklist: { text: string; done: boolean }[] }[] {
+    public getTasksForProjectType(): { title: string; description: string }[] {
         switch (this.projectType) {
             case 'greenfield':
                 return GREENFIELD_TASKS;

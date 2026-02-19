@@ -3,7 +3,7 @@ import { Board, Task, Column, DEFAULT_COLUMN_BLUEPRINTS, Workspace, ProgressRepo
 import { ProjectAuditService } from '../setup/projectAuditService';
 import { NodeWorkspace } from '../../infrastructure/nodeWorkspace';
 import { ConfigService } from '../setup/configService';
-import { getAgentInstructions } from '../agents/prompts';
+
 
 export class CoreTaskService {
     constructor(protected workspace: Workspace) { }
@@ -108,7 +108,7 @@ export class CoreTaskService {
     public async createTask(
         columnId: string,
         title: string,
-        summary?: string,
+        description?: string,
         dependsOn?: string[],
         checklist?: Array<{ text: string; done: boolean }>,
         parentId?: string
@@ -130,7 +130,7 @@ export class CoreTaskService {
             id: newId,
             columnId,
             title,
-            summary: (summary || '') + '\n\n' + getAgentInstructions(newId, 'Unknown'), // Phase unknown at creation
+            description: description || '',
             updatedAt: new Date().toISOString(),
             status: undefined,
             ...(dependsOn?.length ? { dependsOn } : {}),
@@ -305,10 +305,10 @@ export class CoreTaskService {
             if (!await this.workspace.exists(bundleDir)) {
                 await this.workspace.mkdir(bundleDir);
             }
-            const contextPath = path.join(bundleDir, 'context.md');
+            const tracePath = path.join(bundleDir, 'decision_trace.md');
             // ... minimal ensure
-            if (!await this.workspace.exists(contextPath)) {
-                await this.workspace.writeFile(contextPath, '');
+            if (!await this.workspace.exists(tracePath)) {
+                await this.workspace.writeFile(tracePath, '');
             }
         } catch (e) {
             // ignore

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { getFontLink, getSharedStyles, getCSPMeta } from '../shared/styles';
 import { Board } from '../../types';
-import { readTaskContext, writeTaskContext } from '../../services/board/boardPersistence';
+import { readDecisionTrace, writeDecisionTrace } from '../../services/board/boardPersistence';
 import { boardService } from '../../services/board/boardService';
 
 export type BoardViewColumn = {
@@ -16,7 +16,7 @@ export type BoardViewTask = {
   id: string;
   columnId: string;
   title: string;
-  summary?: string;
+  description?: string;
   columnName?: string;
   // priority removed
   status?: string;
@@ -50,7 +50,10 @@ type WebviewMessage =
   | { type: 'viewWalkthrough'; taskId: string }
   | { type: 'getTaskContext'; taskId: string }
   | { type: 'saveTaskContext'; taskId: string; content: string }
-  | { type: 'updateTask'; taskId: string; updates: any };
+  | { type: 'updateTask'; taskId: string; updates: any }
+  | { type: 'getDecisionTrace'; taskId: string }
+  | { type: 'saveDecisionTrace'; taskId: string; content: string }
+  | { type: 'decisionTrace'; taskId: string; content: string };
 
 type WebviewEvent =
   | { type: 'board'; data: BoardViewSnapshot }
@@ -173,11 +176,11 @@ export class BoardPanelManager {
       } else if (message.type === 'viewWalkthrough' && typeof message.taskId === 'string') {
         // Open walkthrough for task
         vscode.commands.executeCommand('devops.viewWalkthrough', message.taskId);
-      } else if (message.type === 'getTaskContext' && typeof message.taskId === 'string') {
-        const content = await readTaskContext(message.taskId);
-        this.panel?.webview.postMessage({ type: 'taskContext', taskId: message.taskId, content });
-      } else if (message.type === 'saveTaskContext' && typeof message.taskId === 'string' && typeof message.content === 'string') {
-        await writeTaskContext(message.taskId, message.content);
+      } else if (message.type === 'getDecisionTrace' && typeof message.taskId === 'string') {
+        const content = await readDecisionTrace(message.taskId);
+        this.panel?.webview.postMessage({ type: 'decisionTrace', taskId: message.taskId, content });
+      } else if (message.type === 'saveDecisionTrace' && typeof message.taskId === 'string' && typeof message.content === 'string') {
+        await writeDecisionTrace(message.taskId, message.content);
       }
     });
 
@@ -206,7 +209,7 @@ export class BoardPanelManager {
         id: t.id,
         columnId: t.columnId,
         title: t.title,
-        summary: t.summary,
+        description: t.description,
         columnName: board.columns.find(c => c.id === t.columnId)?.name,
         // priority removed
         status: t.status,
@@ -1076,7 +1079,8 @@ function getBoardHtml(panelMode = false, logoUri = '', webview?: vscode.Webview,
           state.filteredTasks = state.tasks.filter(task => {
             const matchesText = !text || 
                                 task.title.toLowerCase().includes(text) || 
-                                (task.summary && task.summary.toLowerCase().includes(text)) ||
+                                (task.description && task.description.toLowerCase().includes(text)) ||
+                                (task.description && task.description.toLowerCase().includes(text)) ||
                                 (task.owner && task.owner.toLowerCase().includes(text));
             return matchesText;
           });

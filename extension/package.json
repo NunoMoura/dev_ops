@@ -174,24 +174,9 @@
         "icon": "$(trash)"
       },
       {
-        "command": "devops.launchAntigravitySession",
-        "title": "Start Session",
-        "icon": "$(robot)"
-      },
-      {
-        "command": "devops.launchCursorSession",
-        "title": "Start Session",
-        "icon": "$(terminal)"
-      },
-      {
         "command": "devops.insertTaskInCommit",
         "title": "DevOps: Insert Task ID in Commit Message",
         "icon": "$(git-commit)"
-      },
-      {
-        "command": "devops.startAgentSession",
-        "title": "Start Agent Session",
-        "icon": "$(play)"
       }
     ],
     "configuration": {

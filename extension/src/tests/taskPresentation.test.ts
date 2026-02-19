@@ -4,7 +4,7 @@ import {
     buildTaskTooltip,
     buildTaskDetail,
     buildCardPayload,
-    buildCodexPrompt,
+
 } from '../services/tasks';
 import { Task } from '../types';
 
@@ -61,10 +61,10 @@ suite('taskPresentation - buildTaskTooltip', () => {
         assert.ok(tooltip.includes('Column: Implementation'));
     });
 
-    test('includes summary when set', () => {
-        const task = createTask({ summary: 'This is a test summary' });
+    test('includes description when set', () => {
+        const task = createTask({ description: 'This is a test description' });
         const tooltip = buildTaskTooltip(task, 'Backlog');
-        assert.ok(tooltip.includes('Summary: This is a test summary'));
+        assert.ok(tooltip.includes('Description: This is a test description'));
     });
 
     test('includes workflow when set', () => {
@@ -116,8 +116,8 @@ suite('taskPresentation - buildTaskDetail', () => {
 suite('taskPresentation - buildCardPayload', () => {
     test('returns correct payload structure', () => {
         const task = createTask({
-            title: 'Card Task',
-            summary: 'Summary text',
+            title: 'Test Task',
+            description: 'Updated Description',
             tags: ['tag1', 'tag2'],
             // priority removed
             status: 'in_progress',
@@ -127,8 +127,8 @@ suite('taskPresentation - buildCardPayload', () => {
         const payload = buildCardPayload(task, 'Implementation');
 
         assert.strictEqual(payload.id, 'TASK-001');
-        assert.strictEqual(payload.title, 'Card Task');
-        assert.strictEqual(payload.summary, 'Summary text');
+        assert.strictEqual(payload.title, 'Test Task');
+        assert.strictEqual(payload.description, 'Updated Description');
         assert.strictEqual(payload.tags, 'tag1, tag2');
         // priority removed
         assert.strictEqual(payload.status, 'in_progress');
@@ -140,7 +140,7 @@ suite('taskPresentation - buildCardPayload', () => {
         const task = createTask();
         const payload = buildCardPayload(task, 'Backlog');
 
-        assert.strictEqual(payload.summary, undefined);
+        assert.strictEqual(payload.description, undefined);
         assert.strictEqual(payload.tags, undefined);
         // priority removed
     });
@@ -160,52 +160,4 @@ suite('taskPresentation - buildCardPayload', () => {
     });
 });
 
-suite('taskPresentation - buildCodexPrompt', () => {
-    test('includes task title as header', () => {
-        const task = createTask({ title: 'Implement Feature' });
-        const prompt = buildCodexPrompt(task, 'Build');
-        assert.ok(prompt.includes('# Task: Implement Feature'));
-    });
 
-    test('includes column', () => {
-        const task = createTask();
-        const prompt = buildCodexPrompt(task, 'Implementation');
-        assert.ok(prompt.includes('Column: Implementation'));
-    });
-
-    test('includes summary section', () => {
-        const task = createTask({ summary: 'This is the summary' });
-        const prompt = buildCodexPrompt(task, 'Build');
-        assert.ok(prompt.includes('## Summary'));
-        assert.ok(prompt.includes('This is the summary'));
-    });
-
-    test('includes context in code block', () => {
-        const task = createTask({ context: '# Context\nSome markdown' });
-        const prompt = buildCodexPrompt(task, 'Build');
-        assert.ok(prompt.includes('## Context'));
-        assert.ok(prompt.includes('```markdown'));
-        assert.ok(prompt.includes('# Context'));
-    });
-
-    test('includes acceptance criteria', () => {
-        const task = createTask({ acceptanceCriteria: ['Criteria 1', 'Criteria 2'] });
-        const prompt = buildCodexPrompt(task, 'Build');
-        assert.ok(prompt.includes('## Acceptance Criteria'));
-        assert.ok(prompt.includes('- Criteria 1'));
-    });
-
-    test('includes entry points', () => {
-        const task = createTask({ entryPoints: ['src/main.ts', 'src/utils.ts'] });
-        const prompt = buildCodexPrompt(task, 'Build');
-        assert.ok(prompt.includes('## Entry Points'));
-        assert.ok(prompt.includes('- src/main.ts'));
-    });
-
-    test('includes risks section', () => {
-        const task = createTask({ risks: ['Risk A', 'Risk B'] });
-        const prompt = buildCodexPrompt(task, 'Build');
-        assert.ok(prompt.includes('## Risks'));
-        assert.ok(prompt.includes('- Risk A'));
-    });
-});

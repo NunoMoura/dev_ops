@@ -106,12 +106,12 @@ async function migrateToBundles(tasksDir: string): Promise<void> {
       const devOpsDir = getDevOpsDir();
       if (devOpsDir) {
         const oldContextPath = path.join(devOpsDir, 'context', `${taskId}.md`);
-        const newContextPath = path.join(bundleDir, 'context.md');
+        const newTracePath = path.join(bundleDir, 'decision_trace.md');
 
         try {
           // Check if context exists
           if (await fs.stat(oldContextPath).catch(() => false)) {
-            await fs.rename(oldContextPath, newContextPath);
+            await fs.rename(oldContextPath, newTracePath);
           }
         } catch (e) {
           // Ignore context move errors
@@ -191,13 +191,21 @@ export async function readBoard(): Promise<Board> {
   // Reconstruct sorted items list
   const sortedItems: Task[] = [];
   const processedTaskIds = new Set<string>();
+  let layoutDirty = false;
 
   for (const col of layout.columns) {
     const colItems = itemsByColumn[col.id] || [];
     const colTaskIds = col.taskIds || [];
 
+    // 0. Prune stale IDs (task files that no longer exist on disk)
+    const validTaskIds = colTaskIds.filter(id => colItems.some(t => t.id === id));
+    if (validTaskIds.length !== colTaskIds.length) {
+      col.taskIds = validTaskIds;
+      layoutDirty = true;
+    }
+
     // 1. Add items in the order specified by taskIds
-    for (const id of colTaskIds) {
+    for (const id of validTaskIds) {
       const task = colItems.find(t => t.id === id);
       if (task) {
         sortedItems.push(task);
@@ -210,9 +218,13 @@ export async function readBoard(): Promise<Board> {
     // Sort new items by ID to be deterministic
     newItems.sort((a, b) => a.id.localeCompare(b.id));
 
+    if (newItems.length > 0) {
+      layoutDirty = true;
+    }
+
     for (const task of newItems) {
       sortedItems.push(task);
-      col.taskIds!.push(task.id); // Update the layout in-memory so it saves correctly later if needed
+      col.taskIds!.push(task.id); // Update the layout in-memory so it saves correctly later
       processedTaskIds.add(task.id);
     }
   }
@@ -230,10 +242,28 @@ export async function readBoard(): Promise<Board> {
         sortedItems.push(task);
         if (!backlog.taskIds) { backlog.taskIds = []; }
         backlog.taskIds.push(task.id);
+        layoutDirty = true;
       }
     } else {
       // Just return them, they might display weirdly but won't be lost
       sortedItems.push(...orphaned);
+    }
+  }
+
+  // Persist the reconciled layout if it drifted
+  if (layoutDirty) {
+    // We don't await here to avoid blocking read, but we should probably catch errors
+    // Actually, awaiting is safer to ensure consistency before next read
+    const updatedLayout = {
+      version: layout.version || 1,
+      columns: layout.columns
+    };
+    // Fire and forget or await? Await is safer for tests.
+    try {
+      await fs.writeFile(boardPath, JSON.stringify(updatedLayout, null, 2), 'utf8');
+      // console.log('Board layout reconciled and saved.');
+    } catch (error) {
+      console.error('Failed to save reconciled board layout:', error);
     }
   }
 
@@ -402,19 +432,19 @@ export async function clearCurrentTask(): Promise<void> {
   if (dir) { await fs.unlink(path.join(dir, '.current_task')).catch(() => { }); }
 }
 
-export async function readTaskContext(taskId: string): Promise<string> {
+export async function readDecisionTrace(taskId: string): Promise<string> {
   const bundleDir = getTaskBundleDir(taskId);
   if (!bundleDir) { return ''; }
   try {
-    return await fs.readFile(path.join(bundleDir, 'context.md'), 'utf8');
+    return await fs.readFile(path.join(bundleDir, 'decision_trace.md'), 'utf8');
   } catch { return ''; }
 }
 
-export async function writeTaskContext(taskId: string, content: string): Promise<void> {
+export async function writeDecisionTrace(taskId: string, content: string): Promise<void> {
   const bundleDir = getTaskBundleDir(taskId);
   if (!bundleDir) { return; }
   await fs.mkdir(bundleDir, { recursive: true });
-  await fs.writeFile(path.join(bundleDir, 'context.md'), content, 'utf8');
+  await fs.writeFile(path.join(bundleDir, 'decision_trace.md'), content, 'utf8');
 }
 
 export async function registerBoardWatchers(

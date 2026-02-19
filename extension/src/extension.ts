@@ -6,7 +6,7 @@ import { log, warn, error as logError } from './infrastructure/logger';
 import { formatError } from './infrastructure/errors';
 import { SessionBridge } from './infrastructure/integrations/sessionBridge';
 import { CursorBridge } from './infrastructure/integrations/cursorBridge';
-import { AgentManager, registerAgentManager, AntigravityAdapter, CursorAdapter } from './services/agents';
+// AgentManager removed
 import { registerCodeLensProvider } from './ui/shared';
 import { registerSCMDecorations } from './vscode/scm/scmDecorator';
 import { registerTestController } from './vscode/testing/testController';
@@ -59,6 +59,7 @@ export async function activate(context: vscode.ExtensionContext) {
         services.dashboard.refresh();
         services.metricsView.updateContent();
         services.boardPanelManager.setBoard(snapshot);
+        TaskEditorProvider.refreshAll();
       })
     );
 
@@ -102,11 +103,11 @@ export async function activate(context: vscode.ExtensionContext) {
     // Register test controller
     registerTestController(context);
 
-    // Initialize Agent Manager
-    const agentManager = AgentManager.getInstance();
-    agentManager.registerAdapter(new AntigravityAdapter());
-    agentManager.registerAdapter(new CursorAdapter());
-    registerAgentManager(context);
+    // Initialize Agent Manager - REMOVED (Legacy)
+    // const agentManager = AgentManager.getInstance();
+    // agentManager.registerAdapter(new AntigravityAdapter());
+    // agentManager.registerAdapter(new CursorAdapter());
+    // registerAgentManager(context);
 
     // Check if existing .dev_ops/ needs framework files update
     // Call without await to avoid blocking activation if UI is shown

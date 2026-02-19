@@ -50,8 +50,8 @@
 1. **Command**:
 
     ```bash
-    # Use Walkthrough content as body
-    gh pr create --title "[TASK-ID] Title" --body-file .dev_ops/tasks/[TASK-ID]/walkthrough.md
+    # Use Walkthrough3. **Create PR**:
+    gh pr create --title "TASK-XXX: Title" --body-file .dev_ops/tasks/TASK-XXX/decision_trace.md
     ```
 
 2. **Verify**: Check that the PR was created successfully.

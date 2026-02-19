@@ -23,9 +23,31 @@ description: Complete DevOps workflow for agent-driven development. Manages the 
 
 > **Artifacts** are task-scoped and ephemeral. **Docs** are project-scoped and persistent.
 
+### Decision Trace (`decision_trace.md`)
+
+Each task has a `decision_trace.md` in `.dev_ops/tasks/TASK-XXX/` that accumulates across phases:
+
+| When | Action |
+|------|--------|
+| Starting any phase | **Read** `decision_trace.md` for prior decisions |
+| Completing a phase | **Append** key decisions, rationale, and blockers |
+| Rework/bugfix | Read both `decision_trace.md` and previous artifacts |
+
+This is NOT context (provided by phase artifacts, docs, and specs). 
+This IS the agent's cross-session memory of *why* decisions were made.
+
+### Artifacts
+
+| Type | Prefix | Storage | Lifecycle |
+|---|---|---|---|
+| **Research** | RES-XXX | `.dev_ops/tasks/TASK-XXX/` | Ephemeral (One-time) |
+| **Plan** | PLN-XXX | `.dev_ops/tasks/TASK-XXX/` | Ephemeral (One-time) |
+| **Spec** | SPEC.md | `src/component/SPEC.md` | **Persistent** (Source of Truth) |
+
+> **Note**: `decision_trace.md` is the persistent memory of the task journey.
+
 | Type | Storage Path | Lifecycle | Templates |
 |------|-------------|-----------|-----------|
-| **Artifacts** | `.dev_ops/tasks/TASK-XXX/` | Ephemeral — archived when task is Done | `research.md`, `plan.md`, `walkthrough_template.md`, `pr_template.md` |
 | **Docs** | `.dev_ops/docs/` | Persistent — survives task lifecycle | `prd.md`, `feature.md`, `persona.md`, `story.md`, `mockup.md`, `project_standards.md` |
 | **Bugs** | `.dev_ops/docs/` | Persistent — tracked independently | `bug.md` |
 | **Specs** | Next to the component they describe | Persistent — updated as component evolves | `spec.md` |
@@ -35,7 +57,7 @@ description: Complete DevOps workflow for agent-driven development. Manages the 
 >
 > * **Docs** (`.dev_ops/docs/`): PRD, Feature, Persona, Story, Mockup, Standards, Bug
 > * **Specs** (next to component): `SPEC.md` lives alongside the code it describes — like a README
-> * **Artifacts** (`.dev_ops/tasks/TASK-XXX/`): Research, Plan, Walkthrough
+> * **Artifacts** (`.dev_ops/tasks/TASK-XXX/`): Research, Plan
 >
 > **ALWAYS** create the file at the path specified in the template's `storage` field.
 

@@ -25,9 +25,8 @@
 
 ## Walkthrough Guidelines
 
-When creating `walkthrough.md`:
+When creating `decision_trace.md`:
 
 - **Context**: What was the goal?
-- **Changes**: What files were modified?
-- **Evidence**: Output of tests, screenshots, or logs.
-- **Status**: Is it ready to ship?
+- **Evidence**: All verification results (test logs, screenshots, manual check confirmations) must be appended to `decision_trace.md`.
+- **Completeness**: Acceptance criteria must be explicitly checked off in `decision_trace.md`.ship?

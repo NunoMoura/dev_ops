@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { readBoard, writeBoard, getBoardPath } from '../../services/board/boardPersistence';
+import { readBoard, writeBoard, getBoardPath, getTaskBundleDir } from '../../services/board/boardPersistence';
 import { boardService } from '../../services/board/boardService';
 import { Task, ChecklistItem, COLUMN_FALLBACK_NAME, TaskStatus } from '../../types';
 import { getFontLink, getSharedStyles, getCSPMeta } from '../shared/styles';
@@ -32,9 +32,27 @@ class TaskDocumentContentProvider implements vscode.TextDocumentContentProvider 
   }
 }
 
+// Helper to escape HTML characters
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
   public static readonly viewType = 'devops.taskEditor';
   private static instance: TaskEditorProvider | undefined;
+
+  // Event emitter for global refreshes
+  private static readonly _onReqRefresh = new vscode.EventEmitter<void>();
+  public static readonly onReqRefresh = TaskEditorProvider._onReqRefresh.event;
+
+  public static refreshAll() {
+    this._onReqRefresh.fire();
+  }
 
   public static register(context: vscode.ExtensionContext): vscode.Disposable {
     const provider = new TaskEditorProvider(context);
@@ -75,8 +93,46 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       webviewPanel.webview.html = this.getEditorHtml(task, board.columns, webviewPanel.webview);
     };
 
+    // Subscribe to global refresh events
+    const refreshSub = TaskEditorProvider.onReqRefresh(() => {
+      console.log(`[TaskEditor] Global refresh triggered for ${taskId}`);
+      updateWebview();
+    });
+
+    webviewPanel.onDidDispose(() => {
+      refreshSub.dispose();
+    });
+
     // Initial render
     await updateWebview();
+
+    // Auto-refresh when the underlying file changes on disk
+    // We watch the specific task.json file to avoid reloading on every board change
+    const bundleDir = getTaskBundleDir(taskId);
+    if (bundleDir) {
+      const taskJsonPattern = new vscode.RelativePattern(bundleDir, 'task.json');
+      const watcher = vscode.workspace.createFileSystemWatcher(taskJsonPattern);
+
+      // Simple debounce
+      let refreshTimeout: NodeJS.Timeout | undefined;
+      const debouncedRefresh = () => {
+        if (refreshTimeout) { clearTimeout(refreshTimeout); }
+        refreshTimeout = setTimeout(() => {
+          console.log(`[TaskEditor] File changed for ${taskId}, refreshing...`);
+          updateWebview().catch(e => console.error('Refresh failed', e));
+        }, 300);
+      };
+
+      watcher.onDidChange(debouncedRefresh);
+      watcher.onDidCreate(debouncedRefresh);
+      // onDidDelete -> maybe close editor or show deleted state? 
+      // For now let's just let getErrorHtml handles it on next refresh attempt or keep last state.
+
+      webviewPanel.onDidDispose(() => {
+        watcher.dispose();
+        if (refreshTimeout) { clearTimeout(refreshTimeout); }
+      });
+    }
 
     // Handle messages
     webviewPanel.webview.onDidReceiveMessage(async (message) => {
@@ -129,10 +185,10 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
           await boardService.moveTask(taskId, 'col-implement');
 
           // 2. Start Agent Session
-          // await vscode.commands.executeCommand('devops.startAgentSession', undefined, { taskId, phase: 'Implement' });
-          // Actually, let's just show a message or let the user know, because startAgentSession might be async or complex here.
+
           // Better: We trigger the command.
-          vscode.commands.executeCommand('devops.startAgentSession', undefined, { taskId, phase: 'Implement' });
+          // 2. Start Agent Session -> Claim Task
+          vscode.commands.executeCommand('devops.claimTask', { taskId });
 
           vscode.window.showInformationMessage(`Plan Approved. Task ${taskId} moved to Implement phase.`);
           await updateWebview();
@@ -708,7 +764,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         <div class="section-header">
           <span>CONTEXT / DESCRIPTION</span>
         </div>
-        <textarea id="description" class="description-input" placeholder="Add context, instructions, or requirements here...">${task.summary || ''}</textarea>
+        <textarea id="description" class="description-input" placeholder="Add context, instructions, or requirements here...">${escapeHtml(task.description || '')}</textarea>
       </div>
 
        <input type="hidden" id="status" value="${currentStatus}">
@@ -800,6 +856,8 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
                 if (message.type === 'updateChecklist') {
                      this.items = message.checklist || [];
                      this.render();
+                } else if (message.description !== undefined) {
+                     descriptionInput.value = message.description;
                 }
             });
         }
@@ -1037,12 +1095,17 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     // --- Collection & Updates ---
 
     function collect() {
+      // Assuming descriptionInput is defined elsewhere or needs to be defined here
+      const descriptionInput = document.getElementById('description'); // Assuming 'description' is the ID for the textarea
+      const statusInput = document.getElementById('status'); // Assuming 'status' is the ID for the status input
+      const columnInput = document.getElementById('column'); // Assuming 'column' is the ID for the column input
+
       return {
         title: document.getElementById('title').value,
         status: statusInput.value,
-        columnId: document.getElementById('column').value,
-        summary: descriptionInput.value,
-        checklist: checklistManager.items
+        columnId: columnInput.value,
+        description: descriptionInput.value,
+        checklist: checklistManager.getAll()
       };
     }
 

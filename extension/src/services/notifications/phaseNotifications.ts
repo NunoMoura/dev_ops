@@ -97,13 +97,12 @@ export async function showPhaseNotification(
 
     const { isBackward } = result;
 
-    // Auto-copy the claim command to clipboard for immediate paste into chat
+    // Auto-copy removed as per user request to stop clipboard spam.
     const claimCommand = `/claim ${taskId}`;
-    await vscode.env.clipboard.writeText(claimCommand);
 
     // Build notification message with clipboard confirmation
     const direction = isBackward ? '← Back to' : '▶';
-    const message = `${direction} ${taskId} → ${phaseName} — 📋 Copied "${claimCommand}" to clipboard`;
+    const message = `${direction} ${taskId} → ${phaseName}`;
 
     // Show notification with action buttons
     const selection = await vscode.window.showInformationMessage(
@@ -115,9 +114,6 @@ export async function showPhaseNotification(
     if (selection === 'View Task') {
         await vscode.commands.executeCommand('board.openTask', taskId);
     } else if (selection === 'Start Agent') {
-        await vscode.commands.executeCommand('devops.startAgentSession', undefined, {
-            taskId,
-            phase: phaseName
-        });
+        await vscode.commands.executeCommand('devops.claimTask', { taskId });
     }
 }

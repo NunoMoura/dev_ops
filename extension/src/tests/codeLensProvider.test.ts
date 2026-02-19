@@ -120,7 +120,7 @@ suite('CodeLensProvider - Task Tooltip Format', () => {
         title: string;
         status?: string;
         priority?: string;
-        summary?: string;
+        description?: string; // Changed from summary to description
         owner?: string;
     }
 
@@ -136,10 +136,9 @@ suite('CodeLensProvider - Task Tooltip Format', () => {
             lines.push(`Owner: ${task.owner}`);
         }
 
-        if (task.summary) {
-            lines.push('', `Summary: ${task.summary.substring(0, 100)}...`);
+        if (task.description) {
+            lines.push('', `Description: ${task.description.substring(0, 100)}...`);
         }
-
         return lines.join('\n');
     }
 
@@ -158,11 +157,11 @@ suite('CodeLensProvider - Task Tooltip Format', () => {
         assert.ok(tooltip.includes('Owner: Cursor'));
     });
 
-    test('truncates long summary', () => {
-        const longSummary = 'A'.repeat(200);
-        const task: Task = { id: 'TASK-001', title: 'Fix bug', summary: longSummary };
+    test('truncates long description', () => {
+        const longDescription = 'A'.repeat(200);
+        const task: Task = { id: 'TASK-001', title: 'Fix bug', description: longDescription };
         const tooltip = formatTaskTooltip(task);
-        assert.ok(tooltip.includes('Summary:'));
+        assert.ok(tooltip.includes('Description:'));
         assert.ok(tooltip.includes('...'));
     });
 });

@@ -54,7 +54,7 @@ export type Task = {
   id: string;                    // TASK-XXX format
   columnId: string;              // Current column (workflow phase)
   title: string;
-  summary?: string;
+  description?: string;
   // priority removed
   tags?: string[];
   updatedAt?: string;
@@ -111,7 +111,7 @@ export type AgentActivity = {
   phase: string;
   startedAt: string;
   endedAt: string;
-  summary?: string;              // Short summary of the session
+  description?: string;              // Short summary of the session
 
 };
 
@@ -151,7 +151,7 @@ export type FilterState = {
 export type ImportedTask = {
   id: string;
   title: string;
-  summary?: string;
+  description?: string;
   column?: string;
   // priority removed
   tags?: string[];
@@ -173,7 +173,7 @@ export type TaskListKey = 'entryPoints' | 'acceptanceCriteria' | 'checklist' | '
 
 export type ParsedPlan = {
   title?: string;
-  summary?: string;
+  description?: string;
   tasks: ImportedTask[];
   defaultColumn?: string;
   defaultStatus?: string;        // Legacy field for plan import
@@ -220,7 +220,7 @@ export const DEFAULT_COLUMN_BLUEPRINTS: ReadonlyArray<Column> = [
 export type TaskDetailsPayload = {
   id: string;
   title: string;
-  summary?: string;
+  description?: string;
   tags?: string; // Comma separated string for UI
   columnId?: string;              // Column determines workflow phase
   status?: string;                // Autonomy state: ready, agent_active, needs_feedback, blocked, done
@@ -233,7 +233,7 @@ export type TaskDetailsPayload = {
   owner?: {                       // Task Ownership
     developer?: string;
     agent?: string; // Agent name
-    model?: string; // Model name
+    description?: string; // Model name
     type?: string;
     sessionId?: string;
   };

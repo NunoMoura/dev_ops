@@ -93,8 +93,8 @@ export class DevOpsCodeLensProvider implements vscode.CodeLensProvider {
             lines.push(`Owner: ${task.owner || 'Unassigned'}`);
         }
 
-        if (task.summary) {
-            lines.push('', `Summary: ${task.summary.substring(0, 100)}...`);
+        if (task.description) {
+            lines.push('', `Description: ${task.description.substring(0, 100)}...`);
         }
 
         return lines.join('\n');

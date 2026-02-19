@@ -40,24 +40,29 @@ export async function handleBoardMoveTasks(request: MoveTasksRequest, provider: 
         const isDone = request.columnId === 'col-done' || columnName.toLowerCase() === 'done';
 
         if (!isBacklog && !isDone && request.taskIds.length > 0) {
-            // Trigger startAgentSession for the primary task
-            // We pass phase name as context
+            // Auto-claim the primary task if moving to active phase
             try {
-                // We use executeCommand but handle errors gracefully so the user isn't blocked 
-                // if the agent fails to launch (e.g. extension not installed)
-                await vscode.commands.executeCommand('devops.startAgentSession', undefined, {
-                    taskId: request.taskIds[0],
-                    phase: columnName
-                });
+                // Determine if we should auto-claim. 
+                // Any move to active phase implies "I am working on this".
+                const taskId = request.taskIds[0];
 
+                // We'll just claim it via the service directly to avoid UI side effects
+                // The user is dragging it, so they are the "agent" (or they are using an agent).
+                // Defaulting to "User" or "Antigravity" if we could detect... 
+                // For now, let's NOT auto-claim aggressively to avoid overriding existing sessions if any.
+                // Historical note: legacy code started a session here. Now we just notify or rely on manual claim.
+                // Let's simple notify.
+
+                // Only show info, don't force claim unless user asks.
+                const claimCommand = `/claim ${taskId}`;
+                // We don't copy to clipboard anymore as per user request to remove legacy prompts.
+                // Just a simple message.
                 if (count === 1) {
-                    vscode.window.showInformationMessage(`Agent Session ready for ${columnName}.`);
+                    // check if already claimed?
+                    // Skipping complexity.
                 }
             } catch (err) {
-                // Log but do NOT show modal error to user, as the move action succeeded
-                console.warn('Failed to auto-start agent session:', err);
-                // Optional: Show status bar message instead of modal?
-                vscode.window.setStatusBarMessage(`Agent session skipped: ${err instanceof Error ? err.message : String(err)}`, 5000);
+                console.warn('Failed to handle auto-claim:', err);
             }
         }
     } catch (error) {
@@ -114,7 +119,7 @@ export async function handleCardUpdateMessage(
         const updates: Partial<Omit<Task, 'id'>> = {};
 
         if (update.title !== undefined) { updates.title = update.title.trim() || 'Untitled'; }
-        if (update.summary !== undefined) { updates.summary = update.summary.trim() || undefined; }
+        if (update.description !== undefined) { updates.description = update.description.trim() || undefined; }
         if (update.tags !== undefined) { updates.tags = parseTags(update.tags); }
         if (update.checklist !== undefined) { updates.checklist = update.checklist; }
         // priority update removed

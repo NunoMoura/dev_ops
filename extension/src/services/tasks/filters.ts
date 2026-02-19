@@ -56,7 +56,7 @@ export function matchesTextFilter(item: Task, column: Column, filter: TaskFilter
     return true;
   }
   const columnName = column.name || COLUMN_FALLBACK_NAME;
-  const haystack = [item.title, item.summary, item.columnId, columnName]
+  const haystack = [item.title, item.description, item.columnId, columnName]
     .filter(isDefined)
     .join(' ')
     .toLowerCase();

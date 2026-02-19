@@ -138,17 +138,17 @@ suite('Bootstrap - Task Selection by Project Type', () => {
         assert.strictEqual(tasks.length, 3);
         assert.deepStrictEqual(
             tasks.map((t: any) => t.title),
-            ['Define Product Requirements', 'Define System Architecture', 'Define Project Standards']
+            ['Define Product Requirements', 'Scaffold Project & Create Specs', 'Define Project Standards']
         );
     });
 
-    test('brownfield creates exactly 4 analyze-first tasks', () => {
+    test('brownfield creates exactly 3 analyze-first tasks', () => {
         const svc = new CoreBootstrapService(nullWorkspace, nullTaskService, extPath, 'brownfield');
         const tasks = svc.getTasksForProjectType();
-        assert.strictEqual(tasks.length, 4);
+        assert.strictEqual(tasks.length, 3);
         assert.deepStrictEqual(
             tasks.map((t: any) => t.title),
-            ['Document System Architecture', 'Define Product Requirements', 'Define Project Standards', 'Configure Project Rules']
+            ['Analyze Codebase & Create Specs', 'Document Product Requirements', 'Formalize Project Standards']
         );
     });
 
@@ -161,7 +161,7 @@ suite('Bootstrap - Task Selection by Project Type', () => {
     test('undefined projectType defaults to brownfield tasks', () => {
         const svc = new CoreBootstrapService(nullWorkspace, nullTaskService, extPath, undefined);
         const tasks = svc.getTasksForProjectType();
-        assert.strictEqual(tasks.length, 4);
-        assert.strictEqual(tasks[0].title, 'Document System Architecture');
+        assert.strictEqual(tasks.length, 3);
+        assert.strictEqual(tasks[0].title, 'Analyze Codebase & Create Specs');
     });
 });

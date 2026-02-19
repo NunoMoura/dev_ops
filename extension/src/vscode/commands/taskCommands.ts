@@ -21,7 +21,7 @@ import {
 import {
     buildTaskDescription,
     buildTaskDetail,
-    presentCodexPrompt,
+
     promptForTask,
     promptForColumn,
     appendTaskHistory,
@@ -155,14 +155,7 @@ export function registerTaskCommands(
         'Unable to open task context',
     );
 
-    registerDevOpsCommand(
-        context,
-        'devops.generateCodexPrompt',
-        async (node?: BoardNode) => {
-            await handleGenerateCodexPrompt(provider, node);
-        },
-        'Unable to build Codex prompt',
-    );
+
 
     // Status management
     registerDevOpsCommand(
@@ -240,7 +233,7 @@ export async function createTask(
     board: any,
     columnId: string,
     title: string,
-    summary?: string
+    description?: string
 ): Promise<Task> {
     const taskId = createTaskId(board);
 
@@ -248,7 +241,7 @@ export async function createTask(
         id: taskId,
         columnId: columnId,
         title: title,
-        summary: summary,
+        description: description,
         // priority removed
         status: undefined,
         updatedAt: new Date().toISOString(),
@@ -341,15 +334,7 @@ async function handleMoveTask(
     const isBacklog = targetColumn.id === 'col-backlog' || targetColumn.name.toLowerCase() === 'backlog';
     const isDone = targetColumn.id === 'col-done' || targetColumn.name.toLowerCase() === 'done';
 
-    if (!isBacklog && !isDone) {
-        // Trigger startAgentSession
-        // We pass phase name as context
-        await vscode.commands.executeCommand('devops.startAgentSession', undefined, {
-            taskId: task.id,
-            phase: targetColumn.name
-        });
-        vscode.window.showInformationMessage(`Task moved to ${targetColumn.name}. copy/paste context to agent to start.`);
-    }
+
 }
 
 /**
@@ -379,7 +364,7 @@ async function handlePickNextTask(provider: BoardTreeProvider, view: vscode.Tree
     const ranked = [...board.items].sort(compareTasks);
     const quickPickItems = ranked.map((item) => ({
         label: item.title,
-        detail: [item.summary, item.status ? `(${item.status})` : undefined].filter(isDefined).join(' — '),
+        detail: [item.description, item.status ? `(${item.status})` : undefined].filter(isDefined).join(' — '),
         description: buildTaskDescription(item),
         item,
     }));
@@ -470,18 +455,7 @@ async function handleOpenTaskContext(node?: BoardNode): Promise<void> {
     await openTaskContext(task);
 }
 
-/**
- * Generate Codex prompt for a task
- */
-async function handleGenerateCodexPrompt(provider: BoardTreeProvider, node?: BoardNode): Promise<void> {
-    const board = await readBoard();
-    const task = node && node.kind === 'item' ? node.item : await promptForTask(board);
-    if (!task) {
-        return;
-    }
-    const columnName = board.columns.find((column) => column.id === task.columnId)?.name ?? COLUMN_FALLBACK_NAME;
-    await presentCodexPrompt(task, columnName);
-}
+
 
 /**
  * Set task status using BoardService

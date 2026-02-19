@@ -126,7 +126,7 @@ suite('MetricsView - TaskDetailsPayload', () => {
     interface TaskDetailsPayload {
         id: string;
         title: string;
-        summary?: string;
+        description?: string;
         tags?: string;
         priority?: string;
         columnId?: string;
@@ -143,14 +143,14 @@ suite('MetricsView - TaskDetailsPayload', () => {
         };
         assert.strictEqual(payload.id, 'TASK-001');
         assert.strictEqual(payload.title, 'Test Task');
-        assert.strictEqual(payload.summary, undefined);
+        assert.strictEqual(payload.description, undefined);
     });
 
     test('can construct full payload', () => {
         const payload: TaskDetailsPayload = {
             id: 'TASK-001',
             title: 'Test Task',
-            summary: 'Summary text',
+            description: 'Summary text',
             tags: 'tag1, tag2',
             priority: 'high',
             columnId: 'col-implement',

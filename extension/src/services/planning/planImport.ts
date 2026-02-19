@@ -75,7 +75,7 @@ export function parsePlanJson(raw: string, filePath: string): ParsedPlan {
   const tasks: ImportedTask[] = data.tasks.map((task: any, index: number) => normalizePlanTaskFromJson(task, index));
   return {
     title: typeof data.title === 'string' ? data.title : undefined,
-    summary: typeof data.summary === 'string' ? data.summary : undefined,
+    description: typeof data.description === 'string' ? data.description : undefined,
     tasks,
     defaultColumn: typeof data.defaultColumn === 'string' ? data.defaultColumn : undefined,
     defaultStatus: typeof data.defaultStatus === 'string' ? data.defaultStatus : undefined,
@@ -94,7 +94,7 @@ export function normalizePlanTaskFromJson(input: any, index: number): ImportedTa
         ? input.id.trim()
         : slugify(title) || createId('plan', title),
     title,
-    summary: typeof input?.summary === 'string' ? input.summary.trim() || undefined : undefined,
+    description: typeof input?.description === 'string' ? input.description.trim() || undefined : undefined,
     column: typeof input?.column === 'string' ? input.column.trim() || undefined : undefined,
     status: typeof input?.status === 'string' ? input.status.trim() as any || undefined : undefined,
     // priority removed
@@ -127,8 +127,8 @@ export function parsePlanMarkdown(raw: string, filePath: string): ParsedPlan {
     if (!currentTask) {
       return;
     }
-    if (!currentTask.summary && currentTask.context) {
-      currentTask.summary = currentTask.context.split('\n')[0];
+    if (!currentTask.description && currentTask.context) {
+      currentTask.description = currentTask.context.split('\n')[0];
     }
     if (!currentTask.id) {
       currentTask.id = slugify(currentTask.title) || createId('plan', currentTask.title);
@@ -221,8 +221,9 @@ export function parsePlanMarkdown(raw: string, filePath: string): ParsedPlan {
       const key = meta[1].trim().toLowerCase();
       const value = meta[2].trim();
       switch (key) {
-        case 'summary':
-          currentTask.summary = value;
+        case 'description':
+        case 'summary': // Legacy support
+          currentTask.description = value;
           break;
         case 'column':
           currentTask.column = value;
@@ -374,7 +375,7 @@ export function applyPlanTask(
 ): void {
   item.columnId = column.id;
   item.title = planTask.title;
-  item.summary = planTask.summary ?? planTask.context?.split('\n')[0] ?? item.summary;
+  item.description = planTask.description ?? planTask.context?.split('\n')[0] ?? item.description;
   // Note: status is now determined by columnId, not stored separately
   // priority removed
   item.tags = planTask.tags ?? item.tags;

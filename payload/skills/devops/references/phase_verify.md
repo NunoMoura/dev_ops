@@ -37,13 +37,16 @@
 
 ### 3. Create Walkthrough
 
-* **Action**: Create `walkthrough.md` using the template.
-* **Template**: [Walkthrough Template](../assets/walkthrough_template.md)
-* **Content**: Summary of changes, Spec compliance, Test results, Screenshots.
+*3. **Trace**: Append your verification evidence to `.dev_ops/tasks/TASK-XXX/decision_trace.md`.
+   - **Test Results**: Paste the output of `npm test` or relevant test commands.
+   - **Manual Checks**: Confirm acceptance criteria are met.
+   - **Screenshots**: If UI changes, reference screenshot paths.
+
+> **Note**: `decision_trace.md` is the persistent record. Do NOT create a separate walkthrough artifact.
 
 ### 4. Create PR
 
-* **Command**: `gh pr create --title "[TASK-XXX] Title" --body-file .dev_ops/tasks/[TASK-XXX]/walkthrough.md`
+* **Command**: `gh pr create --title "[TASK-XXX] Title"`
 
 ---
 

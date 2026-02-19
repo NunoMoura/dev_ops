@@ -236,7 +236,7 @@ export class BoardTreeProvider implements vscode.TreeDataProvider<BoardNode> {
           id: task.id,
           columnId: columnNode.column.id,
           title: task.title,
-          summary: task.summary,
+          description: task.description,
           columnName: columnNode.column.name,
           // status removed
           status: task.status,

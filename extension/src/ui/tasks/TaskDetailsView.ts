@@ -71,7 +71,10 @@ export class BoardTaskDetailsViewProvider implements vscode.WebviewViewProvider 
         this.onClaimEmitter.fire(message.id);
       } else if (message.type === 'openChat' && typeof message.id === 'string') {
         const phase = this.pendingTask?.column || 'Unknown';
-        vscode.commands.executeCommand('devops.startAgentSession', undefined, { taskId: message.id, phase });
+
+        // New: Just claim the task directly
+        // We use boardService or a wrapper command
+        vscode.commands.executeCommand('devops.claimTask', { taskId: message.id });
       }
     });
     if (this.pendingTask) {
@@ -748,7 +751,7 @@ function getCardHtml(): string {
         return featureTasks.map((task) => ({
           id: task.id,
           title: task.title,
-          summary: task.summary,
+          description: task.description,
           items: task.items.map((item) => ({
             id: item.id,
             title: item.title,

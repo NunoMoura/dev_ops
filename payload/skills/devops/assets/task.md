@@ -13,7 +13,6 @@ dependsOn: []          # TASK-XXX IDs that must complete first
 artifacts:             # Pointers to ephemeral artifact content
   research: null       # RES-XXX - set by Understand phase
   plan: null           # PLN-XXX - set by Plan phase
-  walkthrough: null    # Created in Verify phase (IDE-provided)
 ---
 
 # {{id}} - {{title}}

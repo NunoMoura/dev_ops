@@ -9,7 +9,7 @@ import { readBoard, writeBoard, saveTask, deleteTask, getBoardPath, readCurrentT
 import { createTaskId, compareTasks } from '../tasks/taskUtils';
 import { ProjectAuditService } from '../setup/projectAuditService';
 import { NodeWorkspace } from '../../infrastructure/nodeWorkspace';
-import { writeTaskContext, readTaskContext, getWorkspaceRoot as getRoot } from './boardPersistence';
+import { writeDecisionTrace, readDecisionTrace, getWorkspaceRoot as getRoot } from './boardPersistence';
 
 /**
  * BoardService - Central service for all board.json operations
@@ -502,7 +502,7 @@ export class BoardService {
                 const auditService = new ProjectAuditService(workspace);
                 const projectContext = await auditService.audit();
 
-                let currentContext = await readTaskContext(taskId);
+                let currentContext = await readDecisionTrace(taskId);
                 const hydrationHeader = '\n\n## Project Baseline\n';
 
                 if (!currentContext.includes(hydrationHeader)) {
@@ -554,7 +554,7 @@ export class BoardService {
                         }
                     }
 
-                    await writeTaskContext(taskId, currentContext + hydrationContent);
+                    await writeDecisionTrace(taskId, currentContext + hydrationContent);
                 }
             }
         } catch (e) {
@@ -641,7 +641,7 @@ export class BoardService {
                 phase: task.activeSession.phase,
                 startedAt: task.activeSession.startedAt,
                 endedAt: new Date().toISOString(),
-                summary: 'Task completed',
+                description: 'Task completed',
             });
             task.agentHistory = history;
             task.activeSession = undefined;

@@ -29,7 +29,10 @@
 ### 1. Read (The "Wake Up")
 
 * **Context**: Read the local `SPEC.md`.
-* **Trace**: If this is a rework or bugfix, read the previous `walkthrough.md` (if it exists) to understand what was verified last time.
+## Trace & Rework
+
+- **Trace**: Append key technical decisions, trade-offs, and blockers to `.dev_ops/tasks/TASK-XXX/decision_trace.md`.
+- **Rework**: If you are resuming work or fixing bugs, **READ** `decision_trace.md` to understand what happened in previous sessions. It contains the history of decisions and verification results.
 * **Focus**: Identify what parts of the `SPEC` are not yet implemented or need changing.
 * **Safety**: Do NOT read unrelated parts of the codebase.
 
