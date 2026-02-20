@@ -997,7 +997,7 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
                 const nextIndex = index + 1;
                 this.addItem(nextIndex, '', item.indent);
                 this.focusItem(nextIndex);
-            } else if (e.key === 'Backspace' && item.text === '') {
+            } else if (e.key === 'Backspace' && item.text.trim() === '') {
                 e.preventDefault();
                 // Delete empty item and focus previous
                 if (this.items.length > 0) {
