@@ -8,7 +8,7 @@
 |------------|--------------|
 | `git commit`, `git push` | Code Changes (except cleanup) |
 | `gh pr create` | Start new task without cleaning up |
-| Spawn new tasks (feedback) | Move to Done without `walkthrough.md` |
+| Spawn new tasks (feedback) | Move to Done without verification evidence |
 
 **Required Deliverable**: **Merged PR** (Conceptually).
 
@@ -18,7 +18,7 @@
 
 | Input | Output | Next Phase |
 |-------|--------|------------|
-| `walkthrough.md` | Merged/Open PR | None / New Task |
+| `decision_trace.md` | Merged/Open PR | None / New Task |
 
 ---
 
@@ -26,7 +26,7 @@
 
 ### 1. The Handoff
 
-* **Check**: Does `walkthrough.md` exist?
+* **Check**: Does `decision_trace.md` contain verification evidence?
 * **Check**: Does `SPEC.md` match the reality of the code?
 
 ### 2. Git Workflow (The "Push")
@@ -50,7 +50,7 @@
 1. **Command**:
 
     ```bash
-    # Use Walkthrough3. **Create PR**:
+    # Use decision_trace.md as PR body:
     gh pr create --title "TASK-XXX: Title" --body-file .dev_ops/tasks/TASK-XXX/decision_trace.md
     ```
 
@@ -77,37 +77,6 @@
 * Clear your context.
 * Ready for next task.
 
----
-
-## Examples
-
-### Example 1: Shipping a Feature
-
-User says: "Ship the input validation feature"
-
-Actions:
-
-1. Verify `walkthrough.md` exists and is complete.
-2. `git commit -m "feat(api): TASK-042 Input validation"` and `git push`.
-3. `gh pr create` with walkthrough as body.
-4. Move task to Done column.
-
-Result: PR #42 created and linked. Task moved to Done.
-
-### Example 2: Handling PR Feedback
-
-User says: "The reviewer requested changes on the PR"
-
-Actions:
-
-1. Read PR comments.
-2. If small fix: implement, commit, push.
-3. If new scope: create a new task linked to this PR.
-
-Result: PR updated with fixes, or new task created for expanded scope.
-
----
-
 ## Troubleshooting
 
 ### Error: "PR checks failed"
@@ -125,7 +94,7 @@ Result: PR updated with fixes, or new task created for expanded scope.
 ## Exit Criteria
 
 * [ ] Changes committed and pushed.
-* [ ] PR created using `walkthrough.md`.
+* [ ] PR created using `decision_trace.md`.
 * [ ] Task moved to Done (or Next Phase based on PR feedback).
 
 ---

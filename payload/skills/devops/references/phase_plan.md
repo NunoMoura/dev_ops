@@ -6,21 +6,20 @@
 
 | ✅ ALLOWED | ❌ FORBIDDEN |
 |------------|--------------|
-| Update `SPEC.md` | Write Implementation Code |
+| Create/Update `SPEC.md` (only next to source files) | Create `SPEC.md` in project root |
+| Update `task.md` checklist | Write Implementation Code |
 | Read `RES-*.md` & Code Metadata | Modify Source Code (`.ts`, `source/`, etc.) |
 | Create Child Tasks (`create-task`) | Update sub-component `SPEC.md` (Delegate it!) |
 | Read `SPEC.md` headers | Read full files (>100 lines) |
-| Define Verification Strategy | Skip creating/updating `SPEC.md` |
+| Define Verification Strategy | Proceed to next phase without STOPPING |
 
-**Required Deliverable**: Updated `SPEC.md` + Child Tasks in `.dev_ops/tasks/`.
+**Required Deliverable**: Updated `SPEC.md` + Populated `task.md` checklist + Child Tasks (if needed).
 
 ---
 
-## Input → Output
-
-| Input | Output | Next Phase |
+| Input | Output | Next Action |
 |-------|--------|------------|
-| `RES` + `SPEC` headers | Updated `SPEC.md` + Tasks | Implement (Leaf) / Plan (Node) |
+| `RES` + `SPEC` headers | `SPEC.md` + `task.md` checklist + Tasks | **STOP** and wait for user/system to advance task |
 
 ---
 
@@ -39,8 +38,10 @@
 
 ### 3. RLM Zoom-In (Update Local)
 
-* **Action**: Update the **Current Directory's** `SPEC.md` to reflect the new requirements.
-* **Constraint**: You represent the *current level of abstraction*. Do not update child specs.
+* **Action**: Update the **Current Directory's** `SPEC.md` to reflect the new requirements. If this is a brand new component, create the `SPEC.md` from the template.
+* **Action**: Update your current `.dev_ops/tasks/TASK-XXX/task.md` with the checklist of implementation steps.
+* **Constraint**: You represent the *current level of abstraction*. Do not update child specs unless scaffolding a brand new folder.
+* **Constraint**: **NEVER** create a `SPEC.md` at the root of the project. `SPEC.md` MUST live in the directory of the component/module it describes (e.g. `src/api/SPEC.md`). If a component doesn't exist yet, defer its `SPEC.md` creation to its specific implementation task.
 
 ### 4. Recursive Decomposition (The "Delegate")
 
@@ -60,7 +61,7 @@
 
 ### 5. Review (The "Leaf vs Node")
 
-* **Leaf**: If no child tasks were created, you are a Leaf. → Move to **Implement**.
+* **Leaf**: If no child tasks were created, you are a Leaf. → Deliverable is ready for **Implement**.
 * **Node**: If child tasks were created, you are a Node. → Parent is auto-blocked. Wait until all children reach Done, then move parent to **Verify**.
 
 ### 6. Parent Lifecycle
@@ -75,38 +76,6 @@ When a Node task decomposes:
 | **Done** | Parent validates the integrated result of all children |
 
 > The parent's `checklist` shows the tracking overview of child tasks and their current column.
-
----
-
-## Examples
-
-### Example 1: Updating a Component Spec
-
-User says: "Update the API spec to include input validation"
-
-Actions:
-
-1. Read `src/api/SPEC.md` headers.
-2. Add "Input Validation" section to `SPEC.md`.
-3. Create child tasks if multiple files/modules need substantial work.
-
-Result: `SPEC.md` updated with validation requirements. No code written.
-
-### Example 2: Decomposing a Feature
-
-User says: "Plan the new User Profile feature"
-
-Actions:
-
-1. Check for `RES-XXX` (loop back to Understand if missing).
-2. Create/Update `src/users/SPEC.md`.
-3. Identify dependencies (Database, Auth, Frontend).
-4. Create child tasks: "Implement User DB Schema", "Implement Profile API", "Implement Profile UI".
-5. Link child tasks to current task via `dependsOn`.
-
-Result: Parent spec updated, 3 child tasks created, parent marked as Blocked.
-
----
 
 ## Troubleshooting
 
@@ -124,7 +93,8 @@ Result: Parent spec updated, 3 child tasks created, parent marked as Blocked.
 
 ## Exit Criteria
 
-* [ ] Current `SPEC.md` is updated and precise.
+* [ ] Current `SPEC.md` is updated and precise (if local component spec exists/needed).
+* [ ] Implementation steps are listed in the `task.md` checklist.
 * [ ] Child tasks created for all affected sub-components.
 * [ ] Child tasks created with `--parent-id` for all affected sub-components (if Node).
 * [ ] NO code changes (only `SPEC.md` and `task.md`).
@@ -133,6 +103,5 @@ Result: Parent spec updated, 3 child tasks created, parent marked as Blocked.
 
 ## Next Phase
 
-* **Leaf Success**: Move to **Implement** (Go build the Spec).
-* **Node Success**: Move to **Done** (Or wait if tracking).
+* **SUCCESS**: **STOP**. You must stop execution after producing the deliverables so the human or system can advance the task to `Implement` or `Verify`.
 * **Failure**: Return to **Understand** (Need more research).

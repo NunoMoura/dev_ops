@@ -2,7 +2,14 @@
   "id": "TASK-001",
   "columnId": "col-backlog",
   "title": "New Task",
-  "updatedAt": "2026-02-19T23:27:03.012Z",
-  "checklist": [],
+  "updatedAt": "2026-02-20T06:41:39.654Z",
+  "checklist": [
+    {
+      "id": "item-7jbwzvaho",
+      "text": "kjhkljahef ",
+      "done": false,
+      "indent": 0
+    }
+  ],
   "status": "needs_feedback"
 }

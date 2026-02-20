@@ -2,32 +2,7 @@
 
 These examples show how to create technical artifacts that drive the development process.
 
-## 1. Implementation Plan (PLN)
-
-**Trigger**: "Create a plan to refactor the auth service"
-**Template**: `assets/plan.md`
-**Output Path**: `.dev_ops/tasks/TASK-123/PLN-001.md`
-
-```markdown
-# PLN-001: Auth Service Refactor
-
-## Goal
-Decouple authentication logic from the User model.
-
-## Proposed Changes
-### `src/auth/`
-- [NEW] `AuthService.ts`: Handle login/signup logic
-- [NEW] `TokenProvider.ts`: Handle JWT generation
-
-### `src/models/`
-- [MODIFY] `User.ts`: Remove password comparison methods
-
-## Verification
-- Run `npm test`
-- Manual login test with new service
-```
-
-## 2. Component Specification (SPEC)
+## 1. Component Specification (SPEC)
 
 **Trigger**: "Create a spec for the Button component"
 **Template**: `assets/spec.md`
@@ -60,7 +35,7 @@ interface ButtonProps {
 - Must have `role="button"` (if div) or use `<button>`
 - Must support keyboard focus
 
-## 3. Bug Report
+## 2. Bug Report
 
 **Trigger**: "Log a bug about the crash on checkout"
 **Template**: `assets/bug.md`
@@ -91,7 +66,7 @@ Payment modal should open.
 App crashes (White screen).
 
 ## Logs/Screenshots
-## 4. Task File
+## 3. Task File
 
 **Trigger**: `create-task` CLI command (auto-generates this file)
 **Template**: `assets/task.md`
@@ -112,7 +87,7 @@ trigger: PLN-001
 # TASK-123 - Refactor Auth Service
 
 ## Context
-Read the trigger doc for context: PLN-001
+Read the trigger doc for context: DOC-001
 
 ## Notes
 - Encountered circular dependency in `User.ts`, resolving by extracting interface.

@@ -48,7 +48,6 @@ This IS the agent's cross-session memory of *why* decisions were made.
 | Type | Prefix | Storage | Lifecycle |
 |---|---|---|---|
 | **Research** | RES-XXX | `.dev_ops/tasks/TASK-XXX/` | Ephemeral (One-time) |
-| **Plan** | PLN-XXX | `.dev_ops/tasks/TASK-XXX/` | Ephemeral (One-time) |
 | **Spec** | SPEC.md | `src/component/SPEC.md` | **Persistent** (Source of Truth) |
 
 > **Note**: `decision_trace.md` is the persistent memory of the task journey.
@@ -70,38 +69,17 @@ This IS the agent's cross-session memory of *why* decisions were made.
 
 ---
 
-## Phase: Understand
+## Phase Reference Table
 
-> Know more about the problem than the person who wrote the trigger doc.
+> **CRITICAL RULE**: When you complete the Output deliverable for a phase, you MUST **STOP** and wait for the user or system to advance the task. Do NOT overstep into the next phase in the same session.
 
-| ✅ ALLOWED | ❌ FORBIDDEN |
-|------------|--------------|
-| Read `SPEC.md` Metadata (Headers) | Read full implementation files (>100 lines) |
-| Web/external research | Write any code |
-| Create `RES-XXX` artifact | Move to Plan without `RES-XXX` |
-
-**Steps**: Locate specs → Read headers → Define scope → External research → Create `RES-XXX`
-
-**Deliverable**: `RES-XXX` in `.dev_ops/tasks/TASK-XXX/`
-**Template**: [research.md](./assets/research.md) · **Full guide**: [phase_understand.md](./references/phase_understand.md)
-
----
-
-## Phase: Plan
-
-> "The Spec is the Truth."
-
-| ✅ ALLOWED | ❌ FORBIDDEN |
-|------------|--------------|
-| Update `SPEC.md` | Write Implementation Code |
-| Create Child Tasks | Update sub-component `SPEC.md` (Delegate!) |
-| Define Verification Strategy | Skip creating/updating `SPEC.md` |
-
-**Steps**: Read spec headers → Analyze hierarchy → Update local `SPEC.md` → Decompose (delegate) → Review leaf vs node
-
-**Deliverable**: Updated `SPEC.md` + Child Tasks
-**Create sub-tasks**: `node .dev_ops/scripts/devops.js create-task --title "..." --parent-id TASK-XXX`
-**Full guide**: [phase_plan.md](./references/phase_plan.md) · **Rules**: [decomposition_rules.md](./references/decomposition_rules.md)
+| Phase | Input (Read) | Output (Write) | Full Instructions |
+|-------|--------------|----------------|-------------------|
+| **Understand** | `SPEC.md` headers, trigger details | `RES-XXX.md` (Research) | [See phase_understand.md](./references/phase_understand.md) |
+| **Plan** | `RES-XXX.md`, `SPEC.md` headers | `SPEC.md` + `task.md` checklists | [See phase_plan.md](./references/phase_plan.md) |
+| **Implement** | `task.md`, `SPEC.md` | Working Code + Tests | [See phase_implement.md](./references/phase_implement.md) |
+| **Verify** | Code, Tests, `SPEC.md` | `decision_trace.md` + PR | [See phase_verify.md](./references/phase_verify.md) |
+| **Done** | `decision_trace.md` | Merged PR | [See phase_done.md](./references/phase_done.md) |
 
 ### Task Composition
 
@@ -133,58 +111,6 @@ The agent can manage tasks using the following CLI commands:
 
 ---
 
-## Phase: Implement
-
-> "I'm helping!" — Ralph Wiggum (Autonomous Mode)
-
-| ✅ ALLOWED | ❌ FORBIDDEN |
-|------------|--------------|
-| Write Code & Tests | Deviate from `SPEC.md` |
-| Read `SPEC.md` + `RES-XXX` | Plan new features |
-| Run Tests | Ignore broken tests |
-
-**Steps**: Read spec → TDD build → Run tests → Self-review → Stop (allow review)
-
-**Deliverable**: Working code matching `SPEC.md`
-**Full guide**: [phase_implement.md](./references/phase_implement.md) · **Testing**: [testing_guide.md](./references/testing_guide.md)
-
----
-
-## Phase: Verify
-
-> "Trust, but Verify."
-
-| ✅ ALLOWED | ❌ FORBIDDEN |
-|------------|--------------|
-| Run tests | Make code changes (except minor fixes) |
-| Create `walkthrough.md` | Add new features |
-| Create PR | Submit without proof |
-
-**Steps**: Run tests → SPEC integrity check → Create walkthrough → Create PR
-
-**Deliverable**: `walkthrough.md` + PR
-**Detect tests**: `node .dev_ops/scripts/devops.js detect --scope tests`
-**Template**: [walkthrough_template.md](./assets/walkthrough_template.md) · **Full guide**: [phase_verify.md](./references/phase_verify.md)
-
----
-
-## Phase: Done
-
-> "Real artists ship."
-
-| ✅ ALLOWED | ❌ FORBIDDEN |
-|------------|--------------|
-| `git commit`, `git push` | Code Changes (except cleanup) |
-| `gh pr create` | Start new task without cleaning up |
-
-**Steps**: Check walkthrough exists → Commit & push → Create PR → Handle feedback → Move task to Done → Clean up
-
-**Deliverable**: Merged PR
-**Move task**: `node .dev_ops/scripts/devops.js move-task --id TASK-XXX --column col-done`
-**Full guide**: [phase_done.md](./references/phase_done.md) · **Checklist**: [shipping_checklist.md](./references/shipping_checklist.md)
-
----
-
 ## Spec Lifecycle
 
 > `SPEC.md` files are the **source of truth** for a component. They live next to the code they describe, like a README.
@@ -212,20 +138,6 @@ The agent can manage tasks using the following CLI commands:
 * [Testing Guide](./references/testing_guide.md) — TDD and common test issues
 * [Verification Guide](./references/verification_guide.md) — Manual & security checklists
 * [Shipping Checklist](./references/shipping_checklist.md) — Final checks before closure
-
-## Examples
-
-### Research (Understand)
-
-User says: "Research how to add input validation to our API"
-→ Locate specs, check existing patterns, research libraries, create `RES-042`.
-[Full example](./examples/research_doc.md)
-
-### Verification (Verify)
-
-User says: "Verify the login bug is fixed"
-→ Run tests, check SPEC compliance, create walkthrough, create PR.
-[Full example](./examples/walkthrough.md)
 
 ## Troubleshooting
 

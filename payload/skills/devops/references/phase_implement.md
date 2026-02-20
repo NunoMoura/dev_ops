@@ -29,10 +29,12 @@
 ### 1. Read (The "Wake Up")
 
 * **Context**: Read the local `SPEC.md`.
+
 ## Trace & Rework
 
-- **Trace**: Append key technical decisions, trade-offs, and blockers to `.dev_ops/tasks/TASK-XXX/decision_trace.md`.
-- **Rework**: If you are resuming work or fixing bugs, **READ** `decision_trace.md` to understand what happened in previous sessions. It contains the history of decisions and verification results.
+* **Trace**: Append key technical decisions, trade-offs, and blockers to `.dev_ops/tasks/TASK-XXX/decision_trace.md`.
+* **Rework**: If you are resuming work or fixing bugs, **READ** `decision_trace.md` to understand what happened in previous sessions. It contains the history of decisions and verification results.
+
 * **Focus**: Identify what parts of the `SPEC` are not yet implemented or need changing.
 * **Safety**: Do NOT read unrelated parts of the codebase.
 
@@ -57,37 +59,6 @@
 
 * **Action**: **STOP**.
 * **Reason**: Allows the system (or user) to review or auto-loop with fresh context.
-
----
-
-## Examples
-
-### Example 1: Implementing a Feature
-
-User says: "Implement input validation for the API"
-
-Actions:
-
-1. Read `src/api/SPEC.md` to understand requirements.
-2. Create test `tests/api/test_validation.ts` (Red).
-3. Implement `src/api/validation.ts` (Green).
-4. Run tests to confirm passing.
-
-Result: New validation module with passing tests. Code matches SPEC exactly.
-
-### Example 2: Refactoring
-
-User says: "Refactor the auth service to use async/await"
-
-Actions:
-
-1. Read `src/auth/SPEC.md`.
-2. Update `src/auth/service.ts`.
-3. Verify tests still pass.
-
-Result: Refactored code, all existing tests green, no behavioral change.
-
----
 
 ## Troubleshooting
 

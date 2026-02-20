@@ -8,10 +8,10 @@
 |------------|--------------|
 | Run tests | Make code changes (except minor fixes) |
 | Read `SPEC.md` | Add new features |
-| Create `walkthrough.md` | Skip security check |
+| Append to `decision_trace.md` | Skip security check |
 | Create PR | Submit without proof |
 
-**Required Deliverable**: `walkthrough.md` with test evidence + PR
+**Required Deliverable**: `decision_trace.md` appended with test evidence + PR
 
 ---
 
@@ -19,7 +19,7 @@
 
 | Input | Output | Next Phase |
 |-------|--------|------------|
-| Code + Tests + `SPEC.md` | `walkthrough.md` + PR | Done |
+| Code + Tests + `SPEC.md` | `decision_trace.md` + PR | Done |
 
 ---
 
@@ -38,46 +38,16 @@
 ### 3. Create Walkthrough
 
 *3. **Trace**: Append your verification evidence to `.dev_ops/tasks/TASK-XXX/decision_trace.md`.
-   - **Test Results**: Paste the output of `npm test` or relevant test commands.
-   - **Manual Checks**: Confirm acceptance criteria are met.
-   - **Screenshots**: If UI changes, reference screenshot paths.
+
+* **Test Results**: Paste the output of `npm test` or relevant test commands.
+* **Manual Checks**: Confirm acceptance criteria are met.
+* **Screenshots**: If UI changes, reference screenshot paths.
 
 > **Note**: `decision_trace.md` is the persistent record. Do NOT create a separate walkthrough artifact.
 
 ### 4. Create PR
 
 * **Command**: `gh pr create --title "[TASK-XXX] Title"`
-
----
-
-## Examples
-
-### Example 1: Verifying a Bug Fix
-
-User says: "Verify the login bug is fixed"
-
-Actions:
-
-1. Run `npm test tests/auth/login.test.ts`.
-2. Detailed checks against `SPEC.md` constraints.
-3. Create `walkthrough.md` with test output.
-4. Create PR.
-
-Result: All 12 auth tests pass. `walkthrough.md` created with test evidence. PR #43 opened.
-
-### Example 2: Preparing Release
-
-User says: "Prepare the v1.0 release candidate"
-
-Actions:
-
-1. Run full test suite.
-2. Check for security issues (secrets, validation).
-3. Generate walkthrough evidence.
-
-Result: 98/98 tests pass. No secrets detected. Walkthrough documents full test coverage.
-
----
 
 ## Troubleshooting
 
@@ -97,7 +67,7 @@ Result: 98/98 tests pass. No secrets detected. Walkthrough documents full test c
 
 * [ ] All tests pass.
 * [ ] `SPEC.md` matches implementation.
-* [ ] `walkthrough.md` created.
+* [ ] `decision_trace.md` appended with evidence.
 * [ ] PR created.
 
 ---
