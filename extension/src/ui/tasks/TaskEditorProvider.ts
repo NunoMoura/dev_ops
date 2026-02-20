@@ -938,16 +938,8 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
             window.addEventListener('message', event => {
                 const message = event.data;
                 if (message.type === 'updateChecklist') {
-                     // 🚨 CRITICAL FIX: Do not re-render the checklist if the user is actively editing it.
-                     // A re-render destroys the DOM elements and the user's cursor focus.
-                     const isEditing = document.activeElement && document.activeElement.classList.contains('checklist-text');
-                     if (!isEditing) {
-                         this.items = message.checklist || [];
-                         this.render();
-                     } else {
-                         // We are editing, so we ignore the incoming state update to preserve our local edits and focus.
-                         // Our local edits will be saved via the saveTimeout anyway.
-                     }
+                     this.items = message.checklist || [];
+                     this.render();
                 } else if (message.description !== undefined) {
                      // Only update description if it's not currently focused
                      if (document.activeElement !== descriptionInput) {
@@ -966,19 +958,69 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
         }
 
         render() {
-            this.container.innerHTML = '';
+            const existingElements = new Map();
+            Array.from(this.container.children).forEach(child => {
+                if (child.dataset && child.dataset.id) {
+                    existingElements.set(child.dataset.id, child);
+                }
+            });
             
             this.items.forEach((item, index) => {
-                const el = this.createItemElement(item, index);
-                this.container.appendChild(el);
+                let el = existingElements.get(item.id);
+                if (!el) {
+                    el = this.createItemElement(item);
+                } else {
+                    existingElements.delete(item.id);
+                }
+                
+                this.updateItemElement(el, item, index);
+                
+                // Ensure correct order in DOM
+                const expectedChild = this.container.children[index];
+                if (expectedChild !== el) {
+                    if (expectedChild) {
+                        this.container.insertBefore(el, expectedChild);
+                    } else {
+                        this.container.appendChild(el);
+                    }
+                }
             });
+            
+            // Remove remaining elements not in state
+            existingElements.forEach(el => el.remove());
         }
 
-        createItemElement(item, index) {
+        updateItemElement(div, item, index) {
+            div.dataset.index = index;
+            
+            // Update Indentation
+            const marginLeft = (item.indent || 0) * 20;
+            div.style.marginLeft = \`\${marginLeft}px\`;
+
+            // Update Checkbox
+            const checkbox = div.querySelector('.checklist-checkbox');
+            if (checkbox.checked !== !!item.done) {
+                checkbox.checked = !!item.done;
+            }
+
+            // Update Text Node formatting
+            const textDiv = div.querySelector('.checklist-text');
+            if (item.done) {
+                textDiv.classList.add('done');
+            } else {
+                textDiv.classList.remove('done');
+            }
+
+            // Update Text Content ONLY if different and NOT currently focused
+            if (document.activeElement !== textDiv && textDiv.innerText !== item.text) {
+                textDiv.innerText = item.text || '';
+            }
+        }
+
+        createItemElement(item) {
             const div = document.createElement('div');
             div.className = 'checklist-item';
             div.draggable = true;
-            div.dataset.index = index;
             div.dataset.id = item.id;
             
             // Indentation
@@ -989,47 +1031,62 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
             div.innerHTML = \`
                 <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
                 <div class="checkbox-wrapper">
-                    <input type="checkbox" class="checklist-checkbox" \${item.done ? 'checked' : ''}>
+                    <input type="checkbox" class="checklist-checkbox">
                 </div>
-                <div class="checklist-text \${item.done ? 'done' : ''}" contenteditable="true" placeholder="Task...">\${item.text}</div>
+                <div class="checklist-text" contenteditable="true" placeholder="Task..."></div>
                 <button class="delete-btn" title="Delete"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
             \`;
 
             // Event Listeners
             const checkbox = div.querySelector('.checklist-checkbox');
             checkbox.addEventListener('change', (e) => {
-                item.done = e.target.checked;
+                const currentItem = this.items.find(i => i.id === div.dataset.id);
+                if (!currentItem) return;
+                currentItem.done = e.target.checked;
                 const textDiv = div.querySelector('.checklist-text');
-                if (item.done) textDiv.classList.add('done');
+                if (currentItem.done) textDiv.classList.add('done');
                 else textDiv.classList.remove('done');
                 this.save();
             });
 
             const textDiv = div.querySelector('.checklist-text');
             textDiv.addEventListener('input', (e) => {
-                item.text = e.target.innerText;
+                const currentItem = this.items.find(i => i.id === div.dataset.id);
+                if (!currentItem) return;
+                currentItem.text = e.target.innerText;
                 clearTimeout(this.saveTimeout);
                 this.saveTimeout = setTimeout(() => this.save(), 1000); 
             });
             
             // Key navigation
-            textDiv.addEventListener('keydown', (e) => this.handleKeydown(e, item, index));
+            textDiv.addEventListener('keydown', (e) => {
+                const currentItem = this.items.find(i => i.id === div.dataset.id);
+                if (!currentItem) return;
+                this.handleKeydown(e, currentItem);
+            });
 
             const deleteBtn = div.querySelector('.delete-btn');
             deleteBtn.addEventListener('click', () => {
-                this.deleteItem(index);
+                const idx = this.items.findIndex(i => i.id === div.dataset.id);
+                if (idx !== -1) this.deleteItem(idx);
             });
 
             // Drag Events
-            div.addEventListener('dragstart', (e) => this.handleDragStart(e, div, index));
+            div.addEventListener('dragstart', (e) => {
+                const idx = this.items.findIndex(i => i.id === div.dataset.id);
+                if (idx !== -1) this.handleDragStart(e, div, idx);
+            });
             div.addEventListener('dragend', (e) => this.handleDragEnd(e, div));
             div.addEventListener('dragover', (e) => this.handleDragOver(e));
-            div.addEventListener('drop', (e) => this.handleDrop(e, index));
+            div.addEventListener('drop', (e) => {
+                const idx = this.items.findIndex(i => i.id === div.dataset.id);
+                if (idx !== -1) this.handleDrop(e, idx);
+            });
 
             return div;
         }
 
-        handleKeydown(e, item, _staleIndex) {
+        handleKeydown(e, item) {
             const index = this.items.indexOf(item);
             if (index === -1) return;
 
