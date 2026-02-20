@@ -118,6 +118,14 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
       const debouncedRefresh = () => {
         if (refreshTimeout) { clearTimeout(refreshTimeout); }
         refreshTimeout = setTimeout(() => {
+          // Check if we are currently saving to avoid resetting the user's cursor
+          // The isSaving flag is set in the message handler below
+          // (It's scoped properly if we move its declaration out, but we can just use 
+          //  a localized variable or evaluate it dynamically. Let's make it scoped to the resolve provider)
+          if (this.isSavingTask(taskId)) {
+            return;
+          }
+
           console.log(`[TaskEditor] File changed for ${taskId}, refreshing...`);
           updateWebview().catch(e => console.error('Refresh failed', e));
         }, 300);
@@ -145,10 +153,14 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
       switch (message.type) {
         case 'update':
+          this.setIsSavingTask(taskId, true);
           await handleCardUpdateMessage({ id: taskId, ...message.data }, tempProvider, syncFilterUI);
+          setTimeout(() => { this.setIsSavingTask(taskId, false); }, 500); // clear after potential file watch events
           break;
         case 'save':
+          this.setIsSavingTask(taskId, true);
           await handleCardUpdateMessage({ id: taskId, ...message.data }, tempProvider, syncFilterUI);
+          setTimeout(() => { this.setIsSavingTask(taskId, false); }, 500);
           vscode.window.showInformationMessage(`✅ Saved task ${taskId}`);
           await updateWebview();
           vscode.commands.executeCommand('devops.refreshBoard');
@@ -186,10 +198,11 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
           const currentTask = (await readBoard()).items.find(t => t.id === taskId);
           const currentColumn = currentTask?.columnId;
 
-          if (currentColumn === 'col-plan') { nextColumn = 'col-implement'; }
+          if (currentColumn === 'col-backlog') { nextColumn = 'col-understand'; }
+          else if (currentColumn === 'col-understand') { nextColumn = 'col-plan'; }
+          else if (currentColumn === 'col-plan') { nextColumn = 'col-implement'; }
           else if (currentColumn === 'col-implement') { nextColumn = 'col-verify'; }
           else if (currentColumn === 'col-verify') { nextColumn = 'col-done'; }
-          else if (currentColumn === 'col-backlog') { nextColumn = 'col-plan'; }
 
           await boardService.moveTask(taskId, nextColumn);
 
@@ -214,6 +227,16 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
       }
     });
+  }
+
+  private isSavingMap = new Map<string, boolean>();
+
+  public setIsSavingTask(taskId: string, saving: boolean) {
+    this.isSavingMap.set(taskId, saving);
+  }
+
+  public isSavingTask(taskId: string): boolean {
+    return this.isSavingMap.get(taskId) || false;
   }
 
   private getTaskIdFromUri(uri: vscode.Uri): string {
@@ -990,7 +1013,10 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
             return div;
         }
 
-        handleKeydown(e, item, index) {
+        handleKeydown(e, item, _staleIndex) {
+            const index = this.items.indexOf(item);
+            if (index === -1) return;
+
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 // Add new item below

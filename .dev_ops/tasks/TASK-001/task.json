@@ -1,13 +1,8 @@
 {
   "id": "TASK-001",
   "columnId": "col-backlog",
-  "title": "Verification Task",
-  "description": "Testing update capability",
-  "updatedAt": "2026-02-19T04:22:56.653Z",
-  "checklist": [
-    {
-      "text": "Check Item A",
-      "done": true
-    }
-  ]
+  "title": "New Task",
+  "updatedAt": "2026-02-19T23:27:03.012Z",
+  "checklist": [],
+  "status": "needs_feedback"
 }
