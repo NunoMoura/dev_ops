@@ -153,14 +153,14 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
 
       switch (message.type) {
         case 'update':
-          this.setIsSavingTask(taskId, true);
+          this.setIsSavingTask(taskId, 5000); // lock for up to 5s while writing
           await handleCardUpdateMessage({ id: taskId, ...message.data }, tempProvider, syncFilterUI);
-          setTimeout(() => { this.setIsSavingTask(taskId, false); }, 500); // clear after potential file watch events
+          this.setIsSavingTask(taskId, 2000); // extend lock for 2s after write finishes to ignore the incoming file watch events
           break;
         case 'save':
-          this.setIsSavingTask(taskId, true);
+          this.setIsSavingTask(taskId, 5000);
           await handleCardUpdateMessage({ id: taskId, ...message.data }, tempProvider, syncFilterUI);
-          setTimeout(() => { this.setIsSavingTask(taskId, false); }, 500);
+          this.setIsSavingTask(taskId, 2000);
           vscode.window.showInformationMessage(`✅ Saved task ${taskId}`);
           await updateWebview();
           vscode.commands.executeCommand('devops.refreshBoard');
@@ -229,14 +229,19 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
     });
   }
 
-  private isSavingMap = new Map<string, boolean>();
+  private isSavingMap = new Map<string, number>();
 
-  public setIsSavingTask(taskId: string, saving: boolean) {
-    this.isSavingMap.set(taskId, saving);
+  public setIsSavingTask(taskId: string, durationMs: number = 0) {
+    if (durationMs > 0) {
+      this.isSavingMap.set(taskId, Date.now() + durationMs);
+    } else {
+      this.isSavingMap.set(taskId, 0);
+    }
   }
 
   public isSavingTask(taskId: string): boolean {
-    return this.isSavingMap.get(taskId) || false;
+    const expiry = this.isSavingMap.get(taskId) || 0;
+    return Date.now() < expiry;
   }
 
   private getTaskIdFromUri(uri: vscode.Uri): string {
