@@ -938,10 +938,21 @@ export class TaskEditorProvider implements vscode.CustomTextEditorProvider {
             window.addEventListener('message', event => {
                 const message = event.data;
                 if (message.type === 'updateChecklist') {
-                     this.items = message.checklist || [];
-                     this.render();
+                     // 🚨 CRITICAL FIX: Do not re-render the checklist if the user is actively editing it.
+                     // A re-render destroys the DOM elements and the user's cursor focus.
+                     const isEditing = document.activeElement && document.activeElement.classList.contains('checklist-text');
+                     if (!isEditing) {
+                         this.items = message.checklist || [];
+                         this.render();
+                     } else {
+                         // We are editing, so we ignore the incoming state update to preserve our local edits and focus.
+                         // Our local edits will be saved via the saveTimeout anyway.
+                     }
                 } else if (message.description !== undefined) {
-                     descriptionInput.value = message.description;
+                     // Only update description if it's not currently focused
+                     if (document.activeElement !== descriptionInput) {
+                         descriptionInput.value = message.description;
+                     }
                 }
             });
         }
