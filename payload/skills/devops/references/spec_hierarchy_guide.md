@@ -15,7 +15,8 @@ To prevent bloat and maintain a clean context, the framework strictly separates 
   * `project_standards.md` (Formatting/Linting rules)
   * `FEAT-XXX.md` (Epics / Technical Architecture Features)
   * `STORY-XXX.md` (User-facing slices of value)
-* **Rule**: These survive the lifespan of a task. They guide the creation of components.
+  * `BUG-XXX.md` (Persistent troubleshooting history)
+* **Rule**: These survive the lifespan of a task. They guide the creation of components and prevent regressions.
 
 ### Artifacts (The Temporary State)
 
@@ -52,12 +53,14 @@ To operate over massive codebases, agents use **Progressive Disclosure** (often 
 ### Zooming Out (Context Discovery)
 
 If you are asked to modify `src/api/routes/user/` but lack context on how it fits into the system:
-* **Action**: Jump to the parent `src/api/SPEC.md`. 
+
+* **Action**: Jump to the parent `src/api/SPEC.md`.
 * **Why**: To read the upstream constraints or sibling dependencies.
 
 ### Zooming In (Decomposition)
 
 If you are told to architect an entire `src/api` module:
+
 * **Action**: Update `src/api/SPEC.md` to define the routes, then spawn Child Tasks to generate `src/api/routes/user/SPEC.md`.
 * **Why**: You delegate implementation downwards, pushing local constraints to Leaf nodes.
 
@@ -79,5 +82,5 @@ When starting a brand new project, use this exact order of operations to prevent
 Because Specs are **Code Gates**, tasks that do not involve system configuration or code generation should **bypass** Spec creation.
 
 * **Situation**: Your task is "Write the PRD" or "Flesh out the README".
-* **Action**: Do the work directly. Do not generate a `SPEC.md` for a markdown document file. 
+* **Action**: Do the work directly. Do not generate a `SPEC.md` for a markdown document file.
 * **Rule**: If the output of the task sits in `.dev_ops/docs/`, `.dev_ops/tasks/`, or is a generic project config (e.g., `.gitignore`), skip Spec generation.

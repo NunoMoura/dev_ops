@@ -31,8 +31,8 @@ downstream: []             # Tasks derived from this (e.g., TASK-001)
 
 <!-- Testable conditions for "done" -->
 
-- [ ] Criterion 1
-- [ ] Criterion 2
+* [ ] Criterion 1
+* [ ] Criterion 2
 
 ## Technical Notes
 

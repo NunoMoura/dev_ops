@@ -12,8 +12,9 @@ Evaluate the user's request and scaffold either a **User Story** (for user-facin
 ## Step 1: Decision - Story vs. Feature
 
 Evaluate the work to be done.
-*   **If User-Facing**: e.g., "Add profile picture upload". You will scaffold a Story.
-*   **If Technical/Epic**: e.g., "Migrate Database to PostgreSQL" or "Implement Auth Epic". You will scaffold a Feature.
+
+* **If User-Facing**: e.g., "Add profile picture upload". You will scaffold a Story.
+* **If Technical/Epic**: e.g., "Migrate Database to PostgreSQL" or "Implement Auth Epic". You will scaffold a Feature.
 
 ---
 
@@ -22,11 +23,13 @@ Evaluate the work to be done.
 Based on the decision in Step 1, create the corresponding document in `.dev_ops/docs/`.
 
 **For User Stories:**
+
 ```bash
 cp .agent/skills/devops/assets/story.md .dev_ops/docs/STORY-XXX.md
 ```
 
 **For Features / Epics / Enablers:**
+
 ```bash
 cp .agent/skills/devops/assets/feature.md .dev_ops/docs/FEAT-XXX.md
 ```
@@ -37,8 +40,8 @@ cp .agent/skills/devops/assets/feature.md .dev_ops/docs/FEAT-XXX.md
 
 Fully complete all sections in the generated document (`STORY-XXX` or `FEAT-XXX`).
 
-*   Ensure Acceptance Criteria are testable.
-*   If filling a Feature, clearly define the Architectural/Technical Goals.
+* Ensure Acceptance Criteria are testable.
+* If filling a Feature, clearly define the Architectural/Technical Goals.
 
 ---
 
@@ -63,5 +66,5 @@ node .dev_ops/scripts/devops.js create-task \
 
 ## Outputs
 
-- `.dev_ops/docs/[STORY-XXX | FEAT-XXX].md`
-- TASK-XXX entries in the Backlog
+* `.dev_ops/docs/[STORY-XXX | FEAT-XXX].md`
+* TASK-XXX entries in the Backlog

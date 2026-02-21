@@ -34,12 +34,14 @@
 ### 2. Identify Scope (Greenfield vs Brownfield)
 
 **If Greenfield (New Project)**:
+
 1. Ensure the `PRD.md` and `Personas` exist.
 2. Scaffold the base folder structure described in the PRD.
 3. Write the initial `SPEC.md` files for the Root and primary sub-folders.
 4. Delegate actual implementation to `.dev_ops/docs/STORY-XXX.md` tasks.
 
 **If Brownfield (Existing Project)**:
+
 * **Identify**: Which components need to change?
 * **Hierarchy check**: Does this change affect *my* component (Local) or *my children* (Sub-components)?
 
