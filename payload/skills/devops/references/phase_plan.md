@@ -38,7 +38,7 @@
 1. Ensure the `PRD.md` and `Personas` exist.
 2. Scaffold the base folder structure described in the PRD.
 3. Write the initial `SPEC.md` files for the Root and primary sub-folders.
-4. Delegate actual implementation to `.dev_ops/docs/STORY-XXX.md` tasks.
+4. Delegate actual implementation to `.dev_ops/docs/stories/STORY-XXX.md` tasks.
 
 **If Brownfield (Existing Project)**:
 

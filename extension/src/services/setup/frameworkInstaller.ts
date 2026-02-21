@@ -383,9 +383,11 @@ export async function install(
 
     // Create directories (architecture docs are now co-located as SPEC.md in component folders)
     log(`[installer] Creating directory structure in ${devOpsDir}`);
-    fs.mkdirSync(path.join(devOpsDocsDir, 'ux', 'personas'), { recursive: true });
-    fs.mkdirSync(path.join(devOpsDocsDir, 'ux', 'stories'), { recursive: true });
-    fs.mkdirSync(path.join(devOpsDocsDir, 'ux', 'mockups'), { recursive: true });
+    fs.mkdirSync(path.join(devOpsDocsDir, 'personas'), { recursive: true });
+    fs.mkdirSync(path.join(devOpsDocsDir, 'stories'), { recursive: true });
+    fs.mkdirSync(path.join(devOpsDocsDir, 'mockups'), { recursive: true });
+    fs.mkdirSync(path.join(devOpsDocsDir, 'features'), { recursive: true });
+    fs.mkdirSync(path.join(devOpsDocsDir, 'bugs'), { recursive: true });
     fs.mkdirSync(devOpsArchiveDir, { recursive: true });
     fs.mkdirSync(path.join(devOpsDir, 'tasks'), { recursive: true });
     fs.mkdirSync(devOpsTemplatesDir, { recursive: true });

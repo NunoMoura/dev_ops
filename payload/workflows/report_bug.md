@@ -22,7 +22,7 @@ Check output for similar issues.
 ## Step 2: Create Report
 
 ```bash
-cp .agent/skills/devops/assets/bug.md .dev_ops/docs/BUG-XXX.md
+cp .agent/skills/devops/assets/bug.md .dev_ops/docs/bugs/BUG-XXX.md
 ```
 
 Fill sections:
@@ -48,5 +48,5 @@ node .dev_ops/scripts/devops.js create-task \
 
 ## Outputs
 
-- `.dev_ops/docs/BUG-XXX.md`
+- `.dev_ops/docs/bugs/BUG-XXX.md`
 - TASK-XXX in Backlog

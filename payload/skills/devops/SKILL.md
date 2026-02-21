@@ -54,8 +54,8 @@ This IS the agent's cross-session memory of *why* decisions were made.
 
 | Type | Storage Path | Lifecycle | Templates |
 |------|-------------|-----------|-----------|
-| **Docs** | `.dev_ops/docs/` | Persistent — survives task lifecycle | `prd.md`, `feature.md`, `story.md`, `project_standards.md` |
-| **Bugs** | `.dev_ops/docs/` | Persistent — tracked independently | `bug.md` |
+| **Docs** | `.dev_ops/docs/<type>/` | Persistent — survives task lifecycle | `prd.md`, `feature.md`, `story.md`, `project_standards.md` |
+| **Bugs** | `.dev_ops/docs/bugs/` | Persistent — tracked independently | `bug.md` |
 | **Specs** | Next to the component they describe | Persistent — updated as component evolves | `spec.md` |
 | **Tasks** | `.dev_ops/tasks/TASK-XXX/` | Ephemeral — created by CLI | `task.md` |
 

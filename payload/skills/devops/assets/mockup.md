@@ -4,7 +4,7 @@ title: "{{title}}"         # Mockup name
 type: mockup
 date: "{{date}}"           # Creation date (YYYY-MM-DD)
 status: Draft              # Draft | Review | Approved | Implemented
-storage: ".dev_ops/docs/"
+storage: ".dev_ops/docs/mockups/"
 fidelity: Low              # Low | Medium | High
 stories: []                # Related user stories (e.g., STORY-001)
 component: ""              # Component/feature this mockup represents

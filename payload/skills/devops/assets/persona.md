@@ -4,7 +4,7 @@ title: "{{title}}"         # Persona name (e.g., "Project Manager")
 type: persona
 date: "{{date}}"           # Creation date (YYYY-MM-DD)
 status: Draft              # Draft | Active | Deprecated
-storage: ".dev_ops/docs/"
+storage: ".dev_ops/docs/personas/"
 ---
 
 # {{title}}

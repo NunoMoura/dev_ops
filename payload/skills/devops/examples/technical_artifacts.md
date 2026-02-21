@@ -39,7 +39,7 @@ interface ButtonProps {
 
 **Trigger**: "Log a bug about the crash on checkout"
 **Template**: `assets/bug.md`
-**Output Path**: `.dev_ops/docs/bug-checkout-crash.md`
+**Output Path**: `.dev_ops/docs/bugs/bug-checkout-crash.md`
 
 ```markdown
 ---

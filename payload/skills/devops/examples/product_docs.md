@@ -37,7 +37,7 @@ Redesign the user dashboard to improve engagement and provide clearer metrics.
 
 **Trigger**: "Spec out the 'Dark Mode' feature"
 **Template**: `assets/feature.md`
-**Output Path**: `.dev_ops/docs/feature-dark-mode.md`
+**Output Path**: `.dev_ops/docs/features/feature-dark-mode.md`
 
 ```markdown
 ---
@@ -64,7 +64,7 @@ Users report eye strain during night usage.
 
 **Trigger**: "Define our target developer persona"
 **Template**: `assets/persona.md`
-**Output Path**: `.dev_ops/docs/persona-dev-dave.md`
+**Output Path**: `.dev_ops/docs/personas/persona-dev-dave.md`
 
 ```markdown
 ---
@@ -90,7 +90,7 @@ Dave is a senior backend engineer who loves CLI tools and hates context switchin
 
 **Trigger**: "Write a user story for login"
 **Template**: `assets/story.md`
-**Output Path**: `.dev_ops/docs/story-login.md`
+**Output Path**: `.dev_ops/docs/stories/story-login.md`
 
 ```markdown
 # Story: User Login
@@ -109,7 +109,7 @@ Dave is a senior backend engineer who loves CLI tools and hates context switchin
 
 **Trigger**: "Create a mockup for the dashboard"
 **Template**: `assets/mockup.md`
-**Output Path**: `.dev_ops/docs/mockup-dashboard.md`
+**Output Path**: `.dev_ops/docs/mockups/mockup-dashboard.md`
 
 ````markdown
 ---

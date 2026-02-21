@@ -25,13 +25,13 @@ Based on the decision in Step 1, create the corresponding document in `.dev_ops/
 **For User Stories:**
 
 ```bash
-cp .agent/skills/devops/assets/story.md .dev_ops/docs/STORY-XXX.md
+cp .agent/skills/devops/assets/story.md .dev_ops/docs/stories/STORY-XXX.md
 ```
 
 **For Features / Epics / Enablers:**
 
 ```bash
-cp .agent/skills/devops/assets/feature.md .dev_ops/docs/FEAT-XXX.md
+cp .agent/skills/devops/assets/feature.md .dev_ops/docs/features/FEAT-XXX.md
 ```
 
 ---
@@ -66,5 +66,5 @@ node .dev_ops/scripts/devops.js create-task \
 
 ## Outputs
 
-* `.dev_ops/docs/[STORY-XXX | FEAT-XXX].md`
+* `.dev_ops/docs/stories/STORY-XXX.md` or `.dev_ops/docs/features/FEAT-XXX.md`
 * TASK-XXX entries in the Backlog
