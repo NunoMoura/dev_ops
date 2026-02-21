@@ -54,14 +54,14 @@ This IS the agent's cross-session memory of *why* decisions were made.
 
 | Type | Storage Path | Lifecycle | Templates |
 |------|-------------|-----------|-----------|
-| **Docs** | `.dev_ops/docs/` | Persistent — survives task lifecycle | `prd.md`, `feature.md`, `persona.md`, `story.md`, `mockup.md`, `project_standards.md` |
+| **Docs** | `.dev_ops/docs/` | Persistent — survives task lifecycle | `prd.md`, `feature.md`, `story.md`, `project_standards.md` |
 | **Bugs** | `.dev_ops/docs/` | Persistent — tracked independently | `bug.md` |
 | **Specs** | Next to the component they describe | Persistent — updated as component evolves | `spec.md` |
 | **Tasks** | `.dev_ops/tasks/TASK-XXX/` | Ephemeral — created by CLI | `task.md` |
 
 > **Important**: Look at the `storage` field in each template's frontmatter.
 >
-> * **Docs** (`.dev_ops/docs/`): PRD, Feature, Persona, Story, Mockup, Standards, Bug
+> * **Docs** (`.dev_ops/docs/`): PRD, Feature (Epics/Tech), Story (User Value), Standards, Bug
 > * **Specs** (next to component): `SPEC.md` lives alongside the code it describes — like a README
 > * **Artifacts** (`.dev_ops/tasks/TASK-XXX/`): Research, Plan
 >
@@ -105,7 +105,7 @@ The agent can manage tasks using the following CLI commands:
 **Full Examples**:
 
 * [Task Management](./examples/task_management.md) — Creating, updating, and managing tasks.
-* [Product Documentation](./examples/product_docs.md) — PRD, Feature, Persona, User Stories, Mockups.
+* [Product Documentation](./examples/product_docs.md) — PRD, Features, User Stories.
 * [Technical Artifacts](./examples/technical_artifacts.md) — Implementation Plans, Specs, Bug Reports, Tasks.
 * [Process Documentation](./examples/process_docs.md) — Project Standards, PR Templates.
 
@@ -133,6 +133,7 @@ The agent can manage tasks using the following CLI commands:
 
 ## Rules & References
 
+* [Spec Hierarchy Guide](./references/spec_hierarchy_guide.md) — RLM Navigation and Specs as Code Gates
 * [Decomposition Rules](./references/decomposition_rules.md) — Node vs Leaf task splitting
 * [Research Patterns](./references/research_patterns.md) — Scoping and structuring research
 * [Testing Guide](./references/testing_guide.md) — TDD and common test issues

@@ -1,6 +1,6 @@
 ---
 id: "{{id}}"               # FEAT-XXX - auto-generated
-title: "{{title}}"         # Feature name
+title: "{{title}}"         # Epic or Technical Feature name
 type: feature
 date: "{{date}}"           # Creation date (YYYY-MM-DD)
 status: Draft              # Draft | Approved | In Progress | Complete
@@ -16,12 +16,16 @@ downstream: []             # Tasks derived from this (e.g., TASK-001)
 ## Summary
 
 <!-- Brief description of the feature -->
+## Business & User Value (If Applicable)
 
-## User Stories
+<!-- Link to STORY-XXX documents or describe the overarching user value -->
+* [STORY-XXX](./STORY-XXX.md)
 
-<!-- Link to STORY-XXX documents or inline stories -->
+## Architectural & Technical Goals (If Applicable)
 
-- As a **{{persona}}**, I want **[goal]**, so that **[benefit]**.
+<!-- What structural, framework, or technical capabilities does this enable? -->
+* e.g., Migrate database from SQLite to PostgreSQL
+* e.g., Implement Redis caching layer
 
 ## Acceptance Criteria
 

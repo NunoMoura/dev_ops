@@ -6,7 +6,7 @@
 
 | ✅ ALLOWED | ❌ FORBIDDEN |
 |------------|--------------|
-| Create/Update `SPEC.md` (only next to source files) | Create `SPEC.md` in project root |
+| Create/Update `SPEC.md` (only next to source files) | Create `SPEC.md` for documents or arbitrary configs |
 | Update `task.md` checklist | Write Implementation Code |
 | Read `RES-*.md` & Code Metadata | Modify Source Code (`.ts`, `source/`, etc.) |
 | Create Child Tasks (`create-task`) | Update sub-component `SPEC.md` (Delegate it!) |
@@ -31,8 +31,15 @@
 * **Command**: `view_file` (with line limit) or `grep`.
 * **Constraint**: Do **NOT** read implementation files yet. Trust the Spec interface.
 
-### 2. Analyze & Hierarchy
+### 2. Identify Scope (Greenfield vs Brownfield)
 
+**If Greenfield (New Project)**:
+1. Ensure the `PRD.md` and `Personas` exist.
+2. Scaffold the base folder structure described in the PRD.
+3. Write the initial `SPEC.md` files for the Root and primary sub-folders.
+4. Delegate actual implementation to `.dev_ops/docs/STORY-XXX.md` tasks.
+
+**If Brownfield (Existing Project)**:
 * **Identify**: Which components need to change?
 * **Hierarchy check**: Does this change affect *my* component (Local) or *my children* (Sub-components)?
 
@@ -41,7 +48,7 @@
 * **Action**: Update the **Current Directory's** `SPEC.md` to reflect the new requirements. If this is a brand new component, create the `SPEC.md` from the template.
 * **Action**: Update your current `.dev_ops/tasks/TASK-XXX/task.md` with the checklist of implementation steps.
 * **Constraint**: You represent the *current level of abstraction*. Do not update child specs unless scaffolding a brand new folder.
-* **Constraint**: **NEVER** create a `SPEC.md` at the root of the project. `SPEC.md` MUST live in the directory of the component/module it describes (e.g. `src/api/SPEC.md`). If a component doesn't exist yet, defer its `SPEC.md` creation to its specific implementation task.
+* **Constraint**: A Root `SPEC.md` is allowed ONLY as a system mapping entrypoint. It must delegate all functional details to child module specs. Always place component `SPEC.md` files inside the component's directory.
 
 ### 4. Recursive Decomposition (The "Delegate")
 

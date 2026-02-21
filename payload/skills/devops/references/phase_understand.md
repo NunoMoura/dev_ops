@@ -10,6 +10,7 @@
 | Web/external research | Write any code |
 | Create `RES-XXX` artifact | Move to Plan without `RES-XXX` |
 | `grep` / `find` | Skip scope definition |
+| Jump to Parent Spec (Zoom-Out) | |
 
 **Required Deliverable**: `RES-XXX` in `.dev_ops/tasks/TASK-XXX/`
 
@@ -25,7 +26,12 @@
 
 ## Steps
 
-### 1. RLM Zoom-Out (Map the Territory)
+### 1. The Non-Code Bypass
+
+* **Check**: Does this task produce persistent project docs (a PRD, Persona, Story, Standard) or configuration files?
+* **Action**: If YES, skip the Strict Spec search (`find . -name SPEC.md`). Proceed directly to research and scoping. Specs are Code Gates; they do not apply to documentation tasks.
+
+### 2. RLM Zoom-Out (Map the Territory)
 
 * **Action**: Locate the relevant `SPEC.md` files.
 * **Command**: `find . -name SPEC.md`
@@ -35,6 +41,7 @@
 
 * **Action**: Read the *frontmatter* and *headers* of the relevant `SPEC.md` files.
 * **Focus**: `description`, `## Architecture`, `## Dependencies`.
+* **Zoom-Out**: If the local `SPEC.md` doesn't provide enough context on upstream constraints, locate and read the **Parent Directory's** `SPEC.md`. Iterate upwards until the context is clear.
 * **Goal**: precise mental map of components without token overload.
 
 ### 3. Define Scope
@@ -63,8 +70,8 @@ Use template: [research.md](../assets/research.md)
 
 ### Error: "Missing SPEC.md"
 
-**Cause**: Component might be undocumented or new.
-**Solution**: Create a placeholder `SPEC.md` or research the nearest parent component.
+**Cause**: Component might be undocumented, new, or missing context.
+**Solution**: Perform an RLM Zoom-Out. Research the nearest parent folder's `SPEC.md` to understand upstream expectations, or fallback to the Root Spec.
 
 ---
 
