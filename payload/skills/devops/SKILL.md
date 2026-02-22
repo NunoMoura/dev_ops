@@ -19,7 +19,7 @@ metadata:
 | Phase | Triggers | Deliverable | Full Guide |
 |-------|----------|-------------|------------|
 | Understand | "analyze", "research", "investigate" | `RES-XXX` artifact | [Details](./references/phase_understand.md) |
-| Plan | "create plan", "design", "break down" | Updated `SPEC.md` + Tasks | [Details](./references/phase_plan.md) |
+| Plan | "create plan", "design", "break down" | `SPEC.md` OR Docs + Tasks | [Details](./references/phase_plan.md) |
 | Implement | "implement", "write code", "fix bug" | Working code + tests | [Details](./references/phase_implement.md) |
 | Verify | "verify", "run tests", "check quality" | `walkthrough.md` + PR | [Details](./references/phase_verify.md) |
 | Done | "ship", "finish", "complete" | Merged PR | [Details](./references/phase_done.md) |
@@ -54,14 +54,14 @@ This IS the agent's cross-session memory of *why* decisions were made.
 
 | Type | Storage Path | Lifecycle | Templates |
 |------|-------------|-----------|-----------|
-| **Docs** | `.dev_ops/docs/<type>/` | Persistent — survives task lifecycle | `prd.md`, `feature.md`, `story.md`, `project_standards.md` |
+| **Docs** | `.dev_ops/docs/{features,stories,personas,mockups}/` | Persistent — survives task lifecycle | `prd.md`, `feature.md`, `story.md`, `project_standards.md` |
 | **Bugs** | `.dev_ops/docs/bugs/` | Persistent — tracked independently | `bug.md` |
 | **Specs** | Next to the component they describe | Persistent — updated as component evolves | `spec.md` |
 | **Tasks** | `.dev_ops/tasks/TASK-XXX/` | Ephemeral — created by CLI | `task.md` |
 
 > **Important**: Look at the `storage` field in each template's frontmatter.
 >
-> * **Docs** (`.dev_ops/docs/`): PRD, Feature (Epics/Tech), Story (User Value), Standards, Bug
+> * **Docs** (`.dev_ops/docs/`): PRD (root), Features (`features/`), Stories (`stories/`), Personas (`personas/`), Mockups (`mockups/`), Bugs (`bugs/`)
 > * **Specs** (next to component): `SPEC.md` lives alongside the code it describes — like a README
 > * **Artifacts** (`.dev_ops/tasks/TASK-XXX/`): Research, Plan
 >
@@ -76,7 +76,7 @@ This IS the agent's cross-session memory of *why* decisions were made.
 | Phase | Input (Read) | Output (Write) | Full Instructions |
 |-------|--------------|----------------|-------------------|
 | **Understand** | `SPEC.md` headers, trigger details | `RES-XXX.md` (Research) | [See phase_understand.md](./references/phase_understand.md) |
-| **Plan** | `RES-XXX.md`, `SPEC.md` headers | `SPEC.md` + `task.md` checklists | [See phase_plan.md](./references/phase_plan.md) |
+| **Plan** | `RES-XXX.md`, `SPEC.md` headers | `SPEC.md` OR Docs + `task.md` checklists | [See phase_plan.md](./references/phase_plan.md) |
 | **Implement** | `task.md`, `SPEC.md` | Working Code + Tests | [See phase_implement.md](./references/phase_implement.md) |
 | **Verify** | Code, Tests, `SPEC.md` | `decision_trace.md` + PR | [See phase_verify.md](./references/phase_verify.md) |
 | **Done** | `decision_trace.md` | Merged PR | [See phase_done.md](./references/phase_done.md) |

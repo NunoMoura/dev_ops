@@ -13,13 +13,19 @@
 | Read `SPEC.md` headers | Read full files (>100 lines) |
 | Define Verification Strategy | Proceed to next phase without STOPPING |
 
-**Required Deliverable**: Updated `SPEC.md` + Populated `task.md` checklist + Child Tasks (if needed).
+**Required Deliverable**:
+Depending on the task type, you must produce ONE of the following (plus `task.md` checklists):
+
+* **Coding Task**: Updated `SPEC.md` + Populated `task.md` checklist + Child Tasks.
+* **Documentation Task**: Updated Docs (e.g., `PRD.md`, `project_standards.md`) + Populated `task.md` checklist + Child Tasks.
+
+> **CRITICAL**: Do NOT create a `SPEC.md` for a documentation task!
 
 ---
 
 | Input | Output | Next Action |
 |-------|--------|------------|
-| `RES` + `SPEC` headers | `SPEC.md` + `task.md` checklist + Tasks | **STOP** and wait for user/system to advance task |
+| `RES` + `SPEC` headers | `SPEC.md` OR Docs + `task.md` checklist + Tasks | **STOP** and wait for user/system to advance task |
 
 ---
 

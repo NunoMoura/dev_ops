@@ -155,7 +155,7 @@ program
     .requiredOption('--id <id>', 'Task ID')
     .action(async (options) => {
         const board = await taskService.readBoard();
-        const task = board.items.find(t => t.id === options.id);
+        const task = taskService.resolveTask(board, options.id);
         if (task) {
             console.log(JSON.stringify(task, null, 2));
         } else {

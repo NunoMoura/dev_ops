@@ -12,6 +12,14 @@ export class CoreTaskService {
         return path.join(this.workspace.root, '.dev_ops', 'board.json');
     }
 
+    public resolveTask(board: Board, taskId: string): Task | undefined {
+        let normalizedId = taskId.toUpperCase();
+        if (/^\d+$/.test(normalizedId)) {
+            normalizedId = `TASK-${normalizedId.padStart(3, '0')}`;
+        }
+        return board.items.find(t => t.id === taskId || t.id === normalizedId);
+    }
+
     public async readBoard(): Promise<Board> {
         const boardPath = await this.getBoardPath();
         let board: Board;
@@ -205,7 +213,7 @@ export class CoreTaskService {
 
     public async moveTask(taskId: string, columnId: string): Promise<void> {
         const board = await this.readBoard();
-        const task = board.items.find(t => t.id === taskId);
+        const task = this.resolveTask(board, taskId);
         if (!task) {
             throw new Error(`Task ${taskId} not found`);
         }
@@ -245,7 +253,7 @@ export class CoreTaskService {
         checkChecklistItem: string; // Item text to mark as done
     }>): Promise<void> {
         const board = await this.readBoard();
-        const task = board.items.find(t => t.id === taskId);
+        const task = this.resolveTask(board, taskId);
         if (!task) {
             throw new Error(`Task ${taskId} not found`);
         }
@@ -286,7 +294,7 @@ export class CoreTaskService {
 
     public async claimTask(taskId: string, driver: { agent: string; model: string; sessionId?: string; }, ownerOverride?: string): Promise<void> {
         const board = await this.readBoard();
-        const task = board.items.find(t => t.id === taskId);
+        const task = this.resolveTask(board, taskId);
         if (!task) {
             throw new Error(`Task ${taskId} not found`);
         }
